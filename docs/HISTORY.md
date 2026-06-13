@@ -322,11 +322,18 @@ Post-debut hardening — the deferred pre-launch engineering, none of which bloc
 
 Residual v1.0.1 item: the public launch (Show HN / r/LocalLLaMA / self-host catalogs) — a marketing action, not code.
 
-**Live Snapshot (2026-06-13):**
+### v1.0.2 — Dashboard & Community Polish ✅
+
+- **Luxe-card system** extended across the whole dashboard (10 tabs: Cognitive Map, Cognitive OS, Event Log, Home, Memory Browser, Plan Graph, Policy, Risk Observatory, Skills, Version History) — inline cards → `className="lux-card"`, rounded badges, shared `PageHeader`/`RefreshBtn`
+- Fix: `CognitiveMapTab`'s `T as C` alias left `card`/`blue`/`green` undefined (silent muted fallback) — explicit local palette
+- **Community profile** — `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SECURITY.md`
+- **Gilded Calm social-preview card** (1280×640) for GitHub link sharing
+
+**Live Snapshot (2026-06-14):**
 
 | Metric | Value |
 |--------|-------|
-| Version | v1.0.1 (lean runtime + onboarding) |
+| Version | v1.0.2 (luxe dashboard + community profile) |
 | Routing accuracy | 97% full · 99% signal-only |
 | Specialist agents | 10 (registry-canonical) |
 | FAISS vectors | 628+ at 0.38ms P50 |
