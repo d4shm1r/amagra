@@ -219,10 +219,9 @@ export default function VersionHistoryTab() {
     <div style={{ animation: "fadeIn .2s" }}>
 
       {/* ── Stats bar ── */}
-      <div style={{
+      <div className="lux-card" style={{
         display: "flex", gap: 0,
-        background: T.surface, border: `1px solid ${T.border}`,
-        borderRadius: 8, overflow: "hidden", marginBottom: 20,
+        overflow: "hidden", marginBottom: 20,
       }}>
         {[
           { label: "Phases",       value: BUILD_PHASES.length, color: T.accent },

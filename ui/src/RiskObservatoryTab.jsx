@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { T, FONT_MONO } from "./theme";
-import { ObsPanel, MetricCard, ScoreBar, RefreshBtn, EmptyState, hScore } from "./ObsShared";
+import { ObsPanel, MetricCard, RefreshBtn, EmptyState, hScore, PageHeader } from "./ObsShared";
 
 const API = "http://localhost:8000";
 
@@ -17,7 +17,7 @@ function LevelDistribution({ byLevel, total }) {
   return (
     <div>
       {/* Stacked bar */}
-      <div style={{ display: "flex", height: 14, borderRadius: 4, overflow: "hidden", marginBottom: 12 }}>
+      <div style={{ display: "flex", height: 14, borderRadius: 99, overflow: "hidden", marginBottom: 12 }}>
         {values.map(({ level, pct }) => pct > 0 && (
           <div key={level} style={{
             width: `${pct * 100}%`, background: LEVEL_COLOR[level],
@@ -138,7 +138,7 @@ function RecentRiskRows({ history }) {
             color: LEVEL_COLOR[r.reflect_level] || T.muted,
             background: (LEVEL_COLOR[r.reflect_level] || T.muted) + "18",
             border: `1px solid ${(LEVEL_COLOR[r.reflect_level] || T.muted)}44`,
-            borderRadius: 3, padding: "1px 5px", textAlign: "center",
+            borderRadius: 99, padding: "2px 7px", textAlign: "center",
           }}>{r.reflect_level || "—"}</span>
           <span style={{ color: T.mutedLt, minWidth: 60 }}>{r.action || "—"}</span>
           <span style={{ color: T.muted, minWidth: 64 }}>{r.agent?.replace(/_/g, " ") || "—"}</span>
@@ -182,19 +182,16 @@ export default function RiskObservatoryTab() {
     <div style={{ maxWidth: 860, margin: "0 auto" }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <div>
-          <h2 style={{ margin: 0, color: T.text, fontSize: 18, fontWeight: 700 }}>Risk Observatory</h2>
-          <div style={{ color: T.muted, fontSize: 11, marginTop: 2 }}>
-            Reflection gate signals · risk score distribution · per-action breakdown
-          </div>
-        </div>
+      <PageHeader
+        title="Risk Observatory"
+        subtitle="Reflection gate signals · risk score distribution · per-action breakdown"
+      >
         <RefreshBtn onClick={load} />
-      </div>
+      </PageHeader>
 
       {error && (
         <div style={{ color: T.error, background: T.surface, border: `1px solid ${T.border}`,
-          borderRadius: 5, padding: "8px 14px", marginBottom: 14, fontSize: 12 }}>
+          borderRadius: 10, padding: "8px 14px", marginBottom: 14, fontSize: 12 }}>
           Backend unavailable: {error}
         </div>
       )}

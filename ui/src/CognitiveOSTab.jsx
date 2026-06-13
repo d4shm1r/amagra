@@ -131,9 +131,8 @@ function CoherenceHero({ coh, dynamics }) {
     : null;
 
   return (
-    <div style={{
-      background: T.surface, border: `1px solid ${T.border}`,
-      borderRadius: 3, padding: "24px 26px", marginBottom: 14,
+    <div className="lux-card" style={{
+      padding: "24px 26px", marginBottom: 14,
     }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 20 }}>
         {/* Big number */}
@@ -550,9 +549,8 @@ function RoutingInspector({ lastDecision, agents }) {
 // ── Panel wrapper ─────────────────────────────────────────────
 function Panel({ title, icon, children, action }) {
   return (
-    <div style={{
-      background: T.surface, border: `1px solid ${T.border}`,
-      borderRadius: 4, padding: "16px 18px",
+    <div className="lux-card" style={{
+      padding: "16px 18px",
     }}>
       <div style={{
         fontSize: 10, fontWeight: 700, color: T.muted,
@@ -571,10 +569,8 @@ function Panel({ title, icon, children, action }) {
 // ── Sub-metric card (C(t) children) ──────────────────────────
 function SubCard({ label, value, unit = "", color, sub, icon }) {
   return (
-    <div style={{
-      flex: 1, minWidth: 130,
-      background: T.surface, border: `1px solid ${T.border}`,
-      borderRadius: 3, padding: "13px 15px",
+    <div className="lux-card lux-card-i" style={{
+      flex: 1, minWidth: 130, padding: "13px 15px",
     }}>
       <div style={{ fontSize: 9, color: T.muted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>
         {icon && <span style={{ marginRight: 4 }}>{icon}</span>}

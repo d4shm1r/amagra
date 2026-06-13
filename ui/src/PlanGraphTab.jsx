@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { T, FONT_MONO } from "./theme";
-import { ObsPanel, RefreshBtn, EmptyState } from "./ObsShared";
+import { RefreshBtn, PageHeader } from "./ObsShared";
 
 // ── Layout constants ──────────────────────────────────────────
 const NODE_W  = 210;
@@ -107,7 +107,7 @@ function Node({ node, x, y, selected, onClick }) {
         <rect
           x={-2} y={-2}
           width={NODE_W + 4} height={NODE_H + 4}
-          rx={6} fill="none"
+          rx={10} fill="none"
           stroke={T.accent} strokeWidth={1.5}
         />
       )}
@@ -115,7 +115,7 @@ function Node({ node, x, y, selected, onClick }) {
       {/* background */}
       <rect
         width={NODE_W} height={NODE_H}
-        rx={4}
+        rx={9}
         fill={bg}
         stroke={border}
         strokeWidth={1}
@@ -225,7 +225,7 @@ function NodeDetail({ node, onClose }) {
       marginTop: 12,
       background: T.surface2 || "#FAF7F2",
       border: `1px solid ${T.border}`,
-      borderRadius: 4, padding: "14px 18px",
+      borderRadius: 12, padding: "14px 18px",
       position: "relative",
     }}>
       <button
@@ -334,44 +334,30 @@ export default function PlanGraphTab() {
     <div style={{ color: T.text, fontFamily: "inherit" }}>
 
       {/* ── Header ── */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 10,
-        marginBottom: 16,
-      }}>
-        <span style={{
-          fontSize: 16, fontWeight: 700, color: T.text,
-        }}>Plan Graph</span>
+      <PageHeader
+        title="Plan Graph"
+        subtitle={hasGraph && data.meta
+          ? `${data.meta.mode} · ${data.meta.steps} steps · u ${Math.round(data.meta.uncertainty * 100)}% · ${data.meta.elapsed_ms}ms`
+          : "Execution DAG — live step status, agents, dependencies"}
+      >
+        <RefreshBtn onClick={fetch_} />
+      </PageHeader>
 
-        {hasGraph && data.meta && (
-          <>
-            <span style={{
-              fontSize: 10, color: T.muted, fontFamily: FONT_MONO,
-              background: T.surface2 || "#F4F0E8",
-              border: `1px solid ${T.border}`,
-              borderRadius: 3, padding: "2px 8px",
+      {/* ── Status counts ── */}
+      {hasGraph && Object.keys(statusCounts).length > 0 && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+          {Object.entries(statusCounts).map(([s, n]) => (
+            <span key={s} style={{
+              fontSize: 10, fontWeight: 700, fontFamily: FONT_MONO,
+              color: sColor(s), background: `${sColor(s)}18`,
+              border: `1px solid ${sColor(s)}44`,
+              borderRadius: 99, padding: "3px 11px",
             }}>
-              {data.meta.mode}
+              {n} {s}
             </span>
-            <span style={{
-              fontSize: 10, color: T.muted, fontFamily: FONT_MONO,
-            }}>
-              {data.meta.steps} steps · u {Math.round(data.meta.uncertainty * 100)}% · {data.meta.elapsed_ms}ms
-            </span>
-            {Object.entries(statusCounts).map(([s, n]) => (
-              <span key={s} style={{
-                fontSize: 10, fontWeight: 700,
-                color: sColor(s), fontFamily: FONT_MONO,
-              }}>
-                {n} {s}
-              </span>
-            ))}
-          </>
-        )}
-
-        <div style={{ marginLeft: "auto" }}>
-          <RefreshBtn onClick={fetch_} />
+          ))}
         </div>
-      </div>
+      )}
 
       {/* ── Query label ── */}
       {hasGraph && data.meta?.query && (
@@ -381,7 +367,7 @@ export default function PlanGraphTab() {
           color: T.muted,
           background: T.surface2 || "#FAF7F2",
           border: `1px solid ${T.border}`,
-          borderRadius: 4, padding: "8px 12px",
+          borderRadius: 10, padding: "8px 13px",
           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
         }}>
           <span style={{ color: T.accent, marginRight: 6 }}>query</span>
@@ -398,7 +384,7 @@ export default function PlanGraphTab() {
             <div key={li} style={{
               background: T.surface2 || "#FAF7F2",
               border: `1px solid ${T.border}`,
-              borderRadius: 3, padding: "3px 10px",
+              borderRadius: 99, padding: "3px 11px",
               fontSize: 10, fontFamily: FONT_MONO,
               color: T.muted,
             }}>
@@ -467,11 +453,8 @@ export default function PlanGraphTab() {
       )}
 
       {hasGraph && (
-        <div style={{
-          overflowX: "auto",
-          border: `1px solid ${T.border}`,
-          borderRadius: 4,
-          background: "#F7F3EC",
+        <div className="lux-card" style={{
+          overflowX: "auto", padding: 0,
         }}>
           <svg
             ref={svgRef}

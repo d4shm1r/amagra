@@ -185,9 +185,8 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
 
       {/* ── How it works ── */}
       <Section title="How it works">
-        <div style={{
-          background: T.surface, border: `1px solid ${T.border}`,
-          borderRadius: 8, padding: "22px 26px",
+        <div className="lux-card" style={{
+          padding: "22px 26px",
         }}>
           <div style={{
             display: "grid",
@@ -218,8 +217,8 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
             ].map(s => (
               <div key={s.step} style={{ display: "flex", gap: 14 }}>
                 <div style={{
-                  width: 30, height: 30, flexShrink: 0,
-                  borderRadius: 4, background: `${s.color}18`,
+                  width: 32, height: 32, flexShrink: 0,
+                  borderRadius: "50%", background: `${s.color}18`,
                   border: `1px solid ${s.color}44`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 10, fontWeight: 800, color: s.color,
@@ -237,9 +236,8 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
 
       {/* ── Architecture flow ── */}
       <Section title="Architecture">
-        <div style={{
-          background: T.surface, border: `1px solid ${T.border}`,
-          borderRadius: 8, padding: "20px 26px", overflowX: "auto",
+        <div className="lux-card" style={{
+          padding: "20px 26px", overflowX: "auto",
         }}>
           <div style={{ display: "flex", alignItems: "center", minWidth: 640 }}>
             {PIPELINE.map((node, i, arr) => (
@@ -286,7 +284,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
               fontSize: 11, fontWeight: 600,
               color: s.color, background: `${s.color}14`,
               border: `1px solid ${s.color}30`,
-              borderRadius: 4, padding: "5px 12px",
+              borderRadius: 99, padding: "5px 13px",
               fontFamily: "'Consolas', 'Cascadia Code', monospace",
             }}>{s.label}</span>
           ))}
@@ -304,13 +302,11 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
             <button
               key={n.tab}
               onClick={() => onNav(n.tab)}
-              className="card-hover"
+              className="lux-card lux-card-i"
               style={{
                 display: "flex", alignItems: "center", gap: 10,
-                padding: "11px 14px",
-                background: T.surface, border: `1px solid ${T.border}`,
-                borderRadius: 6, cursor: "pointer", fontFamily: "inherit",
-                transition: "background .12s, border-color .12s",
+                padding: "12px 15px",
+                cursor: "pointer", fontFamily: "inherit", textAlign: "left",
               }}
             >
               <span style={{ fontSize: 15, color: n.color, fontFamily: "monospace", flexShrink: 0, lineHeight: 1 }}>{n.sym}</span>
@@ -355,7 +351,7 @@ function Badge({ label, color, pulse }) {
       fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
       color, background: `${color}18`,
       border: `1px solid ${color}44`,
-      borderRadius: 4, padding: "3px 9px",
+      borderRadius: 99, padding: "3px 11px",
       boxShadow: pulse ? `0 0 8px ${color}44` : "none",
     }}>{label}</span>
   );
@@ -382,7 +378,7 @@ function StatusPill({ label, value, color, mono, dot }) {
     <div style={{
       display: "flex", alignItems: "center", gap: 6,
       background: T.surface2, border: `1px solid ${T.border}`,
-      borderRadius: 4, padding: "5px 11px",
+      borderRadius: 99, padding: "5px 12px",
     }}>
       {dot && <span style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />}
       <span style={{ fontSize: 11, color: T.muted }}>{label}</span>
@@ -396,11 +392,9 @@ function StatusPill({ label, value, color, mono, dot }) {
 
 function FeatureCard({ sym, color, title, body, pills }) {
   return (
-    <div style={{
-      background: T.surface, border: `1px solid ${T.border}`,
-      borderRadius: 8, padding: "16px 18px",
+    <div className="lux-card lux-card-i" style={{
+      padding: "16px 18px",
       display: "flex", flexDirection: "column", gap: 10,
-      transition: "border-color .15s",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{
