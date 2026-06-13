@@ -3,7 +3,7 @@
  *
  * Import: import { ObsPanel, MetricCard, ScoreBar, EventIcon, hScore } from "./ObsShared";
  */
-import { T, LUX, FONT_DISPLAY } from "./theme";
+import { T, FONT_DISPLAY } from "./theme";
 
 // ── Page header ───────────────────────────────────────────────
 
@@ -44,11 +44,7 @@ export function hProb(v) {
 /** Standard section container used by every observability tab — landing card style */
 export function ObsPanel({ title, icon, children, action, style = {} }) {
   return (
-    <div style={{
-      background: T.surface, border: `1px solid ${T.border}`,
-      borderRadius: 12, padding: "16px 20px",
-      boxShadow: LUX.shadowSm, ...style,
-    }}>
+    <div className="lux-card" style={{ padding: "16px 20px", ...style }}>
       {(title || action) && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           {title && (
@@ -73,10 +69,7 @@ export function ObsPanel({ title, icon, children, action, style = {} }) {
 /** Small stat card — label / big value / sub-text (matches Overview Stat cards) */
 export function MetricCard({ label, value, sub, color, mono = false }) {
   return (
-    <div style={{
-      background: T.surface, border: `1px solid ${T.border}`,
-      borderRadius: 12, padding: "12px 16px",
-    }}>
+    <div className="lux-card lux-card-i" style={{ padding: "14px 16px" }}>
       <div style={{
         fontSize: 22, fontWeight: 700, color: color ?? T.text,
         fontFamily: mono ? "'Consolas','Cascadia Code',monospace" : "inherit",

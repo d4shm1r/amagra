@@ -43,6 +43,13 @@ export const LUX = {
   shadowMd:   "0 4px 18px rgba(72, 52, 28, 0.11)",
   shadowLg:   "0 18px 48px rgba(62, 44, 20, 0.20)",
   glass:      "rgba(250, 247, 242, 0.88)", // frosted bars (pair with backdropFilter)
+
+  // Landing-style "luxe card" recipe (mirrors public/landing.html .for-card).
+  // Prefer className="lux-card" / "lux-card-i" (index.css) — it adds the top
+  // gloss + hover. These tokens are for surfaces that must stay inline-styled.
+  cardBg:     "linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 42%), #FAF7F2",
+  cardBorder: "rgba(255, 255, 255, 0.45)",
+  cardShadow: "7px 7px 20px rgba(72,52,28,0.10), -3px -3px 11px rgba(255,255,255,0.75), inset 0 1px 1px rgba(255,255,255,0.92), inset 0 -1px 1px rgba(138,99,36,0.04)",
 };
 
 // Font stacks

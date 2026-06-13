@@ -36,6 +36,41 @@ code, pre, .mono {
 ::-webkit-scrollbar-thumb  { background: #D6C9B2; border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: #C0B098; }
 
+/* ── Luxe cards — landing.html card system applied to the dashboard ──
+   Warm neumorphic depth (soft shadow bottom-right, paper highlight
+   top-left), a top gloss baked into the background gradient so card
+   content always paints above it, and a near-white hairline border on
+   cream. Match public/landing.html .for-card / .metric — keep in sync. */
+.lux-card {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 42%),
+    #FAF7F2;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 14px;
+  box-shadow:
+    7px 7px 20px rgba(72, 52, 28, 0.10),
+    -3px -3px 11px rgba(255, 255, 255, 0.75),
+    inset 0 1px 1px rgba(255, 255, 255, 0.92),
+    inset 0 -1px 1px rgba(138, 99, 36, 0.04);
+}
+
+/* Interactive variant — discrete "objects" (stat tiles) earn a calm lift.
+   Containers stay still; gold glow stays a whisper, per the grayscale rule. */
+.lux-card-i {
+  transition:
+    transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 280ms ease-out;
+}
+.lux-card-i:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    10px 10px 26px rgba(62, 44, 20, 0.15),
+    -3px -3px 13px rgba(255, 255, 255, 0.92),
+    inset 0 1px 1px rgba(255, 255, 255, 0.92),
+    0 0 24px rgba(196, 136, 8, 0.12);
+}
+
 /* ── Chat message content ─────────────────────────────────── */
 .msg-content {
   font-family: 'Charter', 'Source Serif Pro', 'Iowan Old Style', Georgia, serif;

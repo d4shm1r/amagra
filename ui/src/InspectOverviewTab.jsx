@@ -19,7 +19,7 @@ function timeAgo(ts) {
 
 function Stat({ value, label, live }) {
   return (
-    <div style={{ flex: 1, padding: "18px 22px", background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12 }}>
+    <div className="lux-card lux-card-i" style={{ flex: 1, padding: "18px 22px" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
         <span style={{ fontSize: 26, fontWeight: 700, color: T.text, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
           {value ?? "—"}
@@ -40,7 +40,7 @@ function Stat({ value, label, live }) {
 
 function Section({ title, onMore, moreLabel, children }) {
   return (
-    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 20px", minWidth: 0 }}>
+    <div className="lux-card" style={{ padding: "16px 20px", minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: T.mutedLt, letterSpacing: "0.1em", textTransform: "uppercase", flex: 1 }}>
           {title}
