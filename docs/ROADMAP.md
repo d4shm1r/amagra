@@ -44,17 +44,19 @@ The public debut. Everything below shipped in 1.0.0 — the development phases t
 
 ## Post-1.0 Roadmap
 
-### v1.0.1 — Launch Polish & Hardening
+### v1.0.1 — Launch Polish & Hardening *(shipped — launch pending)*
 
-Deferred pre-launch items, now post-debut maintenance — none blocks the 1.0.0 release.
+Deferred pre-launch engineering, now landed post-debut. The one open item is the public launch itself.
 
-| Item | Impact | Difficulty | ROI |
-|------|--------|-----------|-----|
-| Tests: routes/ + core/ + payment path to ~60% | 8 | 5 | ★★★★ |
-| In-product onboarding: first-run flow, model pull detection | 8 | 4 | ★★★★ |
-| Vite migration — retire CRA (dead/unmaintained) | 6 | 3 | ★★★★ |
-| DB consolidation — single `amagra.db`, versioned migrations | 6 | 6 | ★★★ |
-| Launch: Show HN + r/LocalLLaMA + Docker Hub + Homebrew | 9 | 3 | ★★★★★ |
+| Item | Status | Impact | Difficulty | ROI |
+|------|--------|--------|-----------|-----|
+| Lean runtime core — `Context`/`Result` spine, onion middleware, lazy registry, run log | ✅ shipped | 8 | 6 | ★★★★ |
+| Delta-algebra routing seam — frozen dispatch reducer, router score/decide split | ✅ shipped | 7 | 5 | ★★★★ |
+| In-product onboarding: first-run flow, model pull detection | ✅ shipped | 8 | 4 | ★★★★ |
+| Vite migration — retire CRA (dead/unmaintained) | ✅ shipped | 6 | 3 | ★★★★ |
+| DB path registry — `infrastructure/db.py` (seam toward single `amagra.db`) | ✅ shipped | 6 | 6 | ★★★ |
+| Tests: routes/ + core/ + dispatch + runtime (544 → 624 passing) | ✅ shipped | 8 | 5 | ★★★★ |
+| Launch: Show HN + r/LocalLLaMA + Docker Hub + Homebrew | ⏳ pending | 9 | 3 | ★★★★★ |
 
 **Onboarding detail:**
 - On first launch: detect whether Ollama is running; if not, one-step command with copy button

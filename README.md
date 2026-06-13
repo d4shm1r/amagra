@@ -43,6 +43,7 @@ The experience is the point. The numbers are here if you want them.
 | Memory retrieval (FAISS, warm) | **< 1 ms** | LRU cache hit |
 | Memory retrieval (cold embed) | ~60–80 ms | nomic-embed-text via Ollama |
 | Skill graph coverage | **21 nodes** | Phrase-weighted disambiguation across all 10 agents |
+| Test suite | **624 passing** | ruff + pytest + Docker build on every push and PR |
 | Free tier | **100 req / day** | No card required — `POST /register/free` |
 
 > Real-world routing accuracy is tracked via telemetry (`GET /telemetry/routing`) from actual usage. The curated-eval figure above is an internal benchmark — treat it as indicative, not definitive.

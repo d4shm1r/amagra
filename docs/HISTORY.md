@@ -305,20 +305,37 @@ Post-phase work tracked by semver release rather than phase number. See `docs/RO
 - `context_files` on `AskRequest`; top-k chunks injected into `/ask` and `/ask/stream`
 - File-chip UI with upload/ready/error states
 
+### v1.0.0 — First Public Release ✅
+
+The public debut. Signal-first routing, 10 domain agents, persistent FAISS memory, the Cognitive OS layer, RAG file context, auth + rate limiting, and the Gilded Calm UI — everything from the v0.1 → v0.10 internal builds, released publicly for the first time. See `docs/ROADMAP.md` for the full 1.0.0 surface.
+
+### v1.0.1 — Lean Runtime & Onboarding ✅
+
+Post-debut hardening — the deferred pre-launch engineering, none of which blocked 1.0.0.
+
+- **Lean runtime core** (`core/`) — neutral `Context`/`Result` spine, onion middleware, lazy registry, append-only run log; now sits beneath the router
+- **Delta-algebra routing seam** — frozen dispatch reducer (`infrastructure/dispatch.py`), router score/decide split
+- **DB path registry** (`infrastructure/db.py`) — centralizes every SQLite path; the consolidation seam toward a single `amagra.db`
+- **First-run onboarding** — Ollama + model-pull detection, guided first prompt; UI migrated CRA → **Vite**
+- **Luxe-card UI** — the `landing.html` card system ported to the dashboard; README badge row + Star History chart
+- Test suite **544 → 624** passing
+
+Residual v1.0.1 item: the public launch (Show HN / r/LocalLLaMA / self-host catalogs) — a marketing action, not code.
+
 **Live Snapshot (2026-06-13):**
 
 | Metric | Value |
 |--------|-------|
-| Version | v1.0.0 (first public release) |
+| Version | v1.0.1 (lean runtime + onboarding) |
 | Routing accuracy | 97% full · 99% signal-only |
 | Specialist agents | 10 (registry-canonical) |
 | FAISS vectors | 628+ at 0.38ms P50 |
 | API endpoints | 100+ (109 routes) |
-| Build phases complete | 37 (+ v0.9–v0.10 releases) |
+| Build phases complete | 37 (+ v0.9 → v1.0.1 releases) |
 | UCI score | ~80.8 |
 | Auth | API key auth (REQUIRE_AUTH=0 dev, 1 prod) |
 | Docker | Dockerfile + docker-compose.yml with GPU passthrough |
-| Test suite | 544 passing (39 files) |
+| Test suite | 624 passing |
 
 ---
 
