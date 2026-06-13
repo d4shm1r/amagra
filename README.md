@@ -241,7 +241,7 @@ Rate limits are returned on every authenticated response as `X-RateLimit-Limit`,
 - **Streaming available** — use `POST /ask/stream` for SSE streaming responses. When `ANTHROPIC_API_KEY` is set, tokens stream directly from Claude; without it, the response arrives as a single chunk. The default `POST /ask` remains non-streaming.
 - **No tool use** — agents produce text only. File access, sandboxed code execution, and web search are committed for `v1.1`.
 - **Default inference** — Ollama (local). Cloud provider support (Anthropic, OpenAI, Gemini) via the multi-provider `/ask` path is available; full provider-abstraction UI is committed for `v1.2`.
-- **SQLite sprawl** — internal data is split across multiple SQLite files. Cross-DB atomicity is not guaranteed. Consolidation into a single `amagra.db` is planned for `v1.0.1`.
+- **SQLite sprawl** — internal data is split across multiple SQLite files; cross-DB atomicity is not guaranteed. Every path now resolves through one registry (`infrastructure/db.py`), and setting `AMAGRA_DB=/path/to/amagra.db` collapses all logical databases into a single file. The default is still separate files (no migration required); making single-file the default is planned for `v1.0.1`.
 - **Benchmark independence** — routing accuracy is measured on a curated eval set, not production data. See [Routing in practice](#routing-in-practice) for the raw numbers and known failure modes. Independent production telemetry is tracked via `GET /telemetry/routing`.
 
 ---
