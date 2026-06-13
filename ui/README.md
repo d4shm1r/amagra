@@ -1,70 +1,40 @@
-# Getting Started with Create React App
+# Mission Control (Amagra UI)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+The Amagra dashboard. Built with [React 19](https://react.dev/) and
+[Vite](https://vite.dev/) (migrated off Create React App).
 
-## Available Scripts
+## Available scripts
 
-In the project directory, you can run:
+Run these from the `ui/` directory.
 
-### `npm start`
+### `npm start` (alias: `npm run dev`)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
-
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Starts the Vite dev server at [http://localhost:3000](http://localhost:3000)
+with hot module replacement. The dashboard expects the API on
+`http://localhost:8000` — start it separately (or use `start-agents.sh`, which
+launches Ollama, the API, and this UI together).
 
 ### `npm run build`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Builds the production bundle to the `build/` folder — minified, with hashed
+filenames. Static assets in `public/` (including `landing.html`) are copied to
+the build root.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### `npm run preview`
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Serves the production `build/` locally to sanity-check a build before shipping.
 
-### `npm run eject`
+## Project layout
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- `index.html` — Vite entry (at the project root, not in `public/`).
+- `src/index.jsx` — React bootstrap.
+- `src/App.jsx` — Mission Control shell; owns navigation and global state.
+- `src/*.jsx` — one component per dashboard tab.
+- `public/` — static assets served at `/` (favicon, manifest, `landing.html`).
+- `vite.config.js` — build config; output dir is `build/` to match the old CRA path.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Notes
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+JSX may live in `.jsx` files only. The two former CRA entry points
+(`index.js`, `App.js`) were renamed to `.jsx` during the Vite migration so the
+production build's import analysis parses them correctly.

@@ -30,13 +30,14 @@ _BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _LOGS = os.path.join(_BASE, "logs")
 
 # ── DB paths (read-only consumers) ───────────────────────────
-_DECISIONS_DB   = os.path.join(_LOGS, "decisions.db")
-_GATE_DB        = os.path.join(_LOGS, "gate.db")
-_RISK_DB        = os.path.join(_LOGS, "risk_gate.db")
-_STEP_VERIFY_DB = os.path.join(_LOGS, "step_verify.db")
-_RUNS_DB        = os.path.join(_LOGS, "runs.db")
-_EVENTS_DB      = os.path.join(_LOGS, "events.db")
-_FEEDBACK_DB    = os.path.join(_LOGS, "feedback.db")
+from infrastructure.db import path as _dbpath
+_DECISIONS_DB   = _dbpath("decisions")
+_GATE_DB        = _dbpath("gate")
+_RISK_DB        = _dbpath("risk_gate")
+_STEP_VERIFY_DB = _dbpath("step_verify")
+_RUNS_DB        = _dbpath("runs")
+_EVENTS_DB      = _dbpath("events")
+_FEEDBACK_DB    = _dbpath("feedback")
 
 # ── UCI weights ───────────────────────────────────────────────
 _W_RELIABILITY = 0.35
@@ -280,7 +281,7 @@ def _productivity_metrics() -> Dict[str, float]:
     'partial' represents a successfully completed request; 'fail' rows represent
     genuine failures. This gives a stable, accurate completion rate.
     """
-    _RUNS_DB = os.path.join(_LOGS, "runs.db")
+    _RUNS_DB = _dbpath("runs")
 
     passed  = _q(_RUNS_DB,
         "SELECT COUNT(*) FROM runs WHERE status IN ('pass','partial') "
@@ -292,7 +293,7 @@ def _productivity_metrics() -> Dict[str, float]:
 
     # Fall back to sessions.db count when runs.db is empty (cold start)
     total_sessions = _q(
-        os.path.join(_LOGS, "sessions.db"),
+        _dbpath("sessions"),
         "SELECT COUNT(*) FROM sessions", default=0
     ) or 0
     if total_runs == 0:
@@ -303,7 +304,7 @@ def _productivity_metrics() -> Dict[str, float]:
 
     # Latency: mean of the 50 most-recent sessions (subquery required for LIMIT to apply)
     mean_latency_ms = _q(
-        os.path.join(_LOGS, "sessions.db"),
+        _dbpath("sessions"),
         "SELECT AVG(duration_ms) FROM "
         "(SELECT duration_ms FROM sessions ORDER BY id DESC LIMIT 50)",
         default=4000

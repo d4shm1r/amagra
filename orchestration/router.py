@@ -1,8 +1,12 @@
 import re
+from dataclasses import dataclass
 from typing import Dict, List
 from langchain_core.messages import HumanMessage
 from models.llm import llm
 from models.state import AgentState
+from infrastructure.dispatch import (
+    Delta, DeltaBuilder, Tier, dispatch, register, unregister,
+)
 
 # ── KEYWORD MAP ──────────────────────────────────────────────
 # Uses (?<!\w)word(?!\w) to avoid partial matches.
@@ -127,51 +131,93 @@ KEYWORD_MAP: Dict[str, List[str]] = {
 VALID_AGENTS = list(KEYWORD_MAP.keys()) + ["coordinator", "knowledge_learning"]
 
 
-def hybrid_router(state: AgentState) -> str:
+def score(query: str) -> Dict[str, int]:
     """
-    Rule-based keyword router with LLM fallback.
-    Returns exact node name string for LangGraph conditional_edges.
+    Pure keyword scoring — the FULL candidate vector, no early exits.
+
+    `query` must already be lowercased. This is §0 of the delta-algebra
+    spec: the single place a complete score vector exists, so a future
+    reduction seam has something to reduce over. It makes NO decision.
     """
-    messages = state.get("messages")
-    if not messages:
-        return "coordinator"
-
-    last = messages[-1]
-    if not isinstance(last, HumanMessage):
-        return "coordinator"
-
-    query = last.content.lower()
-    if not query.strip():
-        return "coordinator"
-
     scores: Dict[str, int] = {agent: 0 for agent in KEYWORD_MAP}
-
     for agent, patterns in KEYWORD_MAP.items():
         for pattern in patterns:
             if re.search(pattern, query, re.IGNORECASE):
                 scores[agent] += 1
+    return scores
 
-    # Terse priority — any single match wins over all other agents
-    if scores.get("terse", 0) >= 1:
-        return "terse"
 
-    # Signal-based terse path: factual shape or short generic query
+ROUTING_EVENT = "routing.decision"
+
+
+@dataclass(frozen=True)
+class RoutingEvent:
+    """Immutable input handed to every routing hook (§2: hooks read, never mutate)."""
+    query:  str
+    scores: dict
+
+
+def _terse_policy_hook(event: RoutingEvent) -> Delta:
+    """
+    CORE-tier hook re-expressing the old terse/factual short-circuits as a
+    `pin` delta (rollout step 2). Pure: a deterministic function of (query,
+    scores) — no LLM, no IO — so it is replay-safe (§8).
+
+    This is the ~30% "bypass" slice from the §0 measurement, pulled under the
+    algebra. A CORE pin outranks any extension bias/scale, exactly preserving
+    "terse wins over everything" without a hardcoded early return.
+    """
+    b = DeltaBuilder("core.terse", Tier.CORE)
+
+    # Terse priority — any single keyword match wins over all other agents
+    if event.scores.get("terse", 0) >= 1:
+        return b.pin("terse").build()
+
+    # Signal-based terse: factual shape or short generic query
     try:
         from orchestration.query_normalizer import normalize as _norm
-        _sig = _norm(query, "unknown")
-        if _sig.answer_shape == "factual":
-            return "terse"
-        _content_heavy = re.search(
+        sig = _norm(event.query, "unknown")
+        if sig.answer_shape == "factual":
+            return b.pin("terse").build()
+        content_heavy = re.search(
             r"\b(summarize|summary|explain|research|analyze|compare|review|describe)\b",
-            query, re.IGNORECASE,
+            event.query, re.IGNORECASE,
         )
-        if (_sig.verbosity == "terse"
-                and _sig.answer_shape == "explanation"
-                and _sig.domain == "general"
-                and not _content_heavy):
-            return "terse"
+        if (sig.verbosity == "terse"
+                and sig.answer_shape == "explanation"
+                and sig.domain == "general"
+                and not content_heavy):
+            return b.pin("terse").build()
     except Exception:
         pass
+
+    return Delta.empty("core.terse", Tier.CORE)
+
+
+# Register the CORE policy hook at import (idempotent across reloads).
+unregister(ROUTING_EVENT, "core.terse")
+register(ROUTING_EVENT, _terse_policy_hook,
+         hook_id="core.terse", tier=Tier.CORE, pure=True)
+
+
+def decide(query: str, scores: Dict[str, int]) -> str:
+    """
+    Runtime-owned decision over the score vector + query signals.
+
+    `query` must already be lowercased. The terse/factual policy now flows
+    through dispatch() as a CORE `pin` delta rather than a hardcoded early
+    return; extension hooks registered on ROUTING_EVENT can bias the vector,
+    but a CORE pin (and any veto) still wins. The threshold/default projection
+    over the RAW integer scores stays here — it is cardinal (counts, "all
+    zeros → default") and is not recoverable from a normalized distribution.
+    """
+    base = {agent: float(s) for agent, s in scores.items()}
+    result = dispatch(ROUTING_EVENT, RoutingEvent(query, dict(scores)), base)
+
+    # A committed pin sets exactly one logit to +inf (§3 Phase E).
+    pinned = [k for k, logit in result.raw.items() if logit == float("inf")]
+    if pinned:
+        return pinned[0]
 
     best_agent = max(scores, key=scores.get)
     best_score = scores[best_agent]
@@ -186,6 +232,28 @@ def hybrid_router(state: AgentState) -> str:
 
     print("[router] no keyword match → knowledge_learning (default)")
     return "knowledge_learning"
+
+
+def hybrid_router(state: AgentState) -> str:
+    """
+    Rule-based keyword router with LLM fallback.
+    Returns exact node name string for LangGraph conditional_edges.
+
+    Thin wrapper: extract the query, then score() → decide() (§0 split).
+    """
+    messages = state.get("messages")
+    if not messages:
+        return "coordinator"
+
+    last = messages[-1]
+    if not isinstance(last, HumanMessage):
+        return "coordinator"
+
+    query = last.content.lower()
+    if not query.strip():
+        return "coordinator"
+
+    return decide(query, score(query))
 
 
 def _llm_fallback(query: str) -> str:

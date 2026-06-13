@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import MenuBar            from "./MenuBar";
+import Onboarding         from "./Onboarding";
 import HomeTab            from "./HomeTab";
 import ChatTab            from "./ChatTab";
 import LogTab             from "./LogTab";
@@ -695,6 +696,14 @@ export default function App() {
   const [inspectContextId, setInspectContextId] = useState(null);
   const [lastInspectTab,   setLastInspectTab]   = useState("overview");
   const [lastSettingsTab,  setLastSettingsTab]  = useState("guide");
+  const [seedPrompt,       setSeedPrompt]       = useState(null);
+  const [showOnboarding,   setShowOnboarding]   = useState(() => {
+    try { return localStorage.getItem("onboarding_done_v1") !== "1"; } catch { return false; }
+  });
+  const dismissOnboarding = useCallback(() => {
+    try { localStorage.setItem("onboarding_done_v1", "1"); } catch {}
+    setShowOnboarding(false);
+  }, []);
 
   const updateSetting = useCallback((key, val) => {
     setSettings(prev => {
@@ -967,6 +976,14 @@ export default function App() {
         .run-row:hover { background: #F1EBE0 !important; }
       `}</style>
 
+      {/* ── First-run onboarding overlay ── */}
+      {showOnboarding && (
+        <Onboarding
+          onDismiss={dismissOnboarding}
+          onStart={(p) => { setSeedPrompt(p); navTo("chat"); }}
+        />
+      )}
+
       {/* ── Menu bar (full width) ── */}
       <MenuBar
         onNav={navTo}
@@ -1015,7 +1032,7 @@ export default function App() {
             display: activeTab === "chat" || activeTab === "prompt" ? "flex" : "block",
             flexDirection: activeTab === "chat" || activeTab === "prompt" ? "column" : undefined,
           }}>
-            {activeTab === "chat"      && <ChatTab apiStatus={apiStatus} onLogAdd={addLog} onQueryComplete={() => setTotalQueries(q => q + 1)} onLitNode={setLitNode} onActivityChange={setActivityPct} onCoherenceUpdate={setCoherence} forcedAgent={forcedAgent} onForcedAgentChange={setForcedAgent} onInspect={handleInspect} defaultReflectMode={settings.reflectMode} />}
+            {activeTab === "chat"      && <ChatTab apiStatus={apiStatus} onLogAdd={addLog} onQueryComplete={() => setTotalQueries(q => q + 1)} onLitNode={setLitNode} onActivityChange={setActivityPct} onCoherenceUpdate={setCoherence} forcedAgent={forcedAgent} onForcedAgentChange={setForcedAgent} onInspect={handleInspect} defaultReflectMode={settings.reflectMode} seedPrompt={seedPrompt} onSeedConsumed={() => setSeedPrompt(null)} />}
             {activeTab === "prompt"    && <PromptEditorTab />}
 
             {/* All other tabs share one centered content column */}

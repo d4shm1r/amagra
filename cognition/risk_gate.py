@@ -40,8 +40,8 @@ import os
 import sqlite3
 from dataclasses import dataclass, asdict
 
-_DB_PATH   = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                          "logs", "risk_gate.db")
+from infrastructure.db import path as _dbpath
+_DB_PATH   = _dbpath("risk_gate")
 _DB_INITED = False
 
 # ── Action risk table ─────────────────────────────────────────

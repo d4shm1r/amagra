@@ -1,5 +1,14 @@
 # Amagra
 
+<p align="center">
+  <a href="https://github.com/d4shm1r/amagra/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/d4shm1r/amagra?color=blue" /></a>
+  <a href="https://github.com/d4shm1r/amagra/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/d4shm1r/amagra?style=flat&logo=github" /></a>
+  <a href="https://github.com/d4shm1r/amagra/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/d4shm1r/amagra" /></a>
+  <a href="https://github.com/d4shm1r/amagra/issues"><img alt="Open issues" src="https://img.shields.io/github/issues/d4shm1r/amagra" /></a>
+  <img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white" />
+  <img alt="Self-hosted" src="https://img.shields.io/badge/self--hosted-✓-success" />
+</p>
+
 ### The AI you can trust with long-term work.
 
 It remembers what you've done, explains every decision, and runs entirely on your hardware.
@@ -241,7 +250,7 @@ Rate limits are returned on every authenticated response as `X-RateLimit-Limit`,
 - **Streaming available** — use `POST /ask/stream` for SSE streaming responses. When `ANTHROPIC_API_KEY` is set, tokens stream directly from Claude; without it, the response arrives as a single chunk. The default `POST /ask` remains non-streaming.
 - **No tool use** — agents produce text only. File access, sandboxed code execution, and web search are committed for `v1.1`.
 - **Default inference** — Ollama (local). Cloud provider support (Anthropic, OpenAI, Gemini) via the multi-provider `/ask` path is available; full provider-abstraction UI is committed for `v1.2`.
-- **SQLite sprawl** — internal data is split across multiple SQLite files. Cross-DB atomicity is not guaranteed. Consolidation into a single `amagra.db` is planned for `v1.0.1`.
+- **SQLite sprawl** — internal data is split across multiple SQLite files; cross-DB atomicity is not guaranteed. Every path now resolves through one registry (`infrastructure/db.py`), and setting `AMAGRA_DB=/path/to/amagra.db` collapses all logical databases into a single file. The default is still separate files (no migration required); making single-file the default is planned for `v1.0.1`.
 - **Benchmark independence** — routing accuracy is measured on a curated eval set, not production data. See [Routing in practice](#routing-in-practice) for the raw numbers and known failure modes. Independent production telemetry is tracked via `GET /telemetry/routing`.
 
 ---
@@ -323,6 +332,18 @@ Run the routing benchmark:
 ```bash
 PYTHONPATH=. python3 evaluation/ablation_eval.py
 ```
+
+---
+
+## Star History
+
+<a href="https://star-history.com/#d4shm1r/amagra&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=d4shm1r/amagra&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=d4shm1r/amagra&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=d4shm1r/amagra&type=Date" />
+  </picture>
+</a>
 
 ---
 

@@ -37,10 +37,8 @@ PLAN_TO_TIER = {
 }
 
 # ── Idempotency store ─────────────────────────────────────────
-_EVENTS_DB = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "memory", "stripe_events.db"
-)
+from infrastructure.db import path as _dbpath
+_EVENTS_DB = _dbpath("stripe_events")
 
 def _init_events_db():
     os.makedirs(os.path.dirname(_EVENTS_DB), exist_ok=True)

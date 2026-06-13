@@ -11,8 +11,9 @@ import sqlite3
 import os
 from datetime import datetime, timezone
 
+from infrastructure.db import path as _dbpath
 _ROOT   = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(_ROOT, "memory", "api_keys.db")
+DB_PATH = _dbpath("api_keys")
 
 TIERS = {"free", "developer", "team", "enterprise"}
 

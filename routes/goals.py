@@ -1,11 +1,9 @@
 import asyncio
-import os
 import sqlite3
 from fastapi import APIRouter, HTTPException
 
 from infrastructure.task_graph import create_graph, get_graph, list_graphs, retry_step
 from infrastructure.executor import execute_graph
-from .deps import _ROOT
 
 router = APIRouter()
 
@@ -67,7 +65,8 @@ async def goal_delete(goal_id: int):
         raise HTTPException(404, f"goal {goal_id} not found")
     if graph["status"] == "running":
         raise HTTPException(400, "cannot delete a running goal")
-    c = sqlite3.connect(os.path.join(_ROOT, "tasks.db"))
+    from infrastructure.db import path as _dbpath
+    c = sqlite3.connect(_dbpath("tasks"))
     c.execute("DELETE FROM task_steps  WHERE graph_id=?", (goal_id,))
     c.execute("DELETE FROM task_graphs WHERE id=?",       (goal_id,))
     c.commit()

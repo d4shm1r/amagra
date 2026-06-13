@@ -17,7 +17,8 @@ import os
 import threading
 from datetime import datetime, timezone
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs", "snapshots.db")
+from infrastructure.db import path as _dbpath
+DB_PATH = _dbpath("snapshots")
 
 # Thread-local: active context_id for the current request thread
 _local = threading.local()

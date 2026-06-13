@@ -33,10 +33,11 @@ from typing import Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 _BASE        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_DECISIONS   = os.path.join(_BASE, "logs",   "decisions.db")
-_SESSIONS    = os.path.join(_BASE, "logs",   "sessions.db")
-_FEEDBACK    = os.path.join(_BASE, "logs",   "feedback.db")
-_MEMORY_DB   = os.path.join(_BASE, "memory", "agent_memory.db")
+from infrastructure.db import path as _dbpath
+_DECISIONS   = _dbpath("decisions")
+_SESSIONS    = _dbpath("sessions")
+_FEEDBACK    = _dbpath("feedback")
+_MEMORY_DB   = _dbpath("memory")
 _OUT_JSONL   = os.path.join(_BASE, "logs",   "trace_dataset.jsonl")
 _OUT_STATS   = os.path.join(_BASE, "logs",   "trace_dataset_stats.json")
 

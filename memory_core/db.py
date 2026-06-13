@@ -18,8 +18,9 @@ _current_owner_key_id: ContextVar[int | None] = ContextVar(
     "current_owner_key_id", default=None
 )
 
+from infrastructure.db import path as _dbpath
 _ROOT   = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(_ROOT, "memory", "agent_memory.db")
+DB_PATH = _dbpath("memory")
 _lock = threading.Lock()
 
 # Retrieval scoring weights by memory type.

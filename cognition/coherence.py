@@ -41,8 +41,9 @@ from dataclasses import dataclass, asdict
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-_DECISIONS_DB = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs", "decisions.db")
-_MEMORY_DB    = os.path.join(os.path.dirname(os.path.dirname(__file__)), "memory", "agent_memory.db")
+from infrastructure.db import path as _dbpath
+_DECISIONS_DB = _dbpath("decisions")
+_MEMORY_DB    = _dbpath("memory")
 
 AGENTS = ["it_networking", "python_dev", "dotnet_dev",
           "ai_ml", "knowledge_learning", "terse"]

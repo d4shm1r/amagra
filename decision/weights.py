@@ -26,7 +26,8 @@ import time
 import sqlite3
 import threading
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs", "decisions.db")
+from infrastructure.db import path as _dbpath
+DB_PATH = _dbpath("decisions")
 BOUNDS  = (0.1, 3.0)
 
 KNOWN_AGENTS = [

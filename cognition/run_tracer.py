@@ -20,8 +20,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Optional
 
+from infrastructure.db import path as _dbpath
 _BASE    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_RUNS_DB = os.path.join(_BASE, "logs", "runs.db")
+_RUNS_DB = _dbpath("runs")
 _LOCK    = threading.Lock()
 _ACTIVE: dict[str, "_RunCtx"] = {}   # run_id → live context
 
