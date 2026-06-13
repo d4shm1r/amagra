@@ -474,6 +474,19 @@ export const BUILD_PHASES = [
       "Repo polish — README badge row + Star History chart, topics, homepage",
     ],
   },
+  {
+    id: 72, version: "v1.0.2", date: "Jun 14, 2026",
+    label: "Dashboard & Community Polish", title: "Luxe Dashboard & Community Profile", color: "#0F766E", status: "done",
+    summary: "The landing-style luxe-card system now spans the whole dashboard, and the repo gains a full community profile (Contributing, Code of Conduct, Security) plus a branded social-preview card.",
+    steps: [
+      "Luxe-card system extended across 10 tabs — Cognitive Map, Cognitive OS, Event Log, Home, Memory Browser, Plan Graph, Policy, Risk Observatory, Skills, Version History",
+      "Rounded badges/pills + shared PageHeader/RefreshBtn from ObsShared across observability views",
+      "Fix: CognitiveMapTab `T as C` alias left card/blue/green colors undefined — explicit local palette",
+      "Community health files — CONTRIBUTING.md, CODE_OF_CONDUCT.md (Covenant 2.1), SECURITY.md",
+      "Gilded Calm social-preview card (1280×640) for GitHub link sharing",
+      "Vite build verified; community profile 85%",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -668,7 +681,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
-  { version: "v1.0.0", label: "First Public Release", color: "#15803D",  phases: [70, 71] },
+  { version: "v1.0.0", label: "First Public Release", color: "#15803D",  phases: [70, 71, 72] },
   { version: "v0.10", label: "Content & Launch",      color: "#C48808",  phases: [60] },
   { version: "v0.9", label: "Commercialization",      color: "#C2410C",  phases: [36, 37, 38, 39, 50, 51, 52, 53] },
   { version: "v0.8", label: "Loop Activation",        color: "#15803D",  phases: [30, 31, 32, 33, 34, 35] },
