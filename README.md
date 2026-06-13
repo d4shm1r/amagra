@@ -320,18 +320,12 @@ Amagra remains responsible for runtime infrastructure. Agent capabilities become
 
 ## Contributing
 
-Issues and PRs welcome. The codebase is structured so that adding a new agent requires changes to exactly two files — see `agents/python_dev.py` as a reference and `agents/registry.py` for registration.
-
-Run the test suite:
+Issues and PRs welcome — see **[CONTRIBUTING.md](CONTRIBUTING.md)** for setup, conventions, and how to add a new agent (it takes changes to exactly two files). Please review the [Code of Conduct](CODE_OF_CONDUCT.md), and report security issues via [SECURITY.md](SECURITY.md) rather than a public issue.
 
 ```bash
-pytest tests/
-```
-
-Run the routing benchmark:
-
-```bash
-PYTHONPATH=. python3 evaluation/ablation_eval.py
+ruff check .                                  # lint
+PYTHONPATH=. python3 -m pytest tests/ -q      # 624 tests
+PYTHONPATH=. python3 evaluation/ablation_eval.py   # routing benchmark
 ```
 
 ---
