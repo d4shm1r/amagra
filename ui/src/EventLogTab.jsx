@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { T, FONT_MONO } from "./theme";
-import { ObsPanel, EventRow, RefreshBtn, EmptyState, eventMeta } from "./ObsShared";
+import { ObsPanel, EventRow, RefreshBtn, EmptyState, eventMeta, PageHeader } from "./ObsShared";
 
 const API = "http://localhost:8000";
 
@@ -21,7 +21,7 @@ function CountPills({ counts }) {
     <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 14 }}>
       <span style={{
         background: T.accent + "22", border: `1px solid ${T.accent}44`,
-        color: T.accent, borderRadius: 3, padding: "2px 8px", fontSize: 11, fontFamily: FONT_MONO,
+        color: T.accent, borderRadius: 99, padding: "3px 11px", fontSize: 11, fontFamily: FONT_MONO,
       }}>{total} total</span>
       {Object.entries(counts)
         .sort((a, b) => b[1] - a[1])
@@ -31,7 +31,7 @@ function CountPills({ counts }) {
           return (
             <span key={type} style={{
               background: T.surface2, border: `1px solid ${T.border}`,
-              borderRadius: 3, padding: "2px 8px", fontSize: 10, color: T.muted,
+              borderRadius: 99, padding: "3px 10px", fontSize: 10, color: T.muted,
               display: "inline-flex", alignItems: "center", gap: 4,
             }}>
               <span style={{ color: meta.color }}>{meta.icon}</span>
@@ -90,26 +90,21 @@ export default function EventLogTab() {
     <div style={{ maxWidth: 860, margin: "0 auto" }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <div>
-          <h2 style={{ margin: 0, color: T.text, fontSize: 18, fontWeight: 700 }}>Event Log</h2>
-          <div style={{ color: T.muted, fontSize: 11, marginTop: 2 }}>
-            Typed event stream from the cognitive runtime · auto-refresh 10s
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.muted, cursor: "pointer" }}>
-            <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}
-              style={{ accentColor: T.accent }} />
-            Auto-scroll
-          </label>
-          <RefreshBtn onClick={load} />
-        </div>
-      </div>
+      <PageHeader
+        title="Events"
+        subtitle="Typed event stream from the cognitive runtime · auto-refresh 10s"
+      >
+        <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.muted, cursor: "pointer" }}>
+          <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}
+            style={{ accentColor: T.accent }} />
+          Auto-scroll
+        </label>
+        <RefreshBtn onClick={load} />
+      </PageHeader>
 
       {error && (
         <div style={{ color: T.error, background: T.surface, border: `1px solid ${T.border}`,
-          borderRadius: 5, padding: "8px 14px", marginBottom: 14, fontSize: 12 }}>
+          borderRadius: 10, padding: "8px 14px", marginBottom: 14, fontSize: 12 }}>
           Backend unavailable: {error}
         </div>
       )}
@@ -125,7 +120,7 @@ export default function EventLogTab() {
               background: filter === c.id ? T.accent + "33" : T.surface2,
               border: `1px solid ${filter === c.id ? T.accent : T.border}`,
               color: filter === c.id ? T.accent : T.muted,
-              borderRadius: 4, padding: "4px 10px", fontSize: 11, cursor: "pointer",
+              borderRadius: 99, padding: "4px 13px", fontSize: 11, cursor: "pointer",
             }}>{c.label}</button>
           ))}
         </div>
@@ -135,14 +130,14 @@ export default function EventLogTab() {
           placeholder="Search events…"
           style={{
             background: T.surface2, border: `1px solid ${T.border}`, color: T.text,
-            borderRadius: 4, padding: "4px 10px", fontSize: 11,
-            outline: "none", minWidth: 160,
+            borderRadius: 99, padding: "6px 14px", fontSize: 11,
+            outline: "none", minWidth: 170,
           }}
         />
         {(search || filter !== "all") && (
           <button onClick={() => { setSearch(""); setFilter("all"); }} style={{
             background: "transparent", border: `1px solid ${T.border}`,
-            color: T.muted, borderRadius: 4, padding: "4px 8px", fontSize: 11, cursor: "pointer",
+            color: T.muted, borderRadius: 99, padding: "4px 12px", fontSize: 11, cursor: "pointer",
           }}>✕ Clear</button>
         )}
         <span style={{ fontSize: 11, color: T.muted, marginLeft: "auto" }}>

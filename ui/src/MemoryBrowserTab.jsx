@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { T, FONT_MONO } from "./theme";
-import { RefreshBtn, EmptyState, PageHeader } from "./ObsShared";
+import { RefreshBtn, EmptyState, PageHeader, MetricCard } from "./ObsShared";
 
 const TYPES  = ["all", "code", "lesson", "episodic", "failure", "chat", "fact", "error"];
 const AGENTS = ["all", "python_dev", "ai_ml", "it_networking", "dotnet_dev",
@@ -71,13 +71,13 @@ function MemoryCard({ item, expanded, onToggle }) {
     <div
       onClick={onToggle}
       style={{
-        background: expanded ? "#F4F0E8" : "#F4F0E8",
+        background: "#F4F0E8",
         border: `1px solid ${expanded ? T.accent + "44" : T.border}`,
-        borderRadius: 4,
-        padding: "10px 14px",
+        borderRadius: 10,
+        padding: "12px 16px",
         cursor: "pointer",
         transition: "background 0.1s, border-color 0.1s",
-        marginBottom: 4,
+        marginBottom: 6,
       }}
       className="card-hover"
     >
@@ -87,7 +87,7 @@ function MemoryCard({ item, expanded, onToggle }) {
           fontFamily: FONT_MONO, fontSize: 9, fontWeight: 700,
           color: tc, background: tc + "20",
           border: `1px solid ${tc}40`,
-          borderRadius: 3, padding: "1px 6px",
+          borderRadius: 99, padding: "2px 8px",
           textTransform: "uppercase", letterSpacing: "0.06em",
           flexShrink: 0,
         }}>{item.type}</span>
@@ -205,63 +205,60 @@ export default function MemoryBrowserTab() {
         <RefreshBtn onClick={fetchAll} />
       </PageHeader>
 
-      {/* ── Stats strip ── */}
+      {/* ── Stats ── */}
       {stats && (
-        <div style={{
-          display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14,
-        }}>
-          {statItems.map(({ label, value }) => (
-            <div key={label} style={{
-              background: T.surface2 || "#FAF7F2",
-              border: `1px solid ${T.border}`,
-              borderRadius: 3, padding: "4px 12px",
-              fontSize: 10, fontFamily: FONT_MONO,
-            }}>
-              <span style={{ color: T.muted }}>{label} </span>
-              <span style={{ color: T.text, fontWeight: 700 }}>{value}</span>
-            </div>
-          ))}
+        <>
+          {/* Key numbers as calm luxe tiles */}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+            {statItems.map(({ label, value }) => (
+              <div key={label} style={{ flex: "1 1 130px", minWidth: 130 }}>
+                <MetricCard label={label} value={value} mono />
+              </div>
+            ))}
+          </div>
 
-          {/* Backend type badge */}
-          {stats.backend && (
-            <div style={{
-              background: T.surface2 || "#FAF7F2",
-              border: `1px solid ${(T.success || "#2E7D32") + "60"}`,
-              borderRadius: 3, padding: "4px 12px",
-              fontSize: 10, fontFamily: FONT_MONO,
-            }}>
-              <span style={{ color: T.success || "#2E7D32" }}>
-                {stats.backend.type === "FAISSBackend" ? "FAISS" : stats.backend.type}
-              </span>
-              <span style={{ color: T.muted }}>
-                {" "}· {stats.backend.total} records
-                {stats.backend.index_ntotal != null &&
-                  stats.backend.index_ntotal !== stats.backend.total &&
-                  ` (${stats.backend.index_ntotal} indexed)`}
-                {stats.backend.index_size_mb != null &&
-                  ` · ${stats.backend.index_size_mb} MB`}
-              </span>
-              {stats.backend.total < 800 && (
-                <span style={{ color: T.muted }}>
-                  {" "}· {800 - stats.backend.total} to FAISS promote
+          {/* Backend + type breakdown as soft pills */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+            {stats.backend && (
+              <div style={{
+                background: T.surface2 || "#FAF7F2",
+                border: `1px solid ${(T.success || "#2E7D32") + "55"}`,
+                borderRadius: 99, padding: "5px 13px",
+                fontSize: 10, fontFamily: FONT_MONO,
+              }}>
+                <span style={{ color: T.success || "#2E7D32" }}>
+                  {stats.backend.type === "FAISSBackend" ? "FAISS" : stats.backend.type}
                 </span>
-              )}
-            </div>
-          )}
+                <span style={{ color: T.muted }}>
+                  {" "}· {stats.backend.total} records
+                  {stats.backend.index_ntotal != null &&
+                    stats.backend.index_ntotal !== stats.backend.total &&
+                    ` (${stats.backend.index_ntotal} indexed)`}
+                  {stats.backend.index_size_mb != null &&
+                    ` · ${stats.backend.index_size_mb} MB`}
+                </span>
+                {stats.backend.total < 800 && (
+                  <span style={{ color: T.muted }}>
+                    {" "}· {800 - stats.backend.total} to FAISS promote
+                  </span>
+                )}
+              </div>
+            )}
 
-          {stats.by_type && Object.entries(stats.by_type).map(([type, info]) => (
-            <div key={type} style={{
-              background: T.surface2 || "#FAF7F2",
-              border: `1px solid ${T.border}`,
-              borderRadius: 3, padding: "4px 12px",
-              fontSize: 10, fontFamily: FONT_MONO,
-            }}>
-              <span style={{ color: TYPE_COLOR[type] || T.muted }}>{type} </span>
-              <span style={{ color: T.text }}>{info.count}</span>
-              <span style={{ color: T.muted }}> · q{(info.avg_quality * 100).toFixed(0)}%</span>
-            </div>
-          ))}
-        </div>
+            {stats.by_type && Object.entries(stats.by_type).map(([type, info]) => (
+              <div key={type} style={{
+                background: T.surface2 || "#FAF7F2",
+                border: `1px solid ${T.border}`,
+                borderRadius: 99, padding: "5px 13px",
+                fontSize: 10, fontFamily: FONT_MONO,
+              }}>
+                <span style={{ color: TYPE_COLOR[type] || T.muted }}>{type} </span>
+                <span style={{ color: T.text }}>{info.count}</span>
+                <span style={{ color: T.muted }}> · q{(info.avg_quality * 100).toFixed(0)}%</span>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* ── Controls ── */}
@@ -278,9 +275,9 @@ export default function MemoryBrowserTab() {
           style={{
             background: T.surface2 || "#FAF7F2",
             border: `1px solid ${T.border}`,
-            borderRadius: 4, padding: "5px 10px",
+            borderRadius: 99, padding: "7px 14px",
             color: T.text, fontFamily: FONT_MONO, fontSize: 11,
-            outline: "none", width: 200,
+            outline: "none", width: 220,
           }}
         />
 
@@ -297,7 +294,7 @@ export default function MemoryBrowserTab() {
                 border: `1px solid ${filterType === t
                   ? (TYPE_COLOR[t] || T.accent)
                   : T.border}`,
-                borderRadius: 3, padding: "3px 10px",
+                borderRadius: 99, padding: "4px 12px",
                 color: filterType === t
                   ? (TYPE_COLOR[t] || T.accent)
                   : T.muted,
@@ -315,7 +312,7 @@ export default function MemoryBrowserTab() {
           style={{
             background: T.surface2 || "#FAF7F2",
             border: `1px solid ${T.border}`,
-            borderRadius: 4, padding: "4px 8px",
+            borderRadius: 8, padding: "5px 10px",
             color: T.text, fontFamily: FONT_MONO, fontSize: 11,
             cursor: "pointer",
           }}
@@ -333,7 +330,7 @@ export default function MemoryBrowserTab() {
           style={{
             background: T.surface2 || "#FAF7F2",
             border: `1px solid ${T.border}`,
-            borderRadius: 4, padding: "4px 8px",
+            borderRadius: 8, padding: "5px 10px",
             color: T.text, fontFamily: FONT_MONO, fontSize: 11,
             cursor: "pointer",
           }}

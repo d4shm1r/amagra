@@ -1,5 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
-import { T as C } from "./theme";
+import { T } from "./theme";
+import { PageHeader, RefreshBtn } from "./ObsShared";
+
+// Local palette — theme tokens plus the few named colors this view references.
+// (Previously aliased `T as C`, but T has no card/blue/green/yellow/red/purple,
+//  so type badges and score dots silently fell back to muted/undefined.)
+const C = {
+  ...T,
+  card:   T.surface,
+  green:  T.success,
+  red:    T.error,
+  yellow: T.warn,
+  blue:   "#1E5A8A",
+  purple: "#7E3F8F",
+};
 
 
 const AGENT_COLORS = {
@@ -23,7 +37,7 @@ function TypeBadge({ type }) {
   const col = TYPE_COLORS[type] || C.muted;
   return (
     <span style={{ background: `${col}22`, border: `1px solid ${col}55`, color: col,
-      borderRadius: 3, padding: "1px 6px", fontSize: 10, fontFamily: "monospace" }}>
+      borderRadius: 99, padding: "2px 8px", fontSize: 10, fontFamily: "monospace" }}>
       {type}
     </span>
   );
@@ -38,8 +52,8 @@ function MemoryCard({ mem, expanded, onToggle }) {
   return (
     <div
       onClick={onToggle}
-      style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 3,
-        padding: "8px 12px", cursor: "pointer", transition: "border-color .15s",
+      style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 8,
+        padding: "10px 13px", cursor: "pointer", transition: "border-color .15s",
         borderColor: expanded ? AGENT_COLORS[mem.agent] || C.muted : C.border }}
     >
       <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: expanded ? 6 : 0 }}>
@@ -79,7 +93,7 @@ function AgentCluster({ agent, memories, typeFilter }) {
     : "–";
 
   return (
-    <div style={{ background: C.card, border: `1.5px solid ${color}44`, borderRadius: 4, overflow: "hidden" }}>
+    <div className="lux-card" style={{ overflow: "hidden", padding: 0 }}>
       {/* Header */}
       <button
         onClick={() => setCollapsed(c => !c)}
@@ -97,7 +111,7 @@ function AgentCluster({ agent, memories, typeFilter }) {
         <div style={{ display: "flex", gap: 4 }}>
           {Object.entries(byType).map(([t, n]) => (
             <span key={t} style={{ background: `${TYPE_COLORS[t] || C.muted}22`, color: TYPE_COLORS[t] || C.muted,
-              border: `1px solid ${TYPE_COLORS[t] || C.muted}44`, borderRadius: 3, padding: "1px 5px", fontSize: 9 }}>
+              border: `1px solid ${TYPE_COLORS[t] || C.muted}44`, borderRadius: 99, padding: "2px 7px", fontSize: 9 }}>
               {t}:{n}
             </span>
           ))}
@@ -187,29 +201,27 @@ export default function CognitiveMapTab() {
     <div style={{ display: "flex", flexDirection: "column", gap: 16, animation: "fadeIn .2s" }}>
 
       {/* ── Header ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: "#1F1408" }}>Cognitive Map</div>
-          <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
-            {rawMem.length} memories across {Object.keys(grouped).length} agents · {totalVisible} visible
-          </div>
-        </div>
-        {stats && (
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <PageHeader
+        title="Memory Map"
+        subtitle={`${rawMem.length} memories across ${Object.keys(grouped).length} agents · ${totalVisible} visible`}
+      >
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          {stats && (
             <span style={{ fontFamily: "monospace", fontSize: 11, color: C.green }}>
               avg_q {stats.total ? (rawMem.reduce((s, m) => s + (m.quality || 0), 0) / rawMem.length).toFixed(3) : "–"}
             </span>
-            {stats.prune_candidates > 0 && (
-              <span style={{ fontFamily: "monospace", fontSize: 11, color: C.red }}>
-                {stats.prune_candidates} prunable
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+          )}
+          {stats?.prune_candidates > 0 && (
+            <span style={{ fontFamily: "monospace", fontSize: 11, color: C.red }}>
+              {stats.prune_candidates} prunable
+            </span>
+          )}
+          <RefreshBtn onClick={load} />
+        </div>
+      </PageHeader>
 
       {/* ── Filter bar ── */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", background: C.card, border: `1px solid ${C.border}`, borderRadius: 4, padding: "10px 14px" }}>
+      <div className="lux-card" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", padding: "10px 14px" }}>
         <input
           value={searchQ} onChange={e => setSearchQ(e.target.value)}
           placeholder="Search memory content…"
@@ -224,7 +236,7 @@ export default function CognitiveMapTab() {
               style={{ background: typeFilter === t ? `${TYPE_COLORS[t] || C.green}33` : "transparent",
                 border: `1px solid ${typeFilter === t ? (TYPE_COLORS[t] || C.green) : C.border}`,
                 color: typeFilter === t ? (TYPE_COLORS[t] || C.green) : C.muted,
-                borderRadius: 4, padding: "2px 8px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>
+                borderRadius: 99, padding: "3px 11px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>
               {t}
             </button>
           ))}
@@ -232,11 +244,10 @@ export default function CognitiveMapTab() {
         <span style={{ color: C.border }}>|</span>
         <select
           value={agentFilter} onChange={e => setAgentFilter(e.target.value)}
-          style={{ background: C.bg, border: `1px solid ${C.border}`, color: "#2E2010", borderRadius: 4, padding: "3px 8px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}
+          style={{ background: C.bg, border: `1px solid ${C.border}`, color: "#2E2010", borderRadius: 8, padding: "4px 9px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}
         >
           {allAgents.map(a => <option key={a} value={a}>{a === "all" ? "All agents" : a.replace(/_/g, " ")}</option>)}
         </select>
-        <button onClick={load} style={{ background: "transparent", border: `1px solid ${C.border}`, color: C.muted, borderRadius: 4, padding: "3px 10px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>↺</button>
       </div>
 
       {/* ── Agent clusters ── */}

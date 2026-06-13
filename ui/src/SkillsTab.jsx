@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { T, FONT_MONO } from "./theme";
+import { PageHeader, RefreshBtn } from "./ObsShared";
 
 const API = "http://localhost:8000";
 
@@ -31,7 +32,7 @@ function AgentBadge({ agent }) {
   return (
     <span style={{
       background: `${color}18`, border: `1px solid ${color}44`,
-      color, borderRadius: 4, padding: "1px 8px",
+      color, borderRadius: 99, padding: "2px 9px",
       fontSize: 10, fontFamily: FONT_MONO, fontWeight: 700, whiteSpace: "nowrap",
     }}>
       {agent.replace(/_/g, " ")}
@@ -43,7 +44,7 @@ function CategoryBadge({ cat }) {
   return (
     <span style={{
       background: `${T.accent}14`, border: `1px solid ${T.accent}33`,
-      color: T.accent, borderRadius: 4, padding: "1px 8px",
+      color: T.accent, borderRadius: 99, padding: "2px 9px",
       fontSize: 10, fontFamily: FONT_MONO, whiteSpace: "nowrap",
     }}>
       {cat}
@@ -56,11 +57,9 @@ function SkillCard({ skill }) {
   const cc = COMPLEXITY_COLOR[complexity] || T.muted;
 
   return (
-    <div className="card-hover" style={{
-      background: T.surface, border: `1px solid ${T.border}`,
-      borderRadius: 6, padding: "14px 16px",
-      display: "flex", flexDirection: "column", gap: 8,
-      transition: "border-color .15s, background .15s",
+    <div className="lux-card lux-card-i" style={{
+      padding: "16px 18px",
+      display: "flex", flexDirection: "column", gap: 9,
     }}>
       <div style={{ display: "flex", gap: 6, alignItems: "flex-start", justifyContent: "space-between" }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: T.text, lineHeight: 1.3 }}>
@@ -136,7 +135,7 @@ export default function SkillsTab() {
     const color  = val === "all" ? T.accent : (colorFn ? colorFn(val) : T.accent);
     return (
       <button onClick={() => set(val)} style={{
-        padding: "3px 10px", borderRadius: 4, fontSize: 11,
+        padding: "4px 13px", borderRadius: 99, fontSize: 11,
         fontFamily: "inherit", cursor: "pointer", border: "none",
         background: active ? `${color}22` : T.surface2,
         color: active ? color : T.muted,
@@ -152,20 +151,12 @@ export default function SkillsTab() {
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: T.text }}>Skills</h2>
-          <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>
-            {skills.length > 0 ? `${skills.length} skill nodes · phrase-weighted routing` : "Loading skill graph…"}
-          </div>
-        </div>
-        <button onClick={load} style={{
-          marginLeft: "auto", background: "transparent",
-          border: `1px solid ${T.border}`, color: T.muted,
-          borderRadius: 4, padding: "4px 10px", fontSize: 11,
-          cursor: "pointer", fontFamily: "inherit",
-        }}>↺ Refresh</button>
-      </div>
+      <PageHeader
+        title="Skills"
+        subtitle={skills.length > 0 ? `${skills.length} skill nodes · phrase-weighted routing` : "Loading skill graph…"}
+      >
+        <RefreshBtn onClick={load} />
+      </PageHeader>
 
       {error && (
         <div style={{ color: T.error, background: T.surface, border: `1px solid ${T.border}`,
@@ -182,9 +173,9 @@ export default function SkillsTab() {
           placeholder="Search skills…"
           style={{
             background: T.surface, border: `1px solid ${T.border}`,
-            borderRadius: 5, color: T.text, padding: "6px 12px",
+            borderRadius: 99, color: T.text, padding: "7px 16px",
             fontSize: 12, fontFamily: "inherit", outline: "none",
-            width: 220, flex: "0 0 auto",
+            width: 240, flex: "0 0 auto",
             transition: "border-color .15s",
           }}
           onFocus={e  => { e.target.style.borderColor = `${T.accent}88`; }}

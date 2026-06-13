@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { PageHeader, MetricCard, ObsPanel, RefreshBtn } from "./ObsShared";
 
 const API = "http://localhost:8000";
 
@@ -70,30 +71,9 @@ function EventDots({ events }) {
   );
 }
 
-// ── Mini stat card ────────────────────────────────────────────
-function Stat({ label, value, color = "#15803D", sub }) {
-  return (
-    <div style={{ background: "#F4F0E8", borderRadius: 4, padding: "10px 14px",
-      border: `1px solid ${color}22`, minWidth: 0 }}>
-      <div style={{ fontSize: 22, fontWeight: 700, color, fontFamily: "monospace" }}>{value}</div>
-      <div style={{ fontSize: 11, color: "#9A7A60", marginTop: 2 }}>{label}</div>
-      {sub && <div style={{ fontSize: 10, color: "#9A7A60", marginTop: 2 }}>{sub}</div>}
-    </div>
-  );
-}
-
-// ── Panel wrapper ─────────────────────────────────────────────
+// ── Panel wrapper — shared luxe card (ObsPanel) ───────────────
 function Panel({ title, children }) {
-  return (
-    <div style={{ background: "#FAF7F2", border: "1px solid #E0D6C4", borderRadius: 3,
-      padding: "16px 20px" }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: "#9A7A60", letterSpacing: "0.1em",
-        marginBottom: 14 }}>
-        {title}
-      </div>
-      {children}
-    </div>
-  );
+  return <ObsPanel title={title}>{children}</ObsPanel>;
 }
 
 // ── Entropy of bucketed distribution (0–1 normalized) ────────
@@ -169,21 +149,29 @@ export default function PolicyTab() {
   return (
     <div style={{ animation: "fadeIn .2s" }}>
 
+      {/* ── Header ── */}
+      <PageHeader
+        title="Policy"
+        subtitle="Critic-gate health · acceptance, uplift, calibration, marginal value"
+      >
+        <RefreshBtn onClick={load} />
+      </PageHeader>
+
       {/* ── Headline row ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 20 }}>
-        <Stat label="Acceptance Rate"
+        <MetricCard label="Acceptance Rate" mono
           value={`${(acceptance_rate * 100).toFixed(1)}%`}
           color={acceptColor}
           sub={`${total} scored total`} />
-        <Stat label="Gate Pressure"
+        <MetricCard label="Gate Pressure" mono
           value={`${(retry_rate * 100).toFixed(1)}%`}
           color={retry_rate > 0.25 ? "#B42318" : retry_rate > 0.05 ? "#9A6C00" : "#15803D"}
           sub="% requests retried" />
-        <Stat label="Mean Uplift ΔC"
+        <MetricCard label="Mean Uplift ΔC" mono
           value={mean_uplift >= 0 ? `+${mean_uplift.toFixed(3)}` : mean_uplift.toFixed(3)}
           color={upliftColor}
           sub={avg_score_retry != null ? `retry avg ${avg_score_retry.toFixed(2)}` : "no retries yet"} />
-        <Stat label="Marginal Value"
+        <MetricCard label="Marginal Value" mono
           value={marginal_value.toFixed(4)}
           color={mvColor}
           sub={mvVerdict} />
@@ -195,13 +183,13 @@ export default function PolicyTab() {
         {/* Panel A — System Flow */}
         <Panel title="A · SYSTEM FLOW">
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
-            <div style={{ background: "#F4F0E8", borderRadius: 7, padding: "8px 12px" }}>
+            <div style={{ background: "#F4F0E8", borderRadius: 10, padding: "8px 12px" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: acceptColor, fontFamily: "monospace" }}>
                 {(acceptance_rate * 100).toFixed(1)}%
               </div>
               <div style={{ fontSize: 10, color: "#9A7A60" }}>first-pass accept</div>
             </div>
-            <div style={{ background: "#F4F0E8", borderRadius: 7, padding: "8px 12px" }}>
+            <div style={{ background: "#F4F0E8", borderRadius: 10, padding: "8px 12px" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#9A6C00", fontFamily: "monospace" }}>
                 {(retry_rate * 100).toFixed(1)}%
               </div>
@@ -217,13 +205,13 @@ export default function PolicyTab() {
           <EventDots events={recent_events} />
           {acceptance_rate > 0.95 && (
             <div style={{ marginTop: 10, fontSize: 11, color: "#9A6C00",
-              background: "#9A6C0011", borderRadius: 3, padding: "5px 8px" }}>
+              background: "#9A6C0011", borderRadius: 8, padding: "6px 10px" }}>
               Gate may be too lenient — consider raising threshold above {threshold}
             </div>
           )}
           {retry_rate > 0.30 && (
             <div style={{ marginTop: 10, fontSize: 11, color: "#B42318",
-              background: "#B4231811", borderRadius: 3, padding: "5px 8px" }}>
+              background: "#B4231811", borderRadius: 8, padding: "6px 10px" }}>
               High gate pressure — generator may be degrading or threshold too strict
             </div>
           )}
@@ -252,14 +240,14 @@ export default function PolicyTab() {
               />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <div style={{ background: "#F4F0E8", borderRadius: 7, padding: "7px 12px" }}>
+              <div style={{ background: "#F4F0E8", borderRadius: 10, padding: "7px 12px" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "#15803D", fontFamily: "monospace" }}>
                   {avg_score_initial?.toFixed(3)}
                 </div>
                 <div style={{ fontSize: 10, color: "#9A7A60" }}>avg C(G₁)</div>
               </div>
               {avg_score_retry != null && (
-                <div style={{ background: "#F4F0E8", borderRadius: 7, padding: "7px 12px" }}>
+                <div style={{ background: "#F4F0E8", borderRadius: 10, padding: "7px 12px" }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "#0F766E", fontFamily: "monospace" }}>
                     {avg_score_retry?.toFixed(3)}
                   </div>
@@ -269,13 +257,13 @@ export default function PolicyTab() {
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            <div style={{ background: "#F4F0E8", borderRadius: 7, padding: "7px 10px" }}>
+            <div style={{ background: "#F4F0E8", borderRadius: 10, padding: "7px 10px" }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: upliftColor, fontFamily: "monospace" }}>
                 {mean_uplift >= 0 ? "+" : ""}{mean_uplift.toFixed(3)}
               </div>
               <div style={{ fontSize: 10, color: "#9A7A60" }}>mean ΔC on retry</div>
             </div>
-            <div style={{ background: "#F4F0E8", borderRadius: 7, padding: "7px 10px" }}>
+            <div style={{ background: "#F4F0E8", borderRadius: 10, padding: "7px 10px" }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: negRetryColor, fontFamily: "monospace" }}>
                 {(negative_retry_pct * 100).toFixed(1)}%
               </div>
@@ -291,14 +279,14 @@ export default function PolicyTab() {
         {/* Panel C — Critic Calibration */}
         <Panel title="C · CRITIC CALIBRATION">
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
-            <div style={{ background: "#F4F0E8", borderRadius: 7, padding: "8px 12px" }}>
+            <div style={{ background: "#F4F0E8", borderRadius: 10, padding: "8px 12px" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#1E5A8A", fontFamily: "monospace" }}>
                 {separation_power >= 0 ? "+" : ""}{separation_power.toFixed(3)}
               </div>
               <div style={{ fontSize: 10, color: "#9A7A60" }}>separation power</div>
               <div style={{ fontSize: 9, color: "#9A7A60", marginTop: 2 }}>E[C(y₂) – C(y₁)]</div>
             </div>
-            <div style={{ background: "#F4F0E8", borderRadius: 7, padding: "8px 12px" }}>
+            <div style={{ background: "#F4F0E8", borderRadius: 10, padding: "8px 12px" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: entropyColor, fontFamily: "monospace" }}>
                 {scoreEntropy.toFixed(2)}
               </div>
@@ -309,13 +297,13 @@ export default function PolicyTab() {
 
           {scoreEntropy < 0.25 && (
             <div style={{ fontSize: 11, color: "#B42318", background: "#B4231811",
-              borderRadius: 3, padding: "5px 8px", marginBottom: 10 }}>
+              borderRadius: 8, padding: "6px 10px", marginBottom: 10 }}>
               Score collapse — critic is not discriminating. Most responses score the same.
             </div>
           )}
           {separation_power < 0.01 && retry_rate > 0.03 && (
             <div style={{ fontSize: 11, color: "#B42318", background: "#B4231811",
-              borderRadius: 3, padding: "5px 8px", marginBottom: 10 }}>
+              borderRadius: 8, padding: "6px 10px", marginBottom: 10 }}>
               Near-zero separation — gate is selecting noise, not quality.
             </div>
           )}
@@ -334,7 +322,7 @@ export default function PolicyTab() {
 
         {/* Panel D — Efficiency Frontier */}
         <Panel title="D · EFFICIENCY FRONTIER">
-          <div style={{ background: "#F4F0E8", borderRadius: 4, padding: "10px 14px", marginBottom: 14,
+          <div style={{ background: "#F4F0E8", borderRadius: 12, padding: "12px 16px", marginBottom: 14,
             border: `1px solid ${mvColor}22` }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: mvColor, fontFamily: "monospace" }}>
               MV = {marginal_value.toFixed(4)}
