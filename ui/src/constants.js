@@ -444,6 +444,36 @@ export const BUILD_PHASES = [
       "Supported: .txt .md .py .js .ts .jsx .tsx .json .yaml .html .css .sh .sql .csv .pdf .toml .rst",
     ],
   },
+
+  // ── v1.0  First Public Release ────────────────────────────────────────────────
+  {
+    id: 70, version: "v1.0.0", date: "Jun 13, 2026",
+    label: "First Public Release", title: "Amagra 1.0", color: "#15803D", status: "done",
+    summary: "The public debut. Signal-first routing, 10 domain agents, persistent FAISS memory, the Cognitive OS observability layer, RAG file context, auth + rate limiting, and the Gilded Calm UI — everything from the v0.1 → v0.10 internal builds, released to the public for the first time.",
+    steps: [
+      "Signal-first routing — QuerySignal classifies most queries in ~1ms, escalates to CoreBrain only when ambiguous",
+      "10 registry-canonical domain agents with per-agent memory + 21-node skill-graph disambiguation",
+      "Persistent semantic memory: SQLite → FAISS auto-promote at 800 entries → 52× LRU cache (<1ms warm)",
+      "Cognitive OS: event_bus, world_model, metrics_engine, cognitive_state — browsable in real time",
+      "Auth deny-by-default (_PUBLIC_PATHS allowlist), CORS lock, sliding-window rate limits, X-RateLimit-* headers",
+      "Docker Compose (Ollama GPU passthrough + API + UI), MIT licensed, fully self-hosted",
+      "CI: ruff + pytest + Docker build on every push and PR",
+    ],
+  },
+  {
+    id: 71, version: "v1.0.1", date: "Jun 13, 2026",
+    label: "Launch Polish", title: "Lean Runtime & Onboarding", color: "#0F766E", status: "done",
+    summary: "Post-debut hardening. A neutral lean runtime core (Context/Result spine, onion middleware, lazy registry, append-only run log) now sits under the router behind a frozen delta-algebra dispatch reducer. First-run onboarding, the CRA → Vite migration, and a centralized SQLite path registry land the bulk of the deferred v1.0.1 engineering. Test suite grows 544 → 624.",
+    steps: [
+      "core/ lean runtime — neutral Context/Result spine, onion middleware, lazy registry, append-only run log",
+      "Delta-algebra routing seam — frozen dispatch reducer, router score/decide split",
+      "infrastructure/db.py — centralized SQLite path registry (consolidation seam toward a single amagra.db)",
+      "First-run onboarding — Ollama + model-pull detection, guided first prompt",
+      "UI migrated CRA → Vite (.js → .jsx); landing-style luxe-card system ported to the dashboard",
+      "Test suite 544 → 624 passing (contract, dispatch reducer, runtime, run log, routing seam, providers, registry)",
+      "Repo polish — README badge row + Star History chart, topics, homepage",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -515,14 +545,16 @@ export const ROADMAP = [
     ],
   },
   {
-    id: 61, version: "v1.0.1", title: "Launch Polish & Hardening", color: "#0F766E", status: "next", priority: "high",
-    summary: "Post-1.0.0 maintenance — deferred pre-launch items, none of which blocked the first public release: 60% test coverage, in-product onboarding, DB consolidation, Vite migration, public launch.",
+    id: 61, version: "v1.0.1", title: "Launch Polish & Hardening", color: "#0F766E", status: "done", priority: "high",
+    summary: "Post-1.0.0 hardening shipped: a lean runtime core under the router, first-run onboarding, the Vite migration, and a centralized SQLite path registry. Test suite 544 → 624. Public launch (Show HN / self-host catalogs) is the one residual item.",
     items: [
-      "Tests to ~60% coverage on routes/ + core/ + payment path",
-      "In-product onboarding — first-run flow, model pull detection, guided first prompt",
-      "DB consolidation — single amagra.db with versioned migrations (retire SQLite sprawl)",
-      "Vite migration — retire CRA (unmaintained, React 19 instability)",
-      "Launch prep — Show HN, r/LocalLLaMA, Docker Hub, Unraid/Umbrel template, Homebrew formula",
+      "Lean runtime core — Context/Result spine, onion middleware, lazy registry, append-only run log ✅",
+      "Delta-algebra routing seam — frozen dispatch reducer, router score/decide split ✅",
+      "In-product onboarding — first-run flow, Ollama + model-pull detection, guided first prompt ✅",
+      "Vite migration — retired CRA (unmaintained, React 19 instability) ✅",
+      "DB path registry — infrastructure/db.py centralizes SQLite paths (seam toward single amagra.db) ✅",
+      "Test suite 544 → 624 passing ✅",
+      "Launch prep — Show HN, r/LocalLLaMA, Docker Hub, Unraid/Umbrel template, Homebrew formula (pending)",
     ],
   },
   {
@@ -636,7 +668,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
-  { version: "v1.0.0", label: "First Public Release", color: "#15803D",  phases: [] },
+  { version: "v1.0.0", label: "First Public Release", color: "#15803D",  phases: [70, 71] },
   { version: "v0.10", label: "Content & Launch",      color: "#C48808",  phases: [60] },
   { version: "v0.9", label: "Commercialization",      color: "#C2410C",  phases: [36, 37, 38, 39, 50, 51, 52, 53] },
   { version: "v0.8", label: "Loop Activation",        color: "#15803D",  phases: [30, 31, 32, 33, 34, 35] },
