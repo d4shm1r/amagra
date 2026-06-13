@@ -23,7 +23,6 @@ Usage
 
 import argparse
 import json
-import math
 import os
 import re
 import sqlite3
@@ -441,7 +440,7 @@ def print_comparison_table(
     # Column widths: strategy(28) acc(6) correct(7) ms/q(6) llm(4) bar(20)
     # correct column is "CCC/TTT" format — right-pad to 7 chars for alignment
     print(f"\n{sep}")
-    print(f"  Agent Arena — Routing Strategy Comparison")
+    print("  Agent Arena — Routing Strategy Comparison")
     print(f"  Prompts: {n_prompts}   (zero LLM calls for rows below)")
     print(sep)
     print(f"  {'Strategy':<28}  {'Acc':>6}  {'Correct':>7}  {'ms/q':>6}  {'LLM':>4}  Bar")
@@ -479,7 +478,7 @@ def print_domain_breakdown(results: dict[str, dict], strategies: list[str]):
 
     sep = "─" * 72
     print(f"\n{sep}")
-    print(f"  Per-domain accuracy breakdown")
+    print("  Per-domain accuracy breakdown")
     print(sep)
 
     header = f"  {'Domain':<12}" + "".join(f"  {s[:10]:>10}" for s in strategies)
@@ -649,7 +648,7 @@ def main():
         print_miss_analysis(results, strategies)
 
     # Per-strategy misses summary
-    print(f"\n  Routing mistakes by strategy:")
+    print("\n  Routing mistakes by strategy:")
     for s in strategies:
         misses = results[s]["misses"]
         c, t   = results[s]["correct"], results[s]["total"]

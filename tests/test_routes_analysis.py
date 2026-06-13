@@ -6,7 +6,8 @@ never a crash. Lightweight endpoints (memory_backend, policy/health) are
 tested for content shape.
 """
 
-import os, sys
+import os
+import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi.testclient import TestClient

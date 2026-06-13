@@ -1,5 +1,10 @@
-import os, time, sqlite3, uuid, json, asyncio
-from datetime import datetime, timezone, timedelta
+import os
+import time
+import sqlite3
+import uuid
+import json
+import asyncio
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -795,8 +800,8 @@ def get_status():
         "gpu": "RTX 2050",
         "model_tiers": {
             "fast":      "phi4-mini (local)",
-            "standard":  f"claude-sonnet-4-6 (API)" if _api_key_set else "phi4-mini (no API key)",
-            "reasoning": f"claude-sonnet-4-6 (API)" if _api_key_set else "phi4-mini (no API key)",
+            "standard":  "claude-sonnet-4-6 (API)" if _api_key_set else "phi4-mini (no API key)",
+            "reasoning": "claude-sonnet-4-6 (API)" if _api_key_set else "phi4-mini (no API key)",
         },
         "claude_active": _api_key_set,
     }

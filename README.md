@@ -84,6 +84,8 @@ make benchmark
 
 ## Architecture
 
+> **Evaluating the engineering?** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) maps every claim below to the file that implements it — the LangGraph `StateGraph`, the signal-first router, the verify/reflect/retry loop, and the observability stack.
+
 ```
 User query
     │

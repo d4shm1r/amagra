@@ -29,9 +29,8 @@ Usage:
     agent = skill_to_agent(skills[0]) if skills else "knowledge_learning"
 """
 
-from dataclasses import dataclass, field
-from typing import List, Optional
-import re
+from dataclasses import dataclass
+from typing import List
 
 # ── Skill node ────────────────────────────────────────────────
 

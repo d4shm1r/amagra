@@ -15,8 +15,6 @@
 import ast
 import json
 import re
-import os
-import sys
 
 
 THRESHOLD = 0.80

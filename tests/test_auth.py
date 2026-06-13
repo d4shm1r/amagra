@@ -13,9 +13,7 @@ Run: python3 -m pytest tests/test_auth.py -v
 
 import os
 import sys
-import sqlite3
 import tempfile
-import hashlib
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

@@ -1,4 +1,4 @@
-import os, re
+import os
 
 PROJECT = os.path.expanduser("~/agentic-ai")
 

@@ -33,9 +33,11 @@
 #   python3 coherence.py --reflection    # reflection gain analysis
 # ─────────────────────────────────────────────────────────────
 
-import sys, os, json, sqlite3
-from dataclasses import dataclass, field, asdict
-from typing import Optional
+import sys
+import os
+import json
+import sqlite3
+from dataclasses import dataclass, asdict
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -346,16 +348,16 @@ def print_coherence(state: CoherenceState) -> None:
     print(f"  Coherence State  C(t)  —  last {state.n_decisions} decisions")
     print(f"{'='*60}")
     print(f"\n  C(t)  = {state.C:.4f}  {bar(state.C)} {'COHERENT' if state.C > 0.75 else 'DEGRADED'}")
-    print(f"\n  Components:")
+    print("\n  Components:")
     print(f"    C_routing  {state.c_routing:.4f}  {bar(state.c_routing)}  (1 - conflict_rate={state.conflict_rate:.3f})")
     print(f"    C_calib    {state.c_calib:.4f}  {bar(state.c_calib)}  (1 - mean|cal_error|)")
     print(f"    C_quality  {state.c_quality:.4f}  {bar(state.c_quality)}  (mean proxy performance)")
-    print(f"\n  Supporting metrics:")
+    print("\n  Supporting metrics:")
     print(f"    Reflect rate   {state.reflection_rate:.3f}")
     print(f"    Mean regret    {state.mean_regret:.4f}")
     print(f"    Mem avg q      {state.mem_avg_quality:.3f}  ({state.mem_n} records)")
     if state.G_r_n > 0:
-        print(f"\n  Reflection gain G_r = s_final − s_initial:")
+        print("\n  Reflection gain G_r = s_final − s_initial:")
         print(f"    n={state.G_r_n}  mean={state.G_r_mean:+.4f}  std={state.G_r_std:.4f}  "
               f"positive={state.G_r_positive:.1%}")
     print()
@@ -381,8 +383,8 @@ def print_dynamics(series: list[dict]) -> None:
 
 def print_reflection_test(gains: dict) -> None:
     print(f"\n{'='*60}")
-    print(f"  Empirical Test: Reflection Increases Coherence")
-    print(f"  Claim: E[G_r | reflect=True] > 0")
+    print("  Empirical Test: Reflection Increases Coherence")
+    print("  Claim: E[G_r | reflect=True] > 0")
     print(f"{'='*60}")
     if gains["n"] == 0:
         print("  No reflection data available.\n")
@@ -393,9 +395,9 @@ def print_reflection_test(gains: dict) -> None:
     print(f"  G_r > 0   = {gains['positive_frac']:.1%}  ({int(gains['positive_frac']*gains['n'])}/{gains['n']} improved)")
     print(f"  Range     = [{gains['min']:+.3f}, {gains['max']:+.3f}]")
     if gains["mean"] >= 0:
-        print(f"\n  ✓ Claim SUPPORTED: mean G_r ≥ 0, reflection is non-destructive")
+        print("\n  ✓ Claim SUPPORTED: mean G_r ≥ 0, reflection is non-destructive")
     else:
-        print(f"\n  ✗ Claim NOT SUPPORTED: mean G_r < 0")
+        print("\n  ✗ Claim NOT SUPPORTED: mean G_r < 0")
     print()
 
 
@@ -423,7 +425,7 @@ if __name__ == "__main__":
             # Memory coherence
             mc = memory_coherence_history()
             print(f"{'='*60}")
-            print(f"  Memory Coherence  C_memory  by type")
+            print("  Memory Coherence  C_memory  by type")
             print(f"{'='*60}")
             print(f"  {'Type':<15}  {'n':>5}  {'avg_q':>7}  {'high≥0.70':>10}  {'low<0.55':>9}  C_memory")
             for r in mc:

@@ -7,7 +7,8 @@ Extra coverage for routes/memory.py — endpoints not hit by existing tests:
   GET /coherence/reflection, GET /contradictions
 """
 
-import os, sys
+import os
+import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi.testclient import TestClient

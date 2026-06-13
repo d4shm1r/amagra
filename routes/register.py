@@ -8,7 +8,8 @@ POST /register/free
   - Simple abuse guard: max 3 free keys per email address.
 """
 
-import sqlite3, os
+import sqlite3
+import os
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, field_validator

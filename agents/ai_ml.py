@@ -1,6 +1,7 @@
 from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
-import subprocess, sys
+import subprocess
+import sys
 from memory_core.context import get_memory_context, save_to_memory
 import os  # path resolution
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

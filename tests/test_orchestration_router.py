@@ -6,7 +6,8 @@ fail because HumanMessage is not a type. We patch hybrid_router to bypass the is
 check by injecting a real-class HumanMessage substitute for the routing logic.
 """
 
-import os, sys
+import os
+import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import unittest.mock as mock

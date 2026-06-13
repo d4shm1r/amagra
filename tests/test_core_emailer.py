@@ -4,7 +4,9 @@ No real SendGrid calls; tests cover: TIER_LIMITS, _sg() import error path,
 send_onboarding_email without API key (no-op), send_billing_confirmation.
 """
 
-import os, sys, unittest.mock as mock
+import os
+import sys
+import unittest.mock as mock
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import core.emailer as emailer

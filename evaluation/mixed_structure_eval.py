@@ -35,7 +35,7 @@ import argparse
 import os  # path resolution
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from orchestration.query_normalizer import normalize, DOMAIN_TO_AGENT
+from orchestration.query_normalizer import normalize
 
 # ─────────────────────────────────────────────────────────────
 # Format A: Chat-style (40 prompts)

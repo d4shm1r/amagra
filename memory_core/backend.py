@@ -24,8 +24,9 @@ Implementation guide for FAISSBackend:
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
-import sys, os, threading
-import os  # path resolution
+import sys
+import os
+import threading
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -203,7 +204,8 @@ class FAISSBackend(MemoryBackend):
 
     def _load_or_build(self) -> None:
         """Load index from disk if it's fresh (within 10% of DB row count), else rebuild."""
-        import faiss, numpy as np, sqlite3
+        import faiss
+        import sqlite3
 
         conn = sqlite3.connect(self._db_path, timeout=30)
         try:
@@ -274,7 +276,8 @@ class FAISSBackend(MemoryBackend):
     def retrieve(self, query: str, k: int = 5, agent_name: Optional[str] = None,
                  caller: str = "") -> list:
         import numpy as np
-        import sqlite3, json
+        import sqlite3
+        import json
         from memory_core.db import _normalize, _TYPE_WEIGHTS, _freshness, _record_use, _log_audit
 
         try:
@@ -399,7 +402,8 @@ class FAISSBackend(MemoryBackend):
 
     def backend_info(self) -> dict:
         try:
-            import faiss as _faiss, sqlite3
+            import faiss as _faiss
+            import sqlite3
             index_total = self._index.ntotal if self._index else 0
             conn = sqlite3.connect(self._db_path, timeout=5)
             db_count = conn.execute(
@@ -631,7 +635,8 @@ class PgvectorBackend(MemoryBackend):
 
     def store(self, content: str, agent_name: str, mem_type: str,
               metadata: Optional[dict] = None, quality: float = 1.0) -> bool:
-        import numpy as np, json
+        import numpy as np
+        import json
         from memory_core.db import get_embedding
         from datetime import datetime, timezone
 

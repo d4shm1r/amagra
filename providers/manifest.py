@@ -42,7 +42,6 @@ dict from loaded manifests, so router.py can stay unchanged during the migration
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any

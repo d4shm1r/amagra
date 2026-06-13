@@ -108,7 +108,6 @@ def test_alpha_no_discontinuity():
     No step jump larger than 0.005 anywhere in [0, 1].
     Old step function had jumps of ~0.025 at I=0.60 and I=0.80.
     """
-    from training.learning import BASE_ALPHA
     instabilities = [i / 1000 for i in range(1001)]
     alphas = [_alpha(i) for i in instabilities]
     max_jump = max(abs(alphas[i] - alphas[i + 1]) for i in range(len(alphas) - 1))

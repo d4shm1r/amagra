@@ -374,7 +374,7 @@ def think(task: str, state: AgentState) -> BrainDecision:
 
     # Lookup is a hard override — deterministic, always confidence 1.0
     if action == "lookup":
-        print(f"[core_brain] lookup → terse (fast path, no LLM)")
+        print("[core_brain] lookup → terse (fast path, no LLM)")
         return BrainDecision(
             intent=f"quick lookup: {query[:60]}",
             action="lookup",
@@ -417,7 +417,7 @@ def think(task: str, state: AgentState) -> BrainDecision:
             and signal.domain == "general"
             and action not in {"research", "explain", "compare"}):
         print(
-            f"[core_brain] terse path | short query, no domain | conf=0.85"
+            "[core_brain] terse path | short query, no domain | conf=0.85"
         )
         return BrainDecision(
             intent=f"brief answer: {query[:60]}",

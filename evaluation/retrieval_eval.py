@@ -27,7 +27,6 @@ To bootstrap ground truth, look at the raw audit rows and label a few:
 """
 
 import json
-import math
 import os
 import sqlite3
 import sys
@@ -312,7 +311,7 @@ def main():
         return
 
     print(f"\n{'═'*60}")
-    print(f"  Memory Retrieval Evaluation Report")
+    print("  Memory Retrieval Evaluation Report")
     print(f"  DB: {memory_db.DB_PATH}")
     print(f"  Entries: {len(audits)} (of last {limit})")
     print(f"{'═'*60}\n")

@@ -24,7 +24,8 @@ for _mod in (
     sys.modules.setdefault(_mod, mock.MagicMock())
 
 import memory_core.db as _mdb
-import hashlib as _hashlib, random as _random
+import hashlib as _hashlib
+import random as _random
 
 def _fake_embedding(text: str) -> list:
     seed = int(_hashlib.md5(text.encode()).hexdigest(), 16)

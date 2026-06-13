@@ -15,9 +15,7 @@
 # ─────────────────────────────────────────────────────────────
 
 import json
-import os
 import sqlite3
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -168,37 +166,37 @@ def build_report():
 
     # ── HEADER ──
     lines += [
-        f"# 🤖 Agentic AI — Model Overview",
-        f"",
+        "# 🤖 Agentic AI — Model Overview",
+        "",
         f"**Generated:** {now}",
-        f"**System:** 9-agent local AI on Ubuntu Linux",
-        f"**Stack:** LangGraph v1.0 · Llama3 8B via Ollama · FastAPI · SQLite + embeddings",
-        f"**Location:** ~/agentic-ai",
-        f"",
-        f"---",
-        f"",
+        "**System:** 9-agent local AI on Ubuntu Linux",
+        "**Stack:** LangGraph v1.0 · Llama3 8B via Ollama · FastAPI · SQLite + embeddings",
+        "**Location:** ~/agentic-ai",
+        "",
+        "---",
+        "",
     ]
 
     # ── SYSTEM STATUS ──
     lines += [
-        f"## 📊 System Status",
-        f"",
-        f"| Metric | Value |",
-        f"|--------|-------|",
+        "## 📊 System Status",
+        "",
+        "| Metric | Value |",
+        "|--------|-------|",
         f"| Total memories in SQLite | {total_memories} |",
         f"| Tasks completed | {total_done_tasks} |",
         f"| Lessons saved | {len(lessons)} |",
         f"| Research files | {len(research_files)} |",
         f"| Agents with memory wired | {sum(1 for v in file_stats.values() if v['memory_wired'])} / 9 |",
-        f"",
+        "",
     ]
 
     # ── MEMORY GROWTH PER AGENT ──
     lines += [
-        f"## 🧠 Memory Growth Per Agent",
-        f"",
-        f"| Agent | Total Memories | Types |",
-        f"|-------|---------------|-------|",
+        "## 🧠 Memory Growth Per Agent",
+        "",
+        "| Agent | Total Memories | Types |",
+        "|-------|---------------|-------|",
     ]
     for agent in AGENTS:
         aid   = agent["id"]
@@ -211,8 +209,8 @@ def build_report():
 
     # ── RECENT MEMORIES (what the system actually knows) ──
     lines += [
-        f"## 💾 Recent Memories (what agents have learned)",
-        f"",
+        "## 💾 Recent Memories (what agents have learned)",
+        "",
     ]
     for agent in AGENTS:
         aid   = agent["id"]
@@ -231,10 +229,10 @@ def build_report():
 
     # ── TASK HISTORY ──
     lines += [
-        f"## ⚡ Task Queue History",
-        f"",
+        "## ⚡ Task Queue History",
+        "",
         f"**Summary:** {task_counts.get('done',0)} done · {task_counts.get('failed',0)} failed · {task_counts.get('pending',0)} pending",
-        f"",
+        "",
     ]
     if tasks:
         for task in tasks:
@@ -250,8 +248,8 @@ def build_report():
     # ── KNOWLEDGE FILES ──
     if lessons or research_files:
         lines += [
-            f"## 📚 Saved Knowledge Files",
-            f"",
+            "## 📚 Saved Knowledge Files",
+            "",
         ]
         if lessons:
             lines.append(f"**Lessons ({len(lessons)}):**")
@@ -267,8 +265,8 @@ def build_report():
     # ── PROJECTS ──
     if projects:
         lines += [
-            f"## 🎯 Personal Projects in Memory",
-            f"",
+            "## 🎯 Personal Projects in Memory",
+            "",
         ]
         for p in projects:
             if isinstance(p, dict):
@@ -280,10 +278,10 @@ def build_report():
 
     # ── AGENT WIRING STATUS ──
     lines += [
-        f"## 🔌 Agent Wiring Status",
-        f"",
-        f"| Agent | File Exists | Size | Memory Wired |",
-        f"|-------|------------|------|-------------|",
+        "## 🔌 Agent Wiring Status",
+        "",
+        "| Agent | File Exists | Size | Memory Wired |",
+        "|-------|------------|------|-------------|",
     ]
     for agent in AGENTS:
         aid  = agent["id"]
@@ -296,36 +294,36 @@ def build_report():
 
     # ── HOW TO USE THIS FILE ──
     lines += [
-        f"## 🤝 How to Use This File for Feedback",
-        f"",
-        f"Paste this entire file into any AI chatbot with one of these prompts:",
-        f"",
-        f"**For architecture review:**",
-        f"```",
-        f"Here is a full overview of my local 9-agent AI system.",
-        f"Review the memory growth, task history, and agent wiring.",
-        f"What is working well, what looks weak, and what should I",
-        f"focus on improving next? Be specific and direct.",
-        f"```",
-        f"",
-        f"**For growth analysis:**",
-        f"```",
-        f"Here is my AI system's current state after [X weeks] of use.",
-        f"Analyze the memory distribution across agents.",
-        f"Which agents are being underused? Which knowledge gaps",
-        f"should I address by asking specific questions?",
-        f"```",
-        f"",
-        f"**For bug hunting:**",
-        f"```",
-        f"Here is my 9-agent local AI system overview.",
-        f"Based on the memory counts and task results,",
-        f"what failure modes or silent bugs might exist",
-        f"that I would not notice in daily use?",
-        f"```",
-        f"",
-        f"---",
-        f"*Generated by ModelOverview.py — run anytime to get a fresh snapshot.*",
+        "## 🤝 How to Use This File for Feedback",
+        "",
+        "Paste this entire file into any AI chatbot with one of these prompts:",
+        "",
+        "**For architecture review:**",
+        "```",
+        "Here is a full overview of my local 9-agent AI system.",
+        "Review the memory growth, task history, and agent wiring.",
+        "What is working well, what looks weak, and what should I",
+        "focus on improving next? Be specific and direct.",
+        "```",
+        "",
+        "**For growth analysis:**",
+        "```",
+        "Here is my AI system's current state after [X weeks] of use.",
+        "Analyze the memory distribution across agents.",
+        "Which agents are being underused? Which knowledge gaps",
+        "should I address by asking specific questions?",
+        "```",
+        "",
+        "**For bug hunting:**",
+        "```",
+        "Here is my 9-agent local AI system overview.",
+        "Based on the memory counts and task results,",
+        "what failure modes or silent bugs might exist",
+        "that I would not notice in daily use?",
+        "```",
+        "",
+        "---",
+        "*Generated by ModelOverview.py — run anytime to get a fresh snapshot.*",
     ]
 
     return "\n".join(lines)
@@ -349,7 +347,7 @@ def main():
     # Quick summary to terminal
     _, total = get_memory_stats()
     _, counts = get_task_stats()
-    print(f"Current snapshot:")
+    print("Current snapshot:")
     print(f"  Total memories: {total}")
     print(f"  Tasks done:     {counts.get('done', 0)}")
 

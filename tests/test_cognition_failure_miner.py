@@ -2,7 +2,9 @@
 Tests for cognition/failure_miner.py — print_report, save_report, mine (empty DB).
 """
 
-import os, sys, json, io
+import os
+import sys
+import json
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import cognition.failure_miner as fm

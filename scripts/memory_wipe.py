@@ -1,7 +1,8 @@
 # ~/agentic-ai/memory_wipe.py
 # One-time wipe. Drops all rows, resets autoincrement, keeps schema.
 
-import sqlite3, os, sys
+import sqlite3
+import os
 
 DB_PATH = os.path.join(os.path.expanduser('~/agentic-ai'), 'memory', 'agent_memory.db')
 

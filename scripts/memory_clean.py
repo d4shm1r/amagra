@@ -13,7 +13,7 @@ import sys
 import os
 sys.path.insert(0, os.path.expanduser('~/agentic-ai'))
 
-from memory_filter import should_save, clean_content, is_duplicate
+from memory_filter import should_save, clean_content
 
 DB_PATH = os.path.join(os.path.expanduser('~/agentic-ai'), 'memory', 'agent_memory.db')
 
@@ -51,7 +51,7 @@ def audit():
 def print_report(keep, drop, clean):
     total = len(keep) + len(drop)
     print(f"\n{'='*55}")
-    print(f"  MEMORY AUDIT REPORT")
+    print("  MEMORY AUDIT REPORT")
     print(f"{'='*55}")
     print(f"  Total entries : {total}")
     print(f"  Keep          : {len(keep)}")
@@ -94,7 +94,7 @@ def do_clean(drop, clean):
     conn.commit()
     conn.close()
 
-    print(f"\n  ✅ Done.")
+    print("\n  ✅ Done.")
     print(f"  Deleted  : {dropped} entries")
     print(f"  Cleaned  : {cleaned} entries")
 
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     print_report(keep, drop, clean)
 
     if mode == '--dry-run':
-        print(f"\n  DRY RUN — no changes made.")
+        print("\n  DRY RUN — no changes made.")
         print(f"  Run with --clean to delete {len(drop)} noise entries")
         print(f"  and clean {len(clean)} fluff-prefixed entries.")
 
@@ -128,4 +128,4 @@ if __name__ == '__main__':
                 print("  Aborted.")
     else:
         print(f"\n  Unknown mode: {mode}")
-        print(f"  Use --dry-run or --clean")
+        print("  Use --dry-run or --clean")

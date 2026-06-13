@@ -4,7 +4,8 @@ Unit tests for cognition/coherence.py pure functions:
   print_reflection_test, reflection_gain_analysis (empty DB).
 """
 
-import os, sys
+import os
+import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import cognition.coherence as ch

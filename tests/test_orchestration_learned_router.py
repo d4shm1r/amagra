@@ -3,7 +3,9 @@ Unit tests for orchestration/learned_router.py pure functions:
   _onehot, extract_features, _trace_hash, stats (no model), predict (no model/fallback).
 """
 
-import os, sys, json
+import os
+import sys
+import json
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import orchestration.learned_router as lr
@@ -122,7 +124,6 @@ def test_load_traces_nonexistent_file(tmp_path, monkeypatch):
     assert result == []
 
 def test_load_traces_with_valid_lines(tmp_path, monkeypatch):
-    import json
     path = str(tmp_path / "traces.jsonl")
     with open(path, "w") as f:
         f.write(json.dumps({"id": "t1", "signal": {}}) + "\n")

@@ -1,0 +1,20 @@
+# Ruff configuration — Amagra
+# Single source of truth for linting. CI runs `ruff check .` (no inline flags).
+line-length = 120
+exclude = ["archive", "backups", ".venv", "venv", "build", "dist", "ui"]
+
+[lint]
+select = ["E", "F", "W"]
+ignore = [
+  "E501",  # line length — not enforced
+  "E402",  # module import not at top — intentional (sys.path setup, lazy/optional imports)
+  "E701",  # multiple statements on one line (colon)
+  "E702",  # multiple statements on one line (semicolon)
+  "E741",  # ambiguous variable name (l/I/O) — domain code uses single letters
+  "E731",  # lambda assignment
+  "F841",  # local assigned but never used — often captures side-effectful calls
+]
+
+[lint.per-file-ignores]
+# Code fragment meant to be pasted into api.py; `app` is injected at the paste site.
+"scripts/task_queue_api_additions.py" = ["F821"]

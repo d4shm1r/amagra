@@ -10,7 +10,9 @@
 #   python3 failure_miner.py --save        # save to logs/failure_report.json
 # ─────────────────────────────────────────────────────────────
 
-import sys, os, json, sqlite3
+import os
+import json
+import sqlite3
 from collections import defaultdict
 from datetime import datetime, timezone
 
@@ -259,28 +261,28 @@ def print_report(report: dict) -> None:
     print(f"  User feedback:    {s['feedback_total']} total, {s['feedback_negative']} negative")
 
     if report["regret_by_agent"]:
-        print(f"\n  High-Regret Agents:")
+        print("\n  High-Regret Agents:")
         for agent, v in report["regret_by_agent"].items():
             print(f"    {agent:<22} {v['count']:>3} cases  avg_regret={v['avg_regret']:.3f}  ({v['pct_of_total']}% of all)")
 
     if report["conflict_by_agent"]:
-        print(f"\n  Conflict Rates by Agent:")
+        print("\n  Conflict Rates by Agent:")
         for agent, v in report["conflict_by_agent"].items():
             bar = "█" * int(v["conflict_rate"] * 20)
             print(f"    {agent:<22} {v['conflict_rate']*100:>5.1f}%  {bar}  ({v['conflicts']}/{v['total']})")
 
     if report["regret_by_action"]:
-        print(f"\n  Regret by Action Type:")
+        print("\n  Regret by Action Type:")
         for action, v in report["regret_by_action"].items():
             print(f"    {action:<12} {v['count']:>3} cases  avg_regret={v['avg_regret']:.3f}")
 
     if report["feedback_by_agent"]:
-        print(f"\n  User Feedback by Agent:")
+        print("\n  User Feedback by Agent:")
         for agent, v in report["feedback_by_agent"].items():
             print(f"    {agent:<22} 👍{v['positive']} 👎{v['negative']}  approval={v['approval_rate']:.0%}")
 
     if report["top_failures"]:
-        print(f"\n  Top Failure Cases (by regret):")
+        print("\n  Top Failure Cases (by regret):")
         for f in report["top_failures"][:5]:
             print(f"    [{f['id']:>4}] {f['agent']:<22} regret={f['regret']:.3f}  {f['task']!r}")
 

@@ -16,7 +16,6 @@ Run this file directly to execute all self-tests:
 """
 
 import math
-from typing import Union
 
 
 # ────────────────────────────────────────────────────────────────

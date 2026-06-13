@@ -5,7 +5,8 @@ Tests for memory_core/context.py:
   save_to_memory (empty content → silent no-op).
 """
 
-import os, sys
+import os
+import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import memory_core.context as mc

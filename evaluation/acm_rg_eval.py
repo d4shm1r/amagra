@@ -497,14 +497,14 @@ def run():
     chi_near = routing_var(near_Vc)
     chi_far  = routing_var(far_Vc)
 
-    print(f"\n  Estimated exponents:")
+    print("\n  Estimated exponents:")
     print(f"    β = {beta:.3f}   (order parameter)")
     print(f"    η = {eta:.3f}   (anomalous dimension)")
     print(f"    ν = {nu_proxy:.3f}   (correlation length, spread-ratio estimate)")
-    print(f"\n  Hyperscaling prediction:")
+    print("\n  Hyperscaling prediction:")
     print(f"    γ = ν(2 − η) = {nu_proxy:.3f} × {2-eta:.3f} = {gamma_predicted:.3f}")
 
-    print(f"\n  Susceptibility proxy  χ = Var(routing probabilities):")
+    print("\n  Susceptibility proxy  χ = Var(routing probabilities):")
     print(f"    χ near V_c  (|V−V_c| < 0.2): {chi_near:.5f}  n={len(near_Vc)}")
     print(f"    χ far  V_c  (|V−V_c| > 0.4): {chi_far:.5f}  n={len(far_Vc)}")
 
@@ -516,7 +516,7 @@ def run():
     # Cross-check: β = ν·η/2 when d=2 (mean-field: β = 0.5, ν = 0.5, η = 0)
     if abs(eta) > 0.01:
         nu_from_beta = 2 * beta / eta
-        print(f"\n  Cross-check (d=2 hyperscaling: ν = 2β/η):")
+        print("\n  Cross-check (d=2 hyperscaling: ν = 2β/η):")
         print(f"    ν = 2×{beta:.3f}/{eta:.3f} = {nu_from_beta:.3f}")
         consistency = 1.0 - min(abs(nu_from_beta - nu_proxy) / max(nu_proxy, 0.01), 1.0)
         print(f"    Consistency with spread estimate: {100*consistency:.0f}%")
@@ -530,27 +530,27 @@ def run():
     print(f"\n  System:    {n} queries,  {correct_count} correct  ({100*correct_count/n:.1f}% accuracy)")
     print(f"  Mean V:    {mean_V:.4f}  (theory V_c = 1.5)")
     print(f"  Empir V_c: {V_c:.2f}")
-    print(f"\n  Critical exponents:")
+    print("\n  Critical exponents:")
     print(f"    β = {beta:.3f}   order parameter exponent  (mean-field: 0.50)")
     print(f"    η = {eta:.3f}   anomalous dimension       (Gaussian:   0.00)")
     print(f"    ν = {nu_proxy:.3f}   correlation length        (mean-field: 0.50)")
     print(f"    γ = {gamma_predicted:.3f}   susceptibility (predicted via hyperscaling)")
 
     mf_consistent = abs(beta - 0.5) < 0.15 and abs(eta) < 0.1
-    print(f"\n  Universality class:")
+    print("\n  Universality class:")
     if mf_consistent:
         print("    Mean-field / Gaussian: routing transition is linear near V_c.")
         print("    Exponents consistent with β=0.5, η=0 (no operator renormalization).")
     else:
         print(f"    Non-trivial: β={beta:.2f}, η={eta:.2f} depart from Gaussian predictions.")
-        print(f"    Keyword signal interactions generate anomalous scaling — the routing")
-        print(f"    system is NOT reducible to independent keyword-counting at the critical point.")
+        print("    Keyword signal interactions generate anomalous scaling — the routing")
+        print("    system is NOT reducible to independent keyword-counting at the critical point.")
 
-    print(f"\n  Note on terse queries:")
-    print(f"    Factual-shape queries (te_*) are routed via answer_shape, not keywords.")
-    print(f"    Their keyword scores are near-uniform → V ≈ 2.0 even when correctly routed.")
-    print(f"    This means keyword-V underestimates routing confidence for factual queries.")
-    print(f"    A 'combined V' using shape + domain_conf would give a more accurate estimate.")
+    print("\n  Note on terse queries:")
+    print("    Factual-shape queries (te_*) are routed via answer_shape, not keywords.")
+    print("    Their keyword scores are near-uniform → V ≈ 2.0 even when correctly routed.")
+    print("    This means keyword-V underestimates routing confidence for factual queries.")
+    print("    A 'combined V' using shape + domain_conf would give a more accurate estimate.")
     print()
 
 

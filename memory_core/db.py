@@ -812,7 +812,8 @@ def auto_resolve_conflicts(threshold: float = 0.90, dry_run: bool = True) -> dic
 
 def export_memories_csv() -> str:
     """Return all memories as a CSV string for download."""
-    import csv, io
+    import csv
+    import io
     conn = sqlite3.connect(DB_PATH, timeout=30)
     try:
         rows = conn.execute(

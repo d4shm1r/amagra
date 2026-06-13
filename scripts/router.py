@@ -1,8 +1,7 @@
 # pip install: no new packages needed
 
 import re
-import json
-from typing import Dict, List, Optional
+from typing import Dict, List
 from langchain_core.messages import HumanMessage
 from llm import llm  # your shared ChatOllama instance
 from state import AgentState
@@ -118,7 +117,7 @@ def _llm_fallback(query: str) -> str:
     Only called when keyword router is not confident.
     """
     agent_list = "\n".join(f"- {a}" for a in KEYWORD_MAP.keys())
-    prompt = f"""You are a routing assistant. Given the user query below, 
+    prompt = f"""You are a routing assistant. Given the user query below,
 return ONLY the name of the most appropriate specialist agent.
 Choose from exactly these options:
 {agent_list}

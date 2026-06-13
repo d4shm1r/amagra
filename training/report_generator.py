@@ -25,7 +25,7 @@ import json
 import os
 import sys
 import argparse
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -652,7 +652,8 @@ def main():
         print(f"[report] JSON saved → {json_path}")
 
     if not args.no_open:
-        import subprocess, shutil
+        import subprocess
+        import shutil
         # Try to open in browser
         for cmd in ["xdg-open", "open", "firefox", "chromium-browser"]:
             if shutil.which(cmd):

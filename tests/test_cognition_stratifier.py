@@ -3,7 +3,8 @@ Unit tests for cognition/context_stratifier.py pure functions:
   routing_text, execution_text, weighted_text, stratify, PromptContext
 """
 
-import os, sys
+import os
+import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from cognition.context_stratifier import (

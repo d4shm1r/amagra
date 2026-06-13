@@ -15,11 +15,19 @@ Usage:
 Results saved to logs/benchmark_<timestamp>.json
 """
 
-import argparse, gzip, json, os, re, subprocess, sys, tempfile, textwrap, time
+import argparse
+import gzip
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import textwrap
+import time
 from datetime import datetime
 from pathlib import Path
 
-import os  # path resolution
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 GATE_THRESHOLD = 0.70
@@ -322,7 +330,7 @@ def _print_report(m: dict):
         pi = m["p_improve_given_gate"] * 100
         fr = m["false_reject_rate"] * 100
         fa = m["false_accept_rate"] * 100
-        print(f"  ── Critic gate ──────────────────────────────")
+        print("  ── Critic gate ──────────────────────────────")
         print(f"  Triggered             : {m['gate_trigger_count']}/{m['n']} ({gr:.1f}%)")
         print(f"  P(improve|triggered)  : {pi:.1f}%  ← key metric")
         print(f"  False reject rate     : {fr:.1f}%  (good solutions discarded)")
@@ -333,7 +341,7 @@ def _print_report(m: dict):
     # This is the core empirical test: does C(y) predict correctness?
     curve = m.get("calibration_curve", [])
     if any(b["n"] > 0 for b in curve):
-        print(f"  ── P(pass | score bucket) ───────────────────")
+        print("  ── P(pass | score bucket) ───────────────────")
         print(f"  {'Score':8}  {'N':>4}  {'Pass%':>6}  {'Bar'}")
         for b in curve:
             if b["n"] == 0:

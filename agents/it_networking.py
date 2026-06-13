@@ -1,6 +1,7 @@
 from langchain_core.messages import SystemMessage
 from langgraph.graph import StateGraph, START, END
-import subprocess, sys
+import subprocess
+import sys
 from memory_core.context import get_memory_context, save_to_memory
 import os  # path resolution
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -14,7 +15,7 @@ You are an expert IT & Networking specialist agent.
 You are a personal sysadmin for home and office networks.
 Your expertise covers:
 - Wi-Fi troubleshooting and optimization
-- Router configuration and diagnostics  
+- Router configuration and diagnostics
 - Network security best practices
 - DNS, DHCP, IP addressing
 - Linux networking commands
@@ -81,19 +82,19 @@ def it_agent_node(state: AgentState):
         _effective_prompt += "\n\n" + _mem_ctx
     # ----------------------------------------
 
-    
+
     # Auto-run relevant tools based on task keywords
     tool_context = ""
-    
+
     if any(word in task.lower() for word in ["ping", "latency", "slow", "speed", "connection"]):
         tool_context += f"\n[PING google.com]\n{ping_host('google.com')}"
-    
+
     if any(word in task.lower() for word in ["interface", "ip", "wifi", "ethernet", "network"]):
         tool_context += f"\n[NETWORK INTERFACES]\n{check_network_interfaces()}"
-    
+
     if any(word in task.lower() for word in ["dns", "domain", "resolve", "website"]):
         tool_context += f"\n[DNS CHECK]\n{check_dns()}"
-    
+
     if any(word in task.lower() for word in ["port", "service", "listening", "firewall"]):
         tool_context += f"\n[OPEN PORTS]\n{check_open_ports()}"
 
@@ -104,7 +105,7 @@ def it_agent_node(state: AgentState):
         SystemMessage(content=_effective_prompt),
         *trimmed,
     ]
-    
+
     # Inject tool results if any were collected
     if tool_context:
         from langchain_core.messages import HumanMessage
@@ -119,7 +120,7 @@ def it_agent_node(state: AgentState):
                    {"task": task[:120] if task else ""})
     # ------------------------------------
 
-    
+
     return {
         "messages":     [response],
         "active_agent": "it_networking",

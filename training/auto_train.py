@@ -527,7 +527,7 @@ def phase_seed_memory():
             print(f"✓ ({dur:.1f}s)")
         else:
             failed += 1
-            print(f"✗ failed")
+            print("✗ failed")
 
     print(f"\n  Seeded: {saved}/{len(SEED_MEMORIES)}  Failed: {failed}")
     return saved
@@ -723,7 +723,7 @@ def print_report(results: dict, domain_stats: dict = None):
             if e.get("verify_passed"):
                 ds["verified"] += 1
 
-    print(f"\n  Routing accuracy by domain:")
+    print("\n  Routing accuracy by domain:")
     for domain in ["networking", "python", "dotnet", "ai_ml", "knowledge", "terse"]:
         ds = domain_stats.get(domain, {"correct": 0, "total": 1, "verified": 0})
         t  = ds["total"]

@@ -18,8 +18,8 @@ This output drives:
 Run standalone or use compute() from other modules.
 """
 
-import sys, os
-import os  # path resolution
+import sys
+import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from collections import defaultdict

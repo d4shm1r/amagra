@@ -1,6 +1,8 @@
 from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
-import os, sys, json
+import os
+import sys
+import json
 from datetime import datetime
 from memory_core.context import get_memory_context, save_to_memory
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -86,7 +88,7 @@ def save_learning_progress(topic: str) -> str:
         progress["lessons_completed"] += 1
         progress["last_lesson"]   = topic
         progress["last_date"]     = datetime.now().strftime('%Y-%m-%d')
-        
+
     try:
         os.makedirs(os.path.dirname(progress_file), exist_ok=True)
         with open(progress_file, 'w') as f:
@@ -161,11 +163,11 @@ def list_completed_lessons() -> str:
     if not progress["topics_covered"]:
         return "📖 No lessons completed yet — let's start learning!"
     lines = [
-        f"📖 Learning Progress",
+        "📖 Learning Progress",
         f"Total lessons: {progress['lessons_completed']}",
         f"Current path: {progress.get('current_path', 'IT Fundamentals')}",
         f"Last lesson: {progress.get('last_lesson', 'none')}",
-        f"\nTopics covered:",
+        "\nTopics covered:",
     ]
     for topic in progress["topics_covered"]:
         lines.append(f"  ✅ {topic}")

@@ -1,4 +1,4 @@
-import os, json
+import os
 from datetime import datetime
 
 LOG_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs", "changes.log")

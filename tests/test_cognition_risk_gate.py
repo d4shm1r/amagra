@@ -3,7 +3,8 @@ Unit tests for cognition/risk_gate.py — compute_risk pure function.
 Uses log=False to avoid DB writes.
 """
 
-import os, sys
+import os
+import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import cognition.risk_gate as rg

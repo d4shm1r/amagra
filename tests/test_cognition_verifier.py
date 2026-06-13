@@ -3,7 +3,8 @@ Unit tests for cognition/step_verifier.py pure functions:
   _length_score, _criteria_score, _error_score, _artifact_score
 """
 
-import os, sys
+import os
+import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import cognition.step_verifier as sv

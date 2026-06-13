@@ -47,7 +47,7 @@ import re
 import os
 import sqlite3
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List
 
 _DB_PATH   = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                           "logs", "step_verify.db")

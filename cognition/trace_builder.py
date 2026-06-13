@@ -23,10 +23,13 @@ Output:
 Also used by specialization.py and the /data/* API endpoints.
 """
 
-import sqlite3, json, os, sys, difflib
+import sqlite3
+import json
+import os
+import sys
+import difflib
 from typing import Optional
 
-import os  # path resolution
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 _BASE        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -461,13 +464,13 @@ if __name__ == "__main__":
         print(f"Eval decisions:    {stats['eval_decisions']}")
         print(f"Avg quality proxy: {stats['avg_quality_proxy']}")
         print(f"Avg memories/q:    {stats['avg_memories_per_query']}")
-        print(f"\nCoverage:")
+        print("\nCoverage:")
         for k, v in stats["coverage"].items():
             print(f"  {k:<20} {v*100:.0f}%")
-        print(f"\nAgent distribution:")
+        print("\nAgent distribution:")
         for a, n in sorted(stats["agent_distribution"].items(), key=lambda x: -x[1]):
             print(f"  {a:<25} {n}")
-        print(f"\nDomain distribution:")
+        print("\nDomain distribution:")
         for d, n in sorted(stats["domain_distribution"].items(), key=lambda x: -x[1]):
             print(f"  {d:<20} {n}")
         print(f"{'='*50}")

@@ -38,8 +38,9 @@ Output schema:
   }
 """
 
-import sys, os, time
-import os  # path resolution
+import sys
+import os
+import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -267,7 +268,8 @@ def top_counterfactual_candidates(n: int = 10) -> list:
 
 
 if __name__ == "__main__":
-    import argparse, json
+    import argparse
+    import json
     p = argparse.ArgumentParser(description="Counterfactual routing analysis")
     p.add_argument("--candidates", action="store_true", help="List top candidates")
     p.add_argument("--decision",   type=int,  help="Decision ID to simulate")
@@ -290,7 +292,7 @@ if __name__ == "__main__":
         print("Usage: --candidates  OR  --decision ID --alt-agent AGENT [--no-dry-run]")
         print()
         candidates = top_counterfactual_candidates(5)
-        print(f"Top 5 candidates:")
+        print("Top 5 candidates:")
         for c in candidates:
             print(f"  #{c['decision_id']}  {c['original_agent']} → {c['suggested_alt']}  "
                   f"regret={c['regret']:.4f}")

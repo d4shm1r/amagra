@@ -7,7 +7,9 @@ Pure-function tests for training/ modules:
                         collect (with mocked subsystems), render_html
 """
 
-import os, sys, json, tempfile
+import os
+import sys
+import json
 from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

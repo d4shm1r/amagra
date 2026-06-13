@@ -18,7 +18,6 @@ Optional:
 """
 
 import os
-import hashlib
 import sqlite3
 
 _STRIPE_KEY     = os.environ.get("STRIPE_SECRET_KEY", "")

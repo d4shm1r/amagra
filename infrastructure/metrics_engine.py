@@ -478,7 +478,7 @@ if __name__ == "__main__":
     print(f"  [{health_bar}]")
 
     print(f"\n  {'─'*40}")
-    print(f"  Level 4 — System Scores")
+    print("  Level 4 — System Scores")
     print(f"  {'─'*40}")
     for k in ("reliability", "capability", "efficiency", "learning"):
         v   = m[k]
@@ -486,21 +486,21 @@ if __name__ == "__main__":
         print(f"  {k.capitalize():<14} {v:.3f}  [{bar}]")
 
     print(f"\n  {'─'*40}")
-    print(f"  Level 3 — Learning")
+    print("  Level 3 — Learning")
     print(f"  {'─'*40}")
     for k in ("lrn_routing_accuracy", "lrn_mean_confidence",
               "lrn_mean_regret", "lrn_feedback_positive"):
         print(f"  {k[4:]:<22} {m[k]:.3f}")
 
     print(f"\n  {'─'*40}")
-    print(f"  Level 2 — Reasoning")
+    print("  Level 2 — Reasoning")
     print(f"  {'─'*40}")
     for k in ("rsn_step_pass_rate", "rsn_mean_risk",
               "rsn_full_reflection_rate", "rsn_step_replan_rate"):
         print(f"  {k[4:]:<25} {m[k]:.3f}")
 
     print(f"\n  {'─'*40}")
-    print(f"  Level 1 — Execution")
+    print("  Level 1 — Execution")
     print(f"  {'─'*40}")
     for k in ("exec_gate_accept_rate", "exec_retry_rate"):
         print(f"  {k[5:]:<25} {m[k]:.3f}")

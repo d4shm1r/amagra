@@ -32,7 +32,7 @@ import re
 import sqlite3
 import time
 from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 _DB_PATH   = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                           "logs", "world_model.db")

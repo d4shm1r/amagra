@@ -1,4 +1,5 @@
-import os, json, sqlite3
+import os
+import sqlite3
 from fastapi import APIRouter, UploadFile, File, Form, Body, HTTPException
 
 router = APIRouter(prefix="/documents", tags=["documents"])

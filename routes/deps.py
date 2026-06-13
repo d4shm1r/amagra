@@ -1,4 +1,5 @@
-import os, sqlite3
+import os
+import sqlite3
 from pydantic import BaseModel
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

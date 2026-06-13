@@ -8,7 +8,8 @@ The background maintenance loop is not tested (requires asyncio). We test:
 - run endpoint returns trigger confirmation
 """
 
-import os, sys
+import os
+import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi.testclient import TestClient

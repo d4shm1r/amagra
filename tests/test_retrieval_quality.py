@@ -14,14 +14,11 @@ Run semantic:   python3 tests/test_retrieval_quality.py --semantic
 """
 
 import json
-import math
 import numpy as np
 import os
 import sqlite3
 import sys
-import time
 from datetime import datetime, timezone, timedelta
-from typing import Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -298,7 +295,7 @@ def test_weighted_vs_unweighted_divergence():
     matches = sum(w == r for w, r in zip(weighted_order, raw_order_names))
     total   = len(weighted_order)
 
-    print(f"  Weighted ranking:")
+    print("  Weighted ranking:")
     for r in results:
         print(f"    [{r['type']:12}] q={r['quality']:.1f}  raw={r['raw_score']:.4f}  "
               f"weighted={r['score']:.4f}  {r['content'][-25:]}")
@@ -486,7 +483,7 @@ def test_semantic_top1_precision():
 
     assert summary["P@1"] >= 0.50, f"P@1={summary['P@1']:.3f} below 0.50 threshold"
     assert summary["P@3"] >= 0.70, f"P@3={summary['P@3']:.3f} below 0.70 threshold"
-    print(f"  ✓ semantic retrieval meets precision thresholds")
+    print("  ✓ semantic retrieval meets precision thresholds")
     _teardown()
 
 
@@ -547,7 +544,7 @@ def test_reflection_memories_surface_for_agent_queries():
             type_hits += 1
 
     assert type_hits >= 1, \
-        f"Reflection memories should surface for agent queries"
+        "Reflection memories should surface for agent queries"
     print(f"  ✓ reflection memories surfaced for {type_hits}/{len(reflection_queries)} agent queries")
     _teardown()
 
@@ -655,7 +652,7 @@ def test_weighted_vs_unweighted_precision():
     if weighted_p3 > raw_p3:
         print(f"  ✓ weighted retrieval improves over raw cosine by {weighted_p3-raw_p3:.3f}")
     elif weighted_p3 == raw_p3:
-        print(f"  ✓ weighted retrieval matches raw cosine precision (no degradation)")
+        print("  ✓ weighted retrieval matches raw cosine precision (no degradation)")
     else:
         print(f"  ⚠ weighted is within tolerance of raw cosine (gap={raw_p3-weighted_p3:.3f})")
     _teardown()
@@ -688,11 +685,11 @@ def print_live_audit_summary():
         print(f"  Total audit entries:  {len(audits)}")
         print(f"  Total items retrieved: {total_retrievals}")
         print(f"  Avg per query: {total_retrievals/len(audits):.1f}")
-        print(f"\n  Type distribution of retrieved memories:")
+        print("\n  Type distribution of retrieved memories:")
         for t, c in sorted(type_counts.items(), key=lambda x: -x[1]):
             pct = 100 * c / total_retrievals if total_retrievals else 0
             print(f"    {t:16} {c:4}  ({pct:.1f}%)")
-        print(f"\n  Callers:")
+        print("\n  Callers:")
         for caller, c in sorted(caller_counts.items(), key=lambda x: -x[1]):
             print(f"    {caller or '(unknown)':30} {c}")
 
@@ -750,7 +747,7 @@ def run_all(run_math=True, run_semantic=True):
     print(f"Results: {passed} passed, {failed} failed")
 
     if run_semantic and _check_ollama():
-        print(f"\n[Live audit summary — from production memory DB]")
+        print("\n[Live audit summary — from production memory DB]")
         print_live_audit_summary()
 
     if failed:

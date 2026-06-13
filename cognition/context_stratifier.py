@@ -32,7 +32,7 @@ Usage:
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 # ── Routing weights ───────────────────────────────────────────
 WEIGHT = {
@@ -240,17 +240,17 @@ if __name__ == "__main__":
 
     ctx = stratify(state_with_history)
 
-    print(f"\n  Raw task (contaminated):")
+    print("\n  Raw task (contaminated):")
     print(f"    {contaminated_sub_task!r}")
 
-    print(f"\n  routing_text() — what normalize() sees:")
+    print("\n  routing_text() — what normalize() sees:")
     print(f"    {routing_text(ctx)!r}")
 
-    print(f"\n  execution_text() — what agents see:")
+    print("\n  execution_text() — what agents see:")
     for line in execution_text(ctx).splitlines():
         print(f"    {line}")
 
-    print(f"\n  weighted_text() (first 100 chars):")
+    print("\n  weighted_text() (first 100 chars):")
     print(f"    {weighted_text(ctx)[:100]!r}")
 
     # Verify contamination is gone from routing signal

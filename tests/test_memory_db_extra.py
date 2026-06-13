@@ -4,7 +4,11 @@ Extra coverage for memory_core/db.py — functions not hit by existing tests:
   auto_resolve_conflicts, memory_stats deeper paths.
 """
 
-import os, sys, sqlite3, tempfile, hashlib, random
+import os
+import sys
+import sqlite3
+import hashlib
+import random
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import memory_core.db as mdb

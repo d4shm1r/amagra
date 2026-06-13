@@ -3,7 +3,8 @@ Unit tests for decision/weights.py — weight management and calibration.
 Tests use production DB (or fallback to defaults when DB unavailable).
 """
 
-import os, sys
+import os
+import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import decision.weights as dw

@@ -7,7 +7,6 @@ Covers: idempotency store, error paths, plan validation.
 import os
 import sys
 import sqlite3
-import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

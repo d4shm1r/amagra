@@ -67,7 +67,7 @@ async def create_org(body: CreateOrgRequest):
     org_id = "org-" + secrets.token_urlsafe(12)
     # Persist to api_keys.db for now; a dedicated orgs table can be added later
     try:
-        import sqlite3, os
+        import sqlite3
         db = _ak.DB_PATH
         con = sqlite3.connect(db, timeout=5)
         try:

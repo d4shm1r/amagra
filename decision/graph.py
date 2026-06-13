@@ -46,10 +46,12 @@ Graph schema:
   }
 """
 
-import hashlib, json, os, sys
+import hashlib
+import json
+import os
+import sys
 from datetime import datetime, timezone
 
-import os  # path resolution
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 _BASE     = os.path.dirname(os.path.abspath(__file__))

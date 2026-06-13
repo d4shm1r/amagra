@@ -4,7 +4,8 @@ Most endpoints return 503 when CognitiveState is unavailable (test environment),
 which is the expected behaviour — we verify the fallback contract, not the live COS state.
 """
 
-import os, sys
+import os
+import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi.testclient import TestClient

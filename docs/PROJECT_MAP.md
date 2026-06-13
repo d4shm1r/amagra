@@ -7,6 +7,7 @@ This is the orientation map. Each area links to the canonical document — this 
 
 | If you want… | Read |
 |---|---|
+| Evaluator-facing architecture (claims → files) | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | What it is, how it works, every number | [REFERENCE.md](REFERENCE.md) |
 | How to use it day to day | [GUIDE.md](GUIDE.md) |
 | What was built, phase by phase | [HISTORY.md](HISTORY.md) |

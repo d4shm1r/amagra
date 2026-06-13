@@ -4,7 +4,9 @@ Unit tests for cognition/context_snapshot.py pure functions:
   begin, record_routing, record_memories, finalize, recent, diff.
 """
 
-import os, sys, uuid
+import os
+import sys
+import uuid
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import cognition.context_snapshot as cs

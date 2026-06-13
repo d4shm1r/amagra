@@ -10,6 +10,9 @@ langgraph-env/
 logs/*.db
 memory/*.db
 tasks.db
+# SQLite WAL/SHM sidecars (created when WAL mode is enabled)
+*.db-wal
+*.db-shm
 
 # Runtime logs and session artifacts
 logs/*.log

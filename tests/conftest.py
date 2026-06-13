@@ -51,6 +51,16 @@ if not getattr(_ak, "_conftest_patched", False):
     _ak.init_db()
     _ak._conftest_patched = True
 
+# ── Ensure the memory DB schema exists ───────────────────────────────────────
+# memory_core.db.init_db() only runs under __main__, so a fresh checkout (CI)
+# has no `memories` table. Create the schema at the canonical path that every
+# consumer (memory_core.db, routes.memory, cognition.coherence) reads from.
+# Idempotent: CREATE TABLE IF NOT EXISTS — a no-op where the DB already exists.
+import memory_core.db as _mdb
+if not getattr(_mdb, "_conftest_schema_ready", False):
+    _mdb.init_db()
+    _mdb._conftest_schema_ready = True
+
 # ── Pre-create a developer key for protected-route tests ─────────────────────
 _TEST_KEY = _ak.create_key(owner="pytest@amagra.dev", tier="developer")
 

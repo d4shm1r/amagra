@@ -2,7 +2,7 @@
 # Patches all 7 remaining agents to inject user_profile.
 # Safe to run multiple times — skips already-patched files.
 
-import os, re
+import os
 
 AGENTS_DIR = os.path.expanduser("~/agentic-ai/agents")
 

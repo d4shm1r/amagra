@@ -36,10 +36,8 @@ Usage:
     # signal.total_risk    → 0.68
 """
 
-import math
 import os
 import sqlite3
-import time
 from dataclasses import dataclass, asdict
 
 _DB_PATH   = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),

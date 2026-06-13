@@ -90,7 +90,7 @@ def save_to_memory(agent_name: str, mem_type: str, content: str, metadata: dict 
             return
     except Exception:
         pass
-        
+
     from memory_core.backend import get_backend
     get_backend().store(content.strip(), agent_name, mem_type, metadata)
 

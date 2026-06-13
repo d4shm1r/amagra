@@ -33,7 +33,7 @@ Usage:
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 # ── Session registry (in-process cache) ──────────────────────
 _SESSIONS: Dict[str, "CognitiveState"] = {}

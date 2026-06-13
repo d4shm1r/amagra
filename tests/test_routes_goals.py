@@ -3,7 +3,8 @@ Tests for routes/goals.py — task graph CRUD endpoints.
 Uses TestClient with mocked infrastructure.task_graph functions.
 """
 
-import os, sys
+import os
+import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import unittest.mock as mock

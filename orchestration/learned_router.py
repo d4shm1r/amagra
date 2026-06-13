@@ -284,12 +284,12 @@ if __name__ == "__main__":
     print(f"\n  ✅ train_accuracy = {result['train_accuracy']:.1%}")
     print(f"     cv_accuracy    = {result['cv_accuracy']:.1%} ± {result['cv_std']:.3f}")
     print(f"     n_samples      = {result['n_samples']}")
-    print(f"\n  Top features:")
+    print("\n  Top features:")
     for name, weight in result["top_features"]:
         bar = "█" * int(weight * 20)
         print(f"    {name:<20} {bar} ({weight:.4f})")
 
-    print(f"\n  Class distribution:")
+    print("\n  Class distribution:")
     for agent, count in sorted(result["class_counts"].items(), key=lambda x: -x[1]):
         print(f"    {agent:<25} {count}")
 

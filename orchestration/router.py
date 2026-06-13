@@ -1,6 +1,5 @@
 import re
-import json
-from typing import Dict, List, Optional
+from typing import Dict, List
 from langchain_core.messages import HumanMessage
 from models.llm import llm
 from models.state import AgentState
@@ -185,7 +184,7 @@ def hybrid_router(state: AgentState) -> str:
     if best_score == 1:
         return best_agent
 
-    print(f"[router] no keyword match → knowledge_learning (default)")
+    print("[router] no keyword match → knowledge_learning (default)")
     return "knowledge_learning"
 
 

@@ -3,7 +3,8 @@ Unit tests for cognition/trace_builder.py pure functions:
   _quality_proxy, dataset_stats, load_cached_traces, _features_from_trace.
 """
 
-import os, sys
+import os
+import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import cognition.trace_builder as tb
