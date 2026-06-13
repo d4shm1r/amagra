@@ -7,7 +7,8 @@ from orchestration.coordinator import coordinator
 
 router = APIRouter()
 
-TASKS_DB = "tasks.db"
+from infrastructure.db import path as _dbpath
+TASKS_DB = _dbpath("tasks")
 
 worker_event = asyncio.Event()
 task_db_lock = asyncio.Lock()

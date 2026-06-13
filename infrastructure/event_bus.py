@@ -34,8 +34,8 @@ from collections import defaultdict
 from enum import Enum
 from typing import Callable
 
-_DB_PATH   = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                          "logs", "events.db")
+from infrastructure.db import path as _dbpath
+_DB_PATH   = _dbpath("events")
 _DB_INITED = False
 _LOCK      = threading.RLock()
 _HANDLERS: dict[str, list[Callable]] = defaultdict(list)

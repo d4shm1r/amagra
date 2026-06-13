@@ -14,10 +14,10 @@
 
 import sqlite3
 import json
-import os
 from datetime import datetime, timezone
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tasks.db")
+from infrastructure.db import path as _dbpath
+DB_PATH = _dbpath("tasks")
 
 VALID_AGENTS = {
     "it_networking", "python_dev", "dotnet_dev",

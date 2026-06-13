@@ -11,9 +11,10 @@
 
 import re
 import sqlite3
-import os
+import os  # noqa: F401 — retained for callers that patch memory_core.filter.os
 
-DB_PATH = os.path.join("memory", "agent_memory.db")
+from infrastructure.db import path as _dbpath
+DB_PATH = _dbpath("memory")
 
 # ── 1. FLUFF PATTERNS ────────────────────────────────────────
 _FLUFF_OPENERS = [

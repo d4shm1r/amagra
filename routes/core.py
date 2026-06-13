@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from orchestration.coordinator import coordinator
 from core.logger import log_response, read_log
 import cognition.run_tracer as run_tracer
+from infrastructure.db import path as _dbpath
 
 from .deps import (
     _cos, session_history, _SESSIONS_DB, _CONTRADICTIONS_DB,
@@ -342,7 +343,7 @@ async def ask(req: AskRequest, request: Request):
     )
     log_response(agent_used, req.message)
     try:
-        _conn = sqlite3.connect("logs/traces.db")
+        _conn = sqlite3.connect(_dbpath("traces"))
         _conn.execute("""CREATE TABLE IF NOT EXISTS traces (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp TEXT, agent TEXT, user_message TEXT,
@@ -776,7 +777,7 @@ def get_status():
     memories, by_agent = 0, {}
     done, failed, pending = 0, 0, 0
     try:
-        conn = sqlite3.connect("memory/agent_memory.db")
+        conn = sqlite3.connect(_dbpath("memory"))
         memories = conn.execute("SELECT COUNT(*) FROM memories").fetchone()[0]
         rows = conn.execute("SELECT agent_name, COUNT(*) FROM memories GROUP BY agent_name").fetchall()
         by_agent = {r[0]: r[1] for r in rows}
@@ -784,7 +785,7 @@ def get_status():
     except Exception:
         pass
     try:
-        conn = sqlite3.connect("tasks.db")
+        conn = sqlite3.connect(_dbpath("tasks"))
         done    = conn.execute("SELECT COUNT(*) FROM tasks WHERE status='done'").fetchone()[0]
         failed  = conn.execute("SELECT COUNT(*) FROM tasks WHERE status='failed'").fetchone()[0]
         pending = conn.execute("SELECT COUNT(*) FROM tasks WHERE status='pending'").fetchone()[0]
@@ -826,7 +827,7 @@ def get_metrics():
     except Exception:
         pass
     try:
-        conn = sqlite3.connect("tasks.db")
+        conn = sqlite3.connect(_dbpath("tasks"))
         for status in ["done", "failed", "pending", "running"]:
             count = conn.execute("SELECT COUNT(*) FROM tasks WHERE status=?", (status,)).fetchone()[0]
             metrics["tasks"][status] = count
@@ -835,7 +836,7 @@ def get_metrics():
     except Exception:
         pass
     try:
-        conn = sqlite3.connect("logs/traces.db")
+        conn = sqlite3.connect(_dbpath("traces"))
         metrics["traces"]["total"] = conn.execute("SELECT COUNT(*) FROM traces").fetchone()[0]
         avg = conn.execute("SELECT AVG(duration_ms) FROM traces").fetchone()[0]
         metrics["traces"]["avg_latency_ms"] = round(avg) if avg else 0

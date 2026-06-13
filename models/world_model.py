@@ -34,8 +34,8 @@ import time
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List
 
-_DB_PATH   = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                          "logs", "world_model.db")
+from infrastructure.db import path as _dbpath
+_DB_PATH   = _dbpath("world_model")
 _DB_INITED = False
 
 # ── Entity vocabulary ─────────────────────────────────────────

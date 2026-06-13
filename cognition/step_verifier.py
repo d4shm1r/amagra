@@ -49,8 +49,8 @@ import sqlite3
 from dataclasses import dataclass, field
 from typing import List
 
-_DB_PATH   = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                          "logs", "step_verify.db")
+from infrastructure.db import path as _dbpath
+_DB_PATH   = _dbpath("step_verify")
 _DB_INITED = False
 
 # ── Failure signal vocabulary ─────────────────────────────────

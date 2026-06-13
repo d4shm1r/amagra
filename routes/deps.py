@@ -15,9 +15,10 @@ except Exception as _e:
 
 session_history = []
 
-_SESSIONS_DB       = os.path.join(_ROOT, "logs", "sessions.db")
-_FEEDBACK_DB       = os.path.join(_ROOT, "logs", "feedback.db")
-_CONTRADICTIONS_DB = os.path.join(_ROOT, "logs", "contradictions.db")
+from infrastructure.db import path as _dbpath
+_SESSIONS_DB       = _dbpath("sessions")
+_FEEDBACK_DB       = _dbpath("feedback")
+_CONTRADICTIONS_DB = _dbpath("contradictions")
 
 
 def _init_sessions():
@@ -45,7 +46,7 @@ def _init_sessions():
         pass
     _dc.close()
 
-    _decisions_path = os.path.join(_ROOT, "logs", "decisions.db")
+    _decisions_path = _dbpath("decisions")
     if os.path.exists(_decisions_path):
         _dc2 = sqlite3.connect(_decisions_path)
         try:

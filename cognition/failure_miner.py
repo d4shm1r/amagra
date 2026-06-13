@@ -17,8 +17,9 @@ from collections import defaultdict
 from datetime import datetime, timezone
 
 _ROOT        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_BRAIN_DB    = os.path.join(_ROOT, "logs", "decisions.db")   # brain_decisions table lives here
-_FEEDBACK_DB = os.path.join(_ROOT, "logs", "feedback.db")
+from infrastructure.db import path as _dbpath
+_BRAIN_DB    = _dbpath("decisions")   # brain_decisions table lives here
+_FEEDBACK_DB = _dbpath("feedback")
 _REPORT_PATH = os.path.join(_ROOT, "logs", "failure_report.json")
 
 # ── Thresholds ────────────────────────────────────────────────

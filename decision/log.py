@@ -11,7 +11,8 @@ import sqlite3
 import os
 from datetime import datetime, timezone
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs", "decisions.db")
+from infrastructure.db import path as _dbpath
+DB_PATH = _dbpath("decisions")
 
 
 def _conn():

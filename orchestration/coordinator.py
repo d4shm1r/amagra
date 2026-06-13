@@ -64,8 +64,9 @@ _PROXY_PERF_CONFLICT    = 0.55   # brain overrode router → lower quality assum
 # on phi4-mini responses importing unavailable libraries.
 _CRITIC_GATE_THRESHOLD = 0.65
 
-_GATE_DB_PATH     = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs", "gate.db")
-_DECISIONS_DB     = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs", "decisions.db")
+from infrastructure.db import path as _dbpath
+_GATE_DB_PATH     = _dbpath("gate")
+_DECISIONS_DB     = _dbpath("decisions")
 _DT_CONF_THRESHOLD = 0.52   # dual-trajectory forced when agent avg_confidence drops below this
 _GATE_DB_INITED = False
 

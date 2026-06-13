@@ -44,7 +44,8 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-_DECISIONS_DB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs", "decisions.db")
+from infrastructure.db import path as _dbpath
+_DECISIONS_DB = _dbpath("decisions")
 
 # Quality gap threshold for a verdict to be non-trivial
 _VERDICT_THRESHOLD = 0.05

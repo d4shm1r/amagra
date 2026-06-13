@@ -22,7 +22,8 @@ def get_failure_analysis(limit: int = 500, save: bool = False):
 
 @router.get("/policy/health")
 def get_policy_health(limit: int = 200):
-    gate_path = os.path.join(_ROOT, "logs", "gate.db")
+    from infrastructure.db import path as _dbpath
+    gate_path = _dbpath("gate")
     if not os.path.exists(gate_path):
         return {"total": 0, "no_data": True}
 

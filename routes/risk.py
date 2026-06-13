@@ -1,8 +1,5 @@
-import os
 import sqlite3
 from fastapi import APIRouter, HTTPException
-
-from .deps import _ROOT
 
 router = APIRouter()
 
@@ -19,7 +16,8 @@ def risk_stats_endpoint(n: int = 200):
 @router.get("/risk/history")
 def risk_history(n: int = 100):
     try:
-        db = os.path.join(_ROOT, "logs", "risk_gate.db")
+        from infrastructure.db import path as _dbpath
+        db = _dbpath("risk_gate")
         con = sqlite3.connect(db, timeout=3)
         rows = con.execute(
             "SELECT id, action, agent, complexity, total_risk, reflect_level, reflect_type "

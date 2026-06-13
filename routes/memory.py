@@ -27,7 +27,8 @@ def get_memory():
 @router.get("/memory/records")
 def get_memory_records(limit: int = 300, agent: str = "", mem_type: str = ""):
     try:
-        DB = os.path.join(_ROOT, "memory", "agent_memory.db")
+        from infrastructure.db import path as _dbpath
+        DB = _dbpath("memory")
         conn = sqlite3.connect(DB, timeout=10)
         q = "SELECT id, timestamp, agent_name, mem_type, content, quality, use_count FROM memories"
         clauses, params = [], []

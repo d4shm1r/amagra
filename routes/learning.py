@@ -1,6 +1,8 @@
 import sqlite3
 from fastapi import APIRouter
 
+from infrastructure.db import path as _dbpath
+
 router = APIRouter()
 
 
@@ -83,7 +85,7 @@ def replay_decision(decision_id: int):
 
 @router.get("/traces")
 def get_traces(limit: int = 50):
-    conn = sqlite3.connect("logs/traces.db")
+    conn = sqlite3.connect(_dbpath("traces"))
     conn.execute("""CREATE TABLE IF NOT EXISTS traces (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         timestamp TEXT, agent TEXT, user_message TEXT,

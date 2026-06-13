@@ -36,7 +36,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from training.auto_train import PROMPTS
 from orchestration.query_normalizer import normalize, DOMAIN_TO_AGENT, detect_domain
 
-_ARENA_DB  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "arena.db")
+from infrastructure.db import path as _dbpath
+_ARENA_DB  = _dbpath("arena")
 _LOGS_DIR  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
 
 # Estimated latency per strategy (ms) — based on RTX 2050 / phi4-mini benchmarks
