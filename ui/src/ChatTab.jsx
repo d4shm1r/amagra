@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AGENTS, PROGRESS_STEPS, AGENT_ID_REVERSE } from "./constants";
 import AgentContextPanel from "./AgentContextPanel";
-import { T } from "./theme";
+import { T, FONT_DISPLAY } from "./theme";
 
 const STARTER_PROMPTS = [
   { icon: "⊃", text: "My Wi-Fi keeps dropping — help me diagnose it" },
@@ -527,7 +527,8 @@ export default function ChatTab({
 
                 {/* Gold AMAGRA logo */}
                 <div style={{
-                  fontSize: 38, fontWeight: 900, letterSpacing: "0.12em",
+                  fontSize: 44, fontWeight: 600, letterSpacing: "0.06em",
+                  fontFamily: FONT_DISPLAY,
                   background: "linear-gradient(135deg, #6C4C00 0%, #9A6C00 18%, #C48808 36%, #DEB838 52%, #C48808 68%, #9A6C00 84%, #6C4C00 100%)",
                   WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                   backgroundClip: "text", marginBottom: 14, lineHeight: 1,

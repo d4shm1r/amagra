@@ -4,82 +4,56 @@
 
 ---
 
-## Version History
+## v1.0.0 — First Public Release
 
-### v0.9.1 — Security Hardening
+The public debut. Everything below shipped in 1.0.0 — the development phases that led here (v0.1 → v0.10 internal builds) are preserved as the in-app build log, but **1.0.0 is the first version released to the public.**
 
-| Item | Detail |
-|------|--------|
-| Auth deny-by-default | Replaced `_PROTECTED_PREFIXES` whitelist with `_PUBLIC_PATHS` allowlist. All ~40 routes gated when `REQUIRE_AUTH=1`. |
-| Admin proxy fix | Removed `host == 127.0.0.1` bypass that broke behind nginx/Caddy. `ADMIN_TOKEN` env var required; 503 when unset. |
-| CORS locked | `ALLOWED_ORIGINS` env var, defaults to `localhost:3000,localhost:8000`. No wildcard. |
-| Rate limiting | Sliding window per key: free 10/min · developer 60/min · team 300/min · enterprise unlimited. `X-RateLimit-*` headers. |
-| CI/CD | GitHub Actions: ruff lint + pytest + Docker build on push and PR. |
-| Streaming shipped | `ChatTab.jsx` wired to `POST /ask/stream`; tokens render as they arrive. |
-
-### v0.9.2 — Async, Concurrency & UI Consolidation
+### Runtime & routing
 
 | Item | Detail |
 |------|--------|
-| Async `/ask` | `coordinator.invoke` wrapped in `asyncio.run_in_executor`; event loop no longer blocks during LLM calls. |
-| WAL mode | `PRAGMA journal_mode=WAL` on all SQLite DBs at startup. Eliminates "database is locked". |
-| Tenant scoping | `ContextVar[int]` propagates `owner_key_id` through the full call chain. Memory search and save are tenant-isolated. |
-| UI consolidation | 29-tab sidebar → 4 surfaces: Chat · Memory · Inspect · Settings. `SubNav` horizontal strip. |
+| Signal-first routing | `QuerySignal` classifies most queries in ~1 ms without an LLM call; escalates to `CoreBrain` reasoning only when genuinely ambiguous. |
+| 10 domain agents | Python, .NET, Web, DevOps, Data, AI/ML, IT Networking, Writer, Knowledge, Terse — each domain-tuned with per-agent memory. |
+| Skill graph | 21-node phrase-weighted disambiguation layer resolves edge-case routing overlaps. |
+| Critic gate + step verifier | Per-response scoring (≥ 0.70 or regenerate) and per-step pass/fail feeding the coordinator. |
 
-### v0.9.3 — Memory Surface, Multi-provider & Brand
+### Memory & observability
 
 | Item | Detail |
 |------|--------|
+| Persistent semantic memory | SQLite → auto-promote to FAISS at 800 entries → cosine search → outcome-weighted scoring → 52× LRU cache (< 1 ms warm). |
 | Memory surfaced inline | Top 2 memories auto-show as "◈ Remembered · [snippet]" below each response. |
-| Emoji → unicode | Emoji removed from constants/UI; replaced with coherent unicode: ◈ λ ⊹ ∑ ¶ ∴ ⊃ § ⊓ ⬡ ⚙ ▸. |
-| Multi-provider | `AskRequest` gains `provider` field; `AnthropicProvider.generate()` available alongside Ollama. `AskResponse` gains `model_used`. |
+| RAG file context | `POST /documents/upload` (PDF, Markdown, code, text up to 10 MB); chunks embedded into the memory layer; top-k injected into `/ask` and `/ask/stream`. |
+| Cognitive OS | `event_bus`, `world_model`, `cognitive_state`, `metrics_engine`, `skill_graph`, `suggestion_engine` — all browsable in real time. |
+| Conversation threading | Each thread carries the last 4 turns; rolling context window; routing telemetry via `GET /telemetry/routing`. |
 
-### v0.9.4 — Brand Identity & Luxury UI
-
-| Item | Detail |
-|------|--------|
-| Brand color | VS Code Blue `#007ACC` → Amagra sky-blue `#0EA5E9` across all design tokens. |
-| Design tokens | `theme.js` is the single source for colors, fonts, spacing, radius. |
-| Routing animation | `RoutingStrip` in stream: "◈ analyzing…" → "◈ [domain] → [agent]". Collapses on first token. |
-| Feedback closure | After 👍/👎: "◈ Got it — routing adjusted" fades out over 3.5s. |
-| Typography | `JetBrains Mono` top of monospace stack. Body darkened to `#191919`. |
-
-### v0.10.1 — RAG File Context ✅
+### Platform & hardening
 
 | Item | Detail |
 |------|--------|
-| File upload | `POST /documents/upload` — PDF, Markdown, code, plain text up to 10 MB. |
-| Inline chunker | Paragraph-boundary splitter with 800c/100c overlap. No langchain dependency. |
-| Context injection | `context_files` field on `AskRequest`; top-k chunks prepended to both `/ask` and `/ask/stream`. |
-| UI | File chips with upload/ready/error states; ⊕ attach button in ChatTab. |
+| Auth deny-by-default | `_PUBLIC_PATHS` allowlist gates all ~40 routes when `REQUIRE_AUTH=1`. `ADMIN_TOKEN` required for admin surface. |
+| CORS + rate limiting | `ALLOWED_ORIGINS` (no wildcard); sliding-window per-key limits with `X-RateLimit-*` headers. |
+| Async + WAL | `/ask` runs in an executor; `PRAGMA journal_mode=WAL` on all SQLite DBs; tenant scoping via `ContextVar[int]`. |
+| Streaming | `POST /ask/stream` SSE; tokens render as they arrive (live from Claude when `ANTHROPIC_API_KEY` is set). |
+| Multi-provider path | `AskRequest.provider`; `AnthropicProvider.generate()` alongside Ollama; `AskResponse.model_used`. |
+| Commercialization | API-key auth, free tier (`POST /register/free`), Stripe Checkout + webhook key provisioning, SendGrid delivery. |
+| Brand & UI | Sky-blue `#0EA5E9` design tokens in `theme.js`; 4-surface nav (Chat · Memory · Inspect · Settings); RoutingStrip animation; JetBrains Mono. |
+| CI/CD | GitHub Actions: ruff lint + pytest + Docker build on push and PR. |
 
 ---
 
-## Current State
+## Post-1.0 Roadmap
 
-**v0.10 remaining items:**
+### v1.0.1 — Launch Polish & Hardening
 
-| Item | Status |
-|------|--------|
-| Tests to ~60% coverage | In progress (544 passing across 39 files, routes/ + core/ + cognition/ + payment path) |
-| In-product onboarding | Pending |
-| DB consolidation (Alembic, single file) | Deferred — WAL + tenant isolation bought the concurrency win; Alembic adds risk |
-| Vite migration (retire CRA) | Pending |
-| Launch (Show HN, Docker Hub, Homebrew) | Pending |
-
----
-
-## Future Roadmap
-
-### v0.10 — Content, Tests & Launch
-
-**Remaining high-priority items:**
+Deferred pre-launch items, now post-debut maintenance — none blocks the 1.0.0 release.
 
 | Item | Impact | Difficulty | ROI |
 |------|--------|-----------|-----|
 | Tests: routes/ + core/ + payment path to ~60% | 8 | 5 | ★★★★ |
 | In-product onboarding: first-run flow, model pull detection | 8 | 4 | ★★★★ |
 | Vite migration — retire CRA (dead/unmaintained) | 6 | 3 | ★★★★ |
+| DB consolidation — single `amagra.db`, versioned migrations | 6 | 6 | ★★★ |
 | Launch: Show HN + r/LocalLLaMA + Docker Hub + Homebrew | 9 | 3 | ★★★★★ |
 
 **Onboarding detail:**
@@ -96,7 +70,7 @@
 
 ---
 
-### v0.11 — Tool-Using Agents
+### v1.1 — Tool-Using Agents
 
 Agents that do things, not just say things. Closes the gap vs Continue/Cursor/Claude Code.
 
@@ -104,7 +78,7 @@ Agents that do things, not just say things. Closes the gap vs Continue/Cursor/Cl
 |------|--------|-----------|-----|
 | Sandboxed code execution | 10 | 8 | ★★★★ |
 | Live web search (Brave/SearXNG/Tavily) | 9 | 4 | ★★★★★ |
-| Shell/terminal tool for DevOps agent | 8 | 5 | ★★★★ |
+| Jailed file/folder tool (`Path.resolve().is_relative_to(root)`) | 8 | 5 | ★★★★ |
 | Stop / regenerate / edit-message affordances | 7 | 3 | ★★★★★ |
 | Thread management: rename, fork, archive | 6 | 2 | ★★★★ |
 | Memory import/export (JSON/Markdown) | 8 | 3 | ★★★★★ |
@@ -113,35 +87,53 @@ Agents that do things, not just say things. Closes the gap vs Continue/Cursor/Cl
 
 ---
 
-### v1.0 — Team Memory & Workspaces
+### v1.2 — Multi-Provider & Workspaces
 
-The moment two users share a memory is the moment you have a moat no chat UI can copy.
+Break the single-model ceiling and give each project its own isolated space.
+
+| Item | Impact | Difficulty | ROI |
+|------|--------|-----------|-----|
+| Provider abstraction — Claude / GPT / Gemini / vLLM / LM Studio | 9 | 6 | ★★★★ |
+| Hybrid inference — escalate compound/low-confidence queries to cloud | 8 | 5 | ★★★★ |
+| Custom agent builder — name, system prompt, keywords via admin UI | 8 | 4 | ★★★★ |
+| Workspaces — multiple isolated projects per user | 8 | 5 | ★★★★ |
+| RBAC — owner / admin / member roles | 8 | 5 | ★★★★ |
+
+**Provider swap happens below the coordinator** — routing, memory, and telemetry are unaffected. Local stays default; cloud escalates only for hard tasks.
+
+---
+
+### v1.3 — Team Memory & Enterprise Governance
+
+The moment two users share a memory is the moment you have a moat no chat UI can copy. The governance angle is category-defining: "Every AI decision in your org — logged, explainable, replayable, on-prem."
 
 | Item | Impact | Difficulty | ROI |
 |------|--------|-----------|-----|
 | Team memory — shared FAISS index, per-workspace | 10 | 7 | ★★★★★ |
-| Workspaces — multiple isolated projects per user | 8 | 5 | ★★★★ |
-| RBAC — owner / admin / member roles | 8 | 5 | ★★★★ |
 | Admin console — user management, key provisioning | 7 | 5 | ★★★★ |
 | Encrypted memory sync/backup — cross-machine for Pro | 8 | 6 | ★★★★ |
 | Weekly "your AI got smarter" digest email | 7 | 2 | ★★★★★ |
-| Agent SDK — community agents publishable and installable | 9 | 7 | ★★★★ |
+| SSO/SAML integration | 9 | 6 | ★★★★ |
+| Audit log export (CSV, JSON, PDF) + CoA trail | 9 | 4 | ★★★★★ |
+| Data retention policies — configurable TTL per workspace | 8 | 4 | ★★★★ |
+| Air-gapped installer | 8 | 5 | ★★★★ |
 
-**Team memory:** every useful exchange any team member has is available to all agents. Org knowledge that compounds — switching cost no competitor can clone. Natural seat expansion: more users → smarter shared brain → more lock-in.
+**Team memory:** every useful exchange any team member has is available to all agents. Org knowledge that compounds — a switching cost no competitor can clone.
 
 ---
 
-### v1.x — Enterprise Governance
+### v2.0 — Agent Registry & Marketplace
 
-The governance angle is the category-defining move: "Every AI decision in your org — logged, explainable, replayable, on-prem." EU AI Act and corporate AI policies are creating budget for exactly this.
+Agents become portable artifacts; the runtime stays the product.
 
 | Item | Impact | Difficulty | ROI |
 |------|--------|-----------|-----|
-| SSO/SAML integration | 9 | 6 | ★★★★ |
-| Audit log export (CSV, JSON, PDF) | 9 | 4 | ★★★★★ |
-| Data retention policies — configurable TTL per workspace | 8 | 4 | ★★★★ |
-| Compliance reporting — decision trail as AI accountability artifact | 9 | 6 | ★★★★ |
-| Air-gapped installer | 8 | 5 | ★★★★ |
+| Agent SDK — manifest-declared community agents | 9 | 7 | ★★★★ |
+| Importable agent packs — export/import as YAML or ZIP | 8 | 4 | ★★★★ |
+| Curated registry — Official / Verified community / Local tiers | 8 | 6 | ★★★ |
+| Standalone environment — execution graph as the interface | 8 | 8 | ★★★ |
+
+Registered agents automatically participate in routing, telemetry, memory retrieval, critic gate, and step verification — capabilities become extensible without compromising runtime quality.
 
 ---
 
@@ -262,6 +254,5 @@ Ranked by expected ROI for a self-hosted developer tool:
 |------|-----|
 | GRAM / Stochastic Multi-Trajectory | Needs frontier-class model to show value |
 | RCP/FMI licensing | No buyer until peer-reviewed and cited |
-| DB consolidation (Alembic) | WAL + tenant isolation bought the immediate win; schedule after data-export step |
 | AlphaProof-style R&D | phi4-mini cannot resolve research-level math |
 | Full Lean 4 integration | Cost far exceeds revenue unlock at this scale |

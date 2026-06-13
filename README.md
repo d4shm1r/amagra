@@ -1,6 +1,8 @@
 # Amagra
 
-**Self-hosted AI that remembers your work, explains every decision, and runs entirely on your hardware.**
+### The AI you can trust with long-term work.
+
+It remembers what you've done, explains every decision, and runs entirely on your hardware.
 
 ![Chat](docs/screenshots/chat.png)
 
@@ -13,16 +15,18 @@
 
 ## What you get
 
-- **Full observability** — every routing decision, memory retrieval, and reflection is browsable in the UI; nothing is a black box
-- **Persistent semantic memory** — FAISS vector search across sessions, 52× LRU cache speedup; the system remembers context you'd otherwise re-explain
-- **Sub-second routing** — signal-first heuristics classify most queries in ~1 ms without an LLM call, then escalate to reasoning only when genuinely ambiguous
-- **10 domain-tuned agents**: Python, .NET, Web, DevOps, Data, AI/ML, IT Networking, Writer, Knowledge, Terse
-- **Conversation threading** — each thread carries the last 4 turns of context; switch projects without re-explaining yourself
-- **Free to self-host** — MIT licensed, Docker + Ollama, runs on consumer CPU or GPU, nothing leaves your machine
+- **Nothing is hidden** — every answer can be inspected, replayed, and understood. No black box.
+- **It remembers your work** — context carries across sessions, so you stop re-explaining yourself.
+- **Fast when the answer is obvious, careful when it isn't** — simple questions return at once; hard ones get more thought.
+- **Specialists handle the work they understand best** — the right expert answers each question, automatically.
+- **Pick up where you left off** — every conversation keeps its context; switch projects without losing your place.
+- **Yours to run** — MIT licensed, self-hosted on your own machine. Nothing leaves your hardware.
 
 ---
 
-## Metrics
+## Under the hood
+
+The experience is the point. The numbers are here if you want them.
 
 | Metric | Value | Notes |
 |---|---|---|
@@ -234,25 +238,25 @@ Rate limits are returned on every authenticated response as `X-RateLimit-Limit`,
 
 - **Streaming available** — use `POST /ask/stream` for SSE streaming responses. When `ANTHROPIC_API_KEY` is set, tokens stream directly from Claude; without it, the response arrives as a single chunk. The default `POST /ask` remains non-streaming.
 - **No tool use** — agents produce text only. File access, sandboxed code execution, and web search are committed for `v1.1`.
-- **Default inference** — Ollama (local). Cloud provider support (Anthropic, OpenAI, Gemini) via the multi-provider `/ask` path is available; full provider-abstraction UI is committed for `v1.0`.
-- **SQLite sprawl** — internal data is split across multiple SQLite files. Cross-DB atomicity is not guaranteed. Consolidation into a single `amagra.db` is planned for `v0.10`.
+- **Default inference** — Ollama (local). Cloud provider support (Anthropic, OpenAI, Gemini) via the multi-provider `/ask` path is available; full provider-abstraction UI is committed for `v1.2`.
+- **SQLite sprawl** — internal data is split across multiple SQLite files. Cross-DB atomicity is not guaranteed. Consolidation into a single `amagra.db` is planned for `v1.0.1`.
 - **Benchmark independence** — routing accuracy is measured on a curated eval set, not production data. See [Routing in practice](#routing-in-practice) for the raw numbers and known failure modes. Independent production telemetry is tracked via `GET /telemetry/routing`.
 
 ---
 
 ## Roadmap
 
-Amagra is evolving toward a provider-agnostic runtime where models, embeddings, and agents can be added without changing the core memory, routing, or observability systems. Commitments are published in the app under **Promises** — explicit delivery targets, not a wishlist.
+**v1.0.0 is the first public release.** From here, Amagra evolves toward a provider-agnostic runtime where models, embeddings, and agents can be added without changing the core memory, routing, or observability systems. Commitments are published in the app under **Promises** — explicit delivery targets, not a wishlist. The full plan lives in [docs/ROADMAP.md](docs/ROADMAP.md).
 
-### Phase 1 — Provider abstraction · v0.9.3 · Q3 2026
+### v1.0.1 — Launch polish · Q3 2026
 
-Introduce internal provider interfaces (`ModelProvider`, `EmbeddingProvider`) so the runtime is not coupled to Ollama.
+Post-debut hardening: tests to ~60% coverage, in-product onboarding (Ollama detection, model-pull progress, guided first prompt), Vite migration to retire CRA, single consolidated `amagra.db`, and public launch (Show HN, r/LocalLLaMA, Docker Hub, Homebrew).
 
-Ollama becomes the first adapter. This phase is intentionally infrastructure-only — no new UI yet. Goal: stable abstraction boundaries before adding model backends.
+### v1.1 — Tool-using agents · Q3 2026
 
-Also in this phase: single consolidated `amagra.db`, independent production telemetry. SSE streaming shipped early via `POST /ask/stream`.
+Agents gain real capabilities, not just text: jailed file/folder access, sandboxed code execution, and live web search. Plus stop/regenerate/edit affordances, thread management (rename, fork, archive), and memory import/export.
 
-### Phase 2 — Multi-provider models · v1.0 · Q3 2026
+### v1.2 — Multi-provider models & workspaces · Q4 2026
 
 Add support for additional inference backends:
 
@@ -264,15 +268,13 @@ Add support for additional inference backends:
 | Gemini | Cloud inference |
 | OpenAI-compatible endpoints | Self-hosted models (vLLM, LM Studio, etc.) |
 
-Users select inference model per workspace. Routing, memory, and telemetry are unaffected — the provider swap happens below the coordinator.
+Users select inference model per workspace. Routing, memory, and telemetry are unaffected — the provider swap happens below the coordinator. Also: workspaces (isolated projects per user), RBAC, and a custom agent builder (name, system prompt, keywords via admin UI — no code deploy).
 
-Also in this phase: file and folder context, sandboxed code execution, live web search.
+### v1.3 — Team memory & governance · Q1 2027
 
-### Phase 3 — Agent configuration · v1.1 · Q3 2026
+Shared team memory (per-workspace FAISS index), admin console, encrypted cross-machine sync, SSO/SAML, audit-log export, configurable retention, and an air-gapped installer.
 
-Allow users to enable/disable agents per workspace and adjust routing preferences. Custom workspace agent sets. Routing continues through QuerySignal and coordinator telemetry.
-
-### Phase 4 — Agent SDK · v1.2 · Q4 2026
+### v2.0 — Agent registry & SDK · 2027
 
 A supported interface for building custom agents. Agents declare a manifest:
 
@@ -288,15 +290,7 @@ confidence_threshold: 0.75
 capabilities: [memory, coding]
 ```
 
-The runtime automatically incorporates registered agents into routing, telemetry, and observability. Custom agents get memory, critic gate, and step verification for free.
-
-### Phase 5 — Importable agent packs · v1.3 · Q1 2027
-
-Agents as portable artifacts. Export, import, and share agent packs as YAML or ZIP. All imported agents participate in memory retrieval, routing telemetry, and execution tracing.
-
-### Phase 6 — Registry · v2.0 · 2027
-
-A curated registry of official and community agents, tiered by trust:
+The runtime automatically incorporates registered agents into routing, telemetry, and observability — custom agents get memory, critic gate, and step verification for free. Agents become portable artifacts (export/import as YAML or ZIP), served from a curated registry tiered by trust:
 
 | Tier | Description |
 |---|---|

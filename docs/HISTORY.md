@@ -1,6 +1,6 @@
 # Amagra — Build History
 
-Phase-by-phase record of what was built and why. Four eras: 37 build phases, then semver releases through v0.10.1.
+Phase-by-phase record of what was built and why. Four eras: 37 build phases, then the internal releases that led to the v1.0.0 public debut. Preserved as the in-app build log.
 
 ---
 
@@ -287,7 +287,7 @@ Action pattern coverage extended: `action=unknown` rate → 0%.
 - World-model planner, rate-limit headers (`X-RateLimit-*`), `/register/free` self-serve endpoint
 - 21 skills in skill graph (up from 18)
 
-## Era 4: Productization (v0.9.1 → v0.10.1)
+## Era 4: Productization → v1.0.0 (v0.9.1 → first public release)
 
 Post-phase work tracked by semver release rather than phase number. See `docs/ROADMAP.md` for the full per-release changelog.
 
@@ -309,7 +309,7 @@ Post-phase work tracked by semver release rather than phase number. See `docs/RO
 
 | Metric | Value |
 |--------|-------|
-| Version | v0.10.1 |
+| Version | v1.0.0 (first public release) |
 | Routing accuracy | 97% full · 99% signal-only |
 | Specialist agents | 10 (registry-canonical) |
 | FAISS vectors | 628+ at 0.38ms P50 |

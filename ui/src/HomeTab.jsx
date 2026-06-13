@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { T } from "./theme";
+import { T, LUX, FONT_DISPLAY } from "./theme";
 import { BUILD_PHASES, ROADMAP } from "./constants";
 
 // ── Feature pillars ─────────────────────────────────────────────
@@ -7,44 +7,44 @@ const FEATURES = [
   {
     sym: "⊕",
     color: "#C48808",
-    title: "Signal-First Routing",
-    body: "Classifies every query by domain, shape, and verbosity before reaching the LLM — routing happens in under 1ms. Verified at 99% accuracy via ablation eval against 3,400+ test cases.",
-    pills: ["99% accuracy", "<1ms routing", "Ablation-verified"],
+    title: "Fast when it's obvious, careful when it isn't",
+    body: "Simple questions are answered at once. Harder ones get more thought — the system decides how much effort each query deserves, on its own.",
+    pills: ["Instant on the simple", "Deeper on the hard", "Always private"],
   },
   {
     sym: "⬡",
     color: "#1E5A8A",
-    title: "10 Specialist Agents",
-    body: "Python Dev, .NET/Blazor Dev, IT Networking, AI/ML, Web Dev, DevOps, Data Analyst, Writer, Knowledge Learning, and Terse — each domain-tuned with per-agent memory and tooling via LangGraph.",
-    pills: ["LangGraph", "Domain-tuned", "Per-agent memory"],
+    title: "Specialists, not a generalist",
+    body: "The right expert handles each question — code, infrastructure, data, writing, and more — each carrying its own memory of your work.",
+    pills: ["The right expert, every time", "Knows your context", "Automatic"],
   },
   {
     sym: "⊞",
     color: "#047857",
-    title: "Semantic Memory",
-    body: "FAISS vector index with nomic-embed-text embeddings. LRU cache delivers 52× retrieval speedup. Automatic dedup (cosine > 0.93) keeps vectors clean. Outcome-weighted quality scoring.",
-    pills: ["FAISS vectors", "52× LRU speedup", "Outcome-weighted"],
+    title: "It remembers your work",
+    body: "Context carries across sessions, so you stop re-explaining yourself. The more you use it, the better it recalls what matters.",
+    pills: ["Across sessions", "Instant recall", "Gets sharper over time"],
   },
   {
     sym: "◷",
     color: "#BE185D",
-    title: "Reflection & Learning",
-    body: "C1-smooth learning kernel with sigmoid adaptive alpha. Triaged reflection dropped the full-reflection rate from 58% to 15%. Dual-trajectory eval for code agents picks the better of two candidates.",
-    pills: ["58%→15% full-reflect", "C1-smooth kernel", "Dual-trajectory"],
+    title: "Reviews its work before answering",
+    body: "Before it responds, it checks its own reasoning — and learns from what worked. Quietly, in the background, with no tuning from you.",
+    pills: ["Self-checks", "Learns from outcomes", "No tuning needed"],
   },
   {
     sym: "Ψ",
     color: "#6D28D9",
-    title: "Cognitive OS",
-    body: "Event bus, world model, metrics engine, and cognitive state layer provide a full observability stack. UCI dashboard tracks 4-layer intelligence: Reliability, Intelligence, Adaptation, Productivity.",
-    pills: ["Event bus", "UCI dashboard", "Decision replay"],
+    title: "Nothing is hidden",
+    body: "Every answer can be inspected, replayed, and understood. See exactly why the system did what it did — never a black box.",
+    pills: ["Inspect any answer", "Replay decisions", "Full transparency"],
   },
   {
     sym: "◎",
     color: "#B45309",
-    title: "Open Core",
-    body: "Full source MIT-licensed and self-hostable via Docker. Managed hosting, enterprise CoA audit trail, and domain agent packs are paid tiers. Privacy is verifiable — runs 100% locally.",
-    pills: ["MIT licensed", "Self-hostable", "100% local"],
+    title: "Yours to run",
+    body: "Full source, MIT-licensed, self-hosted in one command. Runs entirely on your hardware — privacy you can verify, not just trust.",
+    pills: ["MIT licensed", "Self-hosted", "100% local"],
   },
 ];
 
@@ -120,8 +120,9 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
             {/* Title row */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
               <h1 style={{
-                margin: 0, fontSize: 28, fontWeight: 900,
-                color: "#C4880A", letterSpacing: "0.06em", lineHeight: 1.05,
+                margin: 0, fontSize: 34, fontWeight: 600,
+                fontFamily: FONT_DISPLAY, letterSpacing: "0.06em", lineHeight: 1.05,
+                ...LUX.goldText,
               }}>AMAGRA</h1>
               <span style={{ fontSize: 13, fontWeight: 400, color: T.muted, marginTop: 2 }}>
                 — local agentic AI

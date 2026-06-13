@@ -515,39 +515,39 @@ export const ROADMAP = [
     ],
   },
   {
-    id: 61, version: "v0.10", title: "Content, Tests & Launch", color: "#0F766E", status: "next", priority: "high",
-    summary: "Remaining v0.10 items: 60% test coverage, in-product onboarding, DB consolidation, Vite migration, public launch.",
+    id: 61, version: "v1.0.1", title: "Launch Polish & Hardening", color: "#0F766E", status: "next", priority: "high",
+    summary: "Post-1.0.0 maintenance — deferred pre-launch items, none of which blocked the first public release: 60% test coverage, in-product onboarding, DB consolidation, Vite migration, public launch.",
     items: [
       "Tests to ~60% coverage on routes/ + core/ + payment path",
       "In-product onboarding — first-run flow, model pull detection, guided first prompt",
-      "DB consolidation — Alembic migrations, single amagra.db (retire 17 SQLite sprawl)",
+      "DB consolidation — single amagra.db with versioned migrations (retire SQLite sprawl)",
       "Vite migration — retire CRA (unmaintained, React 19 instability)",
       "Launch prep — Show HN, r/LocalLLaMA, Docker Hub, Unraid/Umbrel template, Homebrew formula",
     ],
   },
   {
-    id: 41, version: "v1.0.0", title: "SSE Streaming + Tool Layer", color: "#0F766E", status: "planned", priority: "high",
-    summary: "First token in ~2s instead of 30s blank screen. Agents gain real capabilities: file access, sandboxed code execution, web search. The biggest quality jump available without swapping the model.",
+    id: 41, version: "v1.1.0", title: "Tool-Using Agents", color: "#0F766E", status: "planned", priority: "high",
+    summary: "Agents gain real capabilities, not just text: jailed file access, sandboxed code execution, and live web search. The biggest quality jump available without swapping the model. (SSE streaming already shipped in 1.0.0.)",
     items: [
-      "POST /ask/stream — SSE endpoint, routing badge emitted in <100ms, then live token stream (16h)",
-      "ChatTab SSE consumer: ReadableStream consumer, routing badge, streaming token display (10h)",
-      "GPU semaphore: asyncio.Semaphore(1) — no GPU thrashing under concurrent load (2h)",
       "tools/workspace.py — read, list, search with Path.resolve().is_relative_to(root) jail (8h)",
       "tools/sandbox.py — resource.setrlimit CPU/AS, scrubbed env, python3 -I isolation (6h)",
       "tools/web.py — SearxNG self-hosted or Brave Search API (4h)",
       "Structured tool loop in agents: JSON action → execute → append result, max 3 iters (8h)",
       "Tool calls logged → event_bus + tool_calls table (run_id, tool, exit_code, duration) (4h)",
+      "Stop / regenerate / edit-message affordances in ChatTab (3h)",
+      "Thread management: rename, fork, archive (2h)",
+      "Memory import/export — JSON / Markdown round-trip (3h)",
     ],
   },
   {
-    id: 42, version: "v1.1.0", title: "Workspace Tool Layer", color: "#C2410C", status: "planned", priority: "high",
-    summary: "Give agents real capabilities: jailed file access, sandboxed code execution, web search. The single biggest quality jump available without changing the model.",
+    id: 42, version: "v1.2.0", title: "Workspaces & RBAC", color: "#C2410C", status: "planned", priority: "high",
+    summary: "Multiple isolated projects per user, role-based access, and a custom agent builder. Ships alongside provider abstraction in v1.2.",
     items: [
-      "tools/workspace.py — read, list, search with Path.resolve().is_relative_to(root) jail (8h)",
-      "tools/sandbox.py — resource.setrlimit CPU/AS, scrubbed env, python3 -I isolation (6h)",
-      "tools/web.py — SearxNG self-hosted or Brave Search API (4h)",
-      "Structured tool loop in agents: JSON action → execute → append result, max 3 iters (8h)",
-      "Tool calls → event_bus + tool_calls table (run_id, tool, exit code, duration) (4h)",
+      "workspaces table — multiple isolated projects per user, per-workspace memory namespace (8h)",
+      "RBAC — owner / admin / member roles, enforced at the route layer (6h)",
+      "Custom agent builder — name, system prompt, keyword triggers via admin UI, no code deploy (8h)",
+      "Workspace switcher in nav — active-workspace ContextVar threads through routing + memory (4h)",
+      "Per-workspace settings — default provider, enabled agents, routing preferences (4h)",
     ],
   },
   {
@@ -622,7 +622,7 @@ export const ROADMAP = [
     ],
   },
   {
-    id: 39, version: "v1.0.0", title: "Enterprise: CoA + SLA", color: "#15803D", status: "planned", priority: "medium", type: "commercial",
+    id: 39, version: "v1.3.0", title: "Enterprise: CoA + SLA", color: "#15803D", status: "planned", priority: "medium", type: "commercial",
     summary: "Chain-of-Authorization audit trail, SOC2 self-assessment, MSA template. First enterprise contract at $1,500+/month.",
     items: [
       "Chain-of-Authorization (CoA) — structured auth record on every data-modifying action (who/what/why/ts/decision_id)",
@@ -636,7 +636,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
-  { version: "v1.0", label: "Marketplace",            color: "#15803D",  phases: [] },
+  { version: "v1.0.0", label: "First Public Release", color: "#15803D",  phases: [] },
   { version: "v0.10", label: "Content & Launch",      color: "#C48808",  phases: [60] },
   { version: "v0.9", label: "Commercialization",      color: "#C2410C",  phases: [36, 37, 38, 39, 50, 51, 52, 53] },
   { version: "v0.8", label: "Loop Activation",        color: "#15803D",  phases: [30, 31, 32, 33, 34, 35] },
@@ -805,9 +805,8 @@ export const PROMISES = [
     title: "Streaming Responses",
     description: "First token in under 2 seconds instead of a 30-second wait. Watch the agent think and write in real time.",
     category: "Performance",
-    status: "building",
-    target: "v1.0",
-    target_quarter: "Q3 2026",
+    status: "delivered",
+    delivered_on: "2026-06-12",
     priority: "high",
   },
   {
@@ -896,7 +895,7 @@ export const PROMISES = [
     description: "Every release runs the full eval suite before shipping. Routing accuracy, response quality, and latency benchmarks are published in the release notes.",
     category: "Performance",
     status: "committed",
-    target: "v1.0",
+    target: "v1.1",
     target_quarter: "Q3 2026",
     priority: "high",
   },

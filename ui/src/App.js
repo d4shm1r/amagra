@@ -33,7 +33,7 @@ import { BUILD_PHASES, AGENTS } from "./constants";
 import PromptEditorTab    from "./PromptEditorTab";
 import SkillsTab          from "./SkillsTab";
 import PromisesTab        from "./PromisesTab";
-import { T, LUX, FONT_UI } from "./theme";
+import { T, LUX, FONT_UI, FONT_DISPLAY } from "./theme";
 
 // ── 4-surface navigation ──────────────────────────────────────
 const NAV = [
@@ -861,7 +861,7 @@ export default function App() {
     about: (
       <div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 16 }}>
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#C4880A", letterSpacing: "0.08em" }}>AMAGRA</h2>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, fontFamily: FONT_DISPLAY, letterSpacing: "0.06em", ...LUX.goldText }}>AMAGRA</h2>
           <span style={{
             fontSize: 11, fontWeight: 700, color: T.accent,
             background: `${T.accent}18`, border: `1px solid ${T.accent}44`,

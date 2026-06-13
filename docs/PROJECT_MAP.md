@@ -1,6 +1,6 @@
 # Project Map — Amagra
 
-**Updated:** 2026-06-13 · **Version:** v0.10.1
+**Updated:** 2026-06-13 · **Version:** v1.0.0
 **Mission:** the local-first cognitive runtime developers build agents on top of.
 
 This is the orientation map. Each area links to the canonical document — this file does **not** duplicate their content.
@@ -22,7 +22,7 @@ This is the orientation map. Each area links to the canonical document — this 
 
 | | |
 |---|---|
-| Version | v0.10.1 |
+| Version | v1.0.0 (first public release) |
 | Specialist agents | 10 (`agents/registry.py` is canonical) |
 | Skill graph | 21 nodes |
 | Routing accuracy | 97% full · 99% signal-only (curated eval) |
@@ -69,11 +69,10 @@ Endpoint and UI-tab inventories live in [REFERENCE.md](REFERENCE.md); they are n
 
 | Phase | Name | Status |
 |-------|------|--------|
-| 32–37 | OSS launch → Cognitive Intelligence Layer | ✅ Complete |
-| v0.9.x | Hardening, async, brand | ✅ Complete |
-| v0.10.1 | RAG file context | ✅ Complete |
-| v0.10 | Tests to ~60%, onboarding, Vite, launch | 🔄 In progress |
-| v0.11 | Tool-using agents | ⬜ Planned |
+| Internal builds (v0.1 → v0.10) | Foundation → Cognitive OS → RAG file context | ✅ Complete (in-app build log) |
+| **v1.0.0** | **First public release** | ✅ Shipped |
+| v1.0.1 | Launch polish: tests to ~60%, onboarding, Vite | 🔄 Next |
+| v1.1 | Tool-using agents | ⬜ Planned |
 
 See [ROADMAP.md](ROADMAP.md) for the full forward plan and [HISTORY.md](HISTORY.md) for the per-phase record.
 

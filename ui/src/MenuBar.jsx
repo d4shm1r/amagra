@@ -138,18 +138,19 @@ export default function MenuBar({ onNav, onAction, onModal }) {
 
   return (
     <div ref={ref} style={{
-      height: 34,
-      background: T.menuBg,
-      backdropFilter: "blur(24px) saturate(1.3)",
-      WebkitBackdropFilter: "blur(24px) saturate(1.3)",
-      borderBottom: "1px solid rgba(199, 154, 67, 0.22)",
-      boxShadow: "0 2px 12px rgba(72, 52, 28, 0.06)",
+      height: 52,
+      background: "rgba(240, 235, 226, 0.86)",
+      backdropFilter: "blur(32px) saturate(1.4)",
+      WebkitBackdropFilter: "blur(32px) saturate(1.4)",
+      borderBottom: "none",
+      boxShadow: "0 1px 0 rgba(199, 154, 67, 0.18), 0 4px 20px rgba(72, 52, 28, 0.07)",
       display: "flex",
       alignItems: "stretch",
       flexShrink: 0,
       userSelect: "none",
       zIndex: 1000,
       position: "relative",
+      padding: "0 10px",
     }}>
       <style>{`
         .menu-item-btn:hover { background: rgba(196,136,8,0.12) !important; color: #2E2010 !important; }
@@ -184,7 +185,7 @@ export default function MenuBar({ onNav, onAction, onModal }) {
           animation: "dotPulse 4s ease-in-out infinite",
         }} />
         <span style={{
-          fontSize: 15, fontWeight: 700, letterSpacing: "0.12em", whiteSpace: "nowrap",
+          fontSize: 19, fontWeight: 600, letterSpacing: "0.10em", whiteSpace: "nowrap",
           fontFamily: FONT_DISPLAY,
           background: `linear-gradient(135deg, ${GOLD.g5} 0%, ${GOLD.g4} 18%, ${GOLD.g3} 36%, ${GOLD.g2} 52%, ${GOLD.g3} 68%, ${GOLD.g4} 84%, ${GOLD.g5} 100%)`,
           WebkitBackgroundClip: "text",
@@ -203,21 +204,20 @@ export default function MenuBar({ onNav, onAction, onModal }) {
             onMouseLeave={() => setHoveredTop(null)}
             style={{
               height: "100%",
-              padding: "0 10px",
-              background: open === menu.label
-                ? T.selection
-                : hoveredTop === menu.label
-                  ? LUX.hover
-                  : "transparent",
+              padding: "0 14px",
+              background: open === menu.label ? T.selection : "transparent",
               border: "none",
-              color: T.text,
+              color: (open === menu.label || hoveredTop === menu.label) ? "#6C4C00" : T.text,
               cursor: "pointer",
-              fontSize: 12,
+              fontSize: 13,
+              fontWeight: 500,
+              letterSpacing: "-0.01em",
               fontFamily: "inherit",
               outline: "none",
               display: "flex",
               alignItems: "center",
               whiteSpace: "nowrap",
+              transition: "color 160ms ease, background 160ms ease",
             }}
           >
             {menu.label}

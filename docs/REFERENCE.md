@@ -2,7 +2,7 @@
 
 A locally-running cognitive AI platform built on phi4-mini (3.8B) and LangGraph. Natural language queries are classified by a deterministic signal engine, routed to a specialist agent, executed with persistent semantic memory, and governed by a Cognitive OS that tracks world state, health scores, and execution plans. Everything runs on an RTX 2050 — no cloud dependency.
 
-**Version:** v0.10.1  
+**Version:** v1.0.0  
 **Stack:** phi4-mini · Ollama · LangGraph · FastAPI · React · FAISS · SQLite · nomic-embed-text · Stripe · SendGrid
 
 ---
@@ -264,7 +264,7 @@ Current: **h_UCI ≈ 80.8**
 | Session | Agent overrides, forced-agent mode |
 | Settings | Theme, keyboard shortcuts, REQUIRE_AUTH status |
 | Version History | BUILD_PHASES timeline |
-| Progress | v0.10 remaining items, feedback loop analytics |
+| Progress | post-1.0 polish items, feedback loop analytics |
 
 ---
 
