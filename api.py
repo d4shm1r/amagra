@@ -24,7 +24,7 @@ _REQUIRE_AUTH = os.environ.get("REQUIRE_AUTH", "0") == "1"
 _ADMIN_TOKEN  = os.environ.get("ADMIN_TOKEN", "")
 
 # Deny-by-default: only these paths bypass the customer key gate
-_PUBLIC_PATHS    = {"/", "/health", "/usage", "/openapi.json", "/pricing", "/register/free"}
+_PUBLIC_PATHS    = {"/", "/health", "/usage", "/openapi.json", "/pricing", "/register/free", "/setup/status", "/setup/pull"}
 _PUBLIC_PREFIXES = ("/docs", "/redoc")  # FastAPI UI and Amagra docs sub-paths
 
 # Per-minute request caps per tier (0 = unlimited)
@@ -85,7 +85,8 @@ async def lifespan(app: FastAPI):
         print(f"[startup] memory migration warning: {e}")
 
     try:
-        conn = sqlite3.connect("tasks.db")
+        from infrastructure.db import path as _dbpath
+        conn = sqlite3.connect(_dbpath("tasks"))
         pending = conn.execute(
             "SELECT COUNT(*) FROM tasks WHERE status='pending'"
         ).fetchone()[0]
@@ -219,6 +220,7 @@ from routes.snapshots   import router as snapshots_router
 from routes.docs_api    import router as docs_router
 from routes.admin       import router as admin_router
 from routes.documents   import router as documents_router
+from routes.setup       import router as setup_router
 
 app.include_router(core_router)
 app.include_router(register_router)
@@ -235,3 +237,4 @@ app.include_router(snapshots_router)
 app.include_router(docs_router)
 app.include_router(admin_router)
 app.include_router(documents_router)
+app.include_router(setup_router)

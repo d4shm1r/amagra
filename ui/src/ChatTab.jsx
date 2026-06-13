@@ -104,6 +104,7 @@ export default function ChatTab({
   apiStatus, onLogAdd, onQueryComplete, onLitNode,
   onActivityChange, onCoherenceUpdate, forcedAgent,
   onForcedAgentChange, onInspect, defaultReflectMode,
+  seedPrompt, onSeedConsumed,
 }) {
   const [messages,      setMessages]      = useState([]);
   const [input,         setInput]         = useState("");
@@ -117,6 +118,15 @@ export default function ChatTab({
   const [expandedMem,   setExpandedMem]  = useState({});
   const [expandedCoa,   setExpandedCoa]  = useState({});
   const [reflectMode,   setReflectMode]  = useState(defaultReflectMode ?? "");
+
+  // Onboarding hands off a guided first prompt: prefill the input (don't
+  // auto-send), then clear the seed so it isn't re-applied on later renders.
+  useEffect(() => {
+    if (seedPrompt) {
+      setInput(seedPrompt);
+      onSeedConsumed?.();
+    }
+  }, [seedPrompt, onSeedConsumed]);
   const [lastMeta,      setLastMeta]     = useState(null);
   const [currentThreadId, setCurrentThreadId] = useState(() => {
     try { return localStorage.getItem("amagra_thread_id") || null; } catch { return null; }
