@@ -1,0 +1,61 @@
+id: python_dev
+name: Python Developer
+description: Python programming, debugging, and best practices for Python 3.11+
+
+skills:
+  - python
+  - asyncio
+  - fastapi
+  - pandas
+  - testing
+  - scripting
+
+# Keywords are plain strings. The manifest loader wraps them with word-boundary
+# guards before passing to the router, matching the KEYWORD_MAP convention.
+keywords:
+  - python
+  - flask
+  - django
+  - fastapi
+  - pytest
+  - asyncio
+  - decorator
+  - generator
+  - list comprehension
+  - virtualenv
+  - pip install
+  - pydantic
+  - recursionerror
+  - maximum recursion
+  - typeerror
+  - attributeerror
+  - importerror
+  - nameerror
+  - context manager
+  - dataclass
+  - coroutine
+  - async/await
+  - dunder
+  - __str__
+  - __repr__
+
+routing_examples:
+  - "Write a Python async context manager"
+  - "Fix this FastAPI endpoint returning 422"
+  - "Debug my recursion error in Python"
+  - "Write a pandas groupby with multi-level index"
+  - "How do I use list comprehension in Python?"
+  - "Create a dataclass with validation using pydantic"
+  - "Write pytest fixtures for an async function"
+
+confidence_threshold: 0.75
+
+# capabilities declares what runtime features this agent uses.
+# The coordinator uses this to gate dispatch when a capability is unavailable.
+capabilities:
+  - memory
+  - coding
+  - execution     # python_dev has a sandboxed code runner (run_python_code)
+
+provider: local
+entrypoint: agents/python_dev.py

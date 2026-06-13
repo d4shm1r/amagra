@@ -1,0 +1,325 @@
+# Amagra — Build History
+
+Phase-by-phase record of what was built and why. Four eras: 37 build phases, then semver releases through v0.10.1.
+
+---
+
+## Era 1: Foundation (Phase 1–10)
+
+**Period:** Early 2026  
+**Goal:** Get the loop — user asks → agent answers → system learns — running end-to-end.  
+**Stack:** LangGraph · Llama3 8B · Ubuntu · CPU-only
+
+### Phase 1–7 — Core Bootstrap ✅
+
+- First working agent (`knowledge_learning`) answering questions
+- LangGraph state graph: message → agent → response cycle
+- SQLite memory database: store and retrieve past answers by embedding similarity
+- `nomic-embed-text` for semantic search
+- FastAPI backend exposing `/ask`, `/decisions`, `/health`
+- React frontend — first dashboard, chat tab
+- Basic keyword routing: `router.py` picks agent by domain keywords
+- `user_profile.py` — identity, personality, teaching style injected into every agent
+
+### Phase 8 — Personalization + Cleanup ✅
+
+- `user_profile.py` complete — all 6 agents inject profile via `_effective_prompt()`
+- Project cleanup: `scripts/`, `archive/`, `docs/` organized
+- `.gitignore`, `requirements.txt` created
+
+### Phase 9 — Performance + Machine Upgrade ✅
+
+**Problem:** Llama3 8B was too slow on CPU (~2 min per response).
+
+- RTX 2050 GPU activated with persistent CUDA config
+- Switched to **phi4-mini (3.8B)** — fits in 4GB VRAM, ~3× faster
+- `OLLAMA_MAX_LOADED_MODELS=1` to prevent VRAM conflicts
+- Shell aliases: `ai-start`, `ai-ui`, `ai-stop`, `ai-logs`
+- Python venv: `~/.venvs/langgraph-env/`
+
+### Phase 10 — Reflection + Core Brain ✅
+
+**Problem:** Agents answered and moved on. No quality check, no self-correction.
+
+**Reflection Loop (`reflection.py`):**
+- `grounded_evaluate()` — code execution + heuristics
+- LLM critique: "Is this response complete and correct?"
+- LLM refinement: rewrite based on critique (up to 3 iterations)
+
+**Core Brain (`core_brain.py`):**
+- `BrainDecision` dataclass: intent, action, complexity, agent_strategy, reflect, confidence, regret
+- Fast path: keyword scoring, <1ms, no LLM for clear queries
+- Slow path: LLM fallback for ambiguous queries
+
+**Snapshot at End of Era 1:**
+
+| Metric | Value |
+|--------|-------|
+| Memories | ~61 |
+| Brain decisions logged | ~36 |
+| Routing conflicts | ~2 (5.6%) |
+| GPU | RTX 2050, 4GB VRAM |
+| LLM | phi4-mini 3.8B |
+| Routing | Keyword scorer |
+
+---
+
+## Era 2: Learning + Signal Routing (Phase 11–20)
+
+**Period:** May–June 2026  
+**Goal:** Make the system learn from experience. Reach 97% routing accuracy.
+
+### Phase 11 — Adaptive Decision Tuning ✅
+
+- `decision_weights.py` — SQLite-backed per-agent weights in `[0.1, 3.0]`, default 1.0
+- Calibration EMA of (confidence, reflection_score) divergence
+- `to_confidence()` — applies calibration correction when sample_count ≥ 5
+
+### Phase 12 — Regret + Stable Learning ✅
+
+- `BrainDecision.regret` — `max(alt_confidence) − chosen_confidence`
+- `drift_status()` — three health detectors: calibration_drift · regret_explosion · weight_volatility
+- Hard freeze at instability > 0.80, half-speed at > 0.60
+
+### Phase 13 — Single Learning Kernel ✅
+
+- `apply_learning_update()` in `learning.py` — **only function that modifies agent weights**
+- Full pipeline per decision: calibration EMA → signal L → instability I → adaptive alpha → bounded delta ±0.02 → non-chosen agent decay
+
+### Phase 14 — Control Plane UI ✅
+
+- `DecisionTimeline.jsx` — decision log with filter/search
+- `AgentHealthPanel` — weight bar, confidence, cal error, avg regret, trend arrows
+- `DriftMonitorPanel` — instability bar, STABLE / DEGRADING / UNSTABLE badge
+- `BrainInspector` — full decision breakdown with Replay button
+- Endpoints: `GET /decisions`, `GET /replay/{id}`, `GET /learning/drift`
+
+### Phase 15 — Documentation ✅
+
+- `Summarizer.MD` — system constitution
+- `docs/tracker.md`, `ModelOverview.md`, `dashboard-guide.md`, `known-issues.md`
+
+### Phase 16 — Signal-First Routing ✅
+
+**Problem:** Keyword router was a flat heuristic. Routing accuracy ~70%.
+
+**QuerySignal Architecture:**
+- `query_normalizer.py` — `QuerySignal(domain, domain_conf, answer_shape, verbosity, action)`
+- `detect_domain()` with word-boundary guard for ≤4-char keywords (fixes "nat" in "paginated")
+- `detect_answer_shape()` — factual · code · debug · procedural · comparison · explanation
+- `detect_verbosity()` — terse (≤6 tokens) · normal · detailed (≥25 tokens)
+- `DOMAIN_TO_AGENT` lookup — pure table, no heuristics
+
+**Routing Accuracy Progression:**
+
+| Eval | Prompts | Accuracy |
+|------|---------|----------|
+| Baseline (action-first) | 50 | 70% |
+| Signal-first | 50 | 92% |
+| Signal-first + all fixes | 100 | **97%** |
+
+### Phase 17 — UI Decomposition + Stress Testing ✅
+
+- `App.js` 534 → 120 lines (shell only)
+- Extracted: `ChatTab.jsx`, `OverviewTab.jsx`, `TracesTab.jsx`, `LogTab.jsx`
+- `constants.js` — AGENTS (7) · BUILD_PHASES (11) · PROGRESS_STEPS
+
+Bugs fixed: MindMap force-agent regression · CORS block on 500 errors · raw JSON error messages
+
+### Phase 18 — Memory Pruning + Dual-Trajectory + Ablation ✅
+
+**Memory Quality Pruning:**
+- `memory_stats()`, `prune(dry_run)` — removes `quality < 0.55 AND use_count = 0`
+- API: `GET /memory/stats` · `POST /memory/prune`
+
+**Dual-Trajectory Evaluation (GRAM-light):**
+- Candidate A: full agent call
+- Candidate B: lightweight LLM with CoT system prompt
+- Critic: single short LLM call picks winner
+- Gate: `is_code_task()` — zero overhead for non-code
+
+**Ablation Eval:**
+- `ablation_eval.py` — pure QuerySignal routing, no LLM, runs in <2s
+- **99/100 (99%)** signal-only accuracy — outperforms full pipeline
+
+### Phase 19 — Reflection Triage ✅
+
+**Problem:** Reflection fired 58% of the time, costing ~25–30s per cycle.
+
+- `_reflect_level()` returns `"none" | "light" | "full"`
+- Light reflection = grounded eval only; Full = grounded eval + LLM critique + rewrite
+- Full-reflection rate: 58% → ~15–20%
+
+### Phase 20 — User Feedback ✅
+
+- `POST /feedback` — stores rating, fires `apply_learning_update(performance=0.90/0.25)`
+- `ChatTab.jsx` — 👍/👎 per agent message; selected button highlights
+
+**Snapshot at End of Era 2:**
+
+| Metric | Value |
+|--------|-------|
+| Memories | 672 (21 prunable) |
+| Brain decisions logged | 283 |
+| Routing accuracy | 97% full · 99% signal-only |
+| Reflection rate | 58% → ~15–20% |
+| Learning | Stable single-mutation-path kernel |
+
+---
+
+## Era 3: Causal Intelligence + Cognitive OS (Phase 21–37)
+
+**Period:** June 2026 — current  
+**Goal:** Move from reactive learning to causal understanding. Build the Cognitive OS layer.
+
+### Phase 21 — Episodic Memory ✅
+
+- `_write_episodic()` — writes `mem_type="episodic"` after every response with outcome, performance, regret
+- Fast path uses past episodes: successful episode → +0.04 confidence boost; failed → escalates reflect level
+
+### Phase 22 — Failure Miner ✅
+
+- `failure_miner.py` — clusters high-regret decisions, conflict rates, regret by action type
+- `GET /analysis/failures` endpoint
+- Finding: terse conflict rate 86.7% (keyword router almost never routes to terse)
+- Fix applied: `hybrid_router()` added `answer_shape == "factual"` → terse path
+
+### Phase 23 — Contradiction Detection ✅
+
+- `_check_contradiction()` — zero LLM, pure heuristic; cosine ≥ 0.78 + 22 negation patterns + keyword overlap check
+- If detected → escalates `reflect_level` to "full"
+
+### Phase 24 — Outcome-Weighted Memory ✅
+
+- `memory_db.update_quality(ids, delta)` — log-odds quality delta
+- 👍 rating → +0.03 quality to accessed memories; 👎 → −0.05
+
+### Phase 25 — Decision Trace Dataset ✅
+
+- `trace_builder.py` — 312 traces: 21 real sessions + 291 eval decisions
+- `label_trustworthy` field; Level 3 (similarity-based) joins flagged
+- `agent_specialization.py` — per-agent verdicts (core/narrow/struggling/redundant)
+- `memory_backend.py` — abstract `MemoryBackend` + `SQLiteBackend` adapter
+- `counterfactual.py` — simulate alternative routing for any past decision
+
+### Phase 26 — Decision Graph ✅
+
+The core research artifact. Flat trace records → directed causal graph.
+
+- 922 nodes · 3438 edges · avg degree 3.73
+- Node types: query(312) · agent(6) · memory(111) · reflection(181) · outcome(312)
+- Edge types: SELECTED · REJECTED · RETRIEVED · INFLUENCED · PRODUCED · REFLECTED
+- `causal_path(graph, decision_id)` — full trace with causal flags
+- `DataTab.jsx` — dataset coverage, specialization, counterfactual panel, causal path explorer
+
+### Phase 27 — Tiny Learned Router ✅
+
+- `learned_router.py` — LogisticRegression on 23 features
+- train_accuracy=90.1% · cv_accuracy=86.9% ± 0.096 (5-fold)
+- Ensemble integration: agree with signal router → +0.05 confidence; disagree + `lr_conf > 0.85` → LR wins
+
+Also: Code quality cleanup — `api.py` inline sqlite imports removed, phantom agents removed from `/agents` endpoint, `OLLAMA_MODEL` corrected.
+
+### Phase 28 — Deep Pipeline v1 ✅
+
+- `deep_pipeline.py` — compound task execution: decompose → fan_out → synthesize
+- Coordinator routes to pipeline when `complexity == "compound"` AND ≥ 2 real-domain agents
+- UI keyboard shortcuts: `Ctrl+1–5`, `Ctrl+K`, `Ctrl+B`, `Ctrl+,`, `Ctrl+/`, `Escape`
+- `SettingsModal` added with live system info
+
+### Phase 29 — C1-Smooth Learning Primitives ✅
+
+Three hard discontinuities eliminated:
+
+- **Domain confidence:** `min(1, hits×0.35)` → `1 − exp(−0.40×hits)` — no hard ceiling, full float precision
+- **Adaptive alpha:** step function → smooth sigmoid: `alpha = BASE_ALPHA / (1 + exp(8 × (I − 0.5)))`
+- **Quality update:** linear clip → log-odds Bayesian: `l_new = l + 4.0 × delta; q_new = sigmoid(l_new)`
+- `tests/test_learning_invariants.py` — 14 invariant tests, all pass, no LLM/DB required
+
+Action pattern coverage extended: `action=unknown` rate → 0%.
+
+### Phase 30 — Docs/UI Architecture Alignment ✅
+
+- `AGENTS` unified in `constants.js` — removed from 4 duplicate locations
+- `GET /docs` + `GET /docs/{name}` — UI can fetch authoritative markdown at runtime
+
+### Phase 31 — Feedback Loop UI ✅
+
+- `ProgressTab.jsx` — Feedback Loop panel with per-agent 👍/👎 bar chart
+- Confirmed: feedback buttons POST correctly and trigger `apply_learning_update()` immediately
+
+### Phase 32 — UI Polish + Revenue Strategy ✅
+
+- Menu hover CSS `!important` bug fixed (F-18)
+- Sidebar nav upgrade: font 12/400 → 13/600; layout separator removed
+- Tab layout consistency: removed root-level `maxWidth + margin: 0 auto` from 16 tabs; `App.js` is single layout authority (F-19)
+- `docs/ROADMAP-REVENUE.md` created — 5-phase commercial roadmap
+
+### Phase 33 — Contradiction Resolution ✅
+
+- `memory_db.auto_resolve_conflicts(threshold=0.90)` — always keeps newer memory (higher AUTOINCREMENT id)
+- `GET /memory/auto-resolve` (dry-run preview) · `POST /memory/auto-resolve` (execute)
+- `ContradictionsPanel` in CognitiveOSTab with diff view and Auto-Resolve button
+
+### Phase 34 — Prompt Quality IDE ✅
+
+5-panel architecture: Prompt Health · Execution Forecast · Missing Context · Suggested Agents · Prompt Upgrade.  
+`detectDomain(text)` — pure JS, no API call. `generateRepair` — deterministic heuristic auto-fix, instant.
+
+### Phase 35 — FAISS Backend + Cognitive OS ✅
+
+- `FAISSBackend` active; `promote_if_needed()` hook at startup
+- FAISS search P50 = **0.38ms** at 628 entries (target 5ms, 13× margin)
+- `event_bus`, `world_model`, `metrics_engine`, `cognitive_state` + `/cos/*` API endpoints
+- `context_stratifier` (contamination isolation), `skill_graph` (18 skills, disambiguation)
+
+### Phase 36 — Open Source Launch + Auth Foundation ✅
+
+- `core/api_keys.py` — SHA-256 key hashing, tier-based daily limits (free/developer/team/enterprise)
+- `api.py` — `_auth()` middleware, `REQUIRE_AUTH` env var, `X-API-Key` header
+- `Dockerfile` + `docker-compose.yml` — Ollama (GPU passthrough) + API + UI, persistent volumes
+- `README.md` — quick start, architecture, auth guide, paper pointer
+
+### Phase 37 — Cognitive Intelligence Layer ✅
+
+- Hierarchical UCI: `h_UCI = 0.30×Reliability + 0.30×Intelligence + 0.25×Adaptation + 0.15×Productivity`
+- Current h_UCI: ~80.8 (up from 74.9 after productivity metric fix)
+- World-model planner, rate-limit headers (`X-RateLimit-*`), `/register/free` self-serve endpoint
+- 21 skills in skill graph (up from 18)
+
+## Era 4: Productization (v0.9.1 → v0.10.1)
+
+Post-phase work tracked by semver release rather than phase number. See `docs/ROADMAP.md` for the full per-release changelog.
+
+### v0.9.1–v0.9.4 — Hardening, async & brand ✅
+
+- Auth deny-by-default (`_PUBLIC_PATHS` allowlist), CORS lock, sliding-window rate limits, CI (ruff + pytest + Docker)
+- Async `/ask` via executor, SQLite WAL mode, `ContextVar` tenant scoping
+- 29-tab sidebar consolidated to 4 surfaces (Chat · Memory · Inspect · Settings)
+- Multi-provider `AskRequest.provider` field + `AnthropicProvider`; inline "◈ Remembered" memory surfacing; Amagra brand + luxury UI
+
+### v0.10.1 — RAG File Context ✅
+
+- `POST /documents/upload` — PDF / Markdown / code / text up to 10 MB
+- Inline paragraph-boundary chunker (800c / 100c overlap, no langchain)
+- `context_files` on `AskRequest`; top-k chunks injected into `/ask` and `/ask/stream`
+- File-chip UI with upload/ready/error states
+
+**Live Snapshot (2026-06-13):**
+
+| Metric | Value |
+|--------|-------|
+| Version | v0.10.1 |
+| Routing accuracy | 97% full · 99% signal-only |
+| Specialist agents | 10 (registry-canonical) |
+| FAISS vectors | 628+ at 0.38ms P50 |
+| API endpoints | 100+ (109 routes) |
+| Build phases complete | 37 (+ v0.9–v0.10 releases) |
+| UCI score | ~80.8 |
+| Auth | API key auth (REQUIRE_AUTH=0 dev, 1 prod) |
+| Docker | Dockerfile + docker-compose.yml with GPU passthrough |
+| Test suite | 544 passing (39 files) |
+
+---
+
+*Update with a new section when a phase or release completes.*

@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AMAGRA — The Cognitive OS for Developers</title>
+  <meta name="description" content="Amagra: a local-first cognitive AI platform. Expert agents, persistent memory, decision replay, and full observability — all on your own hardware." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --l0:   #EDE8DF;
+      --l1:   #F4F0E8;
+      --l2:   #FAF7F2;
+      --l3:   #FCFAF7;
+      --l4:   #FEFCFA;
+
+      --hero-bg:     #F0E9DF;
+      --features-bg: #EDE8DF;
+      --agents-bg:   #F3EDE6;
+      --how-bg:      #E9E3DA;
+      --pricing-bg:  #F1EBE3;
+      --cta-bg:      #EDE8DF;
+      --footer-bg:   #E5DFD6;
+      --cos-bg:      #EBE5DC;
+      --compare-bg:  #F0EAE1;
+      --trust-bg:    #E8E2D9;
+
+      --g1:   #FFE880;
+      --g2:   #DEB838;
+      --g3:   #C48808;
+      --g4:   #9A6C00;
+      --g5:   #6C4C00;
+
+      --t1:   #2E2010;
+      --t2:   #5C4030;
+      --t3:   #9A7A60;
+      --t4:   #BEA890;
+
+      --sd1:  rgba(72, 52, 28, 0.07);
+      --sd2:  rgba(72, 52, 28, 0.11);
+      --sd3:  rgba(62, 44, 20, 0.17);
+      --sl1:  rgba(255, 255, 255, 0.80);
+      --sl2:  rgba(255, 255, 255, 0.94);
+
+      --gg1:  rgba(196, 136, 8, 0.13);
+      --gg2:  rgba(196, 136, 8, 0.28);
+      --gg3:  rgba(154, 108, 0, 0.44);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--l0);
+      color: var(--t1);
+      font-family:
+        "DM Sans", "Manrope", ui-sans-serif,
+        -apple-system, BlinkMacSystemFont,
+        "Segoe UI", Roboto, sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      opacity: 0.020;
+      mix-blend-mode: multiply;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--l0); }
+    ::-webkit-scrollbar-thumb { background: var(--g4); border-radius: 2px; }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 62px;
+      background: rgba(240, 235, 226, 0.86);
+      backdrop-filter: blur(32px) saturate(1.4);
+      -webkit-backdrop-filter: blur(32px) saturate(1.4);
+      box-shadow:
+        0 1px 0 rgba(199, 154, 67, 0.18),
+        0 4px 20px var(--sd1);
+      display: flex; align-items: center;
+      padding: 0 40px; z-index: 100; gap: 32px;
+    }
+
+    .nav-logo {
+      display: flex; align-items: center;
+      font-weight: 800; font-size: 22px;
+    }
+
+    .nav-logo-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, var(--g1), var(--g5));
+      box-shadow: 0 0 0 1.5px rgba(138,99,36,0.18), 0 0 8px var(--gg2);
+      animation: dotPulse 4s ease-in-out infinite;
+    }
+    @keyframes dotPulse {
+      0%, 100% { box-shadow: 0 0 0 1.5px rgba(138,99,36,0.18), 0 0 8px var(--gg2); }
+      50%       { box-shadow: 0 0 0 2px rgba(138,99,36,0.28), 0 0 18px var(--gg3), 0 0 32px var(--gg1); }
+    }
+
+    .logo-text {
+      background: linear-gradient(
+        135deg,
+        var(--g5)  0%,
+        var(--g4) 18%,
+        var(--g3) 36%,
+        var(--g2) 52%,
+        var(--g3) 68%,
+        var(--g4) 84%,
+        var(--g5) 100%
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 800;
+      letter-spacing: 0.10em;
+    }
+
+    .nav-links { display: flex; gap: 24px; margin-left: 8px; list-style: none; }
+    .nav-links a {
+      font-size: 13px; color: var(--t3); letter-spacing: -0.01em;
+      transition: color 160ms ease;
+    }
+    .nav-links a:hover { color: var(--g5); }
+    .nav-cta { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+
+    /* ── BUTTON SYSTEM ── */
+    .btn {
+      padding: 9px 22px; border-radius: 40px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      font-family: inherit; border: none;
+      letter-spacing: -0.01em;
+      display: inline-flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+      will-change: transform;
+      transition:
+        transform      200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow     200ms ease-out,
+        background     160ms ease-in-out,
+        color          140ms ease,
+        border-color   140ms ease;
+    }
+
+    .btn::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 50%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.46) 0%, rgba(255,255,255,0) 100%);
+      border-radius: 40px 40px 0 0; pointer-events: none; z-index: 1;
+    }
+
+    .btn-ghost {
+      color: var(--t2);
+      background:
+        linear-gradient(var(--l3), var(--l3)) padding-box,
+        linear-gradient(145deg, var(--g1), var(--g3), var(--g5)) border-box;
+      border: 2px solid transparent;
+      box-shadow:
+        4px 4px 10px var(--sd2),
+        -2px -2px 7px var(--sl1),
+        inset 0 1px 1px var(--sl2),
+        inset 0 -1px 2px rgba(138, 99, 36, 0.06);
+    }
+    .btn-ghost:hover {
+      color: var(--g5);
+      box-shadow:
+        6px 6px 16px var(--sd3),
+        -2px -2px 8px var(--sl2),
+        inset 0 1px 1px var(--sl2),
+        inset 0 -1px 2px rgba(138, 99, 36, 0.10),
+        0 0 24px var(--gg1);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(160deg, var(--g1) 0%, var(--g2) 25%, var(--g3) 60%, var(--g4) 100%);
+      color: #F8F4EC; font-weight: 700;
+      border: 1.5px solid rgba(242, 216, 155, 0.28);
+      box-shadow:
+        5px 5px 14px rgba(72, 52, 28, 0.22),
+        -2px -2px 8px var(--sl1),
+        inset 0 1px 1px rgba(255, 248, 215, 0.62),
+        inset 0 -1px 2px rgba(138, 99, 36, 0.20),
+        0 0 32px var(--gg1);
+      text-shadow: 0 1px 2px rgba(70, 44, 8, 0.22);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(160deg, #FFE870 0%, #DDAF28 28%, #BF8400 60%, #986800 100%);
+      box-shadow:
+        7px 7px 18px rgba(72, 52, 28, 0.26),
+        -2px -2px 9px var(--sl2),
+        inset 0 1px 1px rgba(255, 248, 215, 0.72),
+        inset 0 -1px 2px rgba(138, 99, 36, 0.24),
+        0 0 44px var(--gg2);
+      transform: translateY(-2px);
+    }
+
+    .btn-lg { padding: 15px 38px; font-size: 15px; }
+
+    /* ── SECTIONS ── */
+    section { padding: 100px 32px; }
+    .container { max-width: 1120px; margin: 0 auto; }
+
+    /* ── HERO ── */
+    #hero {
+      padding-top: 172px; padding-bottom: 88px;
+      background: var(--hero-bg);
+      text-align: center; position: relative; overflow: hidden;
+    }
+    #hero::before {
+      content: ''; position: absolute; top: 5%; left: 50%; transform: translateX(-50%);
+      width: 920px; height: 400px;
+      background: radial-gradient(ellipse,
+        rgba(196, 136, 8, 0.14) 0%,
+        rgba(196, 136, 8, 0.05) 45%,
+        transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background:
+        linear-gradient(var(--l3), var(--l3)) padding-box,
+        linear-gradient(135deg, var(--g1), var(--g3), var(--g5)) border-box;
+      border: 1.5px solid transparent;
+      border-radius: 40px; padding: 6px 18px;
+      font-size: 11.5px; color: var(--t3);
+      margin-bottom: 40px; letter-spacing: 0.02em; font-weight: 500;
+      box-shadow:
+        4px 4px 12px var(--sd2),
+        -2px -2px 8px var(--sl2),
+        inset 0 1px 0 var(--sl2),
+        0 0 28px var(--gg1);
+    }
+
+    .hero-badge-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #8FD28C, #2A7428);
+      box-shadow: 0 0 6px rgba(65, 160, 65, 0.5);
+      animation: greenPulse 2.5s ease-in-out infinite;
+    }
+    @keyframes greenPulse {
+      0%, 100% { box-shadow: 0 0 5px rgba(65,160,65,0.45); }
+      50%       { box-shadow: 0 0 10px rgba(65,160,65,0.7), 0 0 18px rgba(65,160,65,0.2); }
+    }
+
+    h1 {
+      font-size: clamp(40px, 5.8vw, 70px);
+      font-weight: 800; line-height: 1.06;
+      letter-spacing: -0.035em;
+      color: var(--t1); margin-bottom: 24px;
+      text-shadow: 0 2px 6px rgba(46, 32, 16, 0.07);
+    }
+
+    .text-accent {
+      background: linear-gradient(108deg,
+        var(--g4)  0%,
+        var(--g2) 16%,
+        var(--g1) 30%,
+        #FFF8C0    40%,
+        var(--g1)  50%,
+        var(--g2) 62%,
+        var(--g3) 76%,
+        var(--g4) 88%,
+        var(--g5) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 2px 8px rgba(154, 108, 0, 0.22));
+    }
+
+    .hero-sub {
+      font-size: clamp(15px, 1.8vw, 18px); color: var(--t3);
+      max-width: 580px; margin: 0 auto 48px; line-height: 1.78;
+      font-weight: 500; letter-spacing: -0.01em;
+    }
+
+    .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── METRIC STRIP ── */
+    .metrics-strip {
+      display: flex; gap: 12px; justify-content: center;
+      flex-wrap: wrap; margin-top: 68px;
+    }
+
+    .metric {
+      flex: 1; min-width: 140px; max-width: 198px;
+      padding: 22px 18px; background: var(--l2); border-radius: 22px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.44);
+      box-shadow:
+        7px 7px 18px var(--sd2),
+        -3px -3px 10px var(--sl1),
+        inset 0 1px 1px var(--sl2),
+        inset 0 -1px 1px rgba(138, 99, 36, 0.04);
+      position: relative; overflow: hidden; will-change: transform;
+      transition:
+        transform      320ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow     280ms ease-out,
+        border-color   180ms ease;
+    }
+    .metric::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 48%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.50) 0%, rgba(255,255,255,0) 100%);
+      border-radius: 22px 22px 0 0; pointer-events: none;
+    }
+    .metric:hover {
+      box-shadow:
+        10px 10px 24px var(--sd3),
+        -3px -3px 12px var(--sl2),
+        inset 0 1px 1px var(--sl2),
+        0 0 28px var(--gg1);
+      transform: translateY(-4px);
+    }
+    .metric-val {
+      font-size: 29px; font-weight: 800;
+      font-family: ui-monospace, "SF Mono", Consolas, monospace;
+      letter-spacing: -0.04em; margin-bottom: 5px; position: relative; z-index: 1;
+    }
+    .metric-label {
+      font-size: 10px; color: var(--t4);
+      text-transform: uppercase; letter-spacing: 0.09em; font-weight: 500;
+      position: relative; z-index: 1;
+    }
+
+    /* ── SECTION TITLES ── */
+    .section-tag {
+      font-size: 10.5px; font-weight: 700; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--g4); margin-bottom: 14px;
+    }
+
+    h2 {
+      font-size: clamp(28px, 3.2vw, 42px);
+      font-weight: 800; letter-spacing: -0.03em;
+      color: var(--t1); margin-bottom: 16px;
+    }
+    .section-sub {
+      font-size: 15px; color: var(--t3); max-width: 540px;
+      margin-bottom: 56px; line-height: 1.78;
+      font-weight: 400; letter-spacing: -0.005em;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(199, 154, 67, 0.14) 30%,
+        rgba(199, 154, 67, 0.14) 70%,
+        transparent 100%);
+    }
+
+    /* ── BUILT FOR ── */
+    #for { background: var(--features-bg); }
+
+    .for-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .for-card {
+      background: var(--l2); border-radius: 24px; padding: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.42);
+      box-shadow:
+        8px 8px 22px var(--sd2),
+        -3px -3px 12px var(--sl1),
+        inset 0 1px 1px var(--sl2),
+        inset 0 -1px 1px rgba(138, 99, 36, 0.04);
+      position: relative; overflow: hidden; will-change: transform;
+      transition:
+        transform      320ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow     280ms ease-out;
+    }
+    .for-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 44%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.48) 0%, rgba(255,255,255,0) 100%);
+      border-radius: 24px 24px 0 0; pointer-events: none;
+    }
+    .for-card:hover {
+      transform: translateY(-4px);
+      box-shadow:
+        12px 12px 30px var(--sd3),
+        -4px -4px 14px var(--sl2),
+        inset 0 1px 1px var(--sl2),
+        0 0 36px var(--gg1);
+    }
+    .for-title { font-size: 14.5px; font-weight: 700; color: var(--g3); margin-bottom: 12px; letter-spacing: -0.02em; position: relative; z-index: 1; }
+    .for-list { list-style: none; display: flex; flex-direction: column; gap: 7px; position: relative; z-index: 1; }
+    .for-list li { font-size: 12.5px; color: var(--t3); display: flex; align-items: flex-start; gap: 8px; line-height: 1.5; }
+    .for-list li::before { content: "→"; color: var(--g4); font-size: 11px; flex-shrink: 0; margin-top: 1px; font-weight: 700; }
+
+    /* ── SCREENSHOT STRIP ── */
+    #screenshots { background: var(--how-bg); padding: 72px 32px; }
+
+    .screenshot-strip {
+      display: flex; gap: 16px; overflow-x: auto;
+      padding-bottom: 12px; scrollbar-width: thin;
+      scroll-snap-type: x mandatory;
+    }
+    .screenshot-strip::-webkit-scrollbar { height: 3px; }
+    .screenshot-strip::-webkit-scrollbar-thumb { background: var(--g4); border-radius: 2px; }
+
+    .screenshot-mock {
+      flex-shrink: 0; width: 320px; height: 200px;
+      background:
+        linear-gradient(#1A1410, #1A1410) padding-box,
+        linear-gradient(145deg, rgba(242,216,155,0.35), rgba(138,99,36,0.45)) border-box;
+      border: 1.5px solid transparent;
+      border-radius: 18px; padding: 18px;
+      scroll-snap-align: start;
+      box-shadow:
+        inset 3px 3px 12px rgba(20, 12, 4, 0.50),
+        6px 6px 22px rgba(72, 52, 28, 0.18),
+        -2px -2px 10px var(--sl1);
+      display: flex; flex-direction: column; gap: 10px;
+      position: relative; overflow: hidden;
+    }
+    .screenshot-mock::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 32px;
+      background: rgba(255,255,255,0.04); border-radius: 18px 18px 0 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .mock-dots {
+      display: flex; gap: 5px; position: relative; z-index: 1;
+      align-items: center;
+    }
+    .mock-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .mock-title { font-size: 10px; color: rgba(199,154,67,0.55); margin-left: auto; font-family: ui-monospace, monospace; letter-spacing: 0.08em; }
+    .mock-body { flex: 1; display: flex; flex-direction: column; gap: 7px; position: relative; z-index: 1; }
+    .mock-row { height: 10px; border-radius: 6px; background: rgba(255,255,255,0.07); }
+    .mock-row.accent { background: rgba(199,154,67,0.22); }
+    .mock-row.short { width: 60%; }
+    .mock-row.medium { width: 80%; }
+    .mock-label { font-size: 10px; color: rgba(199,154,67,0.70); font-family: ui-monospace, monospace; letter-spacing: 0.06em; margin-top: 4px; }
+    .mock-bars {
+      display: flex; align-items: flex-end; gap: 5px; height: 54px;
+      margin-top: 4px;
+    }
+    .mock-bar {
+      flex: 1; border-radius: 4px 4px 0 0;
+      background: rgba(199,154,67,0.18);
+    }
+    .mock-bar.lit { background: rgba(199,154,67,0.55); }
+    .mock-nodes {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px;
+    }
+    .mock-node {
+      padding: 3px 9px; border-radius: 10px; font-size: 9px;
+      font-family: ui-monospace, monospace; letter-spacing: 0.04em;
+    }
+    .mock-node.done { background: rgba(46,122,44,0.25); color: #6DBF6A; }
+    .mock-node.active { background: rgba(199,154,67,0.30); color: #D4B46C; }
+    .mock-node.pending { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.35); }
+    .mock-arrow { color: rgba(199,154,67,0.45); font-size: 10px; }
+    .mock-mem-rows { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+    .mock-mem-row { display: flex; align-items: center; gap: 8px; }
+    .mock-mem-bar { height: 6px; border-radius: 4px; }
+    .mock-mem-label { font-size: 9px; color: rgba(255,255,255,0.28); font-family: ui-monospace, monospace; width: 64px; flex-shrink: 0; }
+
+    .screenshot-caption { font-size: 11px; color: var(--t4); text-align: center; margin-top: 8px; letter-spacing: 0.04em; }
+
+    /* ── FEATURES GRID ── */
+    #features { background: var(--agents-bg); }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .feature-card {
+      background: var(--l2); border-radius: 24px; padding: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.42);
+      box-shadow:
+        8px 8px 22px var(--sd2),
+        -3px -3px 12px var(--sl1),
+        inset 0 1px 1px var(--sl2),
+        inset 0 -1px 1px rgba(138, 99, 36, 0.04);
+      position: relative; overflow: hidden; will-change: transform;
+      transition:
+        transform      320ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow     280ms ease-out,
+        border-color   180ms ease;
+    }
+    .feature-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 44%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.48) 0%, rgba(255,255,255,0) 100%);
+      border-radius: 24px 24px 0 0; pointer-events: none; z-index: 0;
+    }
+    .feature-card::after {
+      content: ''; position: absolute; inset: 0; border-radius: 24px;
+      background:
+        linear-gradient(var(--l2), var(--l2)) padding-box,
+        linear-gradient(145deg, var(--g1), var(--g3), var(--g5)) border-box;
+      border: 1.5px solid transparent;
+      opacity: 0;
+      transition: opacity 280ms ease;
+    }
+    .feature-card:hover::after { opacity: 1; }
+    .feature-card:hover {
+      box-shadow:
+        12px 12px 30px var(--sd3),
+        -4px -4px 14px var(--sl2),
+        inset 0 1px 1px var(--sl2),
+        0 0 36px var(--gg1);
+      transform: translateY(-4px);
+    }
+    .feature-title { font-size: 15px; font-weight: 700; color: var(--g3); margin-bottom: 10px; letter-spacing: -0.02em; position: relative; z-index: 1; }
+    .feature-desc { font-size: 13px; color: var(--t3); line-height: 1.80; letter-spacing: -0.005em; position: relative; z-index: 1; }
+
+    /* ── COGNITIVE OS ── */
+    #cognitive { background: var(--cos-bg); }
+
+    .cognitive-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+    }
+    .cognitive-card {
+      background: var(--l2); border-radius: 20px; padding: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.40);
+      box-shadow:
+        6px 6px 16px var(--sd2),
+        -3px -3px 10px var(--sl1),
+        inset 0 1px 1px var(--sl2);
+      position: relative; overflow: hidden; will-change: transform;
+      transition:
+        transform      300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow     260ms ease-out;
+    }
+    .cognitive-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0) 100%);
+      border-radius: 20px 20px 0 0; pointer-events: none;
+    }
+    .cognitive-card:hover {
+      transform: translateY(-3px);
+      box-shadow:
+        9px 9px 24px var(--sd3),
+        -3px -3px 12px var(--sl2),
+        inset 0 1px 1px var(--sl2),
+        0 0 24px var(--gg1);
+    }
+    .cog-title { font-size: 14px; font-weight: 700; color: var(--g3); margin-bottom: 7px; letter-spacing: -0.02em; position: relative; z-index: 1; }
+    .cog-desc { font-size: 13px; color: var(--t3); line-height: 1.74; position: relative; z-index: 1; }
+
+    /* ── AGENTS ── */
+    #agents { background: var(--features-bg); }
+
+    .agents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+      gap: 14px;
+    }
+
+    .agent-card {
+      background: var(--l2); border-radius: 20px; padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.40);
+      box-shadow:
+        6px 6px 16px var(--sd2),
+        -3px -3px 10px var(--sl1),
+        inset 0 1px 1px var(--sl2),
+        inset 0 -1px 1px rgba(138, 99, 36, 0.03);
+      position: relative; overflow: hidden; will-change: transform;
+      transition:
+        transform      300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow     260ms ease-out;
+    }
+    .agent-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0) 100%);
+      border-radius: 20px 20px 0 0; pointer-events: none;
+    }
+    .agent-card:hover {
+      box-shadow:
+        8px 8px 22px var(--sd3),
+        -3px -3px 12px var(--sl2),
+        inset 0 1px 1px var(--sl2),
+        0 0 22px var(--gg1);
+      transform: translateY(-2px);
+    }
+    .agent-name { font-size: 14px; font-weight: 700; color: var(--g3); margin-bottom: 6px; letter-spacing: -0.02em; position: relative; z-index: 1; }
+    .agent-desc { font-size: 13px; color: var(--t3); line-height: 1.72; position: relative; z-index: 1; }
+
+    /* ── HOW IT WORKS ── */
+    #how { background: var(--how-bg); }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+      gap: 28px;
+    }
+    .step { display: flex; gap: 18px; align-items: flex-start; }
+
+    .step-num {
+      width: 38px; height: 38px; border-radius: 50%;
+      background:
+        linear-gradient(var(--how-bg), var(--how-bg)) padding-box,
+        linear-gradient(145deg, var(--g1) 0%, var(--g3) 50%, var(--g5) 100%) border-box;
+      border: 2px solid transparent;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11.5px; font-weight: 800; color: var(--g5);
+      flex-shrink: 0;
+      font-family: ui-monospace, Consolas, monospace;
+      box-shadow:
+        4px 4px 10px var(--sd2),
+        -2px -2px 7px var(--sl2),
+        inset 0 1px 1px rgba(255, 240, 175, 0.70),
+        inset 0 -1px 2px rgba(138, 99, 36, 0.14),
+        0 0 16px var(--gg1);
+    }
+    .step-title { font-size: 14px; font-weight: 700; color: var(--t1); margin-bottom: 7px; letter-spacing: -0.02em; }
+    .step-desc { font-size: 13px; color: var(--t3); line-height: 1.74; }
+
+    /* ── CODE BLOCK ── */
+    .code-block {
+      border-radius: 20px; padding: 24px 28px;
+      font-family: ui-monospace, "SF Mono", Consolas, monospace;
+      font-size: 13px; line-height: 1.9; color: var(--g2);
+      overflow-x: auto; margin: 32px 0;
+      background:
+        linear-gradient(#161210, #161210) padding-box,
+        linear-gradient(145deg, rgba(242,216,155,0.40), rgba(138,99,36,0.50)) border-box;
+      border: 1.5px solid transparent;
+      box-shadow:
+        inset 4px 4px 16px rgba(20, 12, 4, 0.55),
+        inset -1px -1px 6px rgba(80, 58, 18, 0.12),
+        6px 6px 22px rgba(72, 52, 28, 0.18),
+        -2px -2px 10px var(--sl1);
+    }
+    .code-block .comment { color: #58493A; }
+    .code-block .cmd     { color: #D4C5AC; }
+
+    /* ── FIRST 5 MINUTES ── */
+    .five-minutes {
+      margin-top: 64px;
+      padding: 32px 36px;
+      background: var(--l2); border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.42);
+      box-shadow:
+        8px 8px 22px var(--sd2),
+        -3px -3px 12px var(--sl1),
+        inset 0 1px 1px var(--sl2);
+    }
+    .five-minutes h3 {
+      font-size: 16px; font-weight: 700; color: var(--t1);
+      letter-spacing: -0.025em; margin-bottom: 20px;
+    }
+    .five-steps {
+      display: flex; gap: 0; align-items: stretch;
+      flex-wrap: wrap;
+    }
+    .five-step {
+      flex: 1; min-width: 140px;
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center; position: relative; padding: 0 12px;
+    }
+    .five-step:not(:last-child)::after {
+      content: '→';
+      position: absolute; right: -2px; top: 14px;
+      color: var(--g4); font-size: 13px; font-weight: 700;
+    }
+    .five-num {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: linear-gradient(145deg, var(--g2), var(--g4));
+      color: #F8F4EC; font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 9px; font-family: ui-monospace, monospace;
+      box-shadow: 3px 3px 8px var(--sd2), 0 0 14px var(--gg1);
+    }
+    .five-label { font-size: 12px; color: var(--t2); font-weight: 600; margin-bottom: 4px; }
+    .five-sub { font-size: 11px; color: var(--t4); line-height: 1.5; }
+
+    /* ── COMPARE TABLE ── */
+    #compare { background: var(--compare-bg); }
+
+    .compare-wrap {
+      overflow-x: auto;
+      border-radius: 24px;
+      box-shadow:
+        8px 8px 22px var(--sd2),
+        -3px -3px 12px var(--sl1);
+    }
+    .compare-table {
+      width: 100%; border-collapse: collapse;
+      background: var(--l2);
+      border-radius: 24px; overflow: hidden;
+    }
+    .compare-table th, .compare-table td {
+      padding: 14px 20px;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(199,154,67,0.08);
+      text-align: center;
+    }
+    .compare-table th {
+      background: rgba(199,154,67,0.07);
+      font-weight: 700; font-size: 12px;
+      color: var(--t2); letter-spacing: -0.01em;
+      border-bottom: 1px solid rgba(199,154,67,0.14);
+    }
+    .compare-table th.col-feature {
+      text-align: left; color: var(--t3);
+      font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; font-size: 10px;
+    }
+    .compare-table th.col-amagra {
+      background: rgba(199,154,67,0.14);
+      color: var(--g5);
+    }
+    .compare-table td.col-feature {
+      text-align: left; color: var(--t2); font-weight: 500;
+      font-size: 13px;
+    }
+    .compare-table td.col-amagra {
+      background: rgba(199,154,67,0.06);
+    }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .check { color: #2E7A2C; font-weight: 700; font-size: 14px; }
+    .cross { color: var(--t4); font-size: 13px; }
+    .partial { color: var(--g4); font-size: 12px; font-weight: 600; }
+
+    /* ── TRUST SECTION ── */
+    #trust { background: var(--trust-bg); }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+    }
+    .trust-item {
+      background: var(--l2); border-radius: 20px; padding: 22px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.40);
+      box-shadow:
+        6px 6px 16px var(--sd2),
+        -3px -3px 10px var(--sl1),
+        inset 0 1px 1px var(--sl2);
+      position: relative; overflow: hidden;
+      transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 260ms ease-out;
+    }
+    .trust-item::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0) 100%);
+      border-radius: 20px 20px 0 0; pointer-events: none;
+    }
+    .trust-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 9px 9px 24px var(--sd3), -3px -3px 12px var(--sl2), 0 0 22px var(--gg1);
+    }
+    .trust-val { font-size: 26px; font-weight: 800; font-family: ui-monospace, Consolas, monospace; letter-spacing: -0.04em; color: var(--t1); margin-bottom: 5px; position: relative; z-index: 1; }
+    .trust-label { font-size: 11px; color: var(--t4); letter-spacing: 0.06em; font-weight: 500; text-transform: uppercase; position: relative; z-index: 1; line-height: 1.5; }
+
+    /* ── PRICING ── */
+    #pricing { background: var(--pricing-bg); }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(295px, 1fr));
+      gap: 18px; align-items: start;
+    }
+
+    .pricing-card {
+      background: var(--l2); border-radius: 28px; padding: 34px;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.40);
+      box-shadow:
+        8px 8px 24px var(--sd2),
+        -3px -3px 13px var(--sl1),
+        inset 0 1px 1px var(--sl2),
+        inset 0 -1px 1px rgba(138, 99, 36, 0.04);
+    }
+    .pricing-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 38%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.48) 0%, rgba(255,255,255,0) 100%);
+      border-radius: 28px 28px 0 0; pointer-events: none; z-index: 0;
+    }
+
+    .pricing-card.featured {
+      background:
+        linear-gradient(var(--l2), var(--l2)) padding-box,
+        linear-gradient(160deg,
+          var(--g1)  0%,
+          var(--g3) 25%,
+          var(--g5) 50%,
+          var(--g3) 75%,
+          var(--g1) 100%) border-box;
+      border: 2px solid transparent;
+      box-shadow:
+        10px 10px 30px var(--sd3),
+        -4px -4px 16px var(--sl2),
+        inset 0 1px 1px rgba(255, 248, 215, 0.85),
+        inset 0 -1px 2px rgba(138, 99, 36, 0.12),
+        0 0 60px rgba(199, 154, 67, 0.11);
+    }
+
+    .pricing-badge {
+      position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(90deg, var(--g5), var(--g3), var(--g2), var(--g3), var(--g5));
+      color: #F8F4EC;
+      font-size: 9.5px; font-weight: 800; letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 4px 18px; border-radius: 20px;
+      box-shadow: 0 3px 12px rgba(138,99,36,0.40), inset 0 1px 0 rgba(255,240,160,0.32);
+      white-space: nowrap; z-index: 1;
+    }
+
+    .price-tier { font-size: 10.5px; font-weight: 700; color: var(--g3); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 10px; position: relative; z-index: 1; }
+    .price-amount { font-size: 44px; font-weight: 800; color: var(--t1); letter-spacing: -0.04em; margin-bottom: 4px; font-family: ui-monospace, Consolas, monospace; position: relative; z-index: 1; }
+    .pricing-card.featured .price-amount {
+      background: linear-gradient(115deg, var(--g5) 0%, var(--g3) 35%, var(--g2) 60%, var(--g4) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .price-period { font-size: 14px; font-weight: 400; color: var(--t3); -webkit-text-fill-color: var(--t3); }
+    .price-desc { font-size: 13px; color: var(--t3); margin: 16px 0 22px; min-height: 38px; line-height: 1.68; position: relative; z-index: 1; }
+    .price-features { list-style: none; display: flex; flex-direction: column; gap: 11px; margin-bottom: 30px; position: relative; z-index: 1; }
+    .price-features li { font-size: 13px; color: var(--t2); display: flex; align-items: flex-start; gap: 10px; }
+    .price-features li::before { content: "✓"; color: var(--g5); font-size: 10.5px; font-weight: 800; flex-shrink: 0; margin-top: 2px; }
+    .price-features li.dim { color: var(--t4); }
+    .price-features li.dim::before { color: var(--t4); }
+
+    /* ── PROOF BAR ── */
+    .proof-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 52px; justify-content: center; }
+
+    .proof-item {
+      flex: 1; min-width: 130px; padding: 18px 20px;
+      background: var(--l2); border-radius: 18px; text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.38);
+      box-shadow:
+        5px 5px 14px var(--sd2),
+        -2px -2px 9px var(--sl1),
+        inset 0 1px 1px var(--sl2);
+      position: relative; overflow: hidden; will-change: transform;
+      transition:
+        transform      300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow     260ms ease-out;
+    }
+    .proof-item::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.42) 0%, transparent 100%);
+      border-radius: 18px 18px 0 0; pointer-events: none;
+    }
+    .proof-item:hover {
+      box-shadow:
+        7px 7px 18px var(--sd3),
+        -2px -2px 11px var(--sl2),
+        inset 0 1px 1px var(--sl2),
+        0 0 20px var(--gg1);
+      transform: translateY(-2px);
+    }
+    .proof-val { font-size: 20px; font-weight: 800; font-family: ui-monospace, Consolas, monospace; letter-spacing: -0.03em; color: var(--t1); margin-bottom: 4px; position: relative; z-index: 1; }
+    .proof-label { font-size: 10.5px; color: var(--t4); letter-spacing: 0.06em; font-weight: 500; text-transform: uppercase; position: relative; z-index: 1; }
+
+    /* ── CTA ── */
+    #cta {
+      text-align: center; background: var(--cta-bg);
+      border-top: 1px solid rgba(199, 154, 67, 0.14);
+      border-bottom: 1px solid rgba(199, 154, 67, 0.14);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 32px 40px; background: var(--footer-bg);
+      border-top: 1px solid rgba(199, 154, 67, 0.12);
+      display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+    }
+    .footer-logo { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--t3); letter-spacing: -0.02em; }
+    .footer-links { display: flex; gap: 20px; list-style: none; margin-left: auto; }
+    .footer-links a { font-size: 12px; color: var(--t4); transition: color 160ms ease; }
+    .footer-links a:hover { color: var(--g5); }
+    .footer-copy { font-size: 12px; color: var(--t4); }
+
+    /* ── FAQ ── */
+    #faq { background: var(--how-bg); }
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 16px;
+    }
+    .faq-item {
+      background: var(--l2); border-radius: 20px; padding: 26px 28px;
+      border: 1px solid rgba(255, 255, 255, 0.40);
+      box-shadow:
+        6px 6px 16px var(--sd2),
+        -3px -3px 10px var(--sl1),
+        inset 0 1px 1px var(--sl2);
+      position: relative; overflow: hidden;
+      transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 260ms ease-out;
+    }
+    .faq-item::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0) 100%);
+      border-radius: 20px 20px 0 0; pointer-events: none;
+    }
+    .faq-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 9px 9px 24px var(--sd3), -3px -3px 12px var(--sl2), 0 0 22px var(--gg1);
+    }
+    .faq-q { font-size: 14px; font-weight: 700; color: var(--g3); margin-bottom: 10px; letter-spacing: -0.02em; position: relative; z-index: 1; }
+    .faq-a { font-size: 13px; color: var(--t3); line-height: 1.75; position: relative; z-index: 1; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      nav { padding: 0 18px; }
+      section { padding: 72px 18px; }
+      #screenshots { padding: 56px 18px; }
+      .metrics-strip { gap: 8px; }
+      .metric { min-width: 118px; }
+      .proof-bar { flex-direction: column; }
+      footer { flex-direction: column; gap: 12px; padding: 24px 18px; }
+      .footer-links { margin-left: 0; }
+      .nav-links { display: none; }
+      .five-step:not(:last-child)::after { display: none; }
+      .five-steps { gap: 12px; }
+      .five-step { min-width: 45%; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-logo">
+      <span class="logo-text">AMAGRA</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#for">Who it's for</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#agents">Agents</a></li>
+      <li><a href="#cognitive">Observe</a></li>
+      <li><a href="#compare">Compare</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+    <div class="nav-cta">
+      <a href="http://localhost:3000" class="btn btn-ghost">Dashboard</a>
+      <a href="http://localhost:8000/register/free" class="btn btn-primary">Get Free Key</a>
+    </div>
+  </nav>
+
+  <!-- ── HERO ── -->
+  <section id="hero">
+    <div class="container">
+      <div class="hero-badge">
+        <div class="hero-badge-dot"></div>
+        v0.9.2 · Now Available
+      </div>
+      <h1>
+        Your private AI team.<br />
+        <span class="text-accent">On your hardware.</span>
+      </h1>
+      <p class="hero-sub">
+        Expert help for coding, networking, AI, and infrastructure — without sending your data to the cloud.
+        Runs on your machine, remembers your work, and improves with every interaction.
+      </p>
+      <div class="hero-actions">
+        <a href="#pricing" class="btn btn-primary btn-lg">Start Free — Self-Hosted</a>
+        <a href="http://localhost:3000" class="btn btn-ghost btn-lg">Open Dashboard →</a>
+      </div>
+      <div class="metrics-strip">
+        <div class="metric"><div class="metric-val" style="color:#2E4A9C;">100%</div><div class="metric-label">Private by Default</div></div>
+        <div class="metric"><div class="metric-val" style="color:#8A6324;">98%</div><div class="metric-label">Routing Accuracy</div></div>
+        <div class="metric"><div class="metric-val" style="color:#A87933;">80.8</div><div class="metric-label">h_UCI Score</div></div>
+        <div class="metric"><div class="metric-val" style="color:#A04020;">21</div><div class="metric-label">Specialist Skills</div></div>
+        <div class="metric"><div class="metric-val" style="color:#7050A0;">4GB</div><div class="metric-label">Min GPU VRAM</div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ── BUILT FOR ── -->
+  <section id="for">
+    <div class="container">
+      <div class="section-tag">Who It's For</div>
+      <h2>Built for people who need control.</h2>
+      <p class="section-sub">Not another chatbot. A private AI platform for developers and engineers who want expert help without cloud dependency.</p>
+      <div class="for-grid">
+        <div class="for-card">
+          <div class="for-title">Solo Developers</div>
+          <ul class="for-list">
+            <li>Debug code and build features faster</li>
+            <li>Keep project memory across sessions</li>
+            <li>Run locally with no subscription</li>
+          </ul>
+        </div>
+        <div class="for-card">
+          <div class="for-title">Homelab &amp; IT Engineers</div>
+          <ul class="for-list">
+            <li>Network troubleshooting and DNS</li>
+            <li>Linux administration and scripting</li>
+            <li>Infrastructure planning and review</li>
+          </ul>
+        </div>
+        <div class="for-card">
+          <div class="for-title">AI Builders</div>
+          <ul class="for-list">
+            <li>Local-first agentic platform</li>
+            <li>Persistent memory and planning</li>
+            <li>Full observability into AI decisions</li>
+          </ul>
+        </div>
+        <div class="for-card">
+          <div class="for-title">Privacy-Conscious Teams</div>
+          <ul class="for-list">
+            <li>No cloud lock-in or data exposure</li>
+            <li>Full audit trail of every decision</li>
+            <li>Self-hosted on your own infrastructure</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ── SCREENSHOT STRIP ── -->
+  <section id="screenshots">
+    <div class="container">
+      <div class="section-tag">Dashboard</div>
+      <h2>See how the system thinks.</h2>
+      <p class="section-sub" style="margin-bottom:36px;">Every decision is logged, visualized, and replayable. Not a black box — a glass box.</p>
+      <div class="screenshot-strip">
+
+        <!-- UCI Dashboard mock -->
+        <div>
+          <div class="screenshot-mock">
+            <div class="mock-dots">
+              <div class="mock-dot" style="background:#C0392B;"></div>
+              <div class="mock-dot" style="background:#D4AC0D;"></div>
+              <div class="mock-dot" style="background:#27AE60;"></div>
+              <div class="mock-title">UCI Dashboard</div>
+            </div>
+            <div class="mock-body">
+              <div class="mock-label">UNIFIED COGNITIVE INDEX · h_UCI 80.8 <span style="color:rgba(46,174,96,0.80);font-size:9px;">↑ +5.7</span></div>
+              <div class="mock-row accent" style="width:88%;height:14px;border-radius:8px;"></div>
+              <div class="mock-bars">
+                <div class="mock-bar" style="height:30%;"></div>
+                <div class="mock-bar lit" style="height:75%;"></div>
+                <div class="mock-bar" style="height:50%;"></div>
+                <div class="mock-bar lit" style="height:90%;"></div>
+                <div class="mock-bar" style="height:60%;"></div>
+                <div class="mock-bar" style="height:40%;"></div>
+                <div class="mock-bar lit" style="height:82%;"></div>
+                <div class="mock-bar" style="height:35%;"></div>
+              </div>
+              <div class="mock-label" style="margin-top:6px;">Reliability · Intelligence · Adaptation · Productivity</div>
+            </div>
+          </div>
+          <div class="screenshot-caption">Intelligence Metrics</div>
+        </div>
+
+        <!-- Plan Graph mock -->
+        <div>
+          <div class="screenshot-mock">
+            <div class="mock-dots">
+              <div class="mock-dot" style="background:#C0392B;"></div>
+              <div class="mock-dot" style="background:#D4AC0D;"></div>
+              <div class="mock-dot" style="background:#27AE60;"></div>
+              <div class="mock-title">Plan Graph</div>
+            </div>
+            <div class="mock-body">
+              <div class="mock-label">EXECUTION DAG</div>
+              <div class="mock-nodes" style="margin-top:10px;">
+                <div class="mock-node done">parse</div>
+                <div class="mock-arrow">→</div>
+                <div class="mock-node done">route</div>
+                <div class="mock-arrow">→</div>
+                <div class="mock-node active">reason</div>
+              </div>
+              <div class="mock-nodes" style="margin-left:80px;margin-top:6px;">
+                <div class="mock-arrow" style="transform:rotate(90deg);">↓</div>
+              </div>
+              <div class="mock-nodes" style="margin-left:60px;">
+                <div class="mock-node pending">verify</div>
+                <div class="mock-arrow">→</div>
+                <div class="mock-node pending">respond</div>
+              </div>
+            </div>
+          </div>
+          <div class="screenshot-caption">Plan Graph</div>
+        </div>
+
+        <!-- Memory Browser mock -->
+        <div>
+          <div class="screenshot-mock">
+            <div class="mock-dots">
+              <div class="mock-dot" style="background:#C0392B;"></div>
+              <div class="mock-dot" style="background:#D4AC0D;"></div>
+              <div class="mock-dot" style="background:#27AE60;"></div>
+              <div class="mock-title">Memory Browser</div>
+            </div>
+            <div class="mock-body">
+              <div class="mock-label">592 MEMORIES · FAISS BACKEND</div>
+              <div class="mock-mem-rows" style="margin-top:8px;">
+                <div class="mock-mem-row">
+                  <div class="mock-mem-label">python_dev</div>
+                  <div class="mock-mem-bar accent" style="width:72%;background:rgba(199,154,67,0.40);"></div>
+                </div>
+                <div class="mock-mem-row">
+                  <div class="mock-mem-label">ai_ml</div>
+                  <div class="mock-mem-bar" style="width:55%;background:rgba(46,74,156,0.30);"></div>
+                </div>
+                <div class="mock-mem-row">
+                  <div class="mock-mem-label">it_network</div>
+                  <div class="mock-mem-bar" style="width:44%;background:rgba(39,174,96,0.25);"></div>
+                </div>
+                <div class="mock-mem-row">
+                  <div class="mock-mem-label">knowledge</div>
+                  <div class="mock-mem-bar" style="width:38%;background:rgba(142,68,173,0.25);"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="screenshot-caption">Memory Browser</div>
+        </div>
+
+        <!-- Decision Replay mock -->
+        <div>
+          <div class="screenshot-mock">
+            <div class="mock-dots">
+              <div class="mock-dot" style="background:#C0392B;"></div>
+              <div class="mock-dot" style="background:#D4AC0D;"></div>
+              <div class="mock-dot" style="background:#27AE60;"></div>
+              <div class="mock-title">Decision Replay</div>
+            </div>
+            <div class="mock-body">
+              <div class="mock-label">THEN vs NOW</div>
+              <div style="display:flex;gap:8px;margin-top:8px;">
+                <div style="flex:1;padding:8px;background:rgba(199,154,67,0.08);border-radius:8px;">
+                  <div class="mock-label" style="margin:0 0 4px;">THEN</div>
+                  <div class="mock-row short" style="height:8px;background:rgba(160,64,32,0.30);"></div>
+                  <div class="mock-row medium" style="height:8px;margin-top:5px;background:rgba(160,64,32,0.18);"></div>
+                </div>
+                <div style="flex:1;padding:8px;background:rgba(46,122,44,0.08);border-radius:8px;">
+                  <div class="mock-label" style="margin:0 0 4px;color:rgba(46,174,96,0.70);">NOW</div>
+                  <div class="mock-row" style="height:8px;background:rgba(46,122,44,0.30);width:75%;"></div>
+                  <div class="mock-row" style="height:8px;margin-top:5px;background:rgba(46,122,44,0.18);width:60%;"></div>
+                </div>
+              </div>
+              <div class="mock-label" style="margin-top:10px;">agent: same · confidence: improved · reflect: reduced</div>
+            </div>
+          </div>
+          <div class="screenshot-caption">Decision Replay</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ── FEATURES ── -->
+  <section id="features">
+    <div class="container">
+      <div class="section-tag">Why AMAGRA</div>
+      <h2>Not a chatbot. A team.</h2>
+      <p class="section-sub">Generic AI gives generic answers. Specialist agents give expert answers — every time, locally, privately.</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-title">Complete Privacy</div>
+          <div class="feature-desc">Runs entirely on your hardware. Conversations, code, and context never leave your machine. No telemetry, no external logging, no training on your data.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-title">Deterministic Routing</div>
+          <div class="feature-desc">A geometric scoring engine classifies intent in milliseconds — not an LLM call. Result: 98% routing accuracy at sub-second latency, every time.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-title">Persistent Memory</div>
+          <div class="feature-desc">Semantic memory across sessions using a FAISS vector backend with 52× LRU cache speedup. The system remembers your projects, lessons, and context.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-title">Full Observability</div>
+          <div class="feature-desc">Every routing decision is logged with confidence scores, domain signals, and regret metrics. You can audit exactly why the system chose what it chose.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-title">Consumer Hardware</div>
+          <div class="feature-desc">Runs on an RTX 2050 with 4GB VRAM. No A100, no cloud GPU, no inference bill. phi4-mini via Ollama delivers specialist-quality answers on a gaming laptop.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-title">Self-Learning</div>
+          <div class="feature-desc">Thumbs-up/down feedback adjusts agent weights through a learning kernel. The system adapts to your usage patterns over time and gets better the more you use it.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ── COGNITIVE OS ── -->
+  <section id="cognitive">
+    <div class="container">
+      <div class="section-tag">Cognitive OS</div>
+      <h2>More than chat.</h2>
+      <p class="section-sub">Most tools stop at the response. Amagra lets you see inside the process — replay decisions, inspect memory, trace every step.</p>
+      <div class="cognitive-grid">
+        <div class="cognitive-card">
+          <div class="cog-title">Plan Graph</div>
+          <div class="cog-desc">Visualize execution as a dependency graph. See which steps ran in parallel, which blocked, and why.</div>
+        </div>
+        <div class="cognitive-card">
+          <div class="cog-title">Decision Replay</div>
+          <div class="cog-desc">Re-run any past query and compare how the system would decide now vs then. Measure improvement over time.</div>
+        </div>
+        <div class="cognitive-card">
+          <div class="cog-title">Event Log</div>
+          <div class="cog-desc">A live stream of every cognitive event — routing, reflection, memory access, contradiction detection.</div>
+        </div>
+        <div class="cognitive-card">
+          <div class="cog-title">Memory Browser</div>
+          <div class="cog-desc">Browse, search, prune, and consolidate semantic memories. See quality scores and usage frequency for every entry.</div>
+        </div>
+        <div class="cognitive-card">
+          <div class="cog-title">Risk Observatory</div>
+          <div class="cog-desc">Track reflection triggers, critic gate acceptance rates, and routing conflict rates in real time.</div>
+        </div>
+        <div class="cognitive-card">
+          <div class="cog-title">Step Verification</div>
+          <div class="cog-desc">Each goal step is scored before delivery. Low-confidence responses trigger automatic retry with a higher reflection level.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ── AGENTS ── -->
+  <section id="agents">
+    <div class="container">
+      <div class="section-tag">Specialist Agents</div>
+      <h2>Each expert knows its domain.</h2>
+      <p class="section-sub">The routing engine reads every query and dispatches to the right specialist in under one second — automatically.</p>
+      <div class="agents-grid">
+        <div class="agent-card">
+          <div class="agent-name">Python Dev</div>
+          <div class="agent-desc">Python, FastAPI, asyncio, pandas. Complete, runnable scripts — not code fragments. Handles edge cases and imports.</div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">.NET Dev</div>
+          <div class="agent-desc">C#, ASP.NET Core, Blazor, Entity Framework. Full working code for the .NET ecosystem including DI, async, and xUnit tests.</div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">Web Dev</div>
+          <div class="agent-desc">React, TypeScript, Next.js, Node.js, Tailwind. Full-stack web from hooks to APIs. Handles build tooling and async state.</div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">IT &amp; Networking</div>
+          <div class="agent-desc">Wi-Fi, DNS, SSH, VPN, Linux networking. Runs real diagnostic commands and gives specific, actionable fixes.</div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">AI &amp; ML</div>
+          <div class="agent-desc">PyTorch, TensorFlow, LLMs, embeddings, fine-tuning. Explains concepts clearly and implements training pipelines.</div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">DevOps</div>
+          <div class="agent-desc">Docker, Kubernetes, GitHub Actions, Bash, systemd. Dockerfiles, Compose configs, CI/CD pipelines, and deployment scripts.</div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">Data Analyst</div>
+          <div class="agent-desc">pandas, SQL, NumPy, matplotlib. Data cleaning, EDA, and statistical summaries with working visualization code.</div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">Writer</div>
+          <div class="agent-desc">READMEs, API docs, blog posts, commit messages. Technical writing that developers actually want to read. Edits and proofreads.</div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">Knowledge</div>
+          <div class="agent-desc">Explains any concept clearly. Saves lessons to memory so you never lose what you learn. Corrects wrong analogies directly.</div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">Terse</div>
+          <div class="agent-desc">One-line answers. The command, the syntax, the flag. No explanation unless you ask. Fastest path to the answer you need.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ── HOW IT WORKS ── -->
+  <section id="how">
+    <div class="container">
+      <div class="section-tag">How It Works</div>
+      <h2>From query to expert answer in seconds.</h2>
+      <p class="section-sub">The routing pipeline is deterministic and auditable at every step.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div><div class="step-title">Signal Extraction</div><div class="step-desc">Your query is scored against domain-specific keyword registries. Each token votes for one or more specialist domains — no LLM required.</div></div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div><div class="step-title">Confidence Routing</div><div class="step-desc">If one domain scores above threshold with no competitor, it routes deterministically. Ambiguous queries use phi4-mini as tiebreaker.</div></div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div><div class="step-title">Specialist Response</div><div class="step-desc">The specialist receives your query with domain context and relevant memory injected. Response time: 2–8 seconds depending on complexity.</div></div>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div><div class="step-title">Memory + Learning</div><div class="step-desc">The response is stored as a semantic memory. Your feedback adjusts agent weights through the learning kernel — improving future answers.</div></div>
+        </div>
+      </div>
+
+      <div class="five-minutes">
+        <h3>First 5 minutes</h3>
+        <div class="five-steps">
+          <div class="five-step">
+            <div class="five-num">1</div>
+            <div class="five-label">Run Docker</div>
+            <div class="five-sub">docker-compose up</div>
+          </div>
+          <div class="five-step">
+            <div class="five-num">2</div>
+            <div class="five-label">Open Dashboard</div>
+            <div class="five-sub">localhost:3000</div>
+          </div>
+          <div class="five-step">
+            <div class="five-num">3</div>
+            <div class="five-label">Ask a Question</div>
+            <div class="five-sub">Any domain</div>
+          </div>
+          <div class="five-step">
+            <div class="five-num">4</div>
+            <div class="five-label">Watch Routing</div>
+            <div class="five-sub">See the decision</div>
+          </div>
+          <div class="five-step">
+            <div class="five-num">5</div>
+            <div class="five-label">Explore Memory</div>
+            <div class="five-sub">Plans &amp; replay</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-block" style="max-width:600px;margin:40px auto 0;">
+        <span class="comment"># Install &amp; run in 3 commands</span><br />
+        <span class="cmd">git clone https://github.com/d4shm1r/amagra</span><br />
+        <span class="cmd">cd agentic-ai &amp;&amp; cp .env.example .env</span><br />
+        <span class="cmd">docker-compose up</span><br /><br />
+        <span class="comment"># → Dashboard: http://localhost:3000</span><br />
+        <span class="comment"># → API:       http://localhost:8000</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ── COMPARISON TABLE ── -->
+  <section id="compare">
+    <div class="container">
+      <div class="section-tag">How We Compare</div>
+      <h2>Built different.</h2>
+      <p class="section-sub">Cloud AI tools are powerful but opaque, dependent, and expensive at scale. Amagra is the alternative for engineers who want control.</p>
+      <div class="compare-wrap">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th class="col-feature">Feature</th>
+              <th class="col-amagra">AMAGRA</th>
+              <th>ChatGPT</th>
+              <th>Claude</th>
+              <th>Copilot</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-feature">Runs locally (no cloud)</td>
+              <td class="col-amagra"><span class="check">✓</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Persistent memory</td>
+              <td class="col-amagra"><span class="check">✓</span></td>
+              <td><span class="partial">Limited</span></td>
+              <td><span class="partial">Limited</span></td>
+              <td><span class="cross">✗</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Decision replay</td>
+              <td class="col-amagra"><span class="check">✓</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Plan graph (DAG)</td>
+              <td class="col-amagra"><span class="check">✓</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Event log &amp; observability</td>
+              <td class="col-amagra"><span class="check">✓</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Self-hosted</td>
+              <td class="col-amagra"><span class="check">✓</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Routing audit trail</td>
+              <td class="col-amagra"><span class="check">✓</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Learns from feedback</td>
+              <td class="col-amagra"><span class="check">✓</span></td>
+              <td><span class="partial">Via RLHF</span></td>
+              <td><span class="partial">Via RLHF</span></td>
+              <td><span class="cross">✗</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">No subscription required</td>
+              <td class="col-amagra"><span class="check">✓ Self-hosted</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ── TRUST / BUILT IN PUBLIC ── -->
+  <section id="trust">
+    <div class="container">
+      <div class="section-tag">Built in Public</div>
+      <h2>Every phase, in public.</h2>
+      <p class="section-sub">38 completed development phases, an open architecture, and a full API — nothing is hidden. You can see exactly how it works.</p>
+      <div class="trust-grid">
+        <div class="trust-item">
+          <div class="trust-val" style="color:#2E7A2C;">38</div>
+          <div class="trust-label">Completed Dev Phases</div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-val" style="color:#8A6324;">98%</div>
+          <div class="trust-label">Routing Accuracy</div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-val" style="color:#A87933;">60+</div>
+          <div class="trust-label">API Endpoints</div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-val" style="color:#A04020;">52×</div>
+          <div class="trust-label">Cache Speedup (LRU)</div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-val" style="color:#7050A0;">21</div>
+          <div class="trust-label">Skill Graph Nodes</div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-val" style="color:#2E4A9C;">MIT</div>
+          <div class="trust-label">Open Source License</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ── PRICING ── -->
+  <section id="pricing">
+    <div class="container">
+      <div class="section-tag">Pricing</div>
+      <h2>Start free. Pay when it saves you time.</h2>
+      <p class="section-sub">The self-hosted version is free forever. Pro adds managed hosting with a frontier model backend.</p>
+      <div class="pricing-grid">
+
+        <div class="pricing-card">
+          <div class="price-tier">Self-Hosted</div>
+          <div class="price-amount">$0</div>
+          <div class="price-desc">Run on your own hardware with your own models. Full access, no subscription required, no limits.</div>
+          <ul class="price-features">
+            <li>All specialist agents</li>
+            <li>Local phi4-mini (4GB VRAM)</li>
+            <li>Unlimited queries</li>
+            <li>Full memory + learning system</li>
+            <li>Mission Control dashboard</li>
+            <li>Plan graph, replay, event log</li>
+            <li class="dim">Managed hosting</li>
+            <li class="dim">Claude / GPT-4o backend</li>
+          </ul>
+          <a href="#how" class="btn btn-ghost" style="width:100%;display:block;padding:11px;text-align:center;">Get the Code</a>
+        </div>
+
+        <div class="pricing-card featured">
+          <div class="pricing-badge">Most Popular</div>
+          <div class="price-tier">Developer</div>
+          <div class="price-amount">$39<span class="price-period">/month</span></div>
+          <div class="price-desc">Managed hosting with UCI dashboard, world model persistence, and 5k requests/day. No hardware required.</div>
+          <ul class="price-features">
+            <li>All 10 specialist agents</li>
+            <li>Hosted infrastructure</li>
+            <li>5,000 queries / day</li>
+            <li>Hosted UCI dashboard</li>
+            <li>World model persistence</li>
+            <li>Full memory + learning system</li>
+            <li>Priority support</li>
+            <li class="dim">Team features</li>
+          </ul>
+          <a href="/#checkout?plan=developer" class="btn btn-primary" style="width:100%;display:block;padding:11px;text-align:center;">Get Started</a>
+        </div>
+
+        <div class="pricing-card">
+          <div class="price-tier">Team</div>
+          <div class="price-amount">$249<span class="price-period">/month</span></div>
+          <div class="price-desc">2–10 users with shared cognitive state. One engineer's context improves the whole team.</div>
+          <ul class="price-features">
+            <li>Everything in Developer</li>
+            <li>Up to 10 users</li>
+            <li>Shared world model</li>
+            <li>50,000 queries / day</li>
+            <li>Org-level UCI dashboard</li>
+            <li>Team memory namespace</li>
+            <li>Cognitive Ops audit trail</li>
+          </ul>
+          <a href="mailto:contact@amagra.dev?subject=Amagra Team" class="btn btn-ghost" style="width:100%;display:block;padding:11px;text-align:center;">Contact Us</a>
+        </div>
+
+      </div>
+      <div class="proof-bar">
+        <div class="proof-item"><div class="proof-val" style="color:#2E7A2C;">Free</div><div class="proof-label">Self-Hosted Forever</div></div>
+        <div class="proof-item"><div class="proof-val" style="color:#8A6324;">21</div><div class="proof-label">Skill Nodes</div></div>
+        <div class="proof-item"><div class="proof-val" style="color:#A87933;">60+</div><div class="proof-label">API Endpoints</div></div>
+        <div class="proof-item"><div class="proof-val" style="color:#A04020;">52×</div><div class="proof-label">Cache Speedup</div></div>
+        <div class="proof-item"><div class="proof-val" style="color:#7050A0;">98%</div><div class="proof-label">Routing Accuracy</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="container">
+      <div class="section-tag">Common Questions</div>
+      <h2>FAQ</h2>
+      <div class="faq-grid">
+        <div class="faq-item">
+          <div class="faq-q">Do I need a GPU?</div>
+          <div class="faq-a">A 4GB VRAM GPU is recommended for phi4-mini. The system also runs on CPU with reduced throughput. Any modern NVIDIA RTX card works out of the box.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">What models does it support?</div>
+          <div class="faq-a">Any model served by Ollama — phi4-mini by default. Swap to Llama 3, Mistral, Gemma, or any GGUF-compatible model by changing a single config line.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Does data ever leave my machine?</div>
+          <div class="faq-a">No. The self-hosted version runs entirely locally — inference, memory, and routing all happen on your hardware. Zero telemetry.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">How is routing handled?</div>
+          <div class="faq-a">A signal-first QuerySignal pipeline classifies each query using phrase-weighted keyword scoring across a 21-node skill graph, hitting 98% accuracy without any external API calls.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">What is h_UCI?</div>
+          <div class="faq-a">The Hierarchical Unified Cognitive Index — a composite score across Reliability, Intelligence, Adaptation, and Productivity. Current value: 80.8/100. It updates live as the system processes queries.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Is there a managed cloud option?</div>
+          <div class="faq-a">Yes — the Developer and Team plans (see Pricing) provide managed hosting with UCI dashboard persistence, no GPU required. Contact us to get on the early access list.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cta">
+    <div class="container">
+      <div class="section-tag">Open Source · Self-Hosted · Private</div>
+      <h2>Your AI. Your hardware. Your data.</h2>
+      <p class="section-sub" style="margin:0 auto 36px;">
+        The self-hosted version is free forever. Runs on hardware you already own. Get a free API key in seconds — no card required.
+      </p>
+      <div class="hero-actions">
+        <a href="http://localhost:8000/register/free" class="btn btn-primary btn-lg">Get Free API Key</a>
+        <a href="http://localhost:3000" class="btn btn-ghost btn-lg">Open Dashboard</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-logo">
+      <span class="logo-text">AMAGRA</span>
+    </div>
+    <span class="footer-copy">© 2026 Amagra. All rights reserved.</span>
+    <ul class="footer-links">
+      <li><a href="http://localhost:3000">Dashboard</a></li>
+      <li><a href="http://localhost:8000/docs">API Docs</a></li>
+      <li><a href="mailto:contact@amagra.dev">Contact</a></li>
+    </ul>
+  </footer>
+
+</body>
+</html>

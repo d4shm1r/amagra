@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+langgraph-env/
+
+# Runtime databases — all generated at startup, never committed
+logs/*.db
+memory/*.db
+tasks.db
+
+# Runtime logs and session artifacts
+logs/*.log
+**/logs/*.log
+logs/*.json
+logs/*.jsonl
+logs/*.html
+logs/*.pkl
+auto_train_results.json
+auto_train_run*.log
+
+# Learned state — regenerated from sessions, not source
+memory/learning_progress.json
+logs/brain_weights.json
+
+# Personal test data — generated during development, never committed
+memory/lessons/
+memory/*.bin
+decision/logs/
+
+# Developer-only files — completed checklists and personal research artifacts
+PUBLISH_CHECKLIST.md
+research/
+docs/revenueGPT.md
+docs/ideas/
+
+# Environment and secrets
+.env
+config/settings.env
+config/profile.json
+
+# Example/template files are committed; actual generated configs are not
+!.env.example
+!config/profile.example.json
+
+# Archives and backups — local dev history, not part of the distributable project
+archive/
+backups/
+*.bak
+*.bak2
+
+# Node
+node_modules/
+ui/node_modules/
+ui/build/
+package-lock.json
+ui/package-lock.json
+
+# Test artifacts
+.coverage
+.pytest_cache/
+
+# Claude Code local settings
+.claude/
+
+# Misc
+*.tmp
+.DS_Store

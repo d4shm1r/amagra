@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: agentic-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # GPU passthrough (remove deploy block if no NVIDIA GPU)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  api:
+    build: .
+    container_name: agentic-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./memory:/app/memory
+      - ./logs:/app/logs
+    environment:
+      - REQUIRE_AUTH=${REQUIRE_AUTH:-0}
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-}
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ui:
+    image: node:20-alpine
+    container_name: agentic-ui
+    working_dir: /app
+    command: sh -c "npm install && npm run build && npx serve -s build -l 3000"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./ui:/app
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  ollama_data:

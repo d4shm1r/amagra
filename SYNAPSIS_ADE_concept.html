@@ -1,0 +1,381 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.shell{display:grid;grid-template-columns:52px 180px 1fr 260px;grid-template-rows:40px 1fr 200px;height:720px;background:var(--color-background-tertiary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;font-size:12px}
+.topbar{grid-column:1/-1;background:var(--color-background-primary);border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;gap:12px;padding:0 14px}
+.logo{font-size:13px;font-weight:500;color:var(--color-text-primary);letter-spacing:.5px}
+.logo span{color:#534AB7}
+.tabnav{display:flex;gap:2px;margin-left:8px}
+.tab{padding:6px 12px;font-size:11px;border-radius:4px;color:var(--color-text-secondary);cursor:pointer;border:none;background:none}
+.tab.active{background:var(--color-background-secondary);color:var(--color-text-primary);font-weight:500}
+.breadcrumb{margin-left:auto;font-size:11px;color:var(--color-text-tertiary)}
+.statusbadge{background:#1D9E75;color:#fff;font-size:10px;font-weight:500;padding:2px 8px;border-radius:10px;margin-left:8px}
+.topright{display:flex;align-items:center;gap:10px;margin-left:auto}
+.iconbtn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary);cursor:pointer;color:var(--color-text-secondary)}
+.deploybtn{background:#534AB7;color:#fff;font-size:11px;font-weight:500;padding:5px 14px;border-radius:var(--border-radius-md);border:none;cursor:pointer}
+
+.rail{background:var(--color-background-primary);border-right:0.5px solid var(--color-border-tertiary);display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0}
+.railbtn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:var(--border-radius-md);color:var(--color-text-tertiary);cursor:pointer;font-size:18px}
+.railbtn.active{background:var(--color-background-secondary);color:#534AB7}
+.railbtn.bottom{margin-top:auto}
+
+.sidebar{background:var(--color-background-primary);border-right:0.5px solid var(--color-border-tertiary);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-section{padding:10px 12px 6px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.sidebar-label{font-size:10px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.agent-row{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:var(--border-radius-md);cursor:pointer}
+.agent-row:hover{background:var(--color-background-secondary)}
+.agent-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-active{background:#1D9E75}
+.dot-thinking{background:#EF9F27;animation:pulse 1s infinite}
+.dot-idle{background:var(--color-border-secondary)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.agent-name{font-size:12px;color:var(--color-text-primary);font-weight:500}
+.agent-sub{font-size:10px;color:var(--color-text-tertiary)}
+
+.main{background:var(--color-background-secondary);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.canvas-area{flex:1;position:relative;overflow:hidden;padding:20px}
+.canvas-label{position:absolute;top:12px;left:16px;font-size:10px;font-weight:500;color:var(--color-text-tertiary);letter-spacing:.5px;text-transform:uppercase}
+
+.node{position:absolute;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:9px 12px;min-width:130px;cursor:pointer}
+.node:hover{border-color:var(--color-border-secondary)}
+.node.running{border-color:#534AB7;box-shadow:0 0 0 2px #EEEDFE}
+.node-header{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.node-icon{font-size:14px;color:var(--color-text-secondary)}
+.node-title{font-size:11px;font-weight:500;color:var(--color-text-primary)}
+.node-agent{font-size:10px;color:var(--color-text-tertiary)}
+.node-prog{height:2px;border-radius:2px;background:var(--color-border-tertiary);margin-top:6px;overflow:hidden}
+.node-prog-fill{height:100%;border-radius:2px;background:#534AB7}
+
+.edge{position:absolute;pointer-events:none}
+
+.intent-box{position:absolute;bottom:12px;left:16px;right:16px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:8px 12px;display:flex;align-items:center;gap:8px}
+.intent-input{flex:1;border:none;background:none;font-size:12px;color:var(--color-text-primary);outline:none}
+.intent-run{background:#534AB7;color:#fff;font-size:11px;font-weight:500;padding:4px 12px;border-radius:6px;border:none;cursor:pointer}
+
+.rightpanel{background:var(--color-background-primary);border-left:0.5px solid var(--color-border-tertiary);display:flex;flex-direction:column;overflow:hidden}
+.rpanel-tabs{display:flex;border-bottom:0.5px solid var(--color-border-tertiary);padding:0 12px}
+.rtab{padding:8px 10px;font-size:11px;font-weight:500;color:var(--color-text-tertiary);cursor:pointer;border-bottom:2px solid transparent}
+.rtab.active{color:#534AB7;border-bottom-color:#534AB7}
+.rpanel-body{flex:1;overflow-y:auto;padding:10px 12px}
+
+.ctx-row{display:flex;align-items:start;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.ctx-icon{font-size:14px;color:var(--color-text-tertiary);margin-top:1px}
+.ctx-main{flex:1}
+.ctx-title{font-size:11px;font-weight:500;color:var(--color-text-primary)}
+.ctx-sub{font-size:10px;color:var(--color-text-tertiary);margin-top:1px}
+.ctx-badge{font-size:10px;padding:1px 7px;border-radius:10px;font-weight:500;flex-shrink:0;align-self:center}
+.badge-high{background:#EEEDFE;color:#3C3489}
+.badge-med{background:#FAEEDA;color:#633806}
+.badge-ok{background:#EAF3DE;color:#27500A}
+
+.memory-block{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:8px 10px;margin-bottom:6px}
+.mem-title{font-size:11px;font-weight:500;color:var(--color-text-primary)}
+.mem-sub{font-size:10px;color:var(--color-text-tertiary);margin-top:2px;line-height:1.4}
+.mem-tags{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap}
+.mem-tag{font-size:10px;padding:1px 7px;background:var(--color-background-tertiary);border-radius:10px;color:var(--color-text-secondary)}
+
+.model-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.model-name{font-size:11px;font-weight:500;color:var(--color-text-primary);flex:1}
+.model-role{font-size:10px;color:var(--color-text-tertiary)}
+.model-dot{width:8px;height:8px;border-radius:50%}
+
+.bottombar{grid-column:1/-1;background:var(--color-background-primary);border-top:0.5px solid var(--color-border-tertiary);display:flex;overflow:hidden}
+.bottom-tab-nav{display:flex;gap:0;border-right:0.5px solid var(--color-border-tertiary)}
+.btab{padding:8px 14px;font-size:11px;font-weight:500;color:var(--color-text-tertiary);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.btab.active{color:#534AB7;border-bottom-color:#534AB7;background:var(--color-background-secondary)}
+.bottom-content{flex:1;overflow-x:auto;padding:10px 14px;display:flex;gap:8px;align-items:start}
+.feed-item{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:11px;color:var(--color-text-secondary)}
+.feed-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.feed-time{color:var(--color-text-tertiary);font-size:10px}
+.separator{color:var(--color-border-secondary);margin:0 2px}
+
+svg.edges{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+</style>
+
+<div class="shell" role="img" aria-label="SYNAPSIS — concept UI for a next-generation agentic development environment">
+
+  <div class="topbar">
+    <span class="logo">SYN<span>APSIS</span></span>
+    <span style="font-size:10px;color:var(--color-text-tertiary);border:0.5px solid var(--color-border-tertiary);padding:1px 7px;border-radius:10px">v1.0-alpha</span>
+    <div class="tabnav">
+      <button class="tab active">Compose</button>
+      <button class="tab">Knowledge</button>
+      <button class="tab">Simulate</button>
+      <button class="tab">Observe</button>
+    </div>
+    <span class="breadcrumb">Workspace / Cognet Infra / <strong style="color:var(--color-text-primary)">QuantumSearch</strong></span>
+    <span class="statusbadge">● Live</span>
+    <div class="topright">
+      <div class="iconbtn"><i class="ti ti-share" style="font-size:14px" aria-hidden="true"></i></div>
+      <div class="iconbtn"><i class="ti ti-git-branch" style="font-size:14px" aria-hidden="true"></i></div>
+      <button class="deploybtn">Deploy →</button>
+    </div>
+  </div>
+
+  <div class="rail">
+    <div class="railbtn active"><i class="ti ti-layout-grid" aria-hidden="true"></i></div>
+    <div class="railbtn"><i class="ti ti-file-code" aria-hidden="true"></i></div>
+    <div class="railbtn"><i class="ti ti-bulb" aria-hidden="true"></i></div>
+    <div class="railbtn"><i class="ti ti-database" aria-hidden="true"></i></div>
+    <div class="railbtn"><i class="ti ti-chart-line" aria-hidden="true"></i></div>
+    <div class="railbtn bottom"><i class="ti ti-settings" aria-hidden="true"></i></div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Agent mesh</div>
+      <div class="agent-row">
+        <div class="agent-dot dot-active"></div>
+        <div>
+          <div class="agent-name">Architect</div>
+          <div class="agent-sub">System design</div>
+        </div>
+        <span style="margin-left:auto;font-size:10px;color:#1D9E75">done</span>
+      </div>
+      <div class="agent-row">
+        <div class="agent-dot dot-thinking"></div>
+        <div>
+          <div class="agent-name">Coder</div>
+          <div class="agent-sub">Full-stack impl</div>
+        </div>
+        <span style="margin-left:auto;font-size:10px;color:#BA7517">73%</span>
+      </div>
+      <div class="agent-row">
+        <div class="agent-dot dot-thinking"></div>
+        <div>
+          <div class="agent-name">Verifier</div>
+          <div class="agent-sub">Proof + invariants</div>
+        </div>
+        <span style="margin-left:auto;font-size:10px;color:#BA7517">41%</span>
+      </div>
+      <div class="agent-row">
+        <div class="agent-dot dot-idle"></div>
+        <div>
+          <div class="agent-name">Security</div>
+          <div class="agent-sub">Threat scan</div>
+        </div>
+        <span style="margin-left:auto;font-size:10px;color:var(--color-text-tertiary)">queued</span>
+      </div>
+      <div class="agent-row">
+        <div class="agent-dot dot-idle"></div>
+        <div>
+          <div class="agent-name">DevOps</div>
+          <div class="agent-sub">Infra + pipelines</div>
+        </div>
+        <span style="margin-left:auto;font-size:10px;color:var(--color-text-tertiary)">queued</span>
+      </div>
+    </div>
+    <div class="sidebar-section" style="flex:1">
+      <div class="sidebar-label">Execution plan</div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:4px;background:var(--color-background-secondary)">
+          <i class="ti ti-check" style="font-size:12px;color:#1D9E75" aria-hidden="true"></i>
+          <span style="font-size:11px;color:var(--color-text-secondary)">Schema design</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:4px;background:var(--color-background-secondary)">
+          <i class="ti ti-check" style="font-size:12px;color:#1D9E75" aria-hidden="true"></i>
+          <span style="font-size:11px;color:var(--color-text-secondary)">API contracts</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:4px;border:0.5px solid #534AB7">
+          <div style="width:10px;height:10px;border-radius:50%;border:2px solid #534AB7;border-top-color:transparent;animation:spin .8s linear infinite;flex-shrink:0"></div>
+          <span style="font-size:11px;font-weight:500;color:var(--color-text-primary)">Core indexer</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:4px">
+          <i class="ti ti-circle-dashed" style="font-size:12px;color:var(--color-text-tertiary)" aria-hidden="true"></i>
+          <span style="font-size:11px;color:var(--color-text-tertiary)">Query planner</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:4px">
+          <i class="ti ti-circle-dashed" style="font-size:12px;color:var(--color-text-tertiary)" aria-hidden="true"></i>
+          <span style="font-size:11px;color:var(--color-text-tertiary)">Test suite</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:4px">
+          <i class="ti ti-circle-dashed" style="font-size:12px;color:var(--color-text-tertiary)" aria-hidden="true"></i>
+          <span style="font-size:11px;color:var(--color-text-tertiary)">Deploy pipeline</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="canvas-area">
+      <span class="canvas-label">Execution graph · 5 agents · 18 steps · 61% complete</span>
+
+      <svg class="edges">
+        <defs>
+          <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#B4B2A9"/>
+          </marker>
+        </defs>
+        <line x1="175" y1="75" x2="275" y2="75" stroke="#B4B2A9" stroke-width="1" marker-end="url(#arr)"/>
+        <line x1="175" y1="75" x2="200" y2="175" stroke="#B4B2A9" stroke-width="1" marker-end="url(#arr)"/>
+        <line x1="410" y1="75" x2="490" y2="75" stroke="#B4B2A9" stroke-width="1" marker-end="url(#arr)"/>
+        <line x1="410" y1="75" x2="440" y2="175" stroke="#B4B2A9" stroke-width="1" marker-end="url(#arr)"/>
+        <line x1="340" y1="185" x2="490" y2="120" stroke="#B4B2A9" stroke-width="1" marker-end="url(#arr)"/>
+        <line x1="635" y1="75" x2="720" y2="135" stroke="#534AB7" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+        <line x1="575" y1="195" x2="720" y2="165" stroke="#B4B2A9" stroke-width="1" marker-end="url(#arr)"/>
+      </svg>
+
+      <div class="node" style="left:20px;top:50px;width:145px">
+        <div class="node-header">
+          <i class="ti ti-layout-board node-icon" style="color:#1D9E75" aria-hidden="true"></i>
+          <span class="node-title">Analyze intent</span>
+        </div>
+        <div class="node-agent">Architect</div>
+        <div class="node-prog"><div class="node-prog-fill" style="width:100%;background:#1D9E75"></div></div>
+      </div>
+
+      <div class="node" style="left:275px;top:50px;width:130px">
+        <div class="node-header">
+          <i class="ti ti-vector-triangle node-icon" style="color:#1D9E75" aria-hidden="true"></i>
+          <span class="node-title">Schema graph</span>
+        </div>
+        <div class="node-agent">Architect</div>
+        <div class="node-prog"><div class="node-prog-fill" style="width:100%;background:#1D9E75"></div></div>
+      </div>
+
+      <div class="node running" style="left:490px;top:50px;width:140px">
+        <div class="node-header">
+          <i class="ti ti-code node-icon" style="color:#534AB7" aria-hidden="true"></i>
+          <span class="node-title">Indexer core</span>
+        </div>
+        <div class="node-agent">Coder</div>
+        <div class="node-prog"><div class="node-prog-fill" style="width:73%"></div></div>
+      </div>
+
+      <div class="node" style="left:200px;top:158px;width:138px">
+        <div class="node-header">
+          <i class="ti ti-math-function node-icon" style="color:#1D9E75" aria-hidden="true"></i>
+          <span class="node-title">Formal spec</span>
+        </div>
+        <div class="node-agent">Verifier</div>
+        <div class="node-prog"><div class="node-prog-fill" style="width:100%;background:#1D9E75"></div></div>
+      </div>
+
+      <div class="node running" style="left:440px;top:158px;width:130px">
+        <div class="node-header">
+          <i class="ti ti-checklist node-icon" style="color:#534AB7" aria-hidden="true"></i>
+          <span class="node-title">Proof check</span>
+        </div>
+        <div class="node-agent">Verifier</div>
+        <div class="node-prog"><div class="node-prog-fill" style="width:41%"></div></div>
+      </div>
+
+      <div class="node" style="left:720px;top:120px;width:138px;border-color:var(--color-border-tertiary)">
+        <div class="node-header">
+          <i class="ti ti-search node-icon" aria-hidden="true"></i>
+          <span class="node-title">Query planner</span>
+        </div>
+        <div class="node-agent">Coder · pending</div>
+        <div class="node-prog"><div class="node-prog-fill" style="width:0%"></div></div>
+      </div>
+
+      <div class="intent-box">
+        <i class="ti ti-terminal-2" style="font-size:14px;color:var(--color-text-tertiary)" aria-hidden="true"></i>
+        <input class="intent-input" placeholder="Refine intent — e.g. 'add fuzzy search tolerance' or 'optimize for write-heavy workload'" readonly />
+        <button class="intent-run">Run ⌘↵</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="rightpanel">
+    <div class="rpanel-tabs">
+      <div class="rtab active">Context</div>
+      <div class="rtab">Memory</div>
+      <div class="rtab">Models</div>
+    </div>
+    <div class="rpanel-body">
+      <div style="font-size:10px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Active signals</div>
+
+      <div class="ctx-row">
+        <i class="ti ti-file-text ctx-icon" aria-hidden="true"></i>
+        <div class="ctx-main">
+          <div class="ctx-title">schema_v4.proto</div>
+          <div class="ctx-sub">Pinned · 3.2k tokens</div>
+        </div>
+        <span class="ctx-badge badge-high">pinned</span>
+      </div>
+      <div class="ctx-row">
+        <i class="ti ti-link ctx-icon" aria-hidden="true"></i>
+        <div class="ctx-main">
+          <div class="ctx-title">Prior session — indexer design</div>
+          <div class="ctx-sub">Memory retrieval · 1.4k tokens</div>
+        </div>
+        <span class="ctx-badge badge-ok">auto</span>
+      </div>
+      <div class="ctx-row">
+        <i class="ti ti-alert-triangle ctx-icon" style="color:#BA7517" aria-hidden="true"></i>
+        <div class="ctx-main">
+          <div class="ctx-title">Invariant breach detected</div>
+          <div class="ctx-sub">Verifier flagged null-safety gap</div>
+        </div>
+        <span class="ctx-badge badge-med">review</span>
+      </div>
+
+      <div style="font-size:10px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 6px">Suggestions</div>
+
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:7px 9px;display:flex;justify-content:space-between;align-items:start;gap:8px">
+          <div>
+            <div style="font-size:11px;font-weight:500;color:var(--color-text-primary)">Add bloom filter layer</div>
+            <div style="font-size:10px;color:var(--color-text-tertiary);margin-top:2px">Reduces false-positive index scans</div>
+          </div>
+          <button style="font-size:10px;padding:2px 9px;border-radius:6px;background:#534AB7;color:#fff;border:none;cursor:pointer;white-space:nowrap">Apply</button>
+        </div>
+        <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:7px 9px;display:flex;justify-content:space-between;align-items:start;gap:8px">
+          <div>
+            <div style="font-size:11px;font-weight:500;color:var(--color-text-primary)">Enable write-ahead log</div>
+            <div style="font-size:10px;color:var(--color-text-tertiary);margin-top:2px">Crash recovery for indexer</div>
+          </div>
+          <button style="font-size:10px;padding:2px 9px;border-radius:6px;border:0.5px solid var(--color-border-secondary);background:none;color:var(--color-text-secondary);cursor:pointer;white-space:nowrap">Apply</button>
+        </div>
+        <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:7px 9px;display:flex;justify-content:space-between;align-items:start;gap:8px">
+          <div>
+            <div style="font-size:11px;font-weight:500;color:var(--color-text-primary)">Extract query DSL</div>
+            <div style="font-size:10px;color:var(--color-text-tertiary);margin-top:2px">Decouple planner from storage</div>
+          </div>
+          <button style="font-size:10px;padding:2px 9px;border-radius:6px;border:0.5px solid var(--color-border-secondary);background:none;color:var(--color-text-secondary);cursor:pointer;white-space:nowrap">Apply</button>
+        </div>
+      </div>
+
+      <div style="font-size:10px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 6px">Model routing</div>
+      <div class="model-row">
+        <div class="model-dot" style="background:#534AB7"></div>
+        <div class="model-name">Claude Opus</div>
+        <div class="model-role">Reasoning · Verifier</div>
+      </div>
+      <div class="model-row">
+        <div class="model-dot" style="background:#1D9E75"></div>
+        <div class="model-name">Claude Sonnet</div>
+        <div class="model-role">Codegen · Architect</div>
+      </div>
+      <div class="model-row">
+        <div class="model-dot" style="background:#EF9F27"></div>
+        <div class="model-name">Haiku</div>
+        <div class="model-role">Autocomplete · fast</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottombar">
+    <div class="bottom-tab-nav">
+      <div class="btab active">Activity</div>
+      <div class="btab">Logs</div>
+      <div class="btab">Proof trace</div>
+      <div class="btab">Diff</div>
+    </div>
+    <div class="bottom-content">
+      <div class="feed-item"><div class="feed-dot" style="background:#1D9E75"></div>Architect completed schema graph<span class="separator">·</span><span class="feed-time">12s ago</span></div>
+      <div class="feed-item"><span style="color:var(--color-border-secondary)">|</span></div>
+      <div class="feed-item"><div class="feed-dot" style="background:#534AB7;animation:pulse 1s infinite"></div>Coder writing indexer — 73%<span class="separator">·</span><span class="feed-time">now</span></div>
+      <div class="feed-item"><span style="color:var(--color-border-secondary)">|</span></div>
+      <div class="feed-item"><div class="feed-dot" style="background:#BA7517;animation:pulse 1s infinite"></div>Verifier flagged null-safety in line 142<span class="separator">·</span><span class="feed-time">now</span></div>
+      <div class="feed-item"><span style="color:var(--color-border-secondary)">|</span></div>
+      <div class="feed-item"><div class="feed-dot" style="background:#888780"></div>Security queued<span class="separator">·</span><span class="feed-time">pending</span></div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>

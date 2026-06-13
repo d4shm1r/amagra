@@ -1,0 +1,9 @@
+{
+  "_comment": "Copy this file to config/profile.json and fill in your details. Leave any field blank to omit it.",
+  "name": "Your Name",
+  "role": "e.g. Software Engineer, Student, Researcher",
+  "background": "e.g. 5 years Python, new to ML, building personal AI tools",
+  "communication_style": "e.g. concise answers, no filler phrases, structured output preferred",
+  "preferences": "e.g. code examples before theory, short definitions first",
+  "dont": "e.g. no unsolicited opinions, no excessive caveats"
+}
