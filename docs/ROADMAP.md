@@ -76,14 +76,16 @@ Deferred pre-launch engineering, now landed post-debut. The one open item is the
 
 Agents that do things, not just say things. Closes the gap vs Continue/Cursor/Claude Code.
 
-| Item | Impact | Difficulty | ROI |
-|------|--------|-----------|-----|
-| Sandboxed code execution | 10 | 8 | ★★★★ |
-| Live web search (Brave/SearXNG/Tavily) | 9 | 4 | ★★★★★ |
-| Jailed file/folder tool (`Path.resolve().is_relative_to(root)`) | 8 | 5 | ★★★★ |
-| Stop / regenerate / edit-message affordances | 7 | 3 | ★★★★★ |
-| Thread management: rename, fork, archive | 6 | 2 | ★★★★ |
-| Memory import/export (JSON/Markdown) | 8 | 3 | ★★★★★ |
+| Item | Status | Impact | Difficulty | ROI |
+|------|--------|--------|-----------|-----|
+| Sandboxed code execution | | 10 | 8 | ★★★★ |
+| Live web search (Brave/SearXNG/Tavily) | | 9 | 4 | ★★★★★ |
+| Jailed file/folder tool (`Path.resolve().is_relative_to(root)`) | | 8 | 5 | ★★★★ |
+| Stop / regenerate / edit-message affordances | | 7 | 3 | ★★★★★ |
+| Thread management: rename, fork, archive | | 6 | 2 | ★★★★ |
+| Memory import/export (JSON/Markdown) | ✅ shipped | 8 | 3 | ★★★★★ |
+
+**Memory import/export (shipped):** `GET /memory/export.json` (lossless — base64 float32 embeddings, re-imports with no model call), `GET /memory/export.md` (human-readable, grouped by agent), `POST /memory/import` (dedups via the near-duplicate gate, then rebuilds the FAISS index). CSV export predates this.
 
 **Code execution:** Each agent optionally runs the code it writes in an isolated sandbox (Docker subcontainer, timeout/resource limits). Output inline below the code block. No copy-paste required.
 

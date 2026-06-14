@@ -1,6 +1,6 @@
 import os
 import sqlite3
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Body
 from fastapi.responses import Response
 
 from .deps import _ROOT, _CONTRADICTIONS_DB
@@ -164,6 +164,57 @@ def export_memories_csv():
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/memory/export.json")
+def export_memories_json(agent: str = "", embeddings: bool = True):
+    """Full-fidelity JSON export (lossless re-import when embeddings=true)."""
+    try:
+        import memory_core.db as _mdb
+        data = _mdb.export_memories_json(
+            agent_name=agent or None, include_embeddings=embeddings
+        )
+        return Response(
+            content=data,
+            media_type="application/json",
+            headers={"Content-Disposition": "attachment; filename=memories.json"},
+        )
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@router.get("/memory/export.md")
+def export_memories_markdown(agent: str = ""):
+    """Human-readable Markdown export, grouped by agent."""
+    try:
+        import memory_core.db as _mdb
+        data = _mdb.export_memories_markdown(agent_name=agent or None)
+        return Response(
+            content=data,
+            media_type="text/markdown",
+            headers={"Content-Disposition": "attachment; filename=memories.md"},
+        )
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@router.post("/memory/import")
+def import_memories(payload: dict = Body(...), reembed: bool = False):
+    """Import a JSON memory export. Dedups, then rebuilds the search index."""
+    try:
+        import memory_core.db as _mdb
+        result = _mdb.import_memories_json(payload, reembed=reembed)
+        if result["imported"]:
+            try:
+                from memory_core.backend import get_backend
+                get_backend()._build_index()
+            except Exception:
+                pass
+        return result
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(500, str(e))
 
 
 @router.get("/coherence")

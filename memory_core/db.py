@@ -833,6 +833,146 @@ def export_memories_csv() -> str:
     return buf.getvalue()
 
 
+# ── Portable export / import (JSON, Markdown) ─────────────────
+# JSON export base64-encodes the float32 embedding so a re-import is lossless
+# and needs no embedding model — the stored vector is reused directly. This is
+# the backup/transfer format; CSV (above) stays the spreadsheet-friendly view.
+
+_EXPORT_FORMAT = "amagra.memory/1"
+
+
+def _scoped_rows(agent_name=None, owner_key_id=None, columns="*"):
+    """Fetch memory rows, optionally filtered by agent and tenant (owner_key_id)."""
+    if owner_key_id is None:
+        owner_key_id = _current_owner_key_id.get()
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    try:
+        q = f"SELECT {columns} FROM memories"
+        clauses, params = [], []
+        if agent_name:
+            clauses.append("agent_name = ?"); params.append(agent_name)
+        if owner_key_id is not None:
+            clauses.append("(owner_key_id = ? OR owner_key_id IS NULL)")
+            params.append(owner_key_id)
+        if clauses:
+            q += " WHERE " + " AND ".join(clauses)
+        q += " ORDER BY id"
+        return conn.execute(q, params).fetchall()
+    finally:
+        conn.close()
+
+
+def export_memories_json(agent_name=None, include_embeddings=True,
+                         owner_key_id=None) -> str:
+    """Full-fidelity JSON dump of memories (lossless when include_embeddings)."""
+    import base64
+    rows = _scoped_rows(
+        agent_name, owner_key_id,
+        columns=("id, timestamp, agent_name, mem_type, content, metadata, "
+                 "embedding, COALESCE(quality,1.0), COALESCE(use_count,0), last_used"),
+    )
+    dim = 0
+    mems = []
+    for r in rows:
+        rec = {
+            "timestamp": r[1], "agent": r[2], "type": r[3], "content": r[4],
+            "metadata": json.loads(r[5]) if r[5] else None,
+            "quality": round(float(r[7]), 4), "use_count": r[8], "last_used": r[9],
+        }
+        if include_embeddings and r[6] is not None:
+            rec["embedding_b64"] = base64.b64encode(r[6]).decode("ascii")
+            dim = len(r[6]) // 4  # float32
+        mems.append(rec)
+    return json.dumps({
+        "format": _EXPORT_FORMAT,
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "embedding_dim": dim,
+        "count": len(mems),
+        "memories": mems,
+    }, indent=2, ensure_ascii=False)
+
+
+def export_memories_markdown(agent_name=None, owner_key_id=None) -> str:
+    """Human-readable Markdown dump, grouped by agent."""
+    rows = _scoped_rows(
+        agent_name, owner_key_id,
+        columns="agent_name, mem_type, content, COALESCE(quality,1.0), timestamp",
+    )
+    out = ["# Amagra memory export",
+           f"\n_Exported {datetime.now(timezone.utc).isoformat()} · {len(rows)} memories_\n"]
+    current = None
+    for agent, mtype, content, quality, ts in rows:
+        if agent != current:
+            out.append(f"\n## {agent}\n")
+            current = agent
+        out.append(f"- **[{mtype}]** _(q={round(float(quality), 2)}, {ts})_\n\n"
+                   f"  {(content or '').strip()}\n")
+    return "\n".join(out)
+
+
+def import_memories_json(payload, reembed=False, owner_key_id=None) -> dict:
+    """Ingest a JSON export. Reuses stored embeddings unless reembed=True.
+
+    Dedups against existing memories (same near-duplicate gate as save()), so
+    re-importing the same file is idempotent. Returns a per-outcome summary.
+    """
+    import base64
+    if owner_key_id is None:
+        owner_key_id = _current_owner_key_id.get()
+    if isinstance(payload, str):
+        payload = json.loads(payload)
+    mems = payload.get("memories") if isinstance(payload, dict) else payload
+    if not isinstance(mems, list):
+        raise ValueError('expected a list of memories or {"memories": [...]}')
+
+    imported = duplicates = errors = 0
+    for m in mems:
+        try:
+            content = (m.get("content") or "").strip()
+            if not content:
+                errors += 1
+                continue
+            agent = m.get("agent") or m.get("agent_name") or "knowledge_learning"
+            mtype = m.get("type") or m.get("mem_type") or "imported"
+
+            b64 = m.get("embedding_b64")
+            if b64 and not reembed:
+                emb = _normalize(np.frombuffer(base64.b64decode(b64), dtype=np.float32))
+            else:
+                emb = _normalize(get_embedding(content))
+            emb_bytes = emb.tobytes()
+
+            if _is_near_duplicate(emb, agent):
+                duplicates += 1
+                continue
+
+            meta = m.get("metadata")
+            quality = max(0.0, min(1.0, float(m.get("quality", 1.0))))
+            ts = m.get("timestamp") or datetime.now(timezone.utc).isoformat()
+            with _lock:
+                conn = sqlite3.connect(DB_PATH, timeout=30)
+                try:
+                    conn.execute("PRAGMA journal_mode=WAL;")
+                    conn.execute(
+                        """INSERT INTO memories
+                           (timestamp, agent_name, mem_type, content, metadata,
+                            embedding, quality, owner_key_id)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (ts, agent, mtype, content,
+                         json.dumps(meta) if meta else None,
+                         emb_bytes, quality, owner_key_id),
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+            imported += 1
+        except Exception as e:
+            print(f"[memory] import error: {e}")
+            errors += 1
+    return {"imported": imported, "skipped_duplicates": duplicates,
+            "errors": errors, "total": len(mems)}
+
+
 # ── STANDALONE TEST ──────────────────────────────────────────
 if __name__ == "__main__":
     print("=" * 50)
