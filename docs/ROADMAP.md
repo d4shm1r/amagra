@@ -79,7 +79,7 @@ Agents that do things, not just say things. Closes the gap vs Continue/Cursor/Cl
 | Item | Status | Impact | Difficulty | ROI |
 |------|--------|--------|-----------|-----|
 | Sandboxed code execution | ✅ shipped | 10 | 8 | ★★★★ |
-| Live web search (Brave/SearXNG/Tavily) | | 9 | 4 | ★★★★★ |
+| Live web search (Brave/SearXNG/Tavily) | ✅ shipped | 9 | 4 | ★★★★★ |
 | Jailed file/folder tool (`Path.resolve().is_relative_to(root)`) | ✅ shipped | 8 | 5 | ★★★★ |
 | Stop / regenerate / edit-message affordances | ✅ shipped | 7 | 3 | ★★★★★ |
 | Thread management: rename, fork, archive | ✅ shipped | 6 | 2 | ★★★★ |
@@ -94,6 +94,10 @@ Agents that do things, not just say things. Closes the gap vs Continue/Cursor/Cl
 **Sandboxed code execution (shipped):** `tools/sandbox.py` runs short Python snippets under `python3 -I -S` with POSIX `setrlimit` (CPU seconds, address space, output size, no core dumps), a scrubbed environment (no inherited server secrets), a throwaway cwd, and a wall-clock timeout that kills the whole process group. Exposed at `POST /sandbox/run`, **opt-in** behind `AMAGRA_SANDBOX=1` (returns 403 otherwise). Known limitation: network is not isolated — this is a resource jail, not a defense against a determined adversary; gate it before exposing. A future hardening pass could move execution into a Docker subcontainer or namespaces.
 
 **Stop / regenerate / edit (shipped):** the chat composer can stop an in-flight stream (AbortController), regenerate the last reply (↻ — re-runs the last prompt, truncating the stored turn), and edit any prior user message (✎ — drops that turn and everything after via `POST /threads/{id}/truncate?keep=N`, then resends).
+
+**Live web search (shipped):** `tools/web.py` behind a provider abstraction — default **SearXNG** (self-hosted, no API key; set `SEARXNG_URL`), with **Brave** (`BRAVE_API_KEY`) and **Tavily** (`TAVILY_API_KEY`) as opt-in keyed alternatives. `GET /search/web?q=` (503 until a backend is configured) and `GET /search/status`. Every provider returns the same `{title, url, snippet}` shape.
+
+**Remaining for the v1.1.0 milestone:** the *in-agent tool loop* — letting agents autonomously call these tools (file / sandbox / web) mid-reasoning (JSON action → execute → append result, max 3 iters) and logging tool calls. The capabilities now exist as tools + endpoints; this is the integration that lets the model drive them.
 
 ---
 

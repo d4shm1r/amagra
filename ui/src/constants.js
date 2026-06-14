@@ -599,14 +599,14 @@ export const ROADMAP = [
   },
   {
     id: 41, version: "v1.1.0", title: "Tool-Using Agents", color: "#0F766E", status: "next", priority: "high",
-    summary: "Agents gain real capabilities, not just text: jailed file access, sandboxed code execution, and live web search. The biggest quality jump available without swapping the model. Nearly complete — only live web search and the in-agent tool loop remain. (SSE streaming shipped in 1.0.0.)",
+    summary: "Agents gain real capabilities, not just text: jailed file access, sandboxed code execution, and live web search. The biggest quality jump available without swapping the model. All standalone tools shipped — only the in-agent tool loop (letting the model drive them mid-reasoning) remains. (SSE streaming shipped in 1.0.0.)",
     items: [
       "Memory import/export — JSON / Markdown round-trip ✅",
       "Thread management: rename, fork, archive ✅",
       "tools/workspace.py — read, list, search with Path.resolve().is_relative_to(root) jail ✅",
       "tools/sandbox.py — resource.setrlimit CPU/AS, scrubbed env, python3 -I isolation (opt-in via AMAGRA_SANDBOX) ✅",
       "Stop / regenerate / edit-message affordances in ChatTab ✅",
-      "tools/web.py — SearxNG self-hosted or Brave Search API (4h)",
+      "tools/web.py — SearXNG self-hosted (default, no key) + Brave/Tavily; GET /search/web ✅",
       "Structured tool loop in agents: JSON action → execute → append result, max 3 iters (8h)",
       "Tool calls logged → event_bus + tool_calls table (run_id, tool, exit_code, duration) (4h)",
     ],

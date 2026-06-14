@@ -215,6 +215,7 @@ from routes.documents   import router as documents_router
 from routes.setup       import router as setup_router
 from routes.workspace   import router as workspace_router
 from routes.sandbox     import router as sandbox_router
+from routes.search      import router as search_router
 
 app.include_router(core_router)
 app.include_router(register_router)
@@ -234,3 +235,4 @@ app.include_router(documents_router)
 app.include_router(setup_router)
 app.include_router(workspace_router)
 app.include_router(sandbox_router)
+app.include_router(search_router)
