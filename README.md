@@ -274,9 +274,9 @@ Rate limits are returned on every authenticated response as `X-RateLimit-Limit`,
 
 Post-debut hardening: tests to ~60% coverage, in-product onboarding (Ollama detection, model-pull progress, guided first prompt), Vite migration to retire CRA, single consolidated `amagra.db`, and public launch (Show HN, r/LocalLLaMA, Docker Hub, Homebrew).
 
-### v1.1 — Tool-using agents · Q3 2026
+### v1.1 — Tool-using agents · Q3 2026 *(in progress)*
 
-Agents gain real capabilities, not just text: jailed file/folder access, sandboxed code execution, and live web search. Plus stop/regenerate/edit affordances, thread management (rename, fork, archive), and memory import/export.
+Agents gain real capabilities, not just text: jailed file/folder access, sandboxed code execution, and live web search. Plus stop/regenerate/edit affordances. **Shipped early:** thread management (rename, fork, archive) and memory import/export (JSON/Markdown). **Remaining:** the tool-execution layer (jailed files, sandbox, web search) and the chat affordances.
 
 ### v1.2 — Multi-provider models & workspaces · Q4 2026
 
@@ -294,7 +294,11 @@ Users select inference model per workspace. Routing, memory, and telemetry are u
 
 ### v1.3 — Team memory & governance · Q1 2027
 
-Shared team memory (per-workspace FAISS index), admin console, encrypted cross-machine sync, SSO/SAML, audit-log export, configurable retention, and an air-gapped installer.
+Shared team memory (per-workspace FAISS index), admin console, encrypted cross-machine sync, SSO/SAML, audit-log export + Chain-of-Authorization trail, configurable retention, and an air-gapped installer.
+
+### v1.4 — Unified workspace UI · Q1 2027
+
+The dashboard's 5 surfaces and ~26 views consolidate into 6 coherent views with observability as the hero screen — a reorganization, not a deletion. Includes a Monaco code pane (read + diff + apply). Orthogonal to the capability work above, so it ships on its own track.
 
 ### v2.0 — Agent registry & SDK · 2027
 

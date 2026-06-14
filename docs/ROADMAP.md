@@ -37,7 +37,7 @@ The public debut. Everything below shipped in 1.0.0 — the development phases t
 | Streaming | `POST /ask/stream` SSE; tokens render as they arrive (live from Claude when `ANTHROPIC_API_KEY` is set). |
 | Multi-provider path | `AskRequest.provider`; `AnthropicProvider.generate()` alongside Ollama; `AskResponse.model_used`. |
 | Commercialization | API-key auth, free tier (`POST /register/free`), Stripe Checkout + webhook key provisioning, SendGrid delivery. |
-| Brand & UI | Sky-blue `#0EA5E9` design tokens in `theme.js`; 4-surface nav (Chat · Memory · Inspect · Settings); RoutingStrip animation; JetBrains Mono. |
+| Brand & UI | "Gilded Calm" warm-white + gold (`#C48808`) design tokens in `theme.js`, shared with `landing.html`; 5-surface nav (Chat · Library · Memory · Inspect · Settings) fronting the observability views; RoutingStrip animation; JetBrains Mono. |
 | CI/CD | GitHub Actions: ruff lint + pytest + Docker build on push and PR. |
 
 ---
@@ -72,9 +72,9 @@ Deferred pre-launch engineering, now landed post-debut. The one open item is the
 
 ---
 
-### v1.1 — Tool-Using Agents
+### v1.1 — Tool-Using Agents *(in progress)*
 
-Agents that do things, not just say things. Closes the gap vs Continue/Cursor/Claude Code.
+Agents that do things, not just say things. Closes the gap vs Continue/Cursor/Claude Code. Memory portability and thread management already shipped (delivered early on the v1.0.x line); tool execution — jailed files, sandbox, web search — is next.
 
 | Item | Status | Impact | Difficulty | ROI |
 |------|--------|--------|-----------|-----|
@@ -125,6 +125,22 @@ The moment two users share a memory is the moment you have a moat no chat UI can
 | Air-gapped installer | 8 | 5 | ★★★★ |
 
 **Team memory:** every useful exchange any team member has is available to all agents. Org knowledge that compounds — a switching cost no competitor can clone.
+
+---
+
+### v1.4 — Unified Workspace UI
+
+The dashboard today is 5 top-level surfaces (Chat · Library · Memory · Inspect · Settings) fronting ~26 view components. This consolidates them into 6 coherent views with observability as the hero screen — a reorganization, not a deletion.
+
+| Item | Impact | Difficulty | ROI |
+|------|--------|-----------|-----|
+| 6 primary views — Workspace · Runs · Cognition · Memory · Research · Settings | 7 | 6 | ★★★★ |
+| Runs: list → detail with Trace · Inspector · Decision · Policy sub-tabs | 6 | 4 | ★★★★ |
+| Cognition: UCI · Risk · Events · Plan Graph in one dashboard grid | 6 | 4 | ★★★★ |
+| Monaco code pane — read + DiffEditor + Apply via `POST /workspace/apply` | 7 | 6 | ★★★ |
+| Extract inline style tokens to `theme.js` (dedupe ~26 style objects) | 5 | 3 | ★★★★ |
+
+**Why a standalone milestone:** the view consolidation is orthogonal to the v1.1–v1.3 capability work — it reorganizes what already exists rather than adding runtime features, so it ships on its own track.
 
 ---
 
@@ -188,51 +204,9 @@ That is not an agent product. That is a **cognitive runtime**.
 
 ---
 
-## Monetization
+## Monetization & revenue
 
-Open-core where the moat is the paid surface. Never cripple the free tier — it is the distribution engine.
-
-| Tier | Price | What's included |
-|------|-------|-----------------|
-| **Self-host Free** | $0, MIT | Everything, single-user, full source, unlimited locally |
-| **Pro** | $39/mo | Managed hosting · encrypted memory sync · hosted UCI dashboard · weekly intelligence digest |
-| **Team** | $249/mo | Shared team memory (the killer feature) · workspaces · RBAC · admin console |
-| **Cognitive Ops** | $499–999/mo | Risk observatory · decision audit trail · verification reports · decision replay |
-| **Enterprise** | $2k–10k/mo | SSO/SAML · CoA audit trail · SOC2 · air-gapped installer · signed SLA |
-
-### Cognitive Marketplace
-
-The highest-margin revenue stream. Skill packs, verification packs, planner packs, and world models are high-margin (configuration + tuned prompts, not infrastructure), composable, self-distributing (self-hosted users discover and upgrade), and platform-signaling (a marketplace means this is runtime infrastructure).
-
-**Skill Packs ($99–499 one-time):**
-
-| Pack | Price | What it adds |
-|------|-------|-------------|
-| DevOps | $149 | Kubernetes, Terraform, incident runbooks, SRE patterns |
-| Security | $199 | OWASP, CVE triage, pentest patterns, hardening guides |
-| Legal | $299 | Contract review, clause extraction, GDPR, jurisdiction logic |
-| Finance | $299 | Financial statements, FCA/SEC, ratio calculation |
-| Data Science | $149 | Pandas, Spark, feature engineering, model evaluation |
-
-**Verification Packs ($49–199 one-time):** Python, Kubernetes, Security, SQL — custom step verifier criteria sets.
-
-**Planner Packs ($99–299 one-time):** Software Sprint, Incident Response, Research Project, DevOps Migration.
-
-**World Models ($199+):** Pre-seeded schemas with domain-specific entity vocabulary (Software, Legal, Healthcare, Financial).
-
----
-
-## Revenue Projection
-
-| Month | MRR | Driver |
-|-------|-----|--------|
-| 1 | $0 | Launch build |
-| 2 | $39 | First managed-hosting customer |
-| 3 | $200 | ~5 Pro (organic GitHub) |
-| 6 | $1,200 | 20 Pro + 2 Team + marketplace |
-| 8 | $2,800 | 30 Pro + 4 Team + 1 Cognitive Ops |
-| 12 | $10k–15k | 50 Pro + 8 Team + 3 CogOps + 1 Enterprise |
-| 18 | $20k–40k | Teams building domain agents on the runtime |
+Open-core: the free self-hosted tier is the distribution engine; paid tiers wrap the moat (managed hosting, team shared memory, governance, marketplace). **The pricing tiers, Cognitive Marketplace packs, and revenue projection now live in [revenueGPT.md](revenueGPT.md)** — kept out of the public product roadmap so this document stays feature-focused and the numbers have a single home.
 
 ---
 
