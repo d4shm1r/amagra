@@ -206,7 +206,7 @@ That is not an agent product. That is a **cognitive runtime**.
 
 ## Monetization & revenue
 
-Open-core: the free self-hosted tier is the distribution engine; paid tiers wrap the moat (managed hosting, team shared memory, governance, marketplace). **The pricing tiers, Cognitive Marketplace packs, and revenue projection now live in [revenueGPT.md](revenueGPT.md)** — kept out of the public product roadmap so this document stays feature-focused and the numbers have a single home.
+Open-core: the free self-hosted tier is the distribution engine; paid tiers wrap the moat (managed hosting, team shared memory, governance, marketplace). **Pricing tiers, marketplace packs, and revenue projections are maintained separately, outside this repo** — this document stays feature-focused so the roadmap and the commercial plan don't drift.
 
 ---
 
