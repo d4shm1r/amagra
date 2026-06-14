@@ -162,6 +162,9 @@ def main_args(argv=None) -> int:
                     help="Print the plan and exit without writing (the default).")
     ap.add_argument("--force", action="store_true",
                     help="Allow merging into a target file that already exists.")
+    ap.add_argument("--archive", action="store_true",
+                    help="After a successful migration, rename the old separate "
+                         "files to *.pre-consolidation so they can't diverge.")
     args = ap.parse_args(argv)
 
     if not args.target:
@@ -222,10 +225,31 @@ def main_args(argv=None) -> int:
     print(f"\nDone. {copied} row(s) consolidated into {target}.")
     if sidecar:
         print(f"FAISS sidecar copied to {sidecar}.")
-    print("\nNext steps:")
-    print(f"  export AMAGRA_DB={target}")
-    print("  # restart the API; verify /health and a memory search, then archive the old *.db files.")
+
+    if args.archive:
+        archived = _archive_sources(sources)
+        print(f"\nArchived {archived} old file(s) to *.pre-consolidation "
+              f"(restore by removing the suffix).")
+        print("\nNext steps:")
+        print(f"  export AMAGRA_DB={target}")
+        print("  # restart the API; verify /health and a memory search.")
+    else:
+        print("\nNext steps:")
+        print(f"  export AMAGRA_DB={target}")
+        print("  # restart the API; verify /health and a memory search, then re-run")
+        print("  # with --archive to move the old *.db files aside.")
     return 0
+
+
+def _archive_sources(sources) -> int:
+    """Rename each migrated source file to *.pre-consolidation. Returns count moved."""
+    moved = 0
+    for _name, src, _tables in sources:
+        dest = src + ".pre-consolidation"
+        if os.path.exists(src) and not os.path.exists(dest):
+            os.rename(src, dest)
+            moved += 1
+    return moved
 
 
 if __name__ == "__main__":

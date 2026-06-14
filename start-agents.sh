@@ -7,6 +7,12 @@ AI_DIR="$HOME/agentic-ai"
 API_PORT=8000
 UI_PORT=3000
 
+# Single-file DB mode (optional): export AMAGRA_DB before running this script,
+# e.g. `export AMAGRA_DB=$AI_DIR/amagra.db`, to collapse every SQLite store into
+# one file. Unset = the default separate-file layout. Migrate existing data
+# first: python scripts/migrate_to_single_db.py --target "$AMAGRA_DB" --apply
+export AMAGRA_DB="${AMAGRA_DB:-}"
+
 ok()  { printf "  \033[32m✓\033[0m  %s\n" "$*"; }
 run() { printf "  \033[34m→\033[0m  %s\n" "$*"; }
 warn(){ printf "  \033[33m!\033[0m  %s\n" "$*"; }
@@ -37,6 +43,7 @@ if lsof -Pi :$API_PORT -sTCP:LISTEN -t > /dev/null 2>&1; then
 else
     run "Starting API server on :$API_PORT..."
     gnome-terminal --title="API :$API_PORT" -- bash -c "
+      export AMAGRA_DB='$AMAGRA_DB'
       source $VENV/bin/activate
       cd $AI_DIR
       uvicorn api:app --host 0.0.0.0 --port $API_PORT --reload

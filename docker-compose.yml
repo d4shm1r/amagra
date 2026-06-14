@@ -32,10 +32,18 @@ services:
     volumes:
       - ./memory:/app/memory
       - ./logs:/app/logs
+      # Single-file mode: one volume holds the consolidated amagra.db (+ FAISS
+      # sidecar). Harmless to keep mounted in the default separate-file mode.
+      - ./data:/app/data
     environment:
       - REQUIRE_AUTH=${REQUIRE_AUTH:-0}
       - ADMIN_TOKEN=${ADMIN_TOKEN:-}
       - OLLAMA_HOST=http://ollama:11434
+      # Single-file DB mode (optional): set AMAGRA_DB=/app/data/amagra.db to
+      # collapse every SQLite store into the ./data volume above. Empty/unset
+      # keeps the default separate-file layout under ./memory + ./logs. Migrate
+      # existing data first with scripts/migrate_to_single_db.py.
+      - AMAGRA_DB=${AMAGRA_DB:-}
     depends_on:
       ollama:
         condition: service_healthy

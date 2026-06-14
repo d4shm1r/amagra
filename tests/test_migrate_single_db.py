@@ -108,6 +108,31 @@ def test_collision_different_schema_refuses(monkeypatch, tmp_path):
     assert rc == 1  # refused, did not corrupt
 
 
+def test_archive_renames_sources(monkeypatch, tmp_path):
+    src = tmp_path / "ev.db"
+    _make_db(src, "CREATE TABLE events (msg TEXT)", [("x",)], "events")
+    _registry_to(monkeypatch, {"events": "ev.db"}, tmp_path)
+
+    target = tmp_path / "amagra.db"
+    assert mig.main_args(["--target", str(target), "--apply", "--archive"]) == 0
+    # Source moved aside; data still readable from the consolidated file.
+    assert not src.exists()
+    assert (tmp_path / "ev.db.pre-consolidation").exists()
+    conn = sqlite3.connect(target)
+    assert conn.execute("SELECT COUNT(*) FROM events").fetchone()[0] == 1
+    conn.close()
+
+
+def test_no_archive_leaves_sources(monkeypatch, tmp_path):
+    src = tmp_path / "ev.db"
+    _make_db(src, "CREATE TABLE events (msg TEXT)", [("x",)], "events")
+    _registry_to(monkeypatch, {"events": "ev.db"}, tmp_path)
+
+    target = tmp_path / "amagra.db"
+    assert mig.main_args(["--target", str(target), "--apply"]) == 0
+    assert src.exists()  # untouched without --archive
+
+
 def test_target_exists_without_force_refuses(monkeypatch, tmp_path):
     src = tmp_path / "ev.db"
     _make_db(src, "CREATE TABLE events (msg TEXT)", [("x",)], "events")

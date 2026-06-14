@@ -338,8 +338,13 @@ ships a single file.
 - **One-shot migration** — `scripts/migrate_to_single_db.py` copies every
   separate store into one `amagra.db`, preserving `rowid` for all tables
   (critical: FAISS `IndexIDMap` is keyed on `memories.id`) and the FAISS
-  sidecar. Dry-run by default; refuses to clobber a same-named table with a
-  different schema. 7 new tests; suite **624 → 631**.
+  sidecar. Dry-run by default; `--archive` renames the old files to
+  `*.pre-consolidation` so they can't diverge; refuses to clobber a same-named
+  table with a different schema.
+- **Cutover wiring** (closes #3) — `start-agents.sh` and `docker-compose.yml`
+  pass `AMAGRA_DB` through (with a `./data` volume for the single file), so
+  single-file mode is a one-env-var opt-in; README documents the migrate→flip
+  flow. Suite **624 → 633**.
 
 ### v1.0.2 — Dashboard & Community Polish ✅
 
