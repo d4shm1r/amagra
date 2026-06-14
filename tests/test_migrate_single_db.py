@@ -6,7 +6,6 @@ the dry-run vs --apply gate, the collision guard (same table name, different
 schema), and the new infrastructure.db.distinct_paths() helper.
 """
 
-import importlib
 import os
 import sqlite3
 import sys

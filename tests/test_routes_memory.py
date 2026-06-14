@@ -108,6 +108,39 @@ def test_memory_audit_returns_200():
     assert r.status_code in (200, 404, 500)
 
 
+def test_export_json_returns_attachment():
+    r = client.get("/memory/export.json", headers=HEADERS)
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("application/json")
+    body = r.json()
+    assert body["format"] == "amagra.memory/1"
+    assert "memories" in body
+
+
+def test_export_markdown_returns_attachment():
+    r = client.get("/memory/export.md", headers=HEADERS)
+    assert r.status_code == 200
+    assert "Amagra memory export" in r.text
+
+
+def test_import_roundtrip_via_api():
+    payload = {
+        "format": "amagra.memory/1",
+        "memories": [
+            {"content": "api round-trip note alpha", "agent": "writer", "type": "chat"},
+        ],
+    }
+    r = client.post("/memory/import", headers=HEADERS, json=payload)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["imported"] + body["skipped_duplicates"] == 1
+
+
+def test_import_rejects_bad_payload_400():
+    r = client.post("/memory/import", headers=HEADERS, json={"nope": 1})
+    assert r.status_code == 400
+
+
 def test_memory_records_endpoint():
     r = client.get("/memory/records", headers=HEADERS)
     assert r.status_code in (200, 404)
