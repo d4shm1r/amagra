@@ -118,3 +118,27 @@ def test_unarchive_restores():
 def test_archive_missing_thread_404():
     r = client.post("/threads/nope/archive", headers=HEADERS)
     assert r.status_code == 404
+
+
+def test_truncate_keeps_first_n():
+    tid = _seed_thread(turns=5)
+    r = client.post(f"/threads/{tid}/truncate?keep=2", headers=HEADERS)
+    assert r.status_code == 200
+    assert r.json()["turn_count"] == 2
+    turns = client.get(f"/threads/{tid}/turns", headers=HEADERS).json()["turns"]
+    assert len(turns) == 2
+    # The oldest two are retained (q0, q1).
+    assert turns[0]["user"] == "q0"
+    assert turns[1]["user"] == "q1"
+
+
+def test_truncate_keep_zero_clears():
+    tid = _seed_thread(turns=3)
+    r = client.post(f"/threads/{tid}/truncate?keep=0", headers=HEADERS)
+    assert r.status_code == 200
+    assert r.json()["turn_count"] == 0
+
+
+def test_truncate_missing_thread_404():
+    r = client.post("/threads/nope/truncate?keep=1", headers=HEADERS)
+    assert r.status_code == 404
