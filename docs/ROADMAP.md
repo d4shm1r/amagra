@@ -78,10 +78,10 @@ Agents that do things, not just say things. Closes the gap vs Continue/Cursor/Cl
 
 | Item | Status | Impact | Difficulty | ROI |
 |------|--------|--------|-----------|-----|
-| Sandboxed code execution | | 10 | 8 | ★★★★ |
+| Sandboxed code execution | ✅ shipped | 10 | 8 | ★★★★ |
 | Live web search (Brave/SearXNG/Tavily) | | 9 | 4 | ★★★★★ |
 | Jailed file/folder tool (`Path.resolve().is_relative_to(root)`) | ✅ shipped | 8 | 5 | ★★★★ |
-| Stop / regenerate / edit-message affordances | | 7 | 3 | ★★★★★ |
+| Stop / regenerate / edit-message affordances | ✅ shipped | 7 | 3 | ★★★★★ |
 | Thread management: rename, fork, archive | ✅ shipped | 6 | 2 | ★★★★ |
 | Memory import/export (JSON/Markdown) | ✅ shipped | 8 | 3 | ★★★★★ |
 
@@ -91,7 +91,9 @@ Agents that do things, not just say things. Closes the gap vs Continue/Cursor/Cl
 
 **Jailed file/folder tool (shipped):** `tools/workspace.py` — read / list / search confined to a root (`$AMAGRA_WORKSPACE`). Every path goes through one chokepoint, `(root / p).resolve().is_relative_to(root)`, which defeats `../` traversal, absolute-path injection, and symlink escape. Exposed read-only at `GET /workspace/read|list|search|root` (403 on escape, 404 on missing). Writing + execution stay out of scope — those belong to the sandbox capability.
 
-**Code execution:** Each agent optionally runs the code it writes in an isolated sandbox (Docker subcontainer, timeout/resource limits). Output inline below the code block. No copy-paste required.
+**Sandboxed code execution (shipped):** `tools/sandbox.py` runs short Python snippets under `python3 -I -S` with POSIX `setrlimit` (CPU seconds, address space, output size, no core dumps), a scrubbed environment (no inherited server secrets), a throwaway cwd, and a wall-clock timeout that kills the whole process group. Exposed at `POST /sandbox/run`, **opt-in** behind `AMAGRA_SANDBOX=1` (returns 403 otherwise). Known limitation: network is not isolated — this is a resource jail, not a defense against a determined adversary; gate it before exposing. A future hardening pass could move execution into a Docker subcontainer or namespaces.
+
+**Stop / regenerate / edit (shipped):** the chat composer can stop an in-flight stream (AbortController), regenerate the last reply (↻ — re-runs the last prompt, truncating the stored turn), and edit any prior user message (✎ — drops that turn and everything after via `POST /threads/{id}/truncate?keep=N`, then resends).
 
 ---
 

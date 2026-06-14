@@ -650,6 +650,47 @@ def archive_thread(thread_id: str, archived: bool = True):
     return {"id": thread_id, "archived": bool(archived)}
 
 
+@router.post("/threads/{thread_id}/truncate")
+def truncate_thread(thread_id: str, keep: int = 0):
+    """Drop all turns after the first `keep` (oldest-first). Backs edit-and-resend:
+    editing turn N truncates to keep=N, then the new /ask appends the replacement."""
+    if keep < 0:
+        raise HTTPException(status_code=400, detail="keep must be >= 0")
+    try:
+        conn = sqlite3.connect(_SESSIONS_DB, timeout=5)
+        exists = conn.execute("SELECT 1 FROM threads WHERE id=?", (thread_id,)).fetchone()
+        if not exists:
+            conn.close()
+            raise HTTPException(status_code=404, detail=f"thread not found: {thread_id}")
+        # Identify the turn ids to keep (oldest first), delete the rest.
+        keep_ids = [r[0] for r in conn.execute(
+            "SELECT id FROM turns WHERE thread_id=? ORDER BY id ASC LIMIT ?",
+            (thread_id, keep),
+        ).fetchall()]
+        if keep_ids:
+            placeholders = ",".join("?" * len(keep_ids))
+            conn.execute(
+                f"DELETE FROM turns WHERE thread_id=? AND id NOT IN ({placeholders})",
+                (thread_id, *keep_ids),
+            )
+        else:
+            conn.execute("DELETE FROM turns WHERE thread_id=?", (thread_id,))
+        remaining = conn.execute(
+            "SELECT COUNT(*) FROM turns WHERE thread_id=?", (thread_id,)
+        ).fetchone()[0]
+        conn.execute(
+            "UPDATE threads SET turn_count=?, updated_at=? WHERE id=?",
+            (remaining, datetime.now(timezone.utc).isoformat(), thread_id),
+        )
+        conn.commit()
+        conn.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    return {"id": thread_id, "turn_count": remaining}
+
+
 @router.get("/telemetry/routing")
 def telemetry_routing(limit: int = 200):
     try:

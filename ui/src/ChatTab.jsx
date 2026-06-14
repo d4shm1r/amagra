@@ -236,6 +236,8 @@ export default function ChatTab({
 
   const handleStop = useCallback(() => { abortRef.current?.abort(); }, []);
 
+  const [editingIndex, setEditingIndex] = useState(null);
+
   const clearChat = useCallback(() => {
     if (!messages.length) return;
     if (window.confirm("Clear all messages?")) {
@@ -283,17 +285,22 @@ export default function ChatTab({
     }
   }, []);
 
-  const sendMessage = useCallback(async () => {
-    const raw = input.trim();
+  const sendMessage = useCallback(async (overrideText = null, opts = {}) => {
+    const useOverride = typeof overrideText === "string";
+    const raw = (useOverride ? overrideText : input).trim();
     if (!raw || isProcessingRef.current) return;
     const text = pinnedContext.trim() ? `[Context: ${pinnedContext.trim()}] ${raw}` : raw;
     isProcessingRef.current = true;
-    setInput("");
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
+    if (!useOverride) {
+      setInput("");
+      if (textareaRef.current) textareaRef.current.style.height = "auto";
+    }
     setLoading(true); onActivityChange(70);
 
     const userTs = new Date().toLocaleTimeString();
-    setMessages(prev => [...prev, { role: "user", text: raw, ts: userTs }]);
+    if (opts.appendUser !== false) {
+      setMessages(prev => [...prev, { role: "user", text: raw, ts: userTs }]);
+    }
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
 
@@ -442,8 +449,60 @@ export default function ChatTab({
     setLoading(false); isProcessingRef.current = false; abortRef.current = null;
   }, [input, pinnedContext, forcedAgent, reflectMode, currentThreadId, onLogAdd, onQueryComplete, onLitNode, onActivityChange, fetchCoherence, fetchThreads]);
 
+  // Re-run the last user prompt, replacing the last agent reply.
+  const handleRegenerate = useCallback(async () => {
+    if (isProcessingRef.current) return;
+    let lastUserIdx = -1;
+    messages.forEach((m, i) => { if (m.role === "user") lastUserIdx = i; });
+    if (lastUserIdx < 0) return;
+    const lastUserText = messages[lastUserIdx].text;
+    setMessages(prev => prev.slice(0, lastUserIdx + 1));  // drop the old reply
+    if (currentThreadId) {
+      try {
+        const tc = await fetch(`http://localhost:8000/threads/${currentThreadId}/turns`).then(r => r.json());
+        const keep = Math.max(0, (tc.turns?.length || 0) - 1);
+        await fetch(`http://localhost:8000/threads/${currentThreadId}/truncate?keep=${keep}`, { method: "POST" });
+      } catch { /* best effort */ }
+    }
+    sendMessage(lastUserText, { appendUser: false });
+  }, [messages, currentThreadId, sendMessage]);
+
+  // Edit a prior user message: drop it + everything after, then resend the new text.
+  const handleEditResend = useCallback(async (uiIndex, newText) => {
+    const t = (newText || "").trim();
+    if (!t || isProcessingRef.current) return;
+    let keep = 0;
+    for (let i = 0; i < uiIndex; i++) if (messages[i]?.role === "user") keep++;
+    setMessages(prev => prev.slice(0, uiIndex));
+    if (currentThreadId) {
+      try { await fetch(`http://localhost:8000/threads/${currentThreadId}/truncate?keep=${keep}`, { method: "POST" }); }
+      catch { /* best effort */ }
+    }
+    sendMessage(t, { appendUser: true });
+  }, [messages, currentThreadId, sendMessage]);
+
+  const startEdit = useCallback((uiIndex) => {
+    setEditingIndex(uiIndex);
+    setInput(messages[uiIndex]?.text || "");
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  }, [messages]);
+
+  const cancelEdit = useCallback(() => { setEditingIndex(null); setInput(""); }, []);
+
+  // Send button / Enter: route to edit-resend when editing, else a normal send.
+  const handleSendClick = useCallback(() => {
+    if (editingIndex != null) {
+      const idx = editingIndex; const txt = input;
+      setEditingIndex(null); setInput("");
+      handleEditResend(idx, txt);
+    } else {
+      sendMessage();
+    }
+  }, [editingIndex, input, handleEditResend, sendMessage]);
+
   const handleKeyDown = e => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendClick(); }
+    else if (e.key === "Escape" && editingIndex != null) { e.preventDefault(); cancelEdit(); }
   };
 
   const handleApplySuggestion = useCallback((suggestion) => {
@@ -568,10 +627,24 @@ export default function ChatTab({
             {/* ── Messages ── */}
             {messages.map((msg, i) => {
               if (msg.role === "user") return (
-                <div key={i} style={{ display: "flex", justifyContent: "flex-end" }}>
+                <div key={i} className="user-msg-row" style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-start", gap: 4 }}>
+                  {!loading && (
+                    <button
+                      onClick={() => startEdit(i)}
+                      title="Edit & resend"
+                      className="edit-msg-btn"
+                      style={{
+                        background: "transparent", border: "none", cursor: "pointer",
+                        color: editingIndex === i ? T.accent : T.muted, fontSize: 12,
+                        padding: "4px 4px", marginTop: 6, fontFamily: "inherit",
+                        opacity: editingIndex === i ? 1 : 0.55,
+                      }}
+                    >✎</button>
+                  )}
                   <div style={{
                     maxWidth: "75%",
-                    background: T.surface2, border: `1.5px solid ${T.border}`,
+                    background: T.surface2,
+                    border: `1.5px solid ${editingIndex === i ? T.accent : T.border}`,
                     borderRadius: "10px 10px 4px 10px", padding: "11px 16px",
                   }}>
                     <div className="msg-content" style={{ wordBreak: "break-word" }}>
@@ -624,6 +697,9 @@ export default function ChatTab({
                         <ActionBtn onClick={() => sendFeedback(i, 1)} title="Good response" active={feedbackMap[i] === 1} dim={feedbackMap[i] === -1} activeColor={T.success}>👍</ActionBtn>
                         <ActionBtn onClick={() => sendFeedback(i, -1)} title="Bad response" active={feedbackMap[i] === -1} dim={feedbackMap[i] === 1} activeColor={T.error}>👎</ActionBtn>
                         <ActionBtn onClick={() => copyMessage(i, msg.text)} title="Copy" active={copiedIdx === i} activeColor={T.success}>{copiedIdx === i ? "✓" : "⊞"}</ActionBtn>
+                        {i === messages.length - 1 && !loading && (
+                          <ActionBtn onClick={handleRegenerate} title="Regenerate response" activeColor={T.accent}>↻</ActionBtn>
+                        )}
                       </div>
 
                       {feedbackAck[i] && (
@@ -745,6 +821,20 @@ export default function ChatTab({
 
         {/* ── Pill input ── */}
         <div style={{ flexShrink: 0, padding: "0 20px 18px", maxWidth: 820, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+          {editingIndex != null && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8, marginBottom: 8,
+              padding: "6px 14px", background: `${T.accent}12`,
+              border: `1px solid ${T.accent}44`, borderRadius: 8,
+              fontSize: 11, color: T.accent,
+            }}>
+              <span style={{ flex: 1 }}>✎ Editing your message — resending replaces it and everything after.</span>
+              <button onClick={cancelEdit} style={{
+                background: "transparent", border: "none", cursor: "pointer",
+                color: T.muted, fontSize: 11, fontFamily: "inherit",
+              }}>✕ Cancel (Esc)</button>
+            </div>
+          )}
           <div style={{
             display: "flex", alignItems: "flex-end", gap: 10,
             background: "#FCFAF7",
@@ -783,9 +873,9 @@ export default function ChatTab({
               }}>✕ Stop</button>
             )}
             <button
-              onClick={sendMessage}
+              onClick={handleSendClick}
               disabled={!canSend}
-              title="Send (Enter)"
+              title={editingIndex != null ? "Resend edited message (Enter)" : "Send (Enter)"}
               style={{
                 width: 38, height: 38, flexShrink: 0, borderRadius: "50%",
                 background: canSend
