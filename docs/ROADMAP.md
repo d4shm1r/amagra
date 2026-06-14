@@ -97,7 +97,7 @@ Agents that do things, not just say things. Closes the gap vs Continue/Cursor/Cl
 
 **Live web search (shipped):** `tools/web.py` behind a provider abstraction — default **SearXNG** (self-hosted, no API key; set `SEARXNG_URL`), with **Brave** (`BRAVE_API_KEY`) and **Tavily** (`TAVILY_API_KEY`) as opt-in keyed alternatives. `GET /search/web?q=` (503 until a backend is configured) and `GET /search/status`. Every provider returns the same `{title, url, snippet}` shape.
 
-**Remaining for the v1.1.0 milestone:** the *in-agent tool loop* — letting agents autonomously call these tools (file / sandbox / web) mid-reasoning (JSON action → execute → append result, max 3 iters) and logging tool calls. The capabilities now exist as tools + endpoints; this is the integration that lets the model drive them.
+**In-agent tool loop (shipped):** `tools/tool_loop.py` + `tools/catalog.py` — a provider-agnostic loop (LLM injected) where the model emits a fenced JSON action (`{"tool","args"}`), the catalog executes it (file / sandbox / web, with config gates so unusable tools aren't offered), the observation is fed back, bounded to N rounds. Exposed at `POST /tools/run` and `GET /tools/list`; each call emits a `tool.call` event. **Remaining polish:** auto-invoking this loop inside the *default* specialist-agent chat flow (today it's a dedicated endpoint) — the local phi4-mini's reliability at emitting structured tool JSON is the open question there, so it's deliberately opt-in for now.
 
 ---
 

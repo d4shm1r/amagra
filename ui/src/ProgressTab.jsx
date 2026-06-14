@@ -6,7 +6,7 @@ import { T } from "./theme";
 const ISSUES = [
   { id: 1,  sev: "info",    title: "Feedback coverage near zero",                              detail: "No real user ratings collected yet. The critic gate now provides grounded quality scores (F5 fixed), but 👍/👎 ratings from the Chat tab are a stronger signal — even 20 real ratings begins validating the critic's calibration.", status: "known" },
   { id: 4,  sev: "info",    title: "Contradiction false-positive rate unknown",                detail: "contradictions.db entries are mostly false positives (F8). Real precision is unknown — needs a hold-out sample from sessions.db labeled manually.", status: "tracked" },
-  { id: 19, sev: "info",    title: "In-agent tool loop not yet wired",                         detail: "The file, sandbox, and web-search tools exist as endpoints (GET /workspace/*, POST /sandbox/run, GET /search/web), but agents don't yet call them autonomously mid-reasoning. The structured tool loop (JSON action → execute → append result, max 3 iters) + tool_calls logging is the last v1.1.0 item.", status: "open" },
+  { id: 19, sev: "info",    title: "Tool loop not auto-invoked in default chat",               detail: "The structured tool loop ships (tools/tool_loop.py, POST /tools/run) and the file/sandbox/web tools are wired into it. Remaining polish: auto-invoking the loop inside the default specialist-agent chat flow — gated on phi4-mini reliably emitting tool-call JSON, so it's a dedicated endpoint for now.", status: "tracked" },
 ];
 
 const SEV_META = {

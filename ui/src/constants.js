@@ -603,7 +603,7 @@ export const ROADMAP = [
   },
   {
     id: 41, version: "v1.1.0", title: "Tool-Using Agents", color: "#0F766E", status: "next", priority: "high",
-    summary: "Agents gain real capabilities, not just text: jailed file access, sandboxed code execution, and live web search. The biggest quality jump available without swapping the model. All standalone tools shipped — only the in-agent tool loop (letting the model drive them mid-reasoning) remains. (SSE streaming shipped in 1.0.0.)",
+    summary: "Agents gain real capabilities, not just text: jailed file access, sandboxed code execution, and live web search. The biggest quality jump available without swapping the model. All capabilities + the structured tool loop shipped; remaining polish is auto-invoking the loop inside the default chat flow. (SSE streaming shipped in 1.0.0.)",
     items: [
       "Memory import/export — JSON / Markdown round-trip ✅",
       "Thread management: rename, fork, archive ✅",
@@ -611,8 +611,9 @@ export const ROADMAP = [
       "tools/sandbox.py — resource.setrlimit CPU/AS, scrubbed env, python3 -I isolation (opt-in via AMAGRA_SANDBOX) ✅",
       "Stop / regenerate / edit-message affordances in ChatTab ✅",
       "tools/web.py — SearXNG self-hosted (default, no key) + Brave/Tavily; GET /search/web ✅",
-      "Structured tool loop in agents: JSON action → execute → append result, max 3 iters (8h)",
-      "Tool calls logged → event_bus + tool_calls table (run_id, tool, exit_code, duration) (4h)",
+      "Structured tool loop: JSON action → execute → observe, max N iters; tools/tool_loop.py + POST /tools/run ✅",
+      "Tool calls logged → event_bus (tool.call events) ✅",
+      "Auto-invoke the tool loop inside the default specialist-agent chat flow (polish)",
     ],
   },
   {

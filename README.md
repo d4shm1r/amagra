@@ -276,7 +276,7 @@ Post-debut hardening: tests to ~60% coverage, in-product onboarding (Ollama dete
 
 ### v1.1 — Tool-using agents · Q3 2026 *(in progress)*
 
-Agents gain real capabilities, not just text. **Shipped:** thread management (rename, fork, archive); memory import/export (JSON/Markdown); the jailed file/folder tool (`GET /workspace/read|list|search`, confined via `Path.resolve().is_relative_to(root)`); sandboxed code execution (`POST /sandbox/run`, `setrlimit` + isolated `python3 -I`, opt-in via `AMAGRA_SANDBOX=1`); chat stop/regenerate/edit affordances; and live web search (`GET /search/web`, default self-hosted SearXNG, opt-in Brave/Tavily). **Remaining:** the in-agent tool loop — letting agents call these tools mid-reasoning.
+Agents gain real capabilities, not just text. **Shipped:** thread management (rename, fork, archive); memory import/export (JSON/Markdown); the jailed file/folder tool (`GET /workspace/read|list|search`, confined via `Path.resolve().is_relative_to(root)`); sandboxed code execution (`POST /sandbox/run`, `setrlimit` + isolated `python3 -I`, opt-in via `AMAGRA_SANDBOX=1`); chat stop/regenerate/edit affordances; live web search (`GET /search/web`, default self-hosted SearXNG, opt-in Brave/Tavily); and a structured tool loop (`POST /tools/run`) that lets the model call the file/sandbox/web tools mid-reasoning. **Remaining polish:** auto-invoking the tool loop inside the default specialist-agent chat flow.
 
 ### v1.2 — Multi-provider models & workspaces · Q4 2026
 
