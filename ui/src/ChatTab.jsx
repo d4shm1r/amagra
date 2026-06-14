@@ -238,57 +238,6 @@ export default function ChatTab({
 
   const [editingIndex, setEditingIndex] = useState(null);
 
-  // Re-run the last user prompt, replacing the last agent reply.
-  const handleRegenerate = useCallback(async () => {
-    if (isProcessingRef.current) return;
-    let lastUserIdx = -1;
-    messages.forEach((m, i) => { if (m.role === "user") lastUserIdx = i; });
-    if (lastUserIdx < 0) return;
-    const lastUserText = messages[lastUserIdx].text;
-    setMessages(prev => prev.slice(0, lastUserIdx + 1));  // drop the old reply
-    if (currentThreadId) {
-      try {
-        const tc = await fetch(`http://localhost:8000/threads/${currentThreadId}/turns`).then(r => r.json());
-        const keep = Math.max(0, (tc.turns?.length || 0) - 1);
-        await fetch(`http://localhost:8000/threads/${currentThreadId}/truncate?keep=${keep}`, { method: "POST" });
-      } catch { /* best effort */ }
-    }
-    sendMessage(lastUserText, { appendUser: false });
-  }, [messages, currentThreadId, sendMessage]);
-
-  // Edit a prior user message: drop it + everything after, then resend the new text.
-  const handleEditResend = useCallback(async (uiIndex, newText) => {
-    const t = (newText || "").trim();
-    if (!t || isProcessingRef.current) return;
-    let keep = 0;
-    for (let i = 0; i < uiIndex; i++) if (messages[i]?.role === "user") keep++;
-    setMessages(prev => prev.slice(0, uiIndex));
-    if (currentThreadId) {
-      try { await fetch(`http://localhost:8000/threads/${currentThreadId}/truncate?keep=${keep}`, { method: "POST" }); }
-      catch { /* best effort */ }
-    }
-    sendMessage(t, { appendUser: true });
-  }, [messages, currentThreadId, sendMessage]);
-
-  const startEdit = useCallback((uiIndex) => {
-    setEditingIndex(uiIndex);
-    setInput(messages[uiIndex]?.text || "");
-    setTimeout(() => textareaRef.current?.focus(), 0);
-  }, [messages]);
-
-  const cancelEdit = useCallback(() => { setEditingIndex(null); setInput(""); }, []);
-
-  // Send button / Enter: route to edit-resend when editing, else a normal send.
-  const handleSendClick = useCallback(() => {
-    if (editingIndex != null) {
-      const idx = editingIndex; const txt = input;
-      setEditingIndex(null); setInput("");
-      handleEditResend(idx, txt);
-    } else {
-      sendMessage();
-    }
-  }, [editingIndex, input, handleEditResend, sendMessage]);
-
   const clearChat = useCallback(() => {
     if (!messages.length) return;
     if (window.confirm("Clear all messages?")) {
@@ -499,6 +448,57 @@ export default function ChatTab({
     onActivityChange(100); setTimeout(() => onActivityChange(0), 300);
     setLoading(false); isProcessingRef.current = false; abortRef.current = null;
   }, [input, pinnedContext, forcedAgent, reflectMode, currentThreadId, onLogAdd, onQueryComplete, onLitNode, onActivityChange, fetchCoherence, fetchThreads]);
+
+  // Re-run the last user prompt, replacing the last agent reply.
+  const handleRegenerate = useCallback(async () => {
+    if (isProcessingRef.current) return;
+    let lastUserIdx = -1;
+    messages.forEach((m, i) => { if (m.role === "user") lastUserIdx = i; });
+    if (lastUserIdx < 0) return;
+    const lastUserText = messages[lastUserIdx].text;
+    setMessages(prev => prev.slice(0, lastUserIdx + 1));  // drop the old reply
+    if (currentThreadId) {
+      try {
+        const tc = await fetch(`http://localhost:8000/threads/${currentThreadId}/turns`).then(r => r.json());
+        const keep = Math.max(0, (tc.turns?.length || 0) - 1);
+        await fetch(`http://localhost:8000/threads/${currentThreadId}/truncate?keep=${keep}`, { method: "POST" });
+      } catch { /* best effort */ }
+    }
+    sendMessage(lastUserText, { appendUser: false });
+  }, [messages, currentThreadId, sendMessage]);
+
+  // Edit a prior user message: drop it + everything after, then resend the new text.
+  const handleEditResend = useCallback(async (uiIndex, newText) => {
+    const t = (newText || "").trim();
+    if (!t || isProcessingRef.current) return;
+    let keep = 0;
+    for (let i = 0; i < uiIndex; i++) if (messages[i]?.role === "user") keep++;
+    setMessages(prev => prev.slice(0, uiIndex));
+    if (currentThreadId) {
+      try { await fetch(`http://localhost:8000/threads/${currentThreadId}/truncate?keep=${keep}`, { method: "POST" }); }
+      catch { /* best effort */ }
+    }
+    sendMessage(t, { appendUser: true });
+  }, [messages, currentThreadId, sendMessage]);
+
+  const startEdit = useCallback((uiIndex) => {
+    setEditingIndex(uiIndex);
+    setInput(messages[uiIndex]?.text || "");
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  }, [messages]);
+
+  const cancelEdit = useCallback(() => { setEditingIndex(null); setInput(""); }, []);
+
+  // Send button / Enter: route to edit-resend when editing, else a normal send.
+  const handleSendClick = useCallback(() => {
+    if (editingIndex != null) {
+      const idx = editingIndex; const txt = input;
+      setEditingIndex(null); setInput("");
+      handleEditResend(idx, txt);
+    } else {
+      sendMessage();
+    }
+  }, [editingIndex, input, handleEditResend, sendMessage]);
 
   const handleKeyDown = e => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendClick(); }
