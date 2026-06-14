@@ -125,6 +125,11 @@ def _init_threads():
             agent     TEXT NOT NULL
         )
     """)
+    # Migration: archive flag for thread management (added v1.1). Idempotent —
+    # older sessions.db files predate the column.
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(threads)")}
+    if "archived" not in cols:
+        conn.execute("ALTER TABLE threads ADD COLUMN archived INTEGER DEFAULT 0")
     conn.commit()
     conn.close()
 
