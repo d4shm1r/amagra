@@ -322,6 +322,27 @@ Post-debut hardening — the deferred pre-launch engineering, none of which bloc
 
 Residual v1.0.1 item: the public launch (Show HN / r/LocalLLaMA / self-host catalogs) — a marketing action, not code.
 
+### v1.0.4 — Tool-Using Foundations ✅
+
+The first wave of v1.1 "tool-using agents" capabilities, delivered on the
+v1.0.x line. (Live web search + the in-agent tool loop remain for v1.1.0.)
+
+- **Thread management** — `PATCH /threads/{id}` (rename), `POST /threads/{id}/fork`,
+  `POST /threads/{id}/archive`, `POST /threads/{id}/truncate`; `GET /threads`
+  gained `include_archived`.
+- **Jailed file/folder tool** — `tools/workspace.py` read/list/search confined to
+  `$AMAGRA_WORKSPACE` via `(root/p).resolve().is_relative_to(root)` (defeats
+  traversal, absolute-path injection, symlink escape). `GET /workspace/*`.
+- **Sandboxed code execution** — `tools/sandbox.py` runs `python3 -I -S` under
+  `setrlimit` (CPU/memory/output), scrubbed env, throwaway cwd, process-group
+  timeout kill. `POST /sandbox/run`, opt-in behind `AMAGRA_SANDBOX=1`. Network is
+  not isolated (documented).
+- **Chat affordances** — stop (existing), regenerate, and edit-and-resend in the
+  composer, backed by thread truncation.
+- **UI fix** — resolved a temporal-dead-zone ReferenceError that blanked the
+  dashboard; added a top-level `ErrorBoundary`.
+- Test suite **645 → 690**.
+
 ### v1.0.3 — Single-File DB Consolidation ✅
 
 Completes the DB-consolidation seam opened in v1.0.1 so `AMAGRA_DB` actually
@@ -363,16 +384,16 @@ ships a single file.
 
 | Metric | Value |
 |--------|-------|
-| Version | v1.0.3 (single-file DB + memory portability) |
+| Version | v1.0.4 (tool-using foundations) |
 | Routing accuracy | 97% full · 99% signal-only |
 | Specialist agents | 10 (registry-canonical) |
 | FAISS vectors | 628+ at 0.38ms P50 |
-| API endpoints | 100+ (118 routes) |
-| Build phases complete | 37 (+ v0.9 → v1.0.3 releases) |
+| API endpoints | 100+ (128 routes) |
+| Build phases complete | 37 (+ v0.9 → v1.0.4 releases) |
 | UCI score | ~80.8 |
 | Auth | API key auth (REQUIRE_AUTH=0 dev, 1 prod) |
 | Docker | Dockerfile + docker-compose.yml with GPU passthrough |
-| Test suite | 645 passing |
+| Test suite | 690 passing |
 
 ---
 
