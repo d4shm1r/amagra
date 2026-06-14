@@ -76,3 +76,6 @@ ui/package-lock.json
 # Misc
 *.tmp
 .DS_Store
+
+# Jailed file tool default root (user content)
+workspace/

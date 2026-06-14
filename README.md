@@ -276,7 +276,7 @@ Post-debut hardening: tests to ~60% coverage, in-product onboarding (Ollama dete
 
 ### v1.1 — Tool-using agents · Q3 2026 *(in progress)*
 
-Agents gain real capabilities, not just text: jailed file/folder access, sandboxed code execution, and live web search. Plus stop/regenerate/edit affordances. **Shipped early:** thread management (rename, fork, archive) and memory import/export (JSON/Markdown). **Remaining:** the tool-execution layer (jailed files, sandbox, web search) and the chat affordances.
+Agents gain real capabilities, not just text: jailed file/folder access, sandboxed code execution, and live web search. Plus stop/regenerate/edit affordances. **Shipped:** thread management (rename, fork, archive), memory import/export (JSON/Markdown), and the jailed file/folder tool (`GET /workspace/read|list|search`, confined to a root via `Path.resolve().is_relative_to(root)`). **Remaining:** sandboxed code execution, live web search, and the chat affordances.
 
 ### v1.2 — Multi-provider models & workspaces · Q4 2026
 

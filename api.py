@@ -213,6 +213,7 @@ from routes.docs_api    import router as docs_router
 from routes.admin       import router as admin_router
 from routes.documents   import router as documents_router
 from routes.setup       import router as setup_router
+from routes.workspace   import router as workspace_router
 
 app.include_router(core_router)
 app.include_router(register_router)
@@ -230,3 +231,4 @@ app.include_router(docs_router)
 app.include_router(admin_router)
 app.include_router(documents_router)
 app.include_router(setup_router)
+app.include_router(workspace_router)
