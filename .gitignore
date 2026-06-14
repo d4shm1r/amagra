@@ -13,6 +13,11 @@ tasks.db
 # SQLite WAL/SHM sidecars (created when WAL mode is enabled)
 *.db-wal
 *.db-shm
+# Single-file DB mode (AMAGRA_DB) — consolidated file, its sidecar, archives
+amagra.db
+data/
+faiss_index.bin
+*.pre-consolidation
 
 # Runtime logs and session artifacts
 logs/*.log

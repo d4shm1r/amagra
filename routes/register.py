@@ -15,11 +15,11 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, field_validator
 
 import core.api_keys as _ak
+from infrastructure.db import path as _dbpath
 
 router = APIRouter()
 
-_ROOT    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_REG_DB  = os.path.join(_ROOT, "memory", "registrations.db")
+_REG_DB  = _dbpath("registrations")
 
 
 # ── DB setup ─────────────────────────────────────────────────

@@ -31,6 +31,7 @@ REGISTRY: dict[str, str] = {
     "memory":         os.path.join("memory", "agent_memory.db"),
     "api_keys":       os.path.join("memory", "api_keys.db"),
     "stripe_events":  os.path.join("memory", "stripe_events.db"),
+    "registrations":  os.path.join("memory", "registrations.db"),
     # Task queue (project root)
     "tasks":          "tasks.db",
     # Telemetry / decision cluster
@@ -47,6 +48,7 @@ REGISTRY: dict[str, str] = {
     "step_verify":    os.path.join("logs", "step_verify.db"),
     "traces":         os.path.join("logs", "traces.db"),
     "arena":          os.path.join("logs", "arena.db"),
+    "telemetry":      os.path.join("logs", "telemetry.db"),
 }
 
 
@@ -75,3 +77,17 @@ def path(name: str) -> str:
 def connect(name: str, **kwargs) -> sqlite3.Connection:
     """sqlite3.connect for a logical database name (parent dir is created if needed)."""
     return sqlite3.connect(path(name), **kwargs)
+
+
+def distinct_paths() -> list[str]:
+    """Every distinct DB file path the registry resolves to.
+
+    In default (separate-file) mode this is one path per logical name; in
+    single-file mode (AMAGRA_DB set) it collapses to the single file. Useful for
+    one-time setup over the *physical* databases (e.g. enabling WAL) without
+    touching the same file N times.
+    """
+    seen: dict[str, None] = {}
+    for name in REGISTRY:
+        seen.setdefault(path(name), None)
+    return list(seen)

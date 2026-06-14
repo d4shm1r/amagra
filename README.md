@@ -251,7 +251,17 @@ Rate limits are returned on every authenticated response as `X-RateLimit-Limit`,
 - **Streaming available** — use `POST /ask/stream` for SSE streaming responses. When `ANTHROPIC_API_KEY` is set, tokens stream directly from Claude; without it, the response arrives as a single chunk. The default `POST /ask` remains non-streaming.
 - **No tool use** — agents produce text only. File access, sandboxed code execution, and web search are committed for `v1.1`.
 - **Default inference** — Ollama (local). Cloud provider support (Anthropic, OpenAI, Gemini) via the multi-provider `/ask` path is available; full provider-abstraction UI is committed for `v1.2`.
-- **SQLite sprawl** — internal data is split across multiple SQLite files; cross-DB atomicity is not guaranteed. Every path now resolves through one registry (`infrastructure/db.py`), and setting `AMAGRA_DB=/path/to/amagra.db` collapses all logical databases into a single file. The default is still separate files (no migration required); making single-file the default is planned for `v1.0.1`.
+- **SQLite sprawl** — internal data is split across multiple SQLite files; cross-DB atomicity is not guaranteed. Every path resolves through one registry (`infrastructure/db.py`), and setting `AMAGRA_DB=/path/to/amagra.db` collapses all logical databases into a single file. The default is still separate files (no migration required). To switch to one file, consolidate existing data once and flip the env var:
+
+  ```bash
+  # Preview (writes nothing):
+  python scripts/migrate_to_single_db.py --target amagra.db --dry-run
+  # Consolidate, then archive the old files so they can't diverge:
+  python scripts/migrate_to_single_db.py --target amagra.db --apply --archive
+  export AMAGRA_DB=$(pwd)/amagra.db   # or set it in docker-compose.yml
+  ```
+
+  Migration preserves every table's `rowid` (the FAISS index is keyed on `memories.id`) and copies the FAISS sidecar; on first start in single-file mode the index rebuilds itself if the sidecar isn't found. Single-file mode simplifies backups and container volumes at the cost of one shared writer lock. Making it the default is planned for a later release.
 - **Benchmark independence** — routing accuracy is measured on a curated eval set, not production data. See [Routing in practice](#routing-in-practice) for the raw numbers and known failure modes. Independent production telemetry is tracked via `GET /telemetry/routing`.
 
 ---
