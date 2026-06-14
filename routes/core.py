@@ -520,18 +520,19 @@ async def ask(req: AskRequest, request: Request):
 
 
 @router.get("/threads")
-def list_threads(limit: int = 30):
+def list_threads(limit: int = 30, include_archived: bool = False):
     try:
         conn = sqlite3.connect(_SESSIONS_DB, timeout=5)
-        rows = conn.execute(
-            "SELECT id, title, created_at, updated_at, turn_count "
-            "FROM threads ORDER BY updated_at DESC LIMIT ?",
-            (limit,),
-        ).fetchall()
+        q = ("SELECT id, title, created_at, updated_at, turn_count, COALESCE(archived,0) "
+             "FROM threads")
+        if not include_archived:
+            q += " WHERE COALESCE(archived,0)=0"
+        q += " ORDER BY updated_at DESC LIMIT ?"
+        rows = conn.execute(q, (limit,)).fetchall()
         conn.close()
         return {"threads": [
             {"id": r[0], "title": r[1] or "Untitled", "created_at": r[2],
-             "updated_at": r[3], "turn_count": r[4] or 0}
+             "updated_at": r[3], "turn_count": r[4] or 0, "archived": bool(r[5])}
             for r in rows
         ]}
     except Exception as e:
@@ -567,6 +568,86 @@ def delete_thread(thread_id: str):
         return {"deleted": thread_id}
     except Exception as e:
         raise HTTPException(status_code=503, detail=str(e))
+
+
+class ThreadRename(BaseModel):
+    title: str
+
+
+@router.patch("/threads/{thread_id}")
+def rename_thread(thread_id: str, body: ThreadRename):
+    """Rename a thread (overrides the auto-title taken from the first message)."""
+    title = body.title.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="title must not be empty")
+    try:
+        conn = sqlite3.connect(_SESSIONS_DB, timeout=5)
+        cur = conn.execute(
+            "UPDATE threads SET title=?, updated_at=? WHERE id=?",
+            (title[:200], datetime.now(timezone.utc).isoformat(), thread_id),
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    if cur.rowcount == 0:
+        raise HTTPException(status_code=404, detail=f"thread not found: {thread_id}")
+    return {"id": thread_id, "title": title[:200]}
+
+
+@router.post("/threads/{thread_id}/fork")
+def fork_thread(thread_id: str, upto: int = 0):
+    """Copy a thread (and its turns) into a new one. upto>0 keeps only the first N turns."""
+    try:
+        conn = sqlite3.connect(_SESSIONS_DB, timeout=5)
+        src = conn.execute("SELECT title FROM threads WHERE id=?", (thread_id,)).fetchone()
+        if not src:
+            conn.close()
+            raise HTTPException(status_code=404, detail=f"thread not found: {thread_id}")
+        rows = conn.execute(
+            "SELECT ts, user_msg, agent_msg, agent FROM turns "
+            "WHERE thread_id=? ORDER BY id ASC",
+            (thread_id,),
+        ).fetchall()
+        if upto > 0:
+            rows = rows[:upto]
+        new_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        new_title = f"{src[0] or 'Untitled'} (fork)"[:200]
+        conn.execute(
+            "INSERT INTO threads (id, title, created_at, updated_at, turn_count, archived) "
+            "VALUES (?,?,?,?,?,0)",
+            (new_id, new_title, now, now, len(rows)),
+        )
+        conn.executemany(
+            "INSERT INTO turns (thread_id, ts, user_msg, agent_msg, agent) VALUES (?,?,?,?,?)",
+            [(new_id, r[0], r[1], r[2], r[3]) for r in rows],
+        )
+        conn.commit()
+        conn.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    return {"id": new_id, "title": new_title, "turn_count": len(rows), "forked_from": thread_id}
+
+
+@router.post("/threads/{thread_id}/archive")
+def archive_thread(thread_id: str, archived: bool = True):
+    """Archive (or unarchive with ?archived=false) a thread — hides it from the default list."""
+    try:
+        conn = sqlite3.connect(_SESSIONS_DB, timeout=5)
+        cur = conn.execute(
+            "UPDATE threads SET archived=?, updated_at=? WHERE id=?",
+            (1 if archived else 0, datetime.now(timezone.utc).isoformat(), thread_id),
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    if cur.rowcount == 0:
+        raise HTTPException(status_code=404, detail=f"thread not found: {thread_id}")
+    return {"id": thread_id, "archived": bool(archived)}
 
 
 @router.get("/telemetry/routing")

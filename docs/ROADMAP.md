@@ -82,10 +82,12 @@ Agents that do things, not just say things. Closes the gap vs Continue/Cursor/Cl
 | Live web search (Brave/SearXNG/Tavily) | | 9 | 4 | ★★★★★ |
 | Jailed file/folder tool (`Path.resolve().is_relative_to(root)`) | | 8 | 5 | ★★★★ |
 | Stop / regenerate / edit-message affordances | | 7 | 3 | ★★★★★ |
-| Thread management: rename, fork, archive | | 6 | 2 | ★★★★ |
+| Thread management: rename, fork, archive | ✅ shipped | 6 | 2 | ★★★★ |
 | Memory import/export (JSON/Markdown) | ✅ shipped | 8 | 3 | ★★★★★ |
 
 **Memory import/export (shipped):** `GET /memory/export.json` (lossless — base64 float32 embeddings, re-imports with no model call), `GET /memory/export.md` (human-readable, grouped by agent), `POST /memory/import` (dedups via the near-duplicate gate, then rebuilds the FAISS index). CSV export predates this.
+
+**Thread management (shipped):** `PATCH /threads/{id}` (rename), `POST /threads/{id}/fork?upto=N` (copy a thread + its turns into a new one, optionally truncated), `POST /threads/{id}/archive?archived=bool` (archive/unarchive). `GET /threads` gained `include_archived` and hides archived threads by default. Backed by an idempotent `archived` column migration on `threads`.
 
 **Code execution:** Each agent optionally runs the code it writes in an isolated sandbox (Docker subcontainer, timeout/resource limits). Output inline below the code block. No copy-paste required.
 
