@@ -501,6 +501,19 @@ export const BUILD_PHASES = [
       "Test suite 624 → 645 passing",
     ],
   },
+  {
+    id: 74, version: "v1.0.4", date: "Jun 14, 2026",
+    label: "Tool-Using Foundations", title: "Tool-Using Foundations", color: "#0F766E", status: "done",
+    summary: "The first wave of v1.1 tool-using capabilities, delivered on the v1.0.x line: thread management, a jailed file tool, sandboxed code execution, and chat stop/regenerate/edit. Live web search + the in-agent tool loop remain for v1.1.0. Test suite grows 645 → 690.",
+    steps: [
+      "Thread management — PATCH /threads/{id} (rename), POST .../fork, .../archive, .../truncate; GET /threads gained include_archived",
+      "Jailed file tool — tools/workspace.py read/list/search confined to $AMAGRA_WORKSPACE via (root/p).resolve().is_relative_to(root); GET /workspace/*",
+      "Sandboxed code execution — tools/sandbox.py python3 -I -S under setrlimit + scrubbed env + process-group timeout; POST /sandbox/run, opt-in via AMAGRA_SANDBOX (network not isolated)",
+      "Chat affordances — stop, regenerate, edit-and-resend in the composer, backed by thread truncation",
+      "Fix: temporal-dead-zone ReferenceError that blanked the dashboard; added a top-level ErrorBoundary",
+      "Test suite 645 → 690 passing",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -660,7 +673,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
-  { version: "v1.0.0", label: "First Public Release", color: "#15803D",  phases: [70, 71, 72, 73] },
+  { version: "v1.0.0", label: "First Public Release", color: "#15803D",  phases: [70, 71, 72, 73, 74] },
   { version: "v0.10", label: "Content & Launch",      color: "#C48808",  phases: [60] },
   { version: "v0.9", label: "Commercialization",      color: "#C2410C",  phases: [36, 37, 38, 39, 50, 51, 52, 53] },
   { version: "v0.8", label: "Loop Activation",        color: "#15803D",  phases: [30, 31, 32, 33, 34, 35] },
