@@ -586,11 +586,11 @@ export const ROADMAP = [
   },
   {
     id: 41, version: "v1.1.0", title: "Tool-Using Agents", color: "#0F766E", status: "next", priority: "high",
-    summary: "Agents gain real capabilities, not just text: jailed file access, sandboxed code execution, and live web search. The biggest quality jump available without swapping the model. In progress — memory portability and thread management already shipped; tool execution is next. (SSE streaming shipped in 1.0.0.)",
+    summary: "Agents gain real capabilities, not just text: jailed file access, sandboxed code execution, and live web search. The biggest quality jump available without swapping the model. In progress — memory portability, thread management, and the jailed file tool already shipped; sandboxed execution and web search are next. (SSE streaming shipped in 1.0.0.)",
     items: [
       "Memory import/export — JSON / Markdown round-trip ✅",
       "Thread management: rename, fork, archive ✅",
-      "tools/workspace.py — read, list, search with Path.resolve().is_relative_to(root) jail (8h)",
+      "tools/workspace.py — read, list, search with Path.resolve().is_relative_to(root) jail ✅",
       "tools/sandbox.py — resource.setrlimit CPU/AS, scrubbed env, python3 -I isolation (6h)",
       "tools/web.py — SearxNG self-hosted or Brave Search API (4h)",
       "Structured tool loop in agents: JSON action → execute → append result, max 3 iters (8h)",
