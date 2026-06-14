@@ -487,6 +487,20 @@ export const BUILD_PHASES = [
       "Vite build verified; community profile 85%",
     ],
   },
+  {
+    id: 73, version: "v1.0.3", date: "Jun 14, 2026",
+    label: "Single-File DB", title: "Single-File DB Consolidation", color: "#0F766E", status: "done",
+    summary: "Completes the AMAGRA_DB seam opened in v1.0.1 so the whole system can run from one SQLite file. A one-shot migration consolidates every separate store losslessly, and the start scripts + Docker now opt into single-file mode with one env var. Test suite grows 624 → 645.",
+    steps: [
+      "scripts/migrate_to_single_db.py — one-shot consolidation, preserves rowid for every table (FAISS IndexIDMap is keyed on memories.id) + the FAISS sidecar",
+      "Migration is dry-run by default; --archive moves old files aside; refuses to clobber a same-named table with a different schema",
+      "Registry completion — registrations + telemetry routed through infrastructure/db.py (were hardcoded, so single-file mode silently skipped them)",
+      "api.py WAL setup derived from the registry (distinct_paths) — honours single-file mode, no drift",
+      "Cutover wiring — start-agents.sh + docker-compose.yml pass AMAGRA_DB through (./data volume); README documents the migrate → flip flow",
+      "Memory portability — lossless JSON export/import (base64 embeddings, no model call on re-import) + Markdown export; GET /memory/export.json|.md, POST /memory/import",
+      "Test suite 624 → 645 passing",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -681,7 +695,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
-  { version: "v1.0.0", label: "First Public Release", color: "#15803D",  phases: [70, 71, 72] },
+  { version: "v1.0.0", label: "First Public Release", color: "#15803D",  phases: [70, 71, 72, 73] },
   { version: "v0.10", label: "Content & Launch",      color: "#C48808",  phases: [60] },
   { version: "v0.9", label: "Commercialization",      color: "#C2410C",  phases: [36, 37, 38, 39, 50, 51, 52, 53] },
   { version: "v0.8", label: "Loop Activation",        color: "#15803D",  phases: [30, 31, 32, 33, 34, 35] },

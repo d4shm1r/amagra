@@ -344,7 +344,13 @@ ships a single file.
 - **Cutover wiring** (closes #3) — `start-agents.sh` and `docker-compose.yml`
   pass `AMAGRA_DB` through (with a `./data` volume for the single file), so
   single-file mode is a one-env-var opt-in; README documents the migrate→flip
-  flow. Suite **624 → 633**.
+  flow.
+- **Memory portability** — lossless JSON export/import (`GET /memory/export.json`,
+  `POST /memory/import`): embeddings are base64-encoded so a re-import reuses the
+  stored vectors with no model call and dedups via the near-duplicate gate;
+  Markdown export (`GET /memory/export.md`) grouped by agent. First v1.1
+  "tool-using agents" item, delivered early.
+- Suite **624 → 645**.
 
 ### v1.0.2 — Dashboard & Community Polish ✅
 
@@ -357,16 +363,16 @@ ships a single file.
 
 | Metric | Value |
 |--------|-------|
-| Version | v1.0.2 (luxe dashboard + community profile) |
+| Version | v1.0.3 (single-file DB + memory portability) |
 | Routing accuracy | 97% full · 99% signal-only |
 | Specialist agents | 10 (registry-canonical) |
 | FAISS vectors | 628+ at 0.38ms P50 |
-| API endpoints | 100+ (109 routes) |
-| Build phases complete | 37 (+ v0.9 → v1.0.1 releases) |
+| API endpoints | 100+ (118 routes) |
+| Build phases complete | 37 (+ v0.9 → v1.0.3 releases) |
 | UCI score | ~80.8 |
 | Auth | API key auth (REQUIRE_AUTH=0 dev, 1 prod) |
 | Docker | Dockerfile + docker-compose.yml with GPU passthrough |
-| Test suite | 624 passing |
+| Test suite | 645 passing |
 
 ---
 
