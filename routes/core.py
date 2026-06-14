@@ -21,7 +21,7 @@ from .deps import (
 
 router = APIRouter()
 
-_TELEMETRY_DB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs", "telemetry.db")
+_TELEMETRY_DB = _dbpath("telemetry")
 
 def _init_telemetry():
     os.makedirs(os.path.dirname(_TELEMETRY_DB), exist_ok=True)

@@ -99,18 +99,10 @@ async def lifespan(app: FastAPI):
     # ── Enable WAL mode on all SQLite databases ────────────────
     # WAL allows concurrent readers + 1 writer, eliminating "database is locked"
     # errors under the async /ask path and any concurrent API calls.
-    _wal_dbs = [
-        "tasks.db",
-        "logs/sessions.db", "logs/telemetry.db", "logs/traces.db",
-        "logs/decisions.db", "logs/feedback.db", "logs/events.db",
-        "logs/runs.db", "logs/contradictions.db", "logs/snapshots.db",
-        "logs/gate.db", "logs/risk_gate.db", "logs/world_model.db",
-        "logs/arena.db",
-        "memory/agent_memory.db", "memory/api_keys.db", "memory/registrations.db",
-    ]
-    _root = os.path.dirname(os.path.abspath(__file__))
-    for _db in _wal_dbs:
-        _path = os.path.join(_root, _db)
+    # Paths come from the central registry, so this honours single-file mode
+    # (AMAGRA_DB) automatically and never drifts from the real DB layout.
+    from infrastructure.db import distinct_paths as _distinct_db_paths
+    for _path in _distinct_db_paths():
         if os.path.exists(_path):
             try:
                 _c = sqlite3.connect(_path, timeout=3)

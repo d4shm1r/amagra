@@ -322,6 +322,25 @@ Post-debut hardening — the deferred pre-launch engineering, none of which bloc
 
 Residual v1.0.1 item: the public launch (Show HN / r/LocalLLaMA / self-host catalogs) — a marketing action, not code.
 
+### v1.0.3 — Single-File DB Consolidation ✅
+
+Completes the DB-consolidation seam opened in v1.0.1 so `AMAGRA_DB` actually
+ships a single file.
+
+- **Registry completion** — `registrations` and `telemetry` joined the
+  `infrastructure/db.py` registry; `routes/register.py` and `routes/core.py`
+  now resolve their paths through it (were hardcoded, so single-file mode
+  silently skipped them). `runtime_slice.db` left out by design — it is a demo
+  script's scratch DB whose `runs` table collides with the real one.
+- **WAL setup from the registry** — `api.py` startup now derives the WAL list
+  from `infrastructure.db.distinct_paths()` instead of a hand-maintained list,
+  so it honours single-file mode and never drifts from the real layout.
+- **One-shot migration** — `scripts/migrate_to_single_db.py` copies every
+  separate store into one `amagra.db`, preserving `rowid` for all tables
+  (critical: FAISS `IndexIDMap` is keyed on `memories.id`) and the FAISS
+  sidecar. Dry-run by default; refuses to clobber a same-named table with a
+  different schema. 7 new tests; suite **624 → 631**.
+
 ### v1.0.2 — Dashboard & Community Polish ✅
 
 - **Luxe-card system** extended across the whole dashboard (10 tabs: Cognitive Map, Cognitive OS, Event Log, Home, Memory Browser, Plan Graph, Policy, Risk Observatory, Skills, Version History) — inline cards → `className="lux-card"`, rounded badges, shared `PageHeader`/`RefreshBtn`
