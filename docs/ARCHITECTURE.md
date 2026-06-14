@@ -102,10 +102,10 @@ All of it is browsable live in the UI (Event Log, Plan Graph, UCI Dashboard, Mem
 
 ## Surface & hardening
 
-- **API**: 100+ endpoints (109 routes) under [`routes/`](../routes/) + [`api.py`](../api.py); OpenAPI at `/docs`.
+- **API**: 100+ endpoints (128 routes) under [`routes/`](../routes/) + [`api.py`](../api.py); OpenAPI at `/docs`.
 - **Auth**: deny-by-default `_PUBLIC_PATHS` allowlist, `ADMIN_TOKEN` admin gate, per-tier sliding-window rate limits with `X-RateLimit-*` headers ([`api.py`](../api.py), [`core/api_keys.py`](../core/api_keys.py)).
 - **Concurrency**: async `/ask` via executor; `PRAGMA journal_mode=WAL` on all SQLite DBs.
-- **Tests**: **544 passing** across 39 files ([`tests/`](../tests/)) — routes, core, cognition, learning invariants, payment path.
+- **Tests**: **702 passing** ([`tests/`](../tests/)) — routes, core, cognition, learning invariants, payment path, tool jail + sandbox + web search.
 - **CI/CD**: GitHub Actions (ruff + pytest + Docker build).
 
 ---

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { T, LUX, FONT_DISPLAY } from "./theme";
-import { BUILD_PHASES, ROADMAP } from "./constants";
+import { BUILD_PHASES, ROADMAP, VERSION } from "./constants";
 
 // ── Feature pillars ─────────────────────────────────────────────
 const FEATURES = [
@@ -108,7 +108,6 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
   }, [online]);
 
   const currentPhase = ROADMAP.find(p => p.status === "next");
-  const latestPhase  = BUILD_PHASES[BUILD_PHASES.length - 1];
 
   return (
     <div style={{ animation: "fadeIn .2s", fontFamily: "inherit" }}>
@@ -131,7 +130,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
 
             {/* Version + phase badges */}
             <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 14 }}>
-              <Badge label={latestPhase.version}          color={T.accent}   />
+              <Badge label={`v${VERSION}`}                color={T.accent}   />
               <Badge label={`${BUILD_PHASES.length} phases`} color="#047857" />
               <Badge label="Open Core · MIT"              color="#6D28D9"    />
               <Badge label="100% local"                   color="#0F766E"    />
@@ -323,7 +322,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
         display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
       }}>
         <span style={{ fontSize: 10, color: T.muted }}>
-          Started Dec 15 2025 · {BUILD_PHASES.length} build phases · {latestPhase.version} · MIT
+          Started Dec 15 2025 · {BUILD_PHASES.length} build phases · v{VERSION} · MIT
         </span>
         <span style={{ color: T.border }}>·</span>
         <span

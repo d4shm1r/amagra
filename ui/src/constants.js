@@ -1,3 +1,7 @@
+// Single source of truth for the app version. Keep in lockstep with the latest
+// GitHub release, api.py FastAPI version, and ui/package.json on every release.
+export const VERSION = "1.0.4";
+
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
   { id: "python_dev",         label: "Python Dev",           icon: "λ", color: "#C48808", focus: "Python code, scripts, automation, debugging, FastAPI, asyncio", role: "Writes complete working Python code. Give it a specific task with inputs, outputs, and edge cases — it returns runnable code you can copy and execute.", keywords: ["python","flask","fastapi","script","automation","pip"], phase: 3 },
@@ -850,33 +854,31 @@ export const PROMISES = [
     id: 7,
     icon: "▤",
     title: "File and Folder Context",
-    description: "Drop a file, a directory, or a URL into the chat. Agents read and reason over your actual codebase — not a description of it.",
+    description: "Drop a file or directory into the chat. Agents read and reason over your actual codebase — not a description of it. RAG file upload plus a jailed read/list/search tool (GET /workspace/*).",
     category: "Developer",
-    status: "building",
-    target: "v1.1",
-    target_quarter: "Q3 2026",
+    status: "delivered",
+    delivered_on: "2026-06-14",
     priority: "high",
   },
 
-  // ── Committed ────────────────────────────────────────────────────────────────
+  // ── Building ─────────────────────────────────────────────────────────────────
   {
     id: 8,
     icon: "▶",
     title: "Sandboxed Code Execution",
-    description: "Agents will run the code they write — in an isolated sandbox with CPU and memory limits — and show you the output. No copy-paste required.",
+    description: "Run code in an isolated sandbox with CPU and memory limits, and see the output. POST /sandbox/run (opt-in via AMAGRA_SANDBOX); autonomous in-agent execution lands with the tool loop.",
     category: "Developer",
-    status: "committed",
-    target: "v1.1",
-    target_quarter: "Q3 2026",
+    status: "delivered",
+    delivered_on: "2026-06-14",
     priority: "high",
   },
   {
     id: 9,
     icon: "⊹",
     title: "Live Web Search",
-    description: "Agents will search the web when your question requires up-to-date information — documentation, changelogs, error messages, prices.",
+    description: "Search the web when a question needs up-to-date information — docs, changelogs, errors. Self-hosted SearXNG by default; opt-in Brave/Tavily. GET /search/web.",
     category: "AI",
-    status: "committed",
+    status: "building",
     target: "v1.1",
     target_quarter: "Q3 2026",
     priority: "high",

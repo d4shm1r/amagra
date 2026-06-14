@@ -30,7 +30,7 @@ import InspectOverviewTab  from "./InspectOverviewTab";
 import LibraryTab          from "./LibraryTab";
 import VersionHistoryTab   from "./VersionHistoryTab";
 import ResearchTab         from "./ResearchTab";
-import { BUILD_PHASES, AGENTS } from "./constants";
+import { BUILD_PHASES, AGENTS, VERSION } from "./constants";
 import PromptEditorTab    from "./PromptEditorTab";
 import SkillsTab          from "./SkillsTab";
 import PromisesTab        from "./PromisesTab";
@@ -876,7 +876,7 @@ export default function App() {
             background: `${T.accent}18`, border: `1px solid ${T.accent}44`,
             borderRadius: 4, padding: "2px 8px", fontFamily: "monospace",
           }}>
-            {BUILD_PHASES[BUILD_PHASES.length - 1].version}
+            v{VERSION}
           </span>
           <span style={{ fontSize: 10, color: T.muted }}>
             Phase {BUILD_PHASES[BUILD_PHASES.length - 1].id} — {BUILD_PHASES[BUILD_PHASES.length - 1].title}

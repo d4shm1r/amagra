@@ -1,6 +1,6 @@
 # Project Map — Amagra
 
-**Updated:** 2026-06-13 · **Version:** v1.0.0
+**Updated:** 2026-06-14 · **Version:** v1.0.4
 **Mission:** the local-first cognitive runtime developers build agents on top of.
 
 This is the orientation map. Each area links to the canonical document — this file does **not** duplicate their content.
@@ -23,14 +23,14 @@ This is the orientation map. Each area links to the canonical document — this 
 
 | | |
 |---|---|
-| Version | v1.0.0 (first public release) |
+| Version | v1.0.4 (tool-using foundations) |
 | Specialist agents | 10 (`agents/registry.py` is canonical) |
 | Skill graph | 21 nodes |
 | Routing accuracy | 97% full · 99% signal-only (curated eval) |
 | Memory | SQLite → auto-promote to FAISS at 800 entries · 628+ vectors · P50 0.38ms · 52× LRU cache |
 | UCI health | h_UCI ≈ 80.8 |
-| API surface | 100+ endpoints (109 routes) |
-| Tests | 544 passing across 39 files |
+| API surface | 100+ endpoints (128 routes) |
+| Tests | 702 passing |
 | Auth | API-key, deny-by-default when `REQUIRE_AUTH=1` |
 
 ---
@@ -71,9 +71,13 @@ Endpoint and UI-tab inventories live in [REFERENCE.md](REFERENCE.md); they are n
 | Phase | Name | Status |
 |-------|------|--------|
 | Internal builds (v0.1 → v0.10) | Foundation → Cognitive OS → RAG file context | ✅ Complete (in-app build log) |
-| **v1.0.0** | **First public release** | ✅ Shipped |
-| v1.0.1 | Launch polish: tests to ~60%, onboarding, Vite | 🔄 Next |
-| v1.1 | Tool-using agents | ⬜ Planned |
+| **v1.0.0** | First public release | ✅ Shipped |
+| v1.0.1 | Lean runtime, onboarding, Vite | ✅ Shipped |
+| v1.0.2 | Luxe dashboard + community profile | ✅ Shipped |
+| v1.0.3 | Single-file DB + memory portability | ✅ Shipped |
+| **v1.0.4** | **Tool-using foundations** (file/sandbox/web tools, thread mgmt, chat affordances) | ✅ Shipped |
+| v1.1.0 | Tool-using agents — in-agent tool loop | 🔄 In progress |
+| v1.2 → v2.0 | Providers · workspaces · team memory · agent registry | ⬜ Planned |
 
 See [ROADMAP.md](ROADMAP.md) for the full forward plan and [HISTORY.md](HISTORY.md) for the per-phase record.
 

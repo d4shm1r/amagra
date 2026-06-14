@@ -4,9 +4,9 @@ import { T } from "./theme";
 
 // ── Open issues only — resolved items live in Version History ─────────────────
 const ISSUES = [
-  { id: 18, sev: "warning", title: "F10 — 8 separate SQLite databases",                       detail: "Ad-hoc sqlite3.connect() across 8+ files. traces.db runs CREATE TABLE + 3 ALTER TABLE attempts inside every /ask hot path. Cross-DB relationships can never be atomic (root cause of F4). WAL not consistently set. Fix: consolidate to one amagra.db with versioned migrations. (~10h)", status: "open" },
   { id: 1,  sev: "info",    title: "Feedback coverage near zero",                              detail: "No real user ratings collected yet. The critic gate now provides grounded quality scores (F5 fixed), but 👍/👎 ratings from the Chat tab are a stronger signal — even 20 real ratings begins validating the critic's calibration.", status: "known" },
   { id: 4,  sev: "info",    title: "Contradiction false-positive rate unknown",                detail: "contradictions.db entries are mostly false positives (F8). Real precision is unknown — needs a hold-out sample from sessions.db labeled manually.", status: "tracked" },
+  { id: 19, sev: "info",    title: "In-agent tool loop not yet wired",                         detail: "The file, sandbox, and web-search tools exist as endpoints (GET /workspace/*, POST /sandbox/run, GET /search/web), but agents don't yet call them autonomously mid-reasoning. The structured tool loop (JSON action → execute → append result, max 3 iters) + tool_calls logging is the last v1.1.0 item.", status: "open" },
 ];
 
 const SEV_META = {
