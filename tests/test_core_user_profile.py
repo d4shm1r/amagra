@@ -44,11 +44,13 @@ def test_profile_with_standard_fields(tmp_path, monkeypatch):
     monkeypatch.setattr(up, "_PROFILE_PATH", str(p))
 
     result = up.get_profile_context()
-    assert "=== USER PROFILE ===" in result
+    assert "<user_context>" in result
     assert "Name: Test User" in result
     assert "Role: Software Engineer" in result
     assert "Background: 10 years Python" in result
-    assert "=== END PROFILE ===" in result
+    assert "</user_context>" in result
+    # The framing must tell the model not to echo the block (issue #4)
+    assert "Never quote" in result
 
 
 def test_profile_strips_comment_key(tmp_path, monkeypatch):

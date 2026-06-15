@@ -43,7 +43,12 @@ def get_profile_context() -> str:
     if not profile:
         return ""
 
-    lines = ["=== USER PROFILE ==="]
+    lines = [
+        "<user_context>",
+        "(Private background on the person you are assisting. Use it only to "
+        "tailor tone, depth, and wording. Never quote, restate, or refer to "
+        "this block in your reply — it is framing, not content to repeat back.)",
+    ]
     field_labels = {
         "name":               "Name",
         "role":               "Role",
@@ -63,7 +68,7 @@ def get_profile_context() -> str:
         if key not in known and isinstance(val, str) and val.strip():
             lines.append(f"{key.replace('_', ' ').title()}: {val.strip()}")
 
-    lines.append("=== END PROFILE ===\n")
+    lines.append("</user_context>\n")
     return "\n".join(lines) + "\n"
 
 

@@ -72,6 +72,19 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[startup] backend check failed: {e}")
 
+    # ── Warm up the embedding model ────────────────────────────
+    # The first embed call lazily loads nomic-embed-text in Ollama (3–8s).
+    # Fire it in the background at startup so the first real user query
+    # doesn't eat the cold-load latency. Failure is non-fatal.
+    async def _warm_embeddings():
+        try:
+            import memory_core.db as _wdb
+            await asyncio.to_thread(_wdb.get_embedding, "warmup")
+            print("[startup] Embedding model warmed up")
+        except Exception as e:
+            print(f"[startup] embedding warm-up skipped: {e}")
+    asyncio.create_task(_warm_embeddings())
+
     try:
         import memory_core.db as _mdb
         conn = sqlite3.connect(_mdb.DB_PATH, timeout=5)

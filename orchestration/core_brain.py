@@ -113,6 +113,18 @@ COMPOUND_SIGNALS = [
 
 CODE_AGENTS = {"python_dev", "dotnet_dev"}
 
+# ── CODE NOUNS ───────────────────────────────────────────────
+# Nouns that signal a genuine coding task. Used to guard against the LLM
+# classifier returning action="build" for plain imperative prose
+# ("repeat the months of the year backward"), which would otherwise route
+# to a code agent + code reflection and waste ~80s on a one-line answer.
+CODE_NOUN = re.compile(
+    r"\b(code|script|function|class|component|endpoint|module|api|app|"
+    r"program|cli|library|package|regex|algorithm|website|webpage|page|"
+    r"test|schema|query|migration|dockerfile|pipeline|config)\b",
+    re.I,
+)
+
 VALID_AGENTS = [
     "it_networking", "python_dev", "dotnet_dev",
     "ai_ml", "knowledge_learning", "terse",
@@ -308,9 +320,16 @@ Rules: agents must be from the list. Return JSON only."""
         agents = [a for a in data.get("agents", []) if a in VALID_AGENTS]
         if not agents:
             agents = ["knowledge_learning"]
+        action = data.get("action", "unknown")
+        # Guard: the classifier over-fires "build" on plain imperative prose
+        # ("repeat the months of the year backward"). With no code noun present
+        # it isn't a coding task — downgrade to "explain" so it skips the code
+        # agent + reflection pipeline.
+        if action == "build" and not CODE_NOUN.search(query):
+            action = "explain"
         return {
             "intent":     data.get("intent", query[:80]),
-            "action":     data.get("action", "unknown"),
+            "action":     action,
             "agents":     agents,
             "complexity": data.get("complexity", "simple"),
         }
