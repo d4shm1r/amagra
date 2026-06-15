@@ -322,6 +322,33 @@ Post-debut hardening — the deferred pre-launch engineering, none of which bloc
 
 Residual v1.0.1 item: the public launch (Show HN / r/LocalLLaMA / self-host catalogs) — a marketing action, not code.
 
+### v1.1.0 — Tool-Using Agents ✅
+
+Completes the v1.1 "tool-using agents" milestone. The two pieces held back from
+v1.0.4 — live web search and the in-agent tool loop — landed, alongside a
+beginner-friendly UI and a routing-accuracy guard.
+
+- **Live web search** — `tools/web.py` provider abstraction: default **SearXNG**
+  (no key, set `SEARXNG_URL` — fits the self-hosted posture), opt-in `brave` /
+  `tavily` via keys. `GET /search/web` (503 until configured) + `GET /search/status`,
+  uniform `{title, url, snippet}` results.
+- **In-agent tool loop** — `tools/tool_loop.py`, a provider-agnostic loop (LLM
+  injected): the model emits fenced JSON `{"tool","args"}` → execute → observe,
+  bounded N rounds, emitting `tool.call` events. Wired to file / sandbox / web via
+  `tools/catalog.py`. `GET /tools/list` + `POST /tools/run`. Exposed as a dedicated
+  endpoint for now — auto-invoking it inside the default specialist-agent flow waits
+  on phi4-mini's tool-JSON reliability.
+- **Simple / Advanced UI mode** — Simple trims the chrome to the essentials a
+  newcomer needs (Chat, Library, Guide) and hides the Memory/Inspect surfaces, the
+  technical menus, and advanced settings sub-tabs; Advanced reveals everything. New
+  users start simple; existing users keep the full UI. Persists in `localStorage`,
+  toggleable from the menu-bar pill, the Settings modal, and the onboarding chooser.
+- **Onboarding** — reworked to lead with plain language and privacy ("runs on your
+  own computer") instead of Ollama/model jargon.
+- **Routing guard** — build over-classification guard, profile-leak framing fix,
+  embedding warm-up.
+- Test suite **690 → 719**; **132 routes**.
+
 ### v1.0.4 — Tool-Using Foundations ✅
 
 The first wave of v1.1 "tool-using agents" capabilities, delivered on the
@@ -384,16 +411,16 @@ ships a single file.
 
 | Metric | Value |
 |--------|-------|
-| Version | v1.0.4 (tool-using foundations) |
+| Version | v1.1.0 (tool-using agents) |
 | Routing accuracy | 97% full · 99% signal-only |
 | Specialist agents | 10 (registry-canonical) |
 | FAISS vectors | 628+ at 0.38ms P50 |
-| API endpoints | 100+ (128 routes) |
-| Build phases complete | 37 (+ v0.9 → v1.0.4 releases) |
+| API endpoints | 100+ (132 routes) |
+| Build phases complete | 37 (+ v0.9 → v1.1.0 releases) |
 | UCI score | ~80.8 |
 | Auth | API key auth (REQUIRE_AUTH=0 dev, 1 prod) |
 | Docker | Dockerfile + docker-compose.yml with GPU passthrough |
-| Test suite | 690 passing |
+| Test suite | 719 passing |
 
 ---
 
