@@ -17,6 +17,8 @@ const T = {
 //   3. "Help > Release Notes" is the only intentional alias (links to Version History
 //      as a discovery path — acceptable UX convention, not a navigation duplicate).
 
+// Menus/items marked `advanced: true` (whole menu) or `adv: true` (single item)
+// are hidden in Simple mode, leaving a newcomer with just Go / Docs / View / Help.
 const MENUS = [
   {
     label: "Go",
@@ -24,15 +26,16 @@ const MENUS = [
       { label: "Introduction",      action: "tab:home",         hint: "Ctrl+1" },
       { label: "Chat",              action: "tab:chat",         hint: "Ctrl+2" },
       { label: "Library",           action: "tab:library",      hint: "Ctrl+7" },
-      { label: "Runs",              action: "tab:runs",         hint: "Ctrl+3" },
-      { label: "Inspector",         action: "tab:inspector",    hint: "Ctrl+4" },
-      { label: "UCI Dashboard",     action: "tab:uci",          hint: "Ctrl+5" },
-      { type: "sep" },
-      { label: "Research Lab",      action: "tab:research",     hint: "Ctrl+6" },
+      { label: "Runs",              action: "tab:runs",         hint: "Ctrl+3", adv: true },
+      { label: "Inspector",         action: "tab:inspector",    hint: "Ctrl+4", adv: true },
+      { label: "UCI Dashboard",     action: "tab:uci",          hint: "Ctrl+5", adv: true },
+      { type: "sep", adv: true },
+      { label: "Research Lab",      action: "tab:research",     hint: "Ctrl+6", adv: true },
     ],
   },
   {
     label: "Debug",
+    advanced: true,
     items: [
       { label: "Routing Decisions", action: "tab:brain",        hint: "Ctrl+Shift+D" },
       { label: "Learning Timeline", action: "tab:timeline",     hint: "Ctrl+Shift+L" },
@@ -42,6 +45,7 @@ const MENUS = [
   },
   {
     label: "Observe",
+    advanced: true,
     items: [
       { label: "Cognitive OS",      action: "tab:cognitive",    hint: "Ctrl+Shift+X" },
       { label: "Project State",     action: "tab:project-state" },
@@ -53,6 +57,7 @@ const MENUS = [
   },
   {
     label: "Explore",
+    advanced: true,
     items: [
       { label: "Memory Browser",    action: "tab:memory",       hint: "Ctrl+Shift+M" },
       { label: "Memory Map",        action: "tab:map" },
@@ -65,6 +70,7 @@ const MENUS = [
   },
   {
     label: "Tools",
+    advanced: true,
     items: [
       { label: "Prompt Editor",     action: "tab:prompt",       hint: "Ctrl+Shift+E" },
       { label: "Task Queue",        action: "tab:tasks",        hint: "Ctrl+Shift+Q" },
@@ -81,12 +87,12 @@ const MENUS = [
     label: "Docs",
     items: [
       { label: "Guide",             action: "tab:guide" },
-      { type: "sep" },
-      { label: "QuerySignal",       action: "doc:querysignal" },
-      { label: "Methodology",       action: "doc:methodology" },
-      { label: "Coherence",         action: "doc:coherence"   },
-      { label: "Memory",            action: "doc:memory"      },
-      { label: "Reflection",        action: "doc:reflection"  },
+      { type: "sep", adv: true },
+      { label: "QuerySignal",       action: "doc:querysignal", adv: true },
+      { label: "Methodology",       action: "doc:methodology", adv: true },
+      { label: "Coherence",         action: "doc:coherence",   adv: true },
+      { label: "Memory",            action: "doc:memory",      adv: true },
+      { label: "Reflection",        action: "doc:reflection",  adv: true },
     ],
   },
   {
@@ -96,8 +102,8 @@ const MENUS = [
       { type: "sep" },
       { label: "Settings",          action: "modal:settings",   hint: "Ctrl+," },
       { type: "sep" },
-      { label: "Clear Session Log", action: "fn:clearLog" },
-      { label: "Export Memory…",    action: "fn:exportCsv" },
+      { label: "Clear Session Log", action: "fn:clearLog", adv: true },
+      { label: "Export Memory…",    action: "fn:exportCsv", adv: true },
     ],
   },
   {
@@ -111,13 +117,33 @@ const MENUS = [
   },
 ];
 
+// Drop advanced entries in Simple mode, then collapse any separators left
+// stranded at the edges or doubled up by the removal.
+function visibleMenus(mode) {
+  if (mode !== "simple") return MENUS;
+  return MENUS
+    .filter(menu => !menu.advanced)
+    .map(menu => {
+      const items = [];
+      for (const it of menu.items) {
+        if (it.adv) continue;
+        if (it.type === "sep" && (!items.length || items[items.length - 1].type === "sep")) continue;
+        items.push(it);
+      }
+      while (items.length && items[items.length - 1].type === "sep") items.pop();
+      return { ...menu, items };
+    })
+    .filter(menu => menu.items.length);
+}
+
 const accent  = "#C4880A";
 const accent2 = "#E8C040";
 
-export default function MenuBar({ onNav, onAction, onModal }) {
+export default function MenuBar({ onNav, onAction, onModal, mode = "advanced", onToggleMode }) {
   const [open, setOpen]           = useState(null);
   const [hoveredTop, setHoveredTop] = useState(null);
   const ref = useRef(null);
+  const menus = visibleMenus(mode);
 
   useEffect(() => {
     const close = (e) => {
@@ -196,7 +222,7 @@ export default function MenuBar({ onNav, onAction, onModal }) {
         </span>
       </button>
 
-      {MENUS.map((menu) => (
+      {menus.map((menu) => (
         <div key={menu.label} style={{ position: "relative" }}>
           <button
             onClick={() => setOpen(open === menu.label ? null : menu.label)}
@@ -285,6 +311,40 @@ export default function MenuBar({ onNav, onAction, onModal }) {
           )}
         </div>
       ))}
+
+      {/* ── Simple / Advanced mode toggle (right-aligned) ── */}
+      {onToggleMode && (
+        <button
+          onClick={onToggleMode}
+          title={mode === "simple"
+            ? "Simple mode — showing the essentials. Click for all tools."
+            : "Advanced mode — all tools shown. Click to simplify."}
+          onMouseEnter={(e) => e.currentTarget.style.background = "rgba(196,136,8,0.12)"}
+          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          style={{
+            marginLeft: "auto",
+            alignSelf: "center",
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "4px 12px",
+            background: "transparent",
+            border: `1px solid ${T.border}`,
+            borderRadius: 99,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            fontSize: 11, fontWeight: 600,
+            color: accent2,
+            outline: "none",
+            transition: "background 160ms ease",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <span style={{
+            width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+            background: mode === "simple" ? "#15803D" : accent,
+          }} />
+          {mode === "simple" ? "Simple" : "Advanced"}
+        </button>
+      )}
     </div>
   );
 }

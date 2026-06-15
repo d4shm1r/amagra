@@ -32,7 +32,7 @@ function Bar({ percent }) {
   );
 }
 
-export default function Onboarding({ apiBase = API_BASE, onDismiss, onStart }) {
+export default function Onboarding({ apiBase = API_BASE, onDismiss, onStart, onMode, mode = "simple" }) {
   const [status, setStatus]   = useState(null);   // /setup/status payload
   const [loading, setLoading] = useState(true);
   const [pulling, setPulling] = useState({});     // model -> { percent, status, error, done }
@@ -102,25 +102,27 @@ export default function Onboarding({ apiBase = API_BASE, onDismiss, onStart }) {
           <div style={{ fontFamily: FONT_DISPLAY, fontSize: 40, fontWeight: 600, ...LUX.goldText }}>
             Welcome to Amagra
           </div>
-          <div style={{ color: T.mutedLt, marginTop: 8, fontSize: 15 }}>
-            Two quick checks and you're ready. Everything runs on your machine.
+          <div style={{ color: T.mutedLt, marginTop: 8, fontSize: 15, lineHeight: 1.5 }}>
+            Your private AI workspace. It runs entirely on your own computer —
+            nothing you ask leaves your machine. Let's get it ready.
           </div>
         </div>
 
-        {/* Step 1 — Ollama */}
+        {/* Step 1 — Engine */}
         <Step
           n={1}
-          title="Local model engine"
+          title="Starting the engine"
           done={status && status.ollama === "online"}
           loading={loading}
         >
           {status?.ollama === "online" ? (
-            <span style={{ color: T.success }}>Ollama is running.</span>
+            <span style={{ color: T.success }}>Ready — the local engine is running.</span>
           ) : (
             <div>
-              <div style={{ color: T.error, marginBottom: 8 }}>Ollama isn't reachable.</div>
+              <div style={{ color: T.error, marginBottom: 8 }}>The local engine isn't running yet.</div>
               <div style={{ color: T.mutedLt, fontSize: 13 }}>
-                Start it in a terminal, then re-check:
+                Amagra uses a free, on-device engine called Ollama. Open a terminal,
+                paste the line below, then come back and re-check:
               </div>
               <code style={codeBlock}>ollama serve</code>
               <button style={ghostBtn} onClick={fetchStatus}>Re-check</button>
@@ -128,18 +130,23 @@ export default function Onboarding({ apiBase = API_BASE, onDismiss, onStart }) {
           )}
         </Step>
 
-        {/* Step 2 — Models */}
+        {/* Step 2 — Model download */}
         <Step
           n={2}
-          title="Required models"
+          title="Getting the AI model"
           done={status && status.ollama === "online" && status.missing?.length === 0}
           loading={loading}
           disabled={status?.ollama !== "online"}
         >
           {status?.ollama !== "online" ? (
-            <span style={{ color: T.muted }}>Waiting for Ollama…</span>
+            <span style={{ color: T.muted }}>Waiting for the engine…</span>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ color: T.mutedLt, fontSize: 13, marginBottom: 2 }}>
+                {status.missing?.length === 0
+                  ? "Everything Amagra needs is already installed."
+                  : "Download the model Amagra thinks with — a one-time setup. It stays on your computer."}
+              </div>
               {(status.required || []).map((m) => {
                 const isMissing = (status.missing || []).includes(m);
                 const pp = pulling[m];
@@ -181,6 +188,38 @@ export default function Onboarding({ apiBase = API_BASE, onDismiss, onStart }) {
             </div>
           )}
         </Step>
+
+        {onMode && (
+          <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 16, marginTop: 4 }}>
+            <div style={{ color: T.mutedLt, fontSize: 13, marginBottom: 10 }}>
+              How much do you want to see?
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              {[
+                { val: "simple",   title: "Keep it simple",   sub: "Just the essentials — recommended" },
+                { val: "advanced", title: "Show all tools",   sub: "Every panel and diagnostic" },
+              ].map(opt => {
+                const active = mode === opt.val;
+                return (
+                  <button
+                    key={opt.val}
+                    onClick={() => onMode(opt.val)}
+                    style={{
+                      flex: 1, textAlign: "left", cursor: "pointer",
+                      background: active ? LUX.goldTint : T.surface2,
+                      border: `1.5px solid ${active ? T.accent : T.border}`,
+                      borderRadius: 12, padding: "12px 14px",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{opt.title}</div>
+                    <div style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>{opt.sub}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 24 }}>
           <button style={skipBtn} onClick={onDismiss}>Skip for now</button>

@@ -37,11 +37,12 @@ import PromisesTab        from "./PromisesTab";
 import { T, LUX, FONT_UI, FONT_DISPLAY } from "./theme";
 
 // ── 4-surface navigation ──────────────────────────────────────
+// `adv: true` surfaces are hidden in Simple mode — they're for power users.
 const NAV = [
   { id: "chat",     label: "Chat",     sym: "↗", desc: "Talk to specialist agents" },
   { id: "library",  label: "Library",  sym: "▤", desc: "Documents Amagra has read" },
-  { id: "memory",   label: "Memory",   sym: "◈", desc: "Browse and manage persistent memory" },
-  { id: "inspect",  label: "Inspect",  sym: "⊙", desc: "Decisions, traces, events, runs, replay" },
+  { id: "memory",   label: "Memory",   sym: "◈", desc: "Browse and manage persistent memory", adv: true },
+  { id: "inspect",  label: "Inspect",  sym: "⊙", desc: "Decisions, traces, events, runs, replay", adv: true },
   { id: "settings", label: "Settings", sym: "⚙", desc: "Guide, prompts, goals, tasks, keys" },
 ];
 
@@ -69,15 +70,16 @@ const INSPECT_TABS = [
   { id: "skills",        label: "Skills",    group: "Developer" },
 ];
 
-// Sub-tabs within the Settings surface
+// Sub-tabs within the Settings surface. `adv: true` entries are hidden in
+// Simple mode — Guide / Goals / Tasks / Releases are the ones a newcomer needs.
 const SETTINGS_TABS = [
   { id: "guide",    label: "Guide" },
-  { id: "research", label: "Research" },
-  { id: "prompt",   label: "Prompts" },
+  { id: "research", label: "Research", adv: true },
+  { id: "prompt",   label: "Prompts",  adv: true },
   { id: "goals",    label: "Goals" },
   { id: "tasks",    label: "Tasks" },
-  { id: "log",      label: "Log" },
-  { id: "progress", label: "Progress" },
+  { id: "log",      label: "Log",      adv: true },
+  { id: "progress", label: "Progress", adv: true },
   { id: "releases", label: "Releases" },
 ];
 
@@ -109,7 +111,7 @@ function loadSettings() {
 }
 
 // ── Settings modal ────────────────────────────────────────────
-function SettingsModal({ settings, onUpdate, coherence, apiStatus }) {
+function SettingsModal({ settings, onUpdate, coherence, apiStatus, mode, onSetMode }) {
   const [status,   setStatus]   = useState(null);
   const [memStats, setMemStats] = useState(null);
   const [saved,    setSaved]    = useState(false);
@@ -170,6 +172,19 @@ function SettingsModal({ settings, onUpdate, coherence, apiStatus }) {
         <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.text, flex: 1 }}>Settings</h2>
         {saved && <span style={{ fontSize: 10, color: T.success, fontWeight: 600 }}>✓ Saved</span>}
       </div>
+
+      <SectionHead title="Interface" />
+
+      <Field label="Mode" hint="Simple keeps the essentials; Advanced reveals every tool and diagnostic">
+        <ButtonGroup
+          value={mode}
+          onChange={onSetMode}
+          options={[
+            { val: "simple",   label: "Simple"   },
+            { val: "advanced", label: "Advanced" },
+          ]}
+        />
+      </Field>
 
       <SectionHead title="Agent & Inference" />
 
@@ -337,13 +352,20 @@ function AgentMesh({ mesh, collapsed }) {
 }
 
 function Sidebar({ activeTab, onNav, collapsed, onToggle, apiStatus, coherence, totalQueries, agentMesh,
-                   lastInspectTab, lastSettingsTab }) {
+                   lastInspectTab, lastSettingsTab, mode }) {
   const online  = apiStatus === "online";
   const surface = surfaceOf(activeTab);
+  const navItems = mode === "simple" ? NAV.filter(item => !item.adv) : NAV;
 
   const handleNav = (id) => {
     if (id === "inspect")  { onNav(lastInspectTab  || "overview"); return; }
-    if (id === "settings") { onNav(lastSettingsTab || "guide"); return; }
+    if (id === "settings") {
+      // Don't drop a Simple-mode user onto a sub-tab that's hidden for them.
+      const last = lastSettingsTab || "guide";
+      const hidden = mode === "simple" && SETTINGS_TABS.find(t => t.id === last)?.adv;
+      onNav(hidden ? "guide" : last);
+      return;
+    }
     onNav(id);
   };
 
@@ -364,7 +386,7 @@ function Sidebar({ activeTab, onNav, collapsed, onToggle, apiStatus, coherence, 
 
       {/* ── 4 primary surfaces ── */}
       <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "8px 6px" }}>
-        {NAV.map((item) => {
+        {navItems.map((item) => {
           const isActive = surface === item.id;
           return (
             <button
@@ -705,6 +727,30 @@ export default function App() {
     setShowOnboarding(false);
   }, []);
 
+  // ── Simple / Advanced UI mode ──────────────────────────────────
+  // "simple" trims the chrome to the essentials a newcomer needs (Chat,
+  // Library, Guide); "advanced" reveals every surface, menu, and diagnostic.
+  // New users start simple; people who already finished onboarding keep the
+  // full UI so we never hide tools out from under an existing workflow.
+  const [mode, setMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem("ui_mode_v1");
+      if (saved) return saved;
+      return localStorage.getItem("onboarding_done_v1") === "1" ? "advanced" : "simple";
+    } catch { return "simple"; }
+  });
+  const setModePersisted = useCallback((next) => {
+    setMode(next);
+    try { localStorage.setItem("ui_mode_v1", next); } catch {}
+  }, []);
+  const toggleMode = useCallback(() => {
+    setMode(prev => {
+      const next = prev === "simple" ? "advanced" : "simple";
+      try { localStorage.setItem("ui_mode_v1", next); } catch {}
+      return next;
+    });
+  }, []);
+
   const updateSetting = useCallback((key, val) => {
     setSettings(prev => {
       const next = { ...prev, [key]: val };
@@ -811,9 +857,19 @@ export default function App() {
   const handleMenuAction = (action) => {
     if (action === "clearLog") setSessionLog([]);
     else if (action === "toggleSidebar") toggleCollapsed();
+    else if (action === "toggleMode") toggleMode();
     else if (action === "exportCsv") window.open("http://localhost:8000/memory/export.csv", "_blank");
     else if (action.startsWith("doc:")) setResearchDoc(action.slice(4));
   };
+
+  // In Simple mode, hidden surfaces/sub-tabs are unreachable from the chrome but
+  // can still be hit via keyboard shortcuts — bounce off them to a visible view.
+  useEffect(() => {
+    if (mode !== "simple") return;
+    const s = surfaceOf(activeTab);
+    if (s === "memory" || s === "inspect") { navTo("chat"); return; }
+    if (SETTINGS_TABS.find(t => t.id === activeTab)?.adv) navTo("guide");
+  }, [mode, activeTab, navTo]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -865,7 +921,7 @@ export default function App() {
   }, [toggleCollapsed]);
 
   const MODAL_CONTENT = {
-    settings: <SettingsModal settings={settings} onUpdate={updateSetting} coherence={coherence} apiStatus={apiStatus} />,
+    settings: <SettingsModal settings={settings} onUpdate={updateSetting} coherence={coherence} apiStatus={apiStatus} mode={mode} onSetMode={setModePersisted} />,
     shortcuts: <ShortcutsModal />,
     about: (
       <div>
@@ -981,6 +1037,8 @@ export default function App() {
         <Onboarding
           onDismiss={dismissOnboarding}
           onStart={(p) => { setSeedPrompt(p); navTo("chat"); }}
+          onMode={setModePersisted}
+          mode={mode}
         />
       )}
 
@@ -989,6 +1047,8 @@ export default function App() {
         onNav={navTo}
         onAction={handleMenuAction}
         onModal={setActiveModal}
+        mode={mode}
+        onToggleMode={toggleMode}
       />
 
       {/* ── Body row ── */}
@@ -1004,6 +1064,7 @@ export default function App() {
           agentMesh={agentMesh}
           lastInspectTab={lastInspectTab}
           lastSettingsTab={lastSettingsTab}
+          mode={mode}
         />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
@@ -1022,7 +1083,12 @@ export default function App() {
             <SubNav surface="Inspect" tabs={INSPECT_TABS} activeTab={activeTab} onNav={navTo} />
           )}
           {SETTINGS_IDS.has(activeTab) && (
-            <SubNav surface="Settings" tabs={SETTINGS_TABS} activeTab={activeTab} onNav={navTo} />
+            <SubNav
+              surface="Settings"
+              tabs={mode === "simple" ? SETTINGS_TABS.filter(t => !t.adv) : SETTINGS_TABS}
+              activeTab={activeTab}
+              onNav={navTo}
+            />
           )}
 
           <div style={{
