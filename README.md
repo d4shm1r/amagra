@@ -249,7 +249,7 @@ Rate limits are returned on every authenticated response as `X-RateLimit-Limit`,
 ## Known limitations
 
 - **Streaming available** — use `POST /ask/stream` for SSE streaming responses. When `ANTHROPIC_API_KEY` is set, tokens stream directly from Claude; without it, the response arrives as a single chunk. The default `POST /ask` remains non-streaming.
-- **Tool use via dedicated endpoint** — file access, sandboxed code execution, and web search ship in `v1.1.0`, driven by the in-agent tool loop at `POST /tools/run`. Auto-invoking that loop inside the default specialist-agent chat flow is the remaining polish item.
+- **Tool use** — file access, sandboxed code execution, and web search ship driven by the in-agent tool loop at `POST /tools/run`. As of `v1.1.1` that loop is also wired into the default specialist-agent chat flow (`tools/agent_runtime.py`), **config-gated behind `AMAGRA_AGENT_TOOLS=1`** (off by default until phi4-mini's tool-JSON reliability is validated; falls back to a plain invoke).
 - **Default inference** — Ollama (local). Cloud provider support (Anthropic, OpenAI, Gemini) via the multi-provider `/ask` path is available; full provider-abstraction UI is committed for `v1.2`.
 - **SQLite sprawl** — internal data is split across multiple SQLite files; cross-DB atomicity is not guaranteed. Every path resolves through one registry (`infrastructure/db.py`), and setting `AMAGRA_DB=/path/to/amagra.db` collapses all logical databases into a single file. The default is still separate files (no migration required). To switch to one file, consolidate existing data once and flip the env var:
 

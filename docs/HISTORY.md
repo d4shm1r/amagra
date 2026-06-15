@@ -322,6 +322,40 @@ Post-debut hardening — the deferred pre-launch engineering, none of which bloc
 
 Residual v1.0.1 item: the public launch (Show HN / r/LocalLLaMA / self-host catalogs) — a marketing action, not code.
 
+### v1.1.1 — Tools in the Default Path & Retrieval Polish ✅
+
+**Period:** 2026-06-15
+
+Closes the loop on v1.1: the in-agent tool loop, shipped as a dedicated endpoint
+in v1.1.0, is now wired into the **default** specialist-agent reasoning path, plus
+a wave of retrieval, routing, and multilingual fixes from the issue queue.
+
+- **Tool loop in the default agent path** (#8, #5) — `tools/agent_runtime.py`
+  bridges the bounded loop and the jailed workspace tool into all 10 specialist
+  agents via `respond_with_optional_tools()`, a drop-in for `llm.invoke`. Gated
+  behind `AMAGRA_AGENT_TOOLS=1` (off by default — phi4-mini's fenced-tool-JSON
+  reliability is still unproven); any failure falls back to a plain invoke, so
+  behaviour is unchanged until the flag is set. `run_tool_loop` gained a
+  `system_preamble` so the specialist persona leads, then the tool protocol.
+- **Domain-affinity retrieval penalty** (#14) — off-domain memories are
+  down-weighted (not excluded) so the requesting agent's own memories win close
+  calls. Unified the per-backend ranking tail into one `rank_select()` shared by
+  SQLite/FAISS/pgvector — which also repaired the episodic cap (#13) being a
+  no-op on the default FAISS backend.
+- **Learned-router auto-retrain** (#15) — `orchestration/auto_retrain.py` rebuilds
+  the trace dataset and retrains the router every `LEARNED_ROUTER_RETRAIN_EVERY`
+  real sessions (default 50), in a single-flight background thread. State on
+  `GET /analysis/learned_router`.
+- **Multilingual profile-leak fix** (#6) — `core/language.py` flags non-English
+  input (strong/weak diacritic split + script detection); the user-profile block
+  is then dropped and a "reply in the user's language" directive injected, across
+  all 10 agents and the Anthropic `/ask` path.
+- **Routing & detection** — min-keyword threshold so a lone keyword in a short
+  query no longer over-routes (#10); a compound-query detection benchmark
+  (`evaluation/compound_eval.py`) that found the false-positive rate is already
+  0.00 (#11).
+- Test suite **719 → 766**.
+
 ### v1.1.0 — Tool-Using Agents ✅
 
 Completes the v1.1 "tool-using agents" milestone. The two pieces held back from
@@ -407,20 +441,20 @@ ships a single file.
 - **Community profile** — `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SECURITY.md`
 - **Gilded Calm social-preview card** (1280×640) for GitHub link sharing
 
-**Live Snapshot (2026-06-14):**
+**Live Snapshot (2026-06-15):**
 
 | Metric | Value |
 |--------|-------|
-| Version | v1.1.0 (tool-using agents) |
+| Version | v1.1.1 (tools in default path) |
 | Routing accuracy | 97% full · 99% signal-only |
 | Specialist agents | 10 (registry-canonical) |
 | FAISS vectors | 628+ at 0.38ms P50 |
 | API endpoints | 100+ (132 routes) |
-| Build phases complete | 37 (+ v0.9 → v1.1.0 releases) |
+| Build phases complete | 37 (+ v0.9 → v1.1.1 releases) |
 | UCI score | ~80.8 |
 | Auth | API key auth (REQUIRE_AUTH=0 dev, 1 prod) |
 | Docker | Dockerfile + docker-compose.yml with GPU passthrough |
-| Test suite | 719 passing |
+| Test suite | 766 passing |
 
 ---
 

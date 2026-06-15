@@ -129,7 +129,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Amagra", version="1.1.0", lifespan=lifespan)
+app = FastAPI(title="Amagra", version="1.1.1", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

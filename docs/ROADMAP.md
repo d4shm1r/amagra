@@ -74,7 +74,7 @@ Deferred pre-launch engineering, now landed post-debut. The one open item is the
 
 ### v1.1 — Tool-Using Agents *(✅ shipped v1.1.0, 2026-06-15)*
 
-Agents that do things, not just say things. Closes the gap vs Continue/Cursor/Claude Code. All capabilities shipped: memory portability, thread management, jailed file tool, sandboxed execution, live web search, and a provider-agnostic in-agent tool loop (`tools/tool_loop.py` — model emits fenced JSON `{tool,args}` → execute → observe, bounded rounds; `GET /tools/list`, `POST /tools/run`). The loop is a dedicated endpoint for now; auto-invoking it inside the default specialist-agent flow waits on phi4-mini's tool-JSON reliability.
+Agents that do things, not just say things. Closes the gap vs Continue/Cursor/Claude Code. All capabilities shipped: memory portability, thread management, jailed file tool, sandboxed execution, live web search, and a provider-agnostic in-agent tool loop (`tools/tool_loop.py` — model emits fenced JSON `{tool,args}` → execute → observe, bounded rounds; `GET /tools/list`, `POST /tools/run`). **v1.1.1** wired that loop into the default specialist-agent path via `tools/agent_runtime.py` (`respond_with_optional_tools`), config-gated behind `AMAGRA_AGENT_TOOLS=1` until phi4-mini's tool-JSON reliability is validated — off by default, falls back to a plain invoke.
 
 | Item | Status | Impact | Difficulty | ROI |
 |------|--------|--------|-----------|-----|
