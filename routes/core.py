@@ -390,6 +390,14 @@ async def ask(req: AskRequest, request: Request):
     except Exception:
         pass
 
+    # Auto-retrain the learned router every N real sessions (#15) — non-blocking.
+    if _session_id > 0:
+        try:
+            from orchestration.auto_retrain import note_session
+            note_session()
+        except Exception:
+            pass
+
     if _session_id > 0:
         try:
             _lnk_decisions = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs", "decisions.db")
