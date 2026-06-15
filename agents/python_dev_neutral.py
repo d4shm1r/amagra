@@ -36,7 +36,7 @@ def _to_lc(history: tuple[Msg, ...]) -> list:
 
 def main(ctx: Context) -> Result:
     """Python Dev extension — neutral boundary; langchain stays internal."""
-    prompt = PYTHON_SYSTEM_PROMPT.format(user_profile=get_profile_context())
+    prompt = PYTHON_SYSTEM_PROMPT.format(user_profile=get_profile_context(ctx.task))
     if mem := get_memory_context(ctx.task, "python_dev"):
         prompt += "\n\n" + mem
 

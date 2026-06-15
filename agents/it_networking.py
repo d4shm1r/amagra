@@ -77,7 +77,7 @@ def it_agent_node(state: AgentState):
     # -- Memory: search before responding --
     _mem_ctx = get_memory_context(task, "it_networking")
     from core.user_profile import get_profile_context
-    _effective_prompt = IT_SYSTEM_PROMPT.format(user_profile=get_profile_context())
+    _effective_prompt = IT_SYSTEM_PROMPT.format(user_profile=get_profile_context(task))
     if _mem_ctx:
         _effective_prompt += "\n\n" + _mem_ctx
     # ----------------------------------------

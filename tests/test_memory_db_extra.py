@@ -296,3 +296,41 @@ def test_get_recent_respects_limit(tmp_path):
         assert len(result) == 3
     finally:
         _teardown_tmp_db(orig_path, orig_emb)
+
+
+# ── _select_capped(): episodic retrieval cap (issue #13) ──────────────────────
+
+def _ranked(types):
+    """Build a descending-score result list from a list of mem types."""
+    return [
+        {"id": i, "type": t, "score": round(1.0 - i * 0.01, 4)}
+        for i, t in enumerate(types)
+    ]
+
+def test_select_capped_limits_episodic():
+    # 8 episodic + 4 reflection, ask for 6 → 3 episodic + 3 reflection.
+    ranked = _ranked(["episodic"] * 8 + ["reflection"] * 4)
+    top = mdb._select_capped(ranked, top_k=6)
+    assert len(top) == 6
+    assert sum(1 for r in top if r["type"] == "episodic") == mdb._EPISODIC_RETRIEVAL_CAP
+    # The higher-signal reflection rows are pulled in despite lower raw rank.
+    assert sum(1 for r in top if r["type"] == "reflection") == 3
+
+def test_select_capped_shrinks_when_only_episodic_left():
+    # 8 episodic + 2 reflection, ask for 6: cap leaves only 3+2 eligible rows.
+    ranked = _ranked(["episodic"] * 8 + ["reflection", "reflection"])
+    top = mdb._select_capped(ranked, top_k=6)
+    assert len(top) == 5
+    assert sum(1 for r in top if r["type"] == "episodic") == mdb._EPISODIC_RETRIEVAL_CAP
+
+def test_select_capped_keeps_order_and_under_cap():
+    ranked = _ranked(["episodic", "reflection", "episodic"])
+    top = mdb._select_capped(ranked, top_k=5)
+    # Under the cap, nothing is dropped and original order is preserved.
+    assert [r["id"] for r in top] == [0, 1, 2]
+
+def test_select_capped_bypasses_when_homogeneous():
+    # An explicit mem_type="episodic" query is homogeneous → cap must not apply.
+    ranked = _ranked(["episodic"] * 5)
+    top = mdb._select_capped(ranked, top_k=5)
+    assert len(top) == 5

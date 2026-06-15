@@ -46,6 +46,12 @@ _TYPE_WEIGHTS = {
 _PRUNE_QUALITY_THRESHOLD = 0.55
 _FRESHNESS_HALFLIFE_DAYS = 30   # score halves every 30 days
 
+# Episodic records are written on every response, so without a cap they come to
+# dominate retrieval once a tenant has thousands of sessions, crowding out the
+# higher-signal reflection/procedural/failure types. Cap how many episodic rows
+# can occupy a single result set (GitHub issue #13).
+_EPISODIC_RETRIEVAL_CAP = 3
+
 
 def init_db():
     """Create DB and memories table if not exists. Call once at startup."""
@@ -213,6 +219,31 @@ def save(agent_name: str, mem_type: str, content: str,
             conn.close()
 
 
+def _select_capped(ranked: list, top_k: int) -> list:
+    """
+    Take the top_k results from an already score-sorted list while limiting
+    episodic rows to _EPISODIC_RETRIEVAL_CAP. When a query is explicitly scoped
+    to mem_type="episodic" the rows are homogeneous, so the cap is bypassed —
+    otherwise the caller would silently get fewer rows than requested.
+    """
+    if top_k <= 0 or not ranked:
+        return ranked[:top_k]
+    if all(r.get("type") == "episodic" for r in ranked):
+        return ranked[:top_k]
+
+    selected: list = []
+    episodic_seen = 0
+    for r in ranked:
+        if r.get("type") == "episodic":
+            if episodic_seen >= _EPISODIC_RETRIEVAL_CAP:
+                continue
+            episodic_seen += 1
+        selected.append(r)
+        if len(selected) >= top_k:
+            break
+    return selected
+
+
 def search(query: str, top_k: int = 5, agent_name: str = None,
            mem_type: str = None, caller: str = "",
            owner_key_id: int = None) -> list:
@@ -279,7 +310,7 @@ def search(query: str, top_k: int = 5, agent_name: str = None,
         })
 
     results.sort(key=lambda x: x["score"], reverse=True)
-    top = results[:top_k]
+    top = _select_capped(results, top_k)
 
     # Mark retrieved rows as used and log the audit — both fire-and-forget.
     if top:

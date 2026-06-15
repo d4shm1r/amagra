@@ -34,12 +34,38 @@ def _load_profile() -> dict | None:
         return None
 
 
-def get_profile_context() -> str:
+_LANGUAGE_DIRECTIVE = (
+    "<response_language>\n"
+    "The user's message is not in English. Reply entirely in the user's own "
+    "language and do not mix languages. Match their language for the whole "
+    "response.\n"
+    "</response_language>\n\n"
+)
+
+
+def get_profile_context(query: str | None = None) -> str:
     """
     Return a formatted user-profile block to inject into agent system prompts.
     Returns "" if no profile is configured — agents work without it.
+
+    When `query` is non-English (issue #6) the private profile block is dropped
+    — it conflicts with non-English input and phi4-mini tends to leak it — and a
+    directive to answer in the user's language is returned instead.
     """
+    non_english = False
+    if query:
+        try:
+            from core.language import is_probably_non_english
+            non_english = is_probably_non_english(query)
+        except Exception:
+            non_english = False
+
     profile = _load_profile()
+
+    # Non-English input: never inject the profile (leak risk); steer language.
+    if non_english:
+        return _LANGUAGE_DIRECTIVE
+
     if not profile:
         return ""
 

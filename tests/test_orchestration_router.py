@@ -76,3 +76,33 @@ def test_router_always_returns_string():
         result = _route(q)
         assert isinstance(result, str), f"Failed for query: {q}"
         assert len(result) > 0
+
+
+# ── decide(): short-query keyword threshold (issue #10) ───────────────────────
+
+def test_decide_short_query_single_keyword_defaults():
+    # 3-token query with a single keyword hit is ambiguous → default fallback.
+    # (Domain-shaped so the terse policy pin does not intercept it first.)
+    result = rt.decide("configure vlan trunking", {"it_networking": 1})
+    assert result == "knowledge_learning"
+
+
+def test_decide_short_query_two_keywords_routes():
+    # Two keyword hits clear the bar even for a short query.
+    result = rt.decide("vlan port", {"it_networking": 2})
+    assert result == "it_networking"
+
+
+def test_decide_long_query_single_keyword_routes():
+    # A lone keyword in a longer query carries enough context to route on.
+    q = "i would like help to configure the office network setup"
+    result = rt.decide(q, {"it_networking": 1})
+    assert result == "it_networking"
+
+
+def test_decide_no_keyword_defaults():
+    result = rt.decide(
+        "please assist me with this particular situation today",
+        {"it_networking": 0},
+    )
+    assert result == "knowledge_learning"

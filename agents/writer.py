@@ -45,7 +45,7 @@ def writer_agent_node(state: AgentState):
 
     _mem_ctx = get_memory_context(task, "writer")
     from core.user_profile import get_profile_context
-    _effective_prompt = WRITER_SYSTEM_PROMPT.format(user_profile=get_profile_context())
+    _effective_prompt = WRITER_SYSTEM_PROMPT.format(user_profile=get_profile_context(task))
     if _mem_ctx:
         _effective_prompt += f"\n\n{_mem_ctx}"
 
