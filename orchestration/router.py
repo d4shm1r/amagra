@@ -1,3 +1,15 @@
+"""
+router.py — keyword/signal scoring + the delta-algebra score()/decide() seam.
+
+NOTE (issue #20): this is no longer the live router. The coordinator used to call
+hybrid_router() for a diagnostic comparison and then discard it (core_brain always
+won), so it has been removed from the hot path. core_brain is the sole routing
+authority. This module is kept as a library — its score()/decide() seam has
+dedicated tests (test_routing_seam, test_orchestration_router) and KEYWORD_MAP is
+still consumed by evaluation/acm_rg_eval. Do not re-wire hybrid_router into the
+coordinator without revisiting #20.
+"""
+
 import re
 from dataclasses import dataclass
 from typing import Dict, List

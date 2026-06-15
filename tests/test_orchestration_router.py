@@ -106,3 +106,16 @@ def test_decide_no_keyword_defaults():
         {"it_networking": 0},
     )
     assert result == "knowledge_learning"
+
+
+# ── #20 guard: router must stay out of the coordinator hot path ───────────────
+
+def test_coordinator_does_not_call_hybrid_router():
+    """router.py is a library now; the coordinator must not re-wire it (issue #20)."""
+    import inspect
+    import orchestration.coordinator as coord
+    src = inspect.getsource(coord)
+    assert "hybrid_router" not in src, (
+        "coordinator references hybrid_router again — the discarded diagnostic "
+        "router was removed in #20; core_brain is the sole routing authority."
+    )
