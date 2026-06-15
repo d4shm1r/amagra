@@ -6,7 +6,6 @@ from memory_core.context import get_memory_context, save_to_memory
 import os  # path resolution
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.state import AgentState
-from models.llm import llm
 from core.context_tools import trim_messages
 
 # ── System Prompt ─────────────────────────────────────────────
@@ -102,7 +101,8 @@ def devops_agent_node(state: AgentState):
             content=f"System tool results:\n{tool_context}\n\nUse these in your response."
         ))
 
-    response = llm.invoke(messages)
+    from tools.agent_runtime import respond_with_optional_tools
+    response = respond_with_optional_tools(messages, _effective_prompt, task)
 
     save_to_memory("devops", "chat", response.content,
                    {"task": task[:120] if task else ""})

@@ -18,7 +18,6 @@ from __future__ import annotations
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 from core.contract import Context, Result, Msg, trim_history
-from models.llm import llm
 from memory_core.context import get_memory_context, save_to_memory
 from core.user_profile import get_profile_context
 # Reuse the unchanged pure tool fn + prompt from the original module —
@@ -52,7 +51,8 @@ def main(ctx: Context) -> Result:
             )
         ))
 
-    response = llm.invoke(messages)
+    from tools.agent_runtime import respond_with_optional_tools
+    response = respond_with_optional_tools(messages, prompt, ctx.task)
     save_to_memory("python_dev", "code", response.content,
                    {"task": ctx.task[:120] if ctx.task else ""})
     return Result(output=response.content)
