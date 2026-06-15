@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.1.0";
+export const VERSION = "1.1.1";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -531,6 +531,19 @@ export const BUILD_PHASES = [
       "Test suite 690 → 719 passing · 132 routes",
     ],
   },
+  {
+    id: 76, version: "v1.1.1", date: "Jun 15, 2026",
+    label: "Tools in the Default Path", title: "Tools in the Default Path", color: "#15803D", status: "done",
+    summary: "Wires the in-agent tool loop into the default specialist path (config-gated, off by default) and clears a wave of retrieval, routing, and multilingual fixes from the issue queue. Test suite grows 719 → 766.",
+    steps: [
+      "Tool loop in the default agent path — tools/agent_runtime.py respond_with_optional_tools() across all 10 agents, gated behind AMAGRA_AGENT_TOOLS=1, falls back to plain invoke (#8, #5)",
+      "Domain-affinity retrieval penalty — off-domain memories down-weighted via prefer_agent; unified rank_select() across SQLite/FAISS/pgvector, also repairing the episodic cap on FAISS (#14, #13)",
+      "Learned-router auto-retrain — orchestration/auto_retrain.py retrains every LEARNED_ROUTER_RETRAIN_EVERY real sessions (default 50), single-flight in the background (#15)",
+      "Multilingual profile-leak fix — core/language.py flags non-English input, drops the profile block, and steers reply language (#6)",
+      "Routing & detection — min-keyword threshold for short queries (#10) + compound-detection benchmark, FP-rate 0.00 (#11)",
+      "Test suite 719 → 766 passing",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -691,6 +704,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.1.1", label: "Tools in Default Path", color: "#15803D",  phases: [76] },
   { version: "v1.1.0", label: "Tool-Using Agents",    color: "#15803D",  phases: [75] },
   { version: "v1.0.0", label: "First Public Release", color: "#15803D",  phases: [70, 71, 72, 73, 74] },
   { version: "v0.10", label: "Content & Launch",      color: "#C48808",  phases: [60] },
