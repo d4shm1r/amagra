@@ -320,7 +320,13 @@ def get_memory_influence(memory_id: int):
 def get_learned_router_stats():
     try:
         from orchestration.learned_router import stats
-        return stats()
+        result = stats()
+        try:
+            from orchestration.auto_retrain import retrain_state
+            result["auto_retrain"] = retrain_state()
+        except Exception:
+            pass
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

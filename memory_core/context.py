@@ -38,8 +38,12 @@ def get_memory_context(query: str, agent_name: str, top_k: int = 3, min_score: f
     try:
         from memory_core.backend import get_backend
         backend = get_backend()
+        # agent_name=None keeps cross-agent recall, but prefer_agent applies a
+        # soft domain-affinity penalty so the requesting agent's own memories
+        # win close calls instead of bleeding in adjacent domains (issue #14).
         records = backend.retrieve(query.strip(), k=top_k, agent_name=None,
-                                   caller="memory_context")
+                                   caller="memory_context",
+                                   prefer_agent=agent_name)
         relevant = [r for r in records if r.score >= min_score]
         _excl = getattr(_fork_local, 'excluded_ids', set())
         if _excl:

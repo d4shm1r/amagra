@@ -8,7 +8,6 @@ from memory_core.context import get_memory_context, save_to_memory
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _ROOT)
 from models.state import AgentState
-from models.llm import llm
 from core.context_tools import trim_messages
 
 # ── System Prompt ─────────────────────────────────────────────
@@ -181,7 +180,7 @@ def knowledge_agent_node(state: AgentState):
     # -- Memory: search before responding --
     _mem_ctx = get_memory_context(task, "knowledge_learning")
     from core.user_profile import get_profile_context
-    _effective_prompt = KNOWLEDGE_SYSTEM_PROMPT.format(user_profile=get_profile_context())
+    _effective_prompt = KNOWLEDGE_SYSTEM_PROMPT.format(user_profile=get_profile_context(task))
     if _mem_ctx:
         _effective_prompt = KNOWLEDGE_SYSTEM_PROMPT + chr(10) + chr(10) + _mem_ctx
     # ----------------------------------------
@@ -210,7 +209,8 @@ def knowledge_agent_node(state: AgentState):
             content=f"Student context:\n{tool_context}\n\nTeach accordingly."
         ))
 
-    response = llm.invoke(messages)
+    from tools.agent_runtime import respond_with_optional_tools
+    response = respond_with_optional_tools(messages, _effective_prompt, task)
 
     # -- Memory: save after responding --
     save_to_memory("knowledge_learning", "lesson", response.content,

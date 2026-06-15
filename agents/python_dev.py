@@ -7,7 +7,6 @@ import sys
 from memory_core.context import get_memory_context, save_to_memory
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.state import AgentState
-from models.llm import llm
 from core.context_tools import trim_messages
 
 # Files may only be read from within this directory tree.
@@ -104,7 +103,7 @@ def python_agent_node(state: AgentState):
     # -- Memory: search before responding --
     _mem_ctx = get_memory_context(task, "python_dev")
     from core.user_profile import get_profile_context
-    _effective_prompt = PYTHON_SYSTEM_PROMPT.format(user_profile=get_profile_context())
+    _effective_prompt = PYTHON_SYSTEM_PROMPT.format(user_profile=get_profile_context(task))
     if _mem_ctx:
         _effective_prompt += "\n\n" + _mem_ctx
     # ----------------------------------------
@@ -125,7 +124,8 @@ def python_agent_node(state: AgentState):
             content=f"Tool results from this system:\n{tool_context}\n\nUse these in your response."
         ))
 
-    response = llm.invoke(messages)
+    from tools.agent_runtime import respond_with_optional_tools
+    response = respond_with_optional_tools(messages, _effective_prompt, task)
 
     # -- Memory: save after responding --
     save_to_memory("python_dev", "code", response.content,

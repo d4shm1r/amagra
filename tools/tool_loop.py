@@ -53,16 +53,23 @@ def extract_call(text: str):
     return str(obj["tool"]), (obj.get("args") if isinstance(obj.get("args"), dict) else {})
 
 
-def run_tool_loop(invoke, prompt: str, max_iters: int = 3, log: bool = True) -> dict:
+def run_tool_loop(invoke, prompt: str, max_iters: int = 3, log: bool = True,
+                  system_preamble: str = None) -> dict:
     """Drive the model through up to `max_iters` tool calls, then a final answer.
 
     `invoke(transcript)` takes a list of (role, content) tuples and returns the
     model's text. Returns {answer, iterations, stopped, calls:[{tool,args,ok,...}]}.
+
+    `system_preamble` — optional text prepended to the tool-protocol system
+    message, so a specialist agent's persona + memory context lead, then the tool
+    instructions follow. None keeps the bare tool-using prompt.
     """
     if not prompt or not prompt.strip():
         raise ValueError("prompt must not be empty")
     tools = catalog.available_tools()
-    transcript = [("system", _system_prompt(tools)), ("user", prompt)]
+    tool_sys = _system_prompt(tools)
+    sys_content = f"{system_preamble.strip()}\n\n{tool_sys}" if system_preamble else tool_sys
+    transcript = [("system", sys_content), ("user", prompt)]
     calls: list[dict] = []
 
     for i in range(max_iters):

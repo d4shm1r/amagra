@@ -6,7 +6,6 @@ from memory_core.context import get_memory_context, save_to_memory
 import os  # path resolution
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.state import AgentState
-from models.llm import llm
 
 # ── System Prompt ─────────────────────────────────────────────
 IT_SYSTEM_PROMPT = """
@@ -77,7 +76,7 @@ def it_agent_node(state: AgentState):
     # -- Memory: search before responding --
     _mem_ctx = get_memory_context(task, "it_networking")
     from core.user_profile import get_profile_context
-    _effective_prompt = IT_SYSTEM_PROMPT.format(user_profile=get_profile_context())
+    _effective_prompt = IT_SYSTEM_PROMPT.format(user_profile=get_profile_context(task))
     if _mem_ctx:
         _effective_prompt += "\n\n" + _mem_ctx
     # ----------------------------------------
@@ -113,7 +112,8 @@ def it_agent_node(state: AgentState):
             content=f"Here are the live diagnostic results from this system:\n{tool_context}\n\nNow answer the user's question using these real results."
         ))
 
-    response = llm.invoke(messages)
+    from tools.agent_runtime import respond_with_optional_tools
+    response = respond_with_optional_tools(messages, _effective_prompt, task)
 
     # -- Memory: save after responding --
     save_to_memory("it_networking", "chat", response.content,

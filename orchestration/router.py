@@ -8,6 +8,10 @@ from infrastructure.dispatch import (
     Delta, DeltaBuilder, Tier, dispatch, register, unregister,
 )
 
+# Below this token count a single keyword match is treated as too ambiguous to
+# route on, so decide() falls back to knowledge_learning (issue #10).
+SHORT_QUERY_TOKENS = 4
+
 # ── KEYWORD MAP ──────────────────────────────────────────────
 # Uses (?<!\w)word(?!\w) to avoid partial matches.
 # Agent names must match node names in coordinator.py exactly.
@@ -228,6 +232,15 @@ def decide(query: str, scores: Dict[str, int]) -> str:
         return best_agent
 
     if best_score == 1:
+        # A lone keyword in a very short query is usually ambiguous (issue #10):
+        # e.g. "reset port" hits one it_networking term but could be anything.
+        # Require ≥2 matches for queries under SHORT_QUERY_TOKENS tokens; longer
+        # queries carry enough surrounding context that one hit is meaningful.
+        token_count = len(query.split())
+        if token_count < SHORT_QUERY_TOKENS:
+            print(f"[router] short query ({token_count} tok), 1 keyword → "
+                  "knowledge_learning (default)")
+            return "knowledge_learning"
         return best_agent
 
     print("[router] no keyword match → knowledge_learning (default)")

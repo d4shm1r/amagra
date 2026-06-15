@@ -292,7 +292,7 @@ async def ask(req: AskRequest, request: Request):
             }
             _dec       = _think(req.message, _dummy)
             _agent_name = (_dec.agent_strategy[0] if _dec.agent_strategy else None) or "knowledge_learning"
-            _sys_prompt = _get_agent_system_prompt(_agent_name)
+            _sys_prompt = _get_agent_system_prompt(_agent_name, req.message)
             from providers.anthropic import AnthropicProvider as _AP
             _ap_model    = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
             _ap_provider = _AP(model=_ap_model, api_key=_anthropic_key)
@@ -389,6 +389,14 @@ async def ask(req: AskRequest, request: Request):
         _sc.close()
     except Exception:
         pass
+
+    # Auto-retrain the learned router every N real sessions (#15) — non-blocking.
+    if _session_id > 0:
+        try:
+            from orchestration.auto_retrain import note_session
+            note_session()
+        except Exception:
+            pass
 
     if _session_id > 0:
         try:
@@ -1002,8 +1010,11 @@ def get_metrics():
 
 _AGENT_PROMPTS: dict[str, str] = {}
 
-def _get_agent_system_prompt(agent: str) -> str:
-    """Return the raw system prompt template for a given agent."""
+def _get_agent_system_prompt(agent: str, query: str | None = None) -> str:
+    """Return the raw system prompt template for a given agent.
+
+    `query` is forwarded to get_profile_context so non-English input drops the
+    private profile block on this Anthropic path too (issue #6)."""
     if not _AGENT_PROMPTS:
         try:
             from agents.it_networking     import IT_SYSTEM_PROMPT
@@ -1034,7 +1045,7 @@ def _get_agent_system_prompt(agent: str) -> str:
     template = _AGENT_PROMPTS.get(agent, "You are Amagra, an elite AI assistant.")
     try:
         from user_profile import get_profile_context
-        return template.format(user_profile=get_profile_context())
+        return template.format(user_profile=get_profile_context(query))
     except Exception:
         return template
 
@@ -1069,7 +1080,7 @@ async def ask_stream(req: AskRequest):
         decision      = think(req.message, _dummy_state)
         agent_name    = decision.agent_strategy[0] if decision.agent_strategy else "knowledge_learning"
         complexity    = decision.complexity
-        system_prompt = _get_agent_system_prompt(agent_name)
+        system_prompt = _get_agent_system_prompt(agent_name, req.message)
         _decision_meta = {
             "signal_domain":    decision.signal_domain,
             "signal_shape":     decision.signal_shape,

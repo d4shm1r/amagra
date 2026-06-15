@@ -296,3 +296,98 @@ def test_get_recent_respects_limit(tmp_path):
         assert len(result) == 3
     finally:
         _teardown_tmp_db(orig_path, orig_emb)
+
+
+# ── _select_capped(): episodic retrieval cap (issue #13) ──────────────────────
+
+def _ranked(types):
+    """Build a descending-score result list from a list of mem types."""
+    return [
+        {"id": i, "type": t, "score": round(1.0 - i * 0.01, 4)}
+        for i, t in enumerate(types)
+    ]
+
+def test_select_capped_limits_episodic():
+    # 8 episodic + 4 reflection, ask for 6 → 3 episodic + 3 reflection.
+    ranked = _ranked(["episodic"] * 8 + ["reflection"] * 4)
+    top = mdb._select_capped(ranked, top_k=6)
+    assert len(top) == 6
+    assert sum(1 for r in top if r["type"] == "episodic") == mdb._EPISODIC_RETRIEVAL_CAP
+    # The higher-signal reflection rows are pulled in despite lower raw rank.
+    assert sum(1 for r in top if r["type"] == "reflection") == 3
+
+def test_select_capped_shrinks_when_only_episodic_left():
+    # 8 episodic + 2 reflection, ask for 6: cap leaves only 3+2 eligible rows.
+    ranked = _ranked(["episodic"] * 8 + ["reflection", "reflection"])
+    top = mdb._select_capped(ranked, top_k=6)
+    assert len(top) == 5
+    assert sum(1 for r in top if r["type"] == "episodic") == mdb._EPISODIC_RETRIEVAL_CAP
+
+def test_select_capped_keeps_order_and_under_cap():
+    ranked = _ranked(["episodic", "reflection", "episodic"])
+    top = mdb._select_capped(ranked, top_k=5)
+    # Under the cap, nothing is dropped and original order is preserved.
+    assert [r["id"] for r in top] == [0, 1, 2]
+
+def test_select_capped_bypasses_when_homogeneous():
+    # An explicit mem_type="episodic" query is homogeneous → cap must not apply.
+    ranked = _ranked(["episodic"] * 5)
+    top = mdb._select_capped(ranked, top_k=5)
+    assert len(top) == 5
+
+
+# ── rank_select(): domain-affinity penalty (issue #14) ────────────────────────
+
+def _scored(rows):
+    """rows: list of (agent, score) → ranked dict items with chat type."""
+    return [
+        {"id": i, "agent": a, "type": "chat", "score": s}
+        for i, (a, s) in enumerate(rows)
+    ]
+
+def _select(items, k, prefer_agent=None):
+    return mdb.rank_select(
+        items, k,
+        score_of=lambda r: r["score"],
+        type_of=lambda r: r.get("type"),
+        agent_of=lambda r: r.get("agent"),
+        prefer_agent=prefer_agent,
+    )
+
+def test_affinity_lets_same_domain_overtake():
+    # Off-domain memory has higher raw score, but the penalty flips the order.
+    items = _scored([("python_dev", 0.90), ("it_networking", 0.80)])
+    top = _select(items, k=1, prefer_agent="it_networking")
+    # 0.90 * 0.85 = 0.765 < 0.80 → the same-domain memory wins.
+    assert top[0]["agent"] == "it_networking"
+
+def test_affinity_keeps_offdomain_when_gap_is_large():
+    # A strongly-relevant off-domain memory still survives the penalty.
+    items = _scored([("python_dev", 0.95), ("it_networking", 0.60)])
+    top = _select(items, k=1, prefer_agent="it_networking")
+    # 0.95 * 0.85 = 0.8075 > 0.60 → off-domain stays on top (not excluded).
+    assert top[0]["agent"] == "python_dev"
+
+def test_affinity_noop_without_prefer_agent():
+    items = _scored([("python_dev", 0.90), ("it_networking", 0.80)])
+    top = _select(items, k=2, prefer_agent=None)
+    assert [r["agent"] for r in top] == ["python_dev", "it_networking"]
+
+def test_rank_select_applies_both_affinity_and_cap():
+    items = (
+        [{"id": 0, "agent": "x", "type": "episodic", "score": 0.99},
+         {"id": 1, "agent": "x", "type": "episodic", "score": 0.98},
+         {"id": 2, "agent": "x", "type": "episodic", "score": 0.97},
+         {"id": 3, "agent": "x", "type": "episodic", "score": 0.96},
+         {"id": 4, "agent": "it_networking", "type": "reflection", "score": 0.70}]
+    )
+    top = mdb.rank_select(
+        items, k=4,
+        score_of=lambda r: r["score"],
+        type_of=lambda r: r["type"],
+        agent_of=lambda r: r["agent"],
+        prefer_agent="it_networking",
+    )
+    # Episodic capped at 3; the same-domain reflection is retained.
+    assert sum(1 for r in top if r["type"] == "episodic") == mdb._EPISODIC_RETRIEVAL_CAP
+    assert any(r["id"] == 4 for r in top)

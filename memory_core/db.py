@@ -46,6 +46,18 @@ _TYPE_WEIGHTS = {
 _PRUNE_QUALITY_THRESHOLD = 0.55
 _FRESHNESS_HALFLIFE_DAYS = 30   # score halves every 30 days
 
+# Episodic records are written on every response, so without a cap they come to
+# dominate retrieval once a tenant has thousands of sessions, crowding out the
+# higher-signal reflection/procedural/failure types. Cap how many episodic rows
+# can occupy a single result set (GitHub issue #13).
+_EPISODIC_RETRIEVAL_CAP = 3
+
+# Domain-affinity penalty (issue #14): when a query is retrieved on behalf of a
+# specific agent, memories belonging to a *different* agent (domain) are still
+# eligible but their score is multiplied by this factor before the top-k cut, so
+# a same-domain memory wins close calls and adjacent-domain bleed is suppressed.
+_AFFINITY_PENALTY = 0.85
+
 
 def init_db():
     """Create DB and memories table if not exists. Call once at startup."""
@@ -213,9 +225,62 @@ def save(agent_name: str, mem_type: str, content: str,
             conn.close()
 
 
+def rank_select(items: list, k: int, score_of, type_of,
+                agent_of=None, prefer_agent: str = None) -> list:
+    """
+    Final ranking step shared by every memory backend.
+
+    Operates on the FULL candidate set (dicts or MemoryRecord — caller supplies
+    accessors) before the top-k cut, so the two policies below can actually
+    reorder results rather than just trim them:
+
+      • Domain-affinity penalty (issue #14): off-domain memories are scaled by
+        _AFFINITY_PENALTY when prefer_agent is set, letting a same-domain memory
+        overtake a higher-raw-score adjacent-domain one.
+      • Episodic cap (issue #13): at most _EPISODIC_RETRIEVAL_CAP episodic rows
+        survive, unless every candidate is episodic (an explicit episodic-only
+        query) in which case the cap is bypassed.
+    """
+    if k <= 0 or not items:
+        return items[:k]
+
+    def _adjusted(it):
+        s = score_of(it)
+        if prefer_agent and agent_of is not None:
+            a = agent_of(it)
+            if a and a != prefer_agent:
+                return s * _AFFINITY_PENALTY
+        return s
+
+    ranked = sorted(items, key=_adjusted, reverse=True)
+    if all(type_of(it) == "episodic" for it in ranked):
+        return ranked[:k]
+
+    selected: list = []
+    episodic_seen = 0
+    for it in ranked:
+        if type_of(it) == "episodic":
+            if episodic_seen >= _EPISODIC_RETRIEVAL_CAP:
+                continue
+            episodic_seen += 1
+        selected.append(it)
+        if len(selected) >= k:
+            break
+    return selected
+
+
+def _select_capped(ranked: list, top_k: int) -> list:
+    """Back-compat dict-shaped wrapper around rank_select (no affinity)."""
+    return rank_select(
+        ranked, top_k,
+        score_of=lambda r: r["score"],
+        type_of=lambda r: r.get("type"),
+    )
+
+
 def search(query: str, top_k: int = 5, agent_name: str = None,
            mem_type: str = None, caller: str = "",
-           owner_key_id: int = None) -> list:
+           owner_key_id: int = None, prefer_agent: str = None) -> list:
     """
     Semantic search across memories with quality-weighted ranking.
 
@@ -224,6 +289,9 @@ def search(query: str, top_k: int = 5, agent_name: str = None,
     owner_key_id — when set, only returns memories belonging to that API key,
                    preventing cross-tenant memory bleed (S2 security fix).
                    Falls back to _current_owner_key_id ContextVar if not given.
+    prefer_agent — soft domain-affinity hint (issue #14): off-domain memories
+                   are down-weighted (not excluded) so same-domain results win
+                   close calls. Distinct from agent_name, which hard-filters.
     """
     if owner_key_id is None:
         owner_key_id = _current_owner_key_id.get()
@@ -278,8 +346,13 @@ def search(query: str, top_k: int = 5, agent_name: str = None,
             "timestamp": ts,
         })
 
-    results.sort(key=lambda x: x["score"], reverse=True)
-    top = results[:top_k]
+    top = rank_select(
+        results, top_k,
+        score_of=lambda x: x["score"],
+        type_of=lambda x: x.get("type"),
+        agent_of=lambda x: x.get("agent"),
+        prefer_agent=prefer_agent,
+    )
 
     # Mark retrieved rows as used and log the audit — both fire-and-forget.
     if top:
