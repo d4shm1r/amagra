@@ -1,77 +1,129 @@
 #!/bin/bash
-# start-agents.sh — launch Ollama + API + React UI
-# Also callable via `ai-start` alias in ~/.bashrc
+# start-agents.sh — launch / stop Ollama + API + React UI
+# Usage:  ai-start [start|stop|status|logs]   (default: start)
+#
+# No `source` needed: we call the venv's binaries directly
+# ($VENV/bin/uvicorn already runs under the venv's Python via its shebang).
+# Everything runs in the background; logs go to logs/, PIDs to logs/*.pid.
+
+set -uo pipefail
 
 VENV="$HOME/.venvs/langgraph-env"
 AI_DIR="$HOME/agentic-ai"
 API_PORT=8000
 UI_PORT=3000
+LOG_DIR="$AI_DIR/logs"
 
-# Single-file DB mode (optional): export AMAGRA_DB before running this script,
-# e.g. `export AMAGRA_DB=$AI_DIR/amagra.db`, to collapse every SQLite store into
-# one file. Unset = the default separate-file layout. Migrate existing data
-# first: python scripts/migrate_to_single_db.py --target "$AMAGRA_DB" --apply
+# Single-file DB mode (optional): export AMAGRA_DB before running, e.g.
+#   export AMAGRA_DB=$AI_DIR/amagra.db
+# Migrate existing data first:
+#   python scripts/migrate_to_single_db.py --target "$AMAGRA_DB" --apply
 export AMAGRA_DB="${AMAGRA_DB:-}"
 
-ok()  { printf "  \033[32m✓\033[0m  %s\n" "$*"; }
-run() { printf "  \033[34m→\033[0m  %s\n" "$*"; }
-warn(){ printf "  \033[33m!\033[0m  %s\n" "$*"; }
+mkdir -p "$LOG_DIR"
 
-echo ""
-echo "  ╔══════════════════════════════════════╗"
-echo "  ║     Agentic AI — starting services   ║"
-echo "  ╚══════════════════════════════════════╝"
-echo ""
+ok()   { printf "  \033[32m✓\033[0m  %s\n" "$*"; }
+run()  { printf "  \033[34m→\033[0m  %s\n" "$*"; }
+warn() { printf "  \033[33m!\033[0m  %s\n" "$*"; }
 
-# ── 1. Ollama ────────────────────────────────────────────────
-if pgrep -x ollama > /dev/null 2>&1; then
+port_up() { lsof -Pi :"$1" -sTCP:LISTEN -t >/dev/null 2>&1; }
+
+# ── start ────────────────────────────────────────────────────
+cmd_start() {
+  echo ""
+  echo "  ╔══════════════════════════════════════╗"
+  echo "  ║     Agentic AI — starting services   ║"
+  echo "  ╚══════════════════════════════════════╝"
+  echo ""
+
+  # 1. Ollama
+  if pgrep -x ollama >/dev/null 2>&1; then
     ok "Ollama already running"
-else
+  else
     run "Starting Ollama..."
-    ollama serve > /tmp/ollama.log 2>&1 &
+    nohup ollama serve >"$LOG_DIR/ollama.log" 2>&1 &
+    echo $! >"$LOG_DIR/ollama.pid"
     sleep 2
-    if pgrep -x ollama > /dev/null 2>&1; then
-        ok "Ollama started"
-    else
-        warn "Ollama failed to start — check /tmp/ollama.log"
-    fi
-fi
+    pgrep -x ollama >/dev/null 2>&1 && ok "Ollama started" \
+      || warn "Ollama failed — see logs/ollama.log"
+  fi
 
-# ── 2. API server ────────────────────────────────────────────
-if lsof -Pi :$API_PORT -sTCP:LISTEN -t > /dev/null 2>&1; then
+  # 2. API server (venv uvicorn directly — no activate)
+  if port_up "$API_PORT"; then
     ok "API already running on :$API_PORT"
-else
-    run "Starting API server on :$API_PORT..."
-    gnome-terminal --title="API :$API_PORT" -- bash -c "
-      export AMAGRA_DB='$AMAGRA_DB'
-      source $VENV/bin/activate
-      cd $AI_DIR
-      uvicorn api:app --host 0.0.0.0 --port $API_PORT --reload
-      exec bash" 2>/dev/null &
-    sleep 1
-    ok "API server launching in new terminal"
-fi
+  else
+    run "Starting API on :$API_PORT..."
+    ( cd "$AI_DIR" && AMAGRA_DB="$AMAGRA_DB" \
+        nohup "$VENV/bin/python" -m uvicorn api:app --host 0.0.0.0 --port "$API_PORT" \
+        >"$LOG_DIR/api.log" 2>&1 & echo $! >"$LOG_DIR/api.pid" )
+    ok "API launching (logs/api.log)"
+  fi
 
-# ── 3. React UI ──────────────────────────────────────────────
-if lsof -Pi :$UI_PORT -sTCP:LISTEN -t > /dev/null 2>&1; then
+  # 3. React UI
+  if port_up "$UI_PORT"; then
     ok "UI already running on :$UI_PORT"
-else
-    run "Starting React UI on :$UI_PORT..."
-    gnome-terminal --title="UI :$UI_PORT" -- bash -c "
-      cd $AI_DIR/ui
-      npm start
-      exec bash" 2>/dev/null &
-    ok "React UI launching (takes ~10s on first run)"
-fi
+  else
+    run "Starting UI on :$UI_PORT..."
+    ( cd "$AI_DIR/ui" && BROWSER=none \
+        nohup npm start >"$LOG_DIR/ui.log" 2>&1 & echo $! >"$LOG_DIR/ui.pid" )
+    ok "UI launching (logs/ui.log, ~10s first run)"
+  fi
 
-sleep 2
+  # 4. Browser — wait for the UI port, then open once
+  run "Waiting for UI..."
+  for _ in $(seq 1 30); do port_up "$UI_PORT" && break; sleep 1; done
+  port_up "$UI_PORT" && xdg-open "http://localhost:$UI_PORT" >/dev/null 2>&1 &
 
-# ── 4. Browser ───────────────────────────────────────────────
-run "Opening browser..."
-xdg-open "http://localhost:$UI_PORT" 2>/dev/null &
+  echo ""
+  echo "  Dashboard : http://localhost:$UI_PORT"
+  echo "  API       : http://localhost:$API_PORT"
+  echo "  API docs  : http://localhost:$API_PORT/docs"
+  echo "  Logs      : ai-start logs   (or tail logs/api.log)"
+  echo ""
+}
 
-echo ""
-echo "  Dashboard : http://localhost:$UI_PORT"
-echo "  API       : http://localhost:$API_PORT"
-echo "  API docs  : http://localhost:$API_PORT/docs"
-echo ""
+# ── stop ─────────────────────────────────────────────────────
+kill_pidfile() {  # $1=name $2=pidfile
+  local f="$2"
+  if [[ -f "$f" ]] && kill "$(cat "$f")" 2>/dev/null; then
+    ok "$1 stopped"
+  else
+    warn "$1 not tracked — trying pattern match"
+  fi
+  rm -f "$f"
+}
+
+cmd_stop() {
+  echo ""
+  kill_pidfile "UI"  "$LOG_DIR/ui.pid"
+  kill_pidfile "API" "$LOG_DIR/api.pid"
+  # Fallbacks in case PID files are stale (e.g. reload spawned children)
+  pkill -f "uvicorn api:app"     2>/dev/null
+  pkill -f "react-scripts start" 2>/dev/null
+  # Leave Ollama running by default (shared, slow to reload).
+  # Stop it too with:  ai-start stop --all
+  if [[ "${1:-}" == "--all" ]]; then
+    kill_pidfile "Ollama" "$LOG_DIR/ollama.pid"
+    pkill -x ollama 2>/dev/null
+  fi
+  echo ""
+}
+
+# ── status / logs ────────────────────────────────────────────
+cmd_status() {
+  echo ""
+  pgrep -x ollama       >/dev/null 2>&1 && ok "Ollama  running" || warn "Ollama  down"
+  port_up "$API_PORT"   && ok "API     :$API_PORT" || warn "API     down"
+  port_up "$UI_PORT"    && ok "UI      :$UI_PORT"  || warn "UI      down"
+  echo ""
+}
+
+cmd_logs() { tail -f "$LOG_DIR/api.log" "$LOG_DIR/ui.log"; }
+
+case "${1:-start}" in
+  start)  cmd_start ;;
+  stop)   cmd_stop "${2:-}" ;;
+  status) cmd_status ;;
+  logs)   cmd_logs ;;
+  *)      echo "usage: ai-start [start|stop|status|logs]" ;;
+esac

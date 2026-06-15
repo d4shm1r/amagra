@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { T, FONT_MONO } from "./theme";
+import { T, LUX, GOLD, FONT_MONO } from "./theme";
 import { RefreshBtn, EmptyState, PageHeader, MetricCard } from "./ObsShared";
 
 const TYPES  = ["all", "code", "lesson", "episodic", "failure", "chat", "fact", "error"];
@@ -58,8 +58,11 @@ function QualityBar({ value }) {
 }
 
 function MemoryCard({ item, expanded, onToggle }) {
-  const ac = AGENT_COLOR[item.agent] || T.muted;
-  const tc = TYPE_COLOR[item.type]   || T.muted;
+  // Unified palette: gold for types, muted for agent — semantic red only for
+  // failure/error. Keeps the list calm and on-brand (no rainbow chips).
+  const isBad = item.type === "failure" || item.type === "error";
+  const ac = T.muted;
+  const tc = isBad ? T.error : T.accent;
   const ts = item.timestamp
     ? new Date(item.timestamp).toLocaleString(undefined, {
         month: "short", day: "numeric",
@@ -70,16 +73,16 @@ function MemoryCard({ item, expanded, onToggle }) {
   return (
     <div
       onClick={onToggle}
+      className="lux-card lux-card-i"
       style={{
-        background: "#F4F0E8",
-        border: `1px solid ${expanded ? T.accent + "44" : T.border}`,
-        borderRadius: 10,
-        padding: "12px 16px",
+        padding: "13px 17px",
         cursor: "pointer",
-        transition: "background 0.1s, border-color 0.1s",
-        marginBottom: 6,
+        marginBottom: 10,
+        borderColor: expanded ? GOLD.g2 + "66" : undefined,
+        boxShadow: expanded
+          ? "7px 7px 20px rgba(72,52,28,0.12), -3px -3px 11px rgba(255,255,255,0.75), inset 0 1px 1px rgba(255,255,255,0.92), 0 0 22px rgba(196,136,8,0.14)"
+          : undefined,
       }}
-      className="card-hover"
     >
       {/* ── Header row ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
@@ -117,13 +120,14 @@ function MemoryCard({ item, expanded, onToggle }) {
 
       {/* ── Content ── */}
       <div style={{
-        fontSize: 12, color: T.text, lineHeight: 1.5,
+        fontSize: 12, color: T.mutedLt, lineHeight: 1.5,
         overflow: "hidden",
         display: expanded ? "block" : "-webkit-box",
         WebkitLineClamp: expanded ? undefined : 2,
         WebkitBoxOrient: expanded ? undefined : "vertical",
         whiteSpace: expanded ? "pre-wrap" : undefined,
         wordBreak: "break-word",
+        minHeight: expanded ? undefined : 36,   // 2 lines → uniform row height
       }}>
         {item.content}
       </div>
@@ -201,7 +205,7 @@ export default function MemoryBrowserTab() {
     <div style={{ color: T.text, fontFamily: "inherit" }}>
 
       {/* ── Header ── */}
-      <PageHeader title="Memory" subtitle={`${records.length} records`}>
+      <PageHeader title="Memory" subtitle={`${records.length} records`} gold>
         <RefreshBtn onClick={fetchAll} />
       </PageHeader>
 

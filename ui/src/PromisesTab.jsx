@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { PROMISES } from "./constants";
+import { LUX, FONT_DISPLAY } from "./theme";
 
 const T = {
   bg:      "#F4F0E8",
@@ -41,15 +42,12 @@ function PromiseCard({ p }) {
   const isBuilding  = p.status === "building";
 
   return (
-    <div style={{
-      background: T.surface,
-      border: `1px solid ${isDelivered ? T.success + "44" : isBuilding ? T.warn + "33" : T.border}`,
-      borderRadius: 8,
+    <div className="lux-card lux-card-i" style={{
       padding: "18px 20px",
       display: "flex", flexDirection: "column", gap: 10,
-      transition: "border-color .15s",
       position: "relative",
       overflow: "hidden",
+      borderColor: isDelivered ? T.success + "55" : isBuilding ? T.warn + "44" : undefined,
     }}>
 
       {/* Delivered shimmer bar */}
@@ -183,23 +181,17 @@ export default function PromisesTab() {
         borderBottom: `1px solid ${T.border}`,
         paddingBottom: 28, marginBottom: 28,
       }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 14 }}>
-          <div style={{
-            width: 44, height: 44, borderRadius: 10, flexShrink: 0,
-            background: `linear-gradient(135deg, ${T.accent} 0%, #0F766E 100%)`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 20, fontWeight: 900, color: "#1F1408",
-            boxShadow: `0 0 24px ${T.accent}33`,
-          }}>A</div>
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: T.text, margin: 0, lineHeight: 1.2 }}>
-              Our Promises to You
-            </h1>
-            <p style={{ fontSize: 13, color: T.muted, margin: "6px 0 0", lineHeight: 1.6, maxWidth: 600 }}>
-              These are explicit commitments — not marketing copy. Each promise comes with a target version
-              and a delivery date. Delivered items stay here so you can hold us accountable.
-            </p>
-          </div>
+        <div style={{ marginBottom: 14 }}>
+          <h1 style={{
+            margin: 0, fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 600,
+            letterSpacing: "0.02em", lineHeight: 1.2, display: "inline-block", ...LUX.goldText,
+          }}>
+            Amagra Promises
+          </h1>
+          <p style={{ fontSize: 13, color: T.muted, margin: "6px 0 0", lineHeight: 1.6, maxWidth: 600 }}>
+            These are explicit commitments — not marketing copy. Each promise comes with a target version
+            and a delivery date. Delivered items stay here so you can hold us accountable.
+          </p>
         </div>
 
         {/* Stats */}

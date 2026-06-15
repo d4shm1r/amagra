@@ -1132,6 +1132,7 @@ export default function App() {
               {activeTab === "tasks"         && <TaskQueue />}
               {activeTab === "log"           && <LogTab sessionLog={sessionLog} onClear={() => setSessionLog([])} />}
               {activeTab === "progress"      && <ProgressTab />}
+              {activeTab === "promises"      && <PromisesTab />}
               {activeTab === "releases"      && <VersionHistoryTab />}
             </div>
             )}

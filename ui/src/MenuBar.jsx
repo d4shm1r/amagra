@@ -80,6 +80,7 @@ const MENUS = [
       { label: "Session Log",       action: "tab:log" },
       { type: "sep" },
       { label: "Progress",          action: "tab:progress",     hint: "Ctrl+Shift+P" },
+      { label: "Promises",          action: "tab:promises" },
       { label: "Version History",   action: "tab:releases",     hint: "Ctrl+Shift+H" },
     ],
   },

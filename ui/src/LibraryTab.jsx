@@ -266,7 +266,7 @@ export default function LibraryTab() {
 
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
-        <h1 style={{ margin: 0, fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 600, color: T.text, letterSpacing: "0.02em" }}>
+        <h1 style={{ margin: 0, fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 600, letterSpacing: "0.02em", ...LUX.goldText }}>
           Library
         </h1>
         <input

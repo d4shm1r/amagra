@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { T, LUX, FONT_DISPLAY } from "./theme";
+import { T, LUX, GOLD, FONT_DISPLAY } from "./theme";
 import { BUILD_PHASES, ROADMAP, VERSION } from "./constants";
 
 // ── Feature pillars ─────────────────────────────────────────────
@@ -119,11 +119,14 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
             {/* Title row */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
               <h1 style={{
-                margin: 0, fontSize: 34, fontWeight: 600,
-                fontFamily: FONT_DISPLAY, letterSpacing: "0.06em", lineHeight: 1.05,
+                margin: 0, fontSize: 38, fontWeight: 600,
+                fontFamily: FONT_DISPLAY, letterSpacing: "0.07em", lineHeight: 1.05,
                 ...LUX.goldText,
               }}>AMAGRA</h1>
-              <span style={{ fontSize: 13, fontWeight: 400, color: T.muted, marginTop: 2 }}>
+              <span style={{
+                fontSize: 13, fontWeight: 600, color: T.accent2,
+                marginTop: 4, letterSpacing: "0.02em",
+              }}>
                 — local agentic AI
               </span>
             </div>
@@ -180,6 +183,12 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
             </div>
           </div>
         </div>
+        {/* gold hero rule */}
+        <div style={{
+          height: 2, borderRadius: 2,
+          background: `linear-gradient(90deg, ${GOLD.g3} 0%, ${GOLD.g2} 22%, ${T.border} 70%, transparent 100%)`,
+          opacity: 0.7,
+        }} />
       </div>
 
       {/* ── How it works ── */}
@@ -194,22 +203,22 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
           }}>
             {[
               {
-                step: "01", color: T.accent,
+                step: "01",
                 title: "Classify the query",
                 body: "QuerySignal extracts domain, shape, verbosity, and topic keywords in under 1ms — routing happens before any LLM call is made.",
               },
               {
-                step: "02", color: "#6D28D9",
+                step: "02",
                 title: "Select the right agent",
                 body: "Core Brain maps the signal to one of 10 specialist agents: Python Dev, .NET Dev, IT Networking, AI/ML, Web Dev, DevOps, Data Analyst, Writer, Knowledge, or Terse.",
               },
               {
-                step: "03", color: "#047857",
+                step: "03",
                 title: "Execute with memory",
                 body: "The agent runs inside a LangGraph graph, retrieving semantically relevant memories from the FAISS index and domain-specific tools before synthesising a response.",
               },
               {
-                step: "04", color: "#BE185D",
+                step: "04",
                 title: "Reflect and improve",
                 body: "Triaged reflection updates memory quality scores after each run. User feedback (👍/👎) and outcome weights continuously improve future routing.",
               },
@@ -217,15 +226,19 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
               <div key={s.step} style={{ display: "flex", gap: 14 }}>
                 <div style={{
                   width: 32, height: 32, flexShrink: 0,
-                  borderRadius: "50%", background: `${s.color}18`,
-                  border: `1px solid ${s.color}44`,
+                  borderRadius: "50%", background: LUX.goldTint,
+                  border: `1px solid ${GOLD.g2}55`,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 10, fontWeight: 800, color: s.color,
+                  fontSize: 10, fontWeight: 800, color: T.accent,
                   fontFamily: "monospace", letterSpacing: "0.04em",
+                  boxShadow: "inset 0 1px 1px rgba(255,255,255,0.7)",
                 }}>{s.step}</div>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: T.text, marginBottom: 5 }}>{s.title}</div>
-                  <div style={{ fontSize: 11.5, color: T.muted, lineHeight: 1.6 }}>{s.body}</div>
+                  <div style={{
+                    fontSize: 12.5, fontWeight: 700, color: T.accent,
+                    marginBottom: 5, letterSpacing: "-0.01em",
+                  }}>{s.title}</div>
+                  <div style={{ fontSize: 11.5, color: T.mutedLt, lineHeight: 1.6 }}>{s.body}</div>
                 </div>
               </div>
             ))}
@@ -308,7 +321,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
                 cursor: "pointer", fontFamily: "inherit", textAlign: "left",
               }}
             >
-              <span style={{ fontSize: 15, color: n.color, fontFamily: "monospace", flexShrink: 0, lineHeight: 1 }}>{n.sym}</span>
+              <span style={{ fontSize: 15, color: T.accent, fontFamily: "monospace", flexShrink: 0, lineHeight: 1 }}>{n.sym}</span>
               <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{n.label}</span>
             </button>
           ))}
@@ -360,12 +373,15 @@ function Section({ title, children }) {
   return (
     <div style={{ marginBottom: 36 }}>
       <div style={{
-        fontSize: 10, fontWeight: 700, color: T.muted,
-        letterSpacing: "0.12em", textTransform: "uppercase",
-        marginBottom: 14, display: "flex", alignItems: "center", gap: 10,
+        fontSize: 10, fontWeight: 800, color: T.accent,
+        letterSpacing: "0.16em", textTransform: "uppercase",
+        marginBottom: 14, display: "flex", alignItems: "center", gap: 12,
       }}>
         <span>{title}</span>
-        <span style={{ flex: 1, height: 1, background: T.border }} />
+        <span style={{
+          flex: 1, height: 1,
+          background: `linear-gradient(90deg, ${GOLD.g2}66 0%, ${T.border} 60%, transparent 100%)`,
+        }} />
       </div>
       {children}
     </div>
@@ -389,28 +405,34 @@ function StatusPill({ label, value, color, mono, dot }) {
   );
 }
 
-function FeatureCard({ sym, color, title, body, pills }) {
+function FeatureCard({ sym, title, body, pills }) {
+  // Unified gold treatment — mirrors landing .for-card / .for-title (var(--g3)).
   return (
     <div className="lux-card lux-card-i" style={{
-      padding: "16px 18px",
+      padding: "17px 19px",
       display: "flex", flexDirection: "column", gap: 10,
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
         <div style={{
-          width: 34, height: 34, flexShrink: 0, borderRadius: 6,
-          background: `${color}18`, border: `1px solid ${color}33`,
+          width: 34, height: 34, flexShrink: 0, borderRadius: 8,
+          background: LUX.goldTint, border: `1px solid ${GOLD.g2}55`,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 15, fontFamily: "monospace", color, lineHeight: 1,
+          fontSize: 15, fontFamily: "monospace", color: T.accent, lineHeight: 1,
+          boxShadow: "inset 0 1px 1px rgba(255,255,255,0.7)",
         }}>{sym}</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: T.text, lineHeight: 1.2 }}>{title}</div>
+        <div style={{
+          fontSize: 14, fontWeight: 700, color: T.accent,
+          lineHeight: 1.2, letterSpacing: "-0.02em",
+        }}>{title}</div>
       </div>
-      <div style={{ fontSize: 11.5, color: T.muted, lineHeight: 1.65 }}>{body}</div>
+      <div style={{ fontSize: 11.5, color: T.mutedLt, lineHeight: 1.65 }}>{body}</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
         {pills.map(p => (
           <span key={p} style={{
             fontSize: 9.5, fontWeight: 700, letterSpacing: "0.04em",
-            color, background: `${color}12`, border: `1px solid ${color}28`,
-            borderRadius: 3, padding: "2px 7px",
+            color: T.accent2, background: LUX.goldTint,
+            border: `1px solid ${GOLD.g2}40`,
+            borderRadius: 99, padding: "2px 9px",
           }}>{p}</span>
         ))}
       </div>
