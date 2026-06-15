@@ -105,9 +105,36 @@ def _trace_hash(traces: list) -> str:
     return hashlib.sha256(raw).hexdigest()[:16]
 
 
-def train(traces: list = None, *, verbose: bool = False) -> dict:
+def _is_trainable(t: dict) -> bool:
+    """
+    Reject traces whose label can't be trusted as a positive training example.
+
+    Two leakage guards (external review, issue #19):
+      • Probabilistic joins — labels reconstructed via SequenceMatcher >= 0.85
+        (`label_trustworthy == False`) are fuzzy guesses, not verified outcomes.
+      • Thumbs-down — a trace the user marked wrong (`feedback.rating == -1`)
+        must NOT be taught as the correct query→agent mapping.
+
+    Everything else (fk / text_hash joins, eval seeds, unrated) is kept. Note
+    this only curbs leakage; the labels are still `final_agent` (behaviour
+    cloning), so gold/feedback-confirmed labels remain the real fix.
+    """
+    labels = t.get("labels", {})
+    if labels.get("label_trustworthy") is False:
+        return False
+    if (t.get("feedback", {}) or {}).get("rating") == -1:
+        return False
+    return True
+
+
+def train(traces: list = None, *, verbose: bool = False,
+          trustworthy_only: bool = True) -> dict:
     """
     Fit a LogisticRegression classifier and save to disk.
+
+    trustworthy_only — drop traces with untrustworthy labels before fitting, to
+    keep the auto-retrain loop from cloning its own fuzzy-matched / thumbs-down
+    decisions (see _is_trainable). Pass False to train on every trace.
 
     Returns a stats dict with accuracy, class counts, and feature importances.
     """
@@ -117,6 +144,11 @@ def train(traces: list = None, *, verbose: bool = False) -> dict:
 
     if traces is None:
         traces = _load_traces()
+
+    total_traces = len(traces)
+    if trustworthy_only:
+        traces = [t for t in traces if _is_trainable(t)]
+    dropped = total_traces - len(traces)
 
     rows = [_features_from_trace(t) for t in traces]
     rows = [r for r in rows if r is not None]
@@ -167,6 +199,7 @@ def train(traces: list = None, *, verbose: bool = False) -> dict:
         "label_encoder":   le,
         "trace_hash":      _trace_hash(traces),
         "n_samples":       len(rows),
+        "dropped_untrustworthy": dropped,
         "train_accuracy":  train_acc,
         "cv_accuracy":     cv_mean,
         "cv_std":          cv_std,

@@ -460,7 +460,10 @@ def think(task: str, state: AgentState) -> BrainDecision:
         # Primary agent selection: signal-driven when confident;
         # fall back to keyword-domain list for weaker signals.
         if use_signal:
-            primary = DOMAIN_TO_AGENT[signal.domain]
+            # .get() guard: a normalizer domain missing from DOMAIN_TO_AGENT must
+            # not raise — a KeyError here would crash think() and dump the whole
+            # query onto the (discarded) keyword router with reflection disabled.
+            primary = DOMAIN_TO_AGENT.get(signal.domain, "knowledge_learning")
         elif core_domains:
             # Regret-weighted sort before selecting primary
             if len(core_domains) > 1:

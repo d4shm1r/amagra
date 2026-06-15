@@ -8,7 +8,6 @@ from langgraph.graph import StateGraph, START, END
 import cognition.run_tracer as run_tracer
 
 from models.state import AgentState
-from orchestration.router import hybrid_router
 from orchestration.core_brain import think
 from decision.log import log as log_decision
 from training.learning import apply_learning_update
@@ -517,9 +516,8 @@ def coordinator_node(state: AgentState):
     try:
         decision = think(task, state)
     except Exception as e:
-        print(f"[coordinator] brain failure: {e} — falling back to router")
-        fallback = hybrid_router(state)
-        fallback = fallback if fallback in VALID_AGENTS else "knowledge_learning"
+        print(f"[coordinator] brain failure: {e} — defaulting to knowledge_learning")
+        fallback = "knowledge_learning"
         return {
             "next_agent":     fallback,
             "active_agent":   fallback,
@@ -565,20 +563,15 @@ def coordinator_node(state: AgentState):
         decision.reflect       = force_rl != "none"
         print(f"   👤 User override → reflect_level={force_rl}")
 
-    # ── Router: diagnostic comparison only ────────────────────
-    router_agent = hybrid_router(state)
-    conflict     = (router_agent != "coordinator" and router_agent != brain_agent)
-    final_agent  = brain_agent  # brain always wins
-
-    if conflict:
-        print(
-            f"\n👑 Coordinator → ⚡ conflict: router=[{router_agent}] "
-            f"brain=[{brain_agent}] → brain wins"
-        )
-    elif router_agent != "coordinator":
-        print(f"\n👑 Coordinator → [{final_agent}] (brain+router agree, {duration}ms)")
-    else:
-        print(f"\n👑 Coordinator → [{final_agent}] (brain decision, {duration}ms)")
+    # ── Core brain is the sole routing authority (issue #20) ──────────
+    # router.py used to run here purely for a diagnostic comparison and was then
+    # discarded — final_agent was always brain_agent. It has been removed from the
+    # hot path (it had drifted from core_brain's own keyword table and the
+    # normalizer). These constants keep the decision-log / trace schema stable.
+    final_agent  = brain_agent
+    router_agent = "none"
+    conflict     = False
+    print(f"\n👑 Coordinator → [{final_agent}] (brain decision, {duration}ms)")
 
     if decision.needs_plan:
         print("   Plan:")
