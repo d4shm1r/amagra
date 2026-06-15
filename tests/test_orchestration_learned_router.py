@@ -161,3 +161,47 @@ def test_train_traces_no_valid_agents():
 def test_invalidate_cache():
     lr.invalidate_cache()
     assert lr._cached_payload is None
+
+
+# ── trustworthy-label gate (leakage guard, issue #19) ─────────────────────────
+
+def test_is_trainable_rejects_fuzzy_join():
+    assert lr._is_trainable({"labels": {"label_trustworthy": True}})
+    assert not lr._is_trainable({"labels": {"label_trustworthy": False}})
+
+def test_is_trainable_rejects_thumbs_down():
+    t = {"labels": {"label_trustworthy": True}, "feedback": {"rating": -1}}
+    assert not lr._is_trainable(t)
+    t_up = {"labels": {"label_trustworthy": True}, "feedback": {"rating": 1}}
+    assert lr._is_trainable(t_up)
+
+def test_is_trainable_defaults_keep():
+    # Missing fields → keep (eval seeds / unrated traces).
+    assert lr._is_trainable({})
+    assert lr._is_trainable({"labels": {}, "feedback": {}})
+
+def test_train_drops_untrustworthy_traces(tmp_path, monkeypatch):
+    # Don't clobber the real model on disk.
+    monkeypatch.setattr(lr, "_MODEL_PATH", str(tmp_path / "router.pkl"))
+
+    def _trace(agent, domain, trustworthy=True, rating=None):
+        return {
+            "signal": {"domain": domain, "conf": 0.7, "shape": "code",
+                       "verbosity": "normal"},
+            "routing": {"final_agent": agent, "action": "build"},
+            "labels": {"correct_agent": agent, "label_trustworthy": trustworthy},
+            "feedback": {"rating": rating},
+        }
+    # Two classes so LogisticRegression can fit.
+    traces = (
+        [_trace("python_dev", "python") for _ in range(6)]
+        + [_trace("it_networking", "networking") for _ in range(6)]
+        + [_trace("dotnet_dev", "blazor", trustworthy=False)]  # fuzzy → dropped
+        + [_trace("ai_ml", "ai_ml", rating=-1)]                # 👎 → dropped
+    )
+    res = lr.train(traces, trustworthy_only=True)
+    assert res.get("dropped_untrustworthy") == 2
+    assert res["n_samples"] == 12
+    res_all = lr.train(traces, trustworthy_only=False)
+    assert res_all.get("dropped_untrustworthy") == 0
+    assert res_all["n_samples"] == 14
