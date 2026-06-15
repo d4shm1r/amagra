@@ -249,7 +249,7 @@ Rate limits are returned on every authenticated response as `X-RateLimit-Limit`,
 ## Known limitations
 
 - **Streaming available** — use `POST /ask/stream` for SSE streaming responses. When `ANTHROPIC_API_KEY` is set, tokens stream directly from Claude; without it, the response arrives as a single chunk. The default `POST /ask` remains non-streaming.
-- **No tool use** — agents produce text only. File access, sandboxed code execution, and web search are committed for `v1.1`.
+- **Tool use via dedicated endpoint** — file access, sandboxed code execution, and web search ship in `v1.1.0`, driven by the in-agent tool loop at `POST /tools/run`. Auto-invoking that loop inside the default specialist-agent chat flow is the remaining polish item.
 - **Default inference** — Ollama (local). Cloud provider support (Anthropic, OpenAI, Gemini) via the multi-provider `/ask` path is available; full provider-abstraction UI is committed for `v1.2`.
 - **SQLite sprawl** — internal data is split across multiple SQLite files; cross-DB atomicity is not guaranteed. Every path resolves through one registry (`infrastructure/db.py`), and setting `AMAGRA_DB=/path/to/amagra.db` collapses all logical databases into a single file. The default is still separate files (no migration required). To switch to one file, consolidate existing data once and flip the env var:
 
@@ -274,7 +274,7 @@ Rate limits are returned on every authenticated response as `X-RateLimit-Limit`,
 
 Post-debut hardening: tests to ~60% coverage, in-product onboarding (Ollama detection, model-pull progress, guided first prompt), Vite migration to retire CRA, single consolidated `amagra.db`, and public launch (Show HN, r/LocalLLaMA, Docker Hub, Homebrew).
 
-### v1.1 — Tool-using agents · Q3 2026 *(in progress)*
+### v1.1 — Tool-using agents · Q3 2026 *(✅ shipped v1.1.0)*
 
 Agents gain real capabilities, not just text. **Shipped:** thread management (rename, fork, archive); memory import/export (JSON/Markdown); the jailed file/folder tool (`GET /workspace/read|list|search`, confined via `Path.resolve().is_relative_to(root)`); sandboxed code execution (`POST /sandbox/run`, `setrlimit` + isolated `python3 -I`, opt-in via `AMAGRA_SANDBOX=1`); chat stop/regenerate/edit affordances; live web search (`GET /search/web`, default self-hosted SearXNG, opt-in Brave/Tavily); and a structured tool loop (`POST /tools/run`) that lets the model call the file/sandbox/web tools mid-reasoning. **Remaining polish:** auto-invoking the tool loop inside the default specialist-agent chat flow.
 

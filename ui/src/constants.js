@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.0.4";
+export const VERSION = "1.1.0";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -518,6 +518,19 @@ export const BUILD_PHASES = [
       "Test suite 645 → 690 passing",
     ],
   },
+  {
+    id: 75, version: "v1.1.0", date: "Jun 15, 2026",
+    label: "Tool-Using Agents", title: "Tool-Using Agents", color: "#15803D", status: "done",
+    summary: "Completes the v1.1 tool-using milestone: live web search and a provider-agnostic in-agent tool loop, plus a beginner-friendly UI (Simple/Advanced mode + reworked onboarding) and a routing over-classification guard. Test suite grows 690 → 719; 132 routes.",
+    steps: [
+      "Live web search — tools/web.py provider abstraction (default SearXNG, opt-in Brave/Tavily); GET /search/web + /search/status, uniform {title,url,snippet}",
+      "In-agent tool loop — tools/tool_loop.py provider-agnostic loop (model emits fenced JSON {tool,args} → execute → observe, bounded rounds) + tools/catalog.py; GET /tools/list, POST /tools/run",
+      "Simple/Advanced UI mode — Simple trims chrome to Chat/Library/Guide and hides technical menus + diagnostics; persists in localStorage, toggleable from menu bar, Settings, and onboarding",
+      "Onboarding reworked — plain-language, privacy-first copy instead of Ollama/model jargon",
+      "Routing guard — build over-classification guard, profile-leak framing fix, embedding warm-up",
+      "Test suite 690 → 719 passing · 132 routes",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -602,7 +615,7 @@ export const ROADMAP = [
     ],
   },
   {
-    id: 41, version: "v1.1.0", title: "Tool-Using Agents", color: "#0F766E", status: "next", priority: "high",
+    id: 41, version: "v1.1.0", title: "Tool-Using Agents", color: "#0F766E", status: "done", priority: "high",
     summary: "Agents gain real capabilities, not just text: jailed file access, sandboxed code execution, and live web search. The biggest quality jump available without swapping the model. All capabilities + the structured tool loop shipped; remaining polish is auto-invoking the loop inside the default chat flow. (SSE streaming shipped in 1.0.0.)",
     items: [
       "Memory import/export — JSON / Markdown round-trip ✅",
@@ -678,6 +691,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.1.0", label: "Tool-Using Agents",    color: "#15803D",  phases: [75] },
   { version: "v1.0.0", label: "First Public Release", color: "#15803D",  phases: [70, 71, 72, 73, 74] },
   { version: "v0.10", label: "Content & Launch",      color: "#C48808",  phases: [60] },
   { version: "v0.9", label: "Commercialization",      color: "#C2410C",  phases: [36, 37, 38, 39, 50, 51, 52, 53] },
