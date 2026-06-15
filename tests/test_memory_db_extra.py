@@ -334,3 +334,60 @@ def test_select_capped_bypasses_when_homogeneous():
     ranked = _ranked(["episodic"] * 5)
     top = mdb._select_capped(ranked, top_k=5)
     assert len(top) == 5
+
+
+# ── rank_select(): domain-affinity penalty (issue #14) ────────────────────────
+
+def _scored(rows):
+    """rows: list of (agent, score) → ranked dict items with chat type."""
+    return [
+        {"id": i, "agent": a, "type": "chat", "score": s}
+        for i, (a, s) in enumerate(rows)
+    ]
+
+def _select(items, k, prefer_agent=None):
+    return mdb.rank_select(
+        items, k,
+        score_of=lambda r: r["score"],
+        type_of=lambda r: r.get("type"),
+        agent_of=lambda r: r.get("agent"),
+        prefer_agent=prefer_agent,
+    )
+
+def test_affinity_lets_same_domain_overtake():
+    # Off-domain memory has higher raw score, but the penalty flips the order.
+    items = _scored([("python_dev", 0.90), ("it_networking", 0.80)])
+    top = _select(items, k=1, prefer_agent="it_networking")
+    # 0.90 * 0.85 = 0.765 < 0.80 → the same-domain memory wins.
+    assert top[0]["agent"] == "it_networking"
+
+def test_affinity_keeps_offdomain_when_gap_is_large():
+    # A strongly-relevant off-domain memory still survives the penalty.
+    items = _scored([("python_dev", 0.95), ("it_networking", 0.60)])
+    top = _select(items, k=1, prefer_agent="it_networking")
+    # 0.95 * 0.85 = 0.8075 > 0.60 → off-domain stays on top (not excluded).
+    assert top[0]["agent"] == "python_dev"
+
+def test_affinity_noop_without_prefer_agent():
+    items = _scored([("python_dev", 0.90), ("it_networking", 0.80)])
+    top = _select(items, k=2, prefer_agent=None)
+    assert [r["agent"] for r in top] == ["python_dev", "it_networking"]
+
+def test_rank_select_applies_both_affinity_and_cap():
+    items = (
+        [{"id": 0, "agent": "x", "type": "episodic", "score": 0.99},
+         {"id": 1, "agent": "x", "type": "episodic", "score": 0.98},
+         {"id": 2, "agent": "x", "type": "episodic", "score": 0.97},
+         {"id": 3, "agent": "x", "type": "episodic", "score": 0.96},
+         {"id": 4, "agent": "it_networking", "type": "reflection", "score": 0.70}]
+    )
+    top = mdb.rank_select(
+        items, k=4,
+        score_of=lambda r: r["score"],
+        type_of=lambda r: r["type"],
+        agent_of=lambda r: r["agent"],
+        prefer_agent="it_networking",
+    )
+    # Episodic capped at 3; the same-domain reflection is retained.
+    assert sum(1 for r in top if r["type"] == "episodic") == mdb._EPISODIC_RETRIEVAL_CAP
+    assert any(r["id"] == 4 for r in top)

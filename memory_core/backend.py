@@ -55,7 +55,7 @@ class MemoryBackend(ABC):
 
     @abstractmethod
     def retrieve(self, query: str, k: int = 5, agent_name: Optional[str] = None,
-                 caller: str = "") -> list:
+                 caller: str = "", prefer_agent: Optional[str] = None) -> list:
         """
         Semantic search over stored memories.
 
@@ -63,10 +63,13 @@ class MemoryBackend(ABC):
           relevance(query, memory) × quality × type_weight × freshness
 
         Parameters:
-          query      — user query or sub-task text
-          k          — max records to return
-          agent_name — filter to this agent's memories (None = all agents)
-          caller     — log tag for the retrieval audit trail
+          query        — user query or sub-task text
+          k            — max records to return
+          agent_name   — hard filter to this agent's memories (None = all agents)
+          caller       — log tag for the retrieval audit trail
+          prefer_agent — soft domain-affinity hint (issue #14): off-domain
+                         memories stay eligible but are down-weighted so
+                         same-domain results win close calls.
 
         Thread-safety: MUST be safe to call from multiple threads simultaneously
         (required by deep pipeline's parallel sub-task execution).
@@ -91,13 +94,14 @@ class MemoryBackend(ABC):
         ...
 
     def search(self, query: str, top_k: int = 5, agent_name: Optional[str] = None,
-               caller: str = "") -> list:
+               caller: str = "", prefer_agent: Optional[str] = None) -> list:
         """
         Compatibility adapter: same signature as legacy memory_db.search().
         Returns list of dicts instead of MemoryRecord objects.
         Existing agent code calls this without modification.
         """
-        records = self.retrieve(query, k=top_k, agent_name=agent_name, caller=caller)
+        records = self.retrieve(query, k=top_k, agent_name=agent_name,
+                                caller=caller, prefer_agent=prefer_agent)
         return [
             {"id": r.id, "agent": r.agent, "type": r.mem_type, "content": r.content,
              "score": r.score, "quality": r.quality, "use_count": r.use_count}
@@ -120,9 +124,10 @@ class SQLiteBackend(MemoryBackend):
     """
 
     def retrieve(self, query: str, k: int = 5, agent_name: Optional[str] = None,
-                 caller: str = "") -> list:
+                 caller: str = "", prefer_agent: Optional[str] = None) -> list:
         import memory_core.db as _mdb
-        raw = _mdb.search(query, top_k=k, agent_name=agent_name, caller=caller)
+        raw = _mdb.search(query, top_k=k, agent_name=agent_name, caller=caller,
+                          prefer_agent=prefer_agent)
         return [
             MemoryRecord(
                 id        = r["id"],
@@ -274,11 +279,12 @@ class FAISSBackend(MemoryBackend):
             pass
 
     def retrieve(self, query: str, k: int = 5, agent_name: Optional[str] = None,
-                 caller: str = "") -> list:
+                 caller: str = "", prefer_agent: Optional[str] = None) -> list:
         import numpy as np
         import sqlite3
         import json
-        from memory_core.db import _normalize, _TYPE_WEIGHTS, _freshness, _record_use, _log_audit
+        from memory_core.db import (_normalize, _TYPE_WEIGHTS, _freshness,
+                                    _record_use, _log_audit, rank_select)
 
         try:
             q_emb = _normalize(
@@ -340,8 +346,13 @@ class FAISSBackend(MemoryBackend):
                 metadata  = metadata,
             ))
 
-        results.sort(key=lambda r: r.score, reverse=True)
-        top = results[:k]
+        top = rank_select(
+            results, k,
+            score_of=lambda r: r.score,
+            type_of=lambda r: r.mem_type,
+            agent_of=lambda r: r.agent,
+            prefer_agent=prefer_agent,
+        )
 
         if top:
             _record_use([r.id for r in top])
@@ -513,9 +524,10 @@ class PgvectorBackend(MemoryBackend):
             conn.close()
 
     def retrieve(self, query: str, k: int = 5, agent_name: Optional[str] = None,
-                 caller: str = "") -> list:
+                 caller: str = "", prefer_agent: Optional[str] = None) -> list:
         import numpy as np
-        from memory_core.db import get_embedding, _TYPE_WEIGHTS, _freshness, _record_use
+        from memory_core.db import (get_embedding, _TYPE_WEIGHTS, _freshness,
+                                    _record_use, rank_select)
 
         try:
             q_emb = np.array(get_embedding(query), dtype=np.float32)
@@ -552,8 +564,13 @@ class PgvectorBackend(MemoryBackend):
                 metadata  = metadata,
             ))
 
-        results.sort(key=lambda r: r.score, reverse=True)
-        top = results[:k]
+        top = rank_select(
+            results, k,
+            score_of=lambda r: r.score,
+            type_of=lambda r: r.mem_type,
+            agent_of=lambda r: r.agent,
+            prefer_agent=prefer_agent,
+        )
 
         if top:
             _record_use([r.id for r in top])
