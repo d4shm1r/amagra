@@ -1,0 +1,8 @@
+{
+  "name": "amagra-site",
+  "private": true,
+  "description": "Root build entrypoint for the amagra.dev marketing site (Cloudflare Workers Static Assets). The app itself lives in ui/ and is self-hosted by users.",
+  "scripts": {
+    "build": "npm --prefix ui install && npm --prefix ui run build && cp ui/build/landing.html ui/build/index.html"
+  }
+}

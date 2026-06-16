@@ -1,0 +1,12 @@
+# Cloudflare Workers Static Assets config for the amagra.dev marketing site.
+# Assets-only (no Worker script): `npx wrangler deploy` uploads ui/build as a static
+# site. The root build step copies landing.html → index.html, so "/" serves the
+# marketing page (the Vite index.html is the local dashboard, not wanted publicly).
+#
+# NOTE: `name` must match the Worker you connected in the dashboard. If your Worker
+# has a different name, change this to match it.
+name = "amagra"
+compatibility_date = "2025-01-01"
+
+[assets]
+directory = "./ui/build"
