@@ -26,9 +26,9 @@ This is the orientation map. Each area links to the canonical document — this 
 | Version | v1.1.1 (tools in default path) |
 | Specialist agents | 10 (`agents/registry.py` is canonical) |
 | Skill graph | 21 nodes |
-| Routing accuracy | 97% full · 99% signal-only (curated eval) |
+| Routing accuracy | ~99% curated · ~42% held-out adversarial (internal metrics, not validated — see docs/FINDINGS.md §3a) |
 | Memory | SQLite → auto-promote to FAISS at 800 entries · 628+ vectors · P50 0.38ms · 52× LRU cache |
-| UCI health | h_UCI ≈ 80.8 |
+| UCI health | h_UCI ≈ 80.8 (internal heuristic, not a quality measure — not surfaced publicly) |
 | API surface | 100+ endpoints (132 routes) |
 | Tests | 766 passing |
 | Auth | API-key, deny-by-default when `REQUIRE_AUTH=1` |

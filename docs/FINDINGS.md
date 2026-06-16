@@ -7,7 +7,7 @@
 
 ## Abstract
 
-Key empirical findings from developing a local-first agentic AI over 37 phases. The central finding: replacing LLM-based intent classification with deterministic geometric signal detection increased routing accuracy from 70% to 97% while reducing median classification latency from ~800ms to ~12ms.
+Key empirical findings from developing a local-first agentic AI over 37 phases. The central finding: replacing LLM-based intent classification with deterministic geometric signal detection increased routing accuracy from 70% to 97% while reducing median classification latency from ~800ms to ~12ms. **These are internal development metrics on a self-authored set — on a held-out adversarial set the same router scores ~42% (see §3a). Treat the headline numbers as indicative of the engineering, not as validated accuracy.**
 
 ---
 
@@ -47,6 +47,34 @@ The routing confidence score is not a softmax probability — it's `1 − exp(�
 | QuerySignal only, no LLM (ablation) | **99%** |
 
 The remaining 3% are genuinely ambiguous queries (multi-domain, compound intent) that require LLM intervention by design.
+
+### 3a. Held-out reality check — why we don't quote a single headline number
+
+The 97–99% figures above are **internal development metrics, not validated accuracy.** The
+prompts and the routing rules were authored by the same person, so that benchmark largely
+measures "can the rules recognise prompts that resemble the rules?" — evaluation on the
+development distribution, not a held-out test. An external eval-methodology review flagged
+this directly, and it's correct.
+
+So there is a second, deliberately hostile eval (`evaluation/adversarial_eval.py`): 33 held-out
+prompts written to be hard and **keyword-free** — cross-domain ("spin up containers to run an
+AI experiment"), keyword-decoys, and paraphrases that avoid the trigger words the rules key on.
+
+| Eval | Signal-only routing accuracy |
+|------|------------------------------|
+| Curated ablation (same set used for tuning) | ~99% |
+| **Held-out adversarial** (33 prompts) | **42.4%**, Wilson 95% CI **[27%, 59%]** |
+
+The drop is the honest finding, and the *failure pattern* is the useful part: paraphrases
+collapse to the fallback agent (`knowledge_learning`) — i.e. the rules keyword-match, they
+don't generalise — and cross-domain prompts pick a plausible-but-not-primary specialist.
+Production sits between these two numbers, closer to the floor than the ceiling.
+
+**Caveat on the 42% itself:** those labels are single-rater (one author's best call). Before
+*either* number is publishable, the prior question — is the routing target even well-defined? —
+needs answering with inter-rater agreement. `evaluation/rater_harness.py` collects independent
+blind labels and computes Fleiss' κ; the bar is κ ≳ 0.6, after which the majority vote becomes
+consensus gold labels. Until then: internal metrics only.
 
 ---
 

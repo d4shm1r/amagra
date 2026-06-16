@@ -79,3 +79,8 @@ ui/package-lock.json
 
 # Jailed file tool default root (user content)
 workspace/
+
+# Per-rater agreement data (issue #20) — local labels, not source.
+# Harness: evaluation/rater_harness.py; only consensus_gold.json is shareable.
+evaluation/ratings/*.json
+!evaluation/ratings/consensus_gold.json

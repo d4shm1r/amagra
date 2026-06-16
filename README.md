@@ -9,9 +9,13 @@
   <img alt="Self-hosted" src="https://img.shields.io/badge/self--hosted-✓-success" />
 </p>
 
+<p align="center">
+  <b>A self-hosted, local-first AI assistant with persistent memory — and it shows its work. Runs entirely on your own hardware via <a href="https://ollama.com">Ollama</a>.</b>
+</p>
+
 ### The AI you can trust with long-term work.
 
-It remembers what you've done, explains every decision, and runs entirely on your hardware.
+It remembers your projects across sessions, and **every routing decision is logged and replayable** — so you can see exactly why it answered the way it did. Nothing is a black box, and nothing leaves your hardware.
 
 ![Chat](docs/screenshots/chat.png)
 
@@ -33,20 +37,42 @@ It remembers what you've done, explains every decision, and runs entirely on you
 
 ---
 
+## Why not just use Ollama, OpenWebUI, or ChatGPT?
+
+You can — and for one-off questions you probably should. Amagra is for the times you
+come back to the *same* work for weeks and need the tool to remember it and show its
+reasoning. The honest trade-offs:
+
+| | **Amagra** | Plain Ollama / OpenWebUI | Cloud ChatGPT / Claude |
+|---|:---:|:---:|:---:|
+| Runs fully local & offline | ✅ | ✅ | ❌ |
+| Persistent memory across sessions | ✅ built-in | ⚠️ manual / limited | ⚠️ cloud-stored |
+| Every answer inspectable & replayable | ✅ | ❌ | ❌ |
+| Routes each question to a specialist | ✅ | ❌ | ❌ |
+| Your data never leaves your machine | ✅ | ✅ | ❌ |
+| Frontier-grade model quality | ❌ your local model | ❌ | ✅ |
+| Zero setup | ❌ | ⚠️ | ✅ |
+
+If you want the strongest possible single answer right now, use a frontier cloud model.
+If you want a private workspace that *accumulates* context and never asks you to trust a
+black box, that's the gap Amagra fills.
+
+---
+
 ## Under the hood
 
 The experience is the point. The numbers are here if you want them.
 
 | Metric | Value | Notes |
 |---|---|---|
-| Signal-first routing (curated eval) | **99%** | 138-query ablation, same set used for tuning — not an independent benchmark |
+| Routing | keyword-first, then LLM | Every decision is logged and replayable — see accuracy & method in [docs/FINDINGS.md](docs/FINDINGS.md) |
 | Memory retrieval (FAISS, warm) | **< 1 ms** | LRU cache hit |
 | Memory retrieval (cold embed) | ~60–80 ms | nomic-embed-text via Ollama |
 | Skill graph coverage | **21 nodes** | Phrase-weighted disambiguation across all 10 agents |
 | Test suite | **766 passing** | ruff + pytest + Docker build on every push and PR |
 | Free tier | **100 req / day** | No card required — `POST /register/free` |
 
-> Real-world routing accuracy is tracked via telemetry (`GET /telemetry/routing`) from actual usage. The curated-eval figure above is an internal benchmark — treat it as indicative, not definitive.
+> Routing quality is measured honestly, not marketed: there's a wide gap between a self-authored curated set and a held-out adversarial one, and live telemetry (`GET /telemetry/routing`) tracks the real thing. The numbers, the method, the confidence intervals, and the known failure modes all live in [docs/FINDINGS.md](docs/FINDINGS.md) — including why we don't quote a single headline accuracy figure.
 
 ---
 
@@ -185,9 +211,6 @@ curl http://localhost:8000/memory/stats
 # Live routing telemetry
 curl http://localhost:8000/telemetry/routing
 
-# System intelligence score
-curl http://localhost:8000/cos/uci/hierarchical
-
 # Active execution plan (DAG)
 curl http://localhost:8000/plan/graph
 
@@ -199,9 +222,9 @@ Full API docs at `http://localhost:8000/docs`.
 
 ---
 
-## Cognitive OS
+## Observability — see and replay everything
 
-Amagra ships a runtime layer that makes agent behaviour observable and steerable at every step.
+The reason to choose Amagra over a plain local chat UI: agent behaviour is observable and replayable at every step, not a black box. These are concrete components, not a framework — each emits to a UI panel you can browse live.
 
 | Component | What it does |
 |---|---|

@@ -3,8 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AMAGRA — The Cognitive OS for Developers</title>
-  <meta name="description" content="Amagra: a local-first cognitive AI platform. Expert agents, persistent memory, decision replay, and full observability — all on your own hardware." />
+  <title>Amagra — Self-Hosted AI Assistant with Persistent Memory</title>
+  <meta name="description" content="Amagra is a self-hosted, local-first AI assistant with persistent memory that runs 100% on your own hardware via Ollama. A private ChatGPT alternative where every answer is logged and replayable — no black box, no cloud. Python/FastAPI + LangGraph + FAISS." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://amagra.dev/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://amagra.dev/" />
+  <meta property="og:title" content="Amagra — Self-Hosted AI Assistant with Persistent Memory" />
+  <meta property="og:description" content="Private, local-first AI assistant that remembers your projects across sessions and shows its work — every routing decision logged and replayable. Runs 100% on your hardware via Ollama." />
+  <meta property="og:image" content="https://amagra.dev/social-preview.png" />
+  <meta property="og:site_name" content="Amagra" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Amagra — Self-Hosted AI Assistant with Persistent Memory" />
+  <meta name="twitter:description" content="A private ChatGPT alternative that runs on your own hardware. Persistent memory across sessions, and every answer is replayable." />
+  <meta name="twitter:image" content="https://amagra.dev/social-preview.png" />
+
+  <!-- Structured data: tells search engines this is software, not a blog -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Amagra",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Linux, macOS, Windows (Docker)",
+    "description": "Self-hosted, local-first AI assistant with persistent memory and replayable reasoning. A private ChatGPT alternative running 100% on your own hardware via Ollama.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "featureList": "Persistent memory across sessions, Replayable routing decisions, Specialist agent routing, 100% local and private, Built on Ollama + LangGraph + FAISS",
+    "downloadUrl": "https://github.com/d4shm1r/amagra",
+    "license": "https://opensource.org/licenses/MIT",
+    "author": { "@type": "Person", "name": "d4shm1r" }
+  }
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -957,8 +991,8 @@
       <li><a href="#faq">FAQ</a></li>
     </ul>
     <div class="nav-cta">
-      <a href="http://localhost:3000" class="btn btn-ghost">Dashboard</a>
-      <a href="http://localhost:8000/register/free" class="btn btn-primary">Get Free Key</a>
+      <a href="https://github.com/d4shm1r/amagra" class="btn btn-ghost">GitHub</a>
+      <a href="#how" class="btn btn-primary">Get Started</a>
     </div>
   </nav>
 
@@ -974,12 +1008,13 @@
         <span class="text-accent">with long-term work.</span>
       </h1>
       <p class="hero-sub">
-        It remembers what you've done, explains every decision,
-        and runs entirely on your hardware.
+        A self-hosted, local-first AI assistant with persistent memory. It remembers
+        your projects across sessions and shows its work — every routing decision is
+        logged and replayable — all on your own hardware.
       </p>
       <div class="hero-actions">
         <a href="#pricing" class="btn btn-primary btn-lg">Start free — self-hosted</a>
-        <a href="http://localhost:3000" class="btn btn-ghost btn-lg">Open dashboard →</a>
+        <a href="https://github.com/d4shm1r/amagra" class="btn btn-ghost btn-lg">View on GitHub →</a>
       </div>
       <div class="metrics-strip">
         <div class="metric"><div class="metric-val" style="font-size:19px;color:#8A6324;">Memory</div><div class="metric-label">Remembers across sessions</div></div>
@@ -1605,8 +1640,8 @@
         The self-hosted version is free forever. Runs on hardware you already own. Get a free API key in seconds — no card required.
       </p>
       <div class="hero-actions">
-        <a href="http://localhost:8000/register/free" class="btn btn-primary btn-lg">Get Free API Key</a>
-        <a href="http://localhost:3000" class="btn btn-ghost btn-lg">Open Dashboard</a>
+        <a href="#how" class="btn btn-primary btn-lg">Get Started — Free &amp; Self-Hosted</a>
+        <a href="https://github.com/d4shm1r/amagra" class="btn btn-ghost btn-lg">View on GitHub</a>
       </div>
     </div>
   </section>
@@ -1617,8 +1652,8 @@
     </div>
     <span class="footer-copy">© 2026 Amagra. All rights reserved.</span>
     <ul class="footer-links">
-      <li><a href="http://localhost:3000">Dashboard</a></li>
-      <li><a href="http://localhost:8000/docs">API Docs</a></li>
+      <li><a href="https://github.com/d4shm1r/amagra">GitHub</a></li>
+      <li><a href="https://github.com/d4shm1r/amagra/tree/main/docs">Docs</a></li>
       <li><a href="mailto:contact@amagra.dev">Contact</a></li>
     </ul>
   </footer>
