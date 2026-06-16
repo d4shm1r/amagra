@@ -1,12 +1,15 @@
-# Amagra
+<p align="center">
+  <img src="docs/amagra-logo.png" alt="Amagra" width="440" />
+</p>
 
 <p align="center">
-  <a href="https://github.com/d4shm1r/amagra/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/d4shm1r/amagra?color=blue" /></a>
-  <a href="https://github.com/d4shm1r/amagra/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/d4shm1r/amagra?style=flat&logo=github" /></a>
-  <a href="https://github.com/d4shm1r/amagra/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/d4shm1r/amagra" /></a>
-  <a href="https://github.com/d4shm1r/amagra/issues"><img alt="Open issues" src="https://img.shields.io/github/issues/d4shm1r/amagra" /></a>
-  <img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white" />
-  <img alt="Self-hosted" src="https://img.shields.io/badge/self--hosted-✓-success" />
+  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release" src="https://img.shields.io/github/v/release/d4shm1r/amagra?style=flat-square&label=release&color=C48808&labelColor=2E2010" /></a>
+  <a href="https://github.com/d4shm1r/amagra/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/d4shm1r/amagra?style=flat-square&color=C48808&labelColor=2E2010" /></a>
+  <a href="https://github.com/d4shm1r/amagra/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/d4shm1r/amagra?style=flat-square&logo=github&logoColor=white&color=C48808&labelColor=2E2010" /></a>
+  <a href="https://github.com/d4shm1r/amagra/issues"><img alt="Open issues" src="https://img.shields.io/github/issues/d4shm1r/amagra?style=flat-square&color=C48808&labelColor=2E2010" /></a>
+  <a href="https://github.com/d4shm1r/amagra/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/d4shm1r/amagra?style=flat-square&color=C48808&labelColor=2E2010" /></a>
+  <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-C48808?style=flat-square&logo=python&logoColor=white&labelColor=2E2010" />
+  <img alt="Self-hosted" src="https://img.shields.io/badge/self--hosted-✓-C48808?style=flat-square&labelColor=2E2010" />
 </p>
 
 <p align="center">
