@@ -156,6 +156,62 @@ def test_public_analytics_routes_are_open():
     assert not failures, "\n".join(failures)
 
 
+# ── S1: boot fails closed in production without auth ──────────
+
+def test_production_without_auth_refuses_to_boot():
+    """ENV=production + REQUIRE_AUTH=0 must raise, not boot wide open (S1)."""
+    import api as _api
+    import pytest as _pytest
+    with _pytest.raises(RuntimeError, match="REQUIRE_AUTH"):
+        _api._auth_safety_check("production", require_auth=False)
+
+
+def test_production_with_auth_boots():
+    """ENV=production + REQUIRE_AUTH=1 is the safe combo — must not raise (S1)."""
+    import api as _api
+    _api._auth_safety_check("production", require_auth=True)  # no raise
+
+
+def test_dev_without_auth_warns_but_boots():
+    """Dev mode stays permissive — warns but does not raise (S1)."""
+    import api as _api
+    _api._auth_safety_check("development", require_auth=False)  # no raise
+
+
+# ── S5: admin token uses a constant-time compare ──────────────
+
+def test_admin_wrong_token_rejected():
+    """A wrong admin token must 403 (constant-time compare, S5)."""
+    import api as _api
+    _orig = _api._ADMIN_TOKEN
+    _api._ADMIN_TOKEN = "the-real-admin-token"
+    try:
+        key = _make_key("admin-s5@example.com", "developer")
+        r = client.delete(
+            "/admin/keys/999999",
+            headers={"X-Admin-Token": "wrong-token", "X-API-Key": key},
+        )
+        assert r.status_code == 403, f"Expected 403, got {r.status_code}"
+    finally:
+        _api._ADMIN_TOKEN = _orig
+
+
+def test_admin_correct_token_passes_gate():
+    """The correct admin token must pass the admin gate (S5)."""
+    import api as _api
+    _orig = _api._ADMIN_TOKEN
+    _api._ADMIN_TOKEN = "the-real-admin-token"
+    try:
+        key = _make_key("admin-s5-ok@example.com", "developer")
+        r = client.delete(
+            "/admin/keys/999999",
+            headers={"X-Admin-Token": "the-real-admin-token", "X-API-Key": key},
+        )
+        assert r.status_code != 403, f"Correct admin token was rejected: {r.status_code}"
+    finally:
+        _api._ADMIN_TOKEN = _orig
+
+
 # ── Entry point ───────────────────────────────────────────────
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 import sys
 import os
 import asyncio
+import secrets
 import sqlite3
 import time
 from contextlib import asynccontextmanager
@@ -49,18 +50,26 @@ from routes.tasks import task_worker
 _ENV = os.environ.get("ENV", "development").lower()
 
 
+def _auth_safety_check(env: str, require_auth: bool) -> None:
+    """Fail closed: refuse to boot in production without auth (S1).
+
+    Pure helper so the boot-time guard is unit-testable without starting the
+    background workers `lifespan` spins up.
+    """
+    if env == "production" and not require_auth:
+        raise RuntimeError(
+            "REQUIRE_AUTH=0 in production ENV — set REQUIRE_AUTH=1 to protect endpoints"
+        )
+    if not require_auth:
+        print("⚠  [startup] REQUIRE_AUTH=0 — all endpoints are open (dev mode)")
+        print("⚠  [startup] Set REQUIRE_AUTH=1 before exposing to the internet")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     asyncio.create_task(maintenance_loop())
 
-    # ── Auth safety check ─────────────────────────────────────
-    if _ENV == "production" and not _REQUIRE_AUTH:
-        raise RuntimeError(
-            "REQUIRE_AUTH=0 in production ENV — set REQUIRE_AUTH=1 to protect endpoints"
-        )
-    if not _REQUIRE_AUTH:
-        print("⚠  [startup] REQUIRE_AUTH=0 — all endpoints are open (dev mode)")
-        print("⚠  [startup] Set REQUIRE_AUTH=1 before exposing to the internet")
+    _auth_safety_check(_ENV, _REQUIRE_AUTH)
 
     try:
         from memory_core.backend import get_backend, promote_if_needed
@@ -152,7 +161,8 @@ async def auth_middleware(request: Request, call_next):
                 {"detail": "Admin access disabled. Set ADMIN_TOKEN env var to enable."},
                 status_code=503,
             )
-        if request.headers.get("X-Admin-Token", "") != _ADMIN_TOKEN:
+        # Constant-time compare so the admin token can't be recovered by timing (S5).
+        if not secrets.compare_digest(request.headers.get("X-Admin-Token", ""), _ADMIN_TOKEN):
             return JSONResponse({"detail": "X-Admin-Token required"}, status_code=403)
 
     # ── Customer key gate (deny-by-default) ──────────────────────────────────

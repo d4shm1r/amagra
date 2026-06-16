@@ -5,6 +5,7 @@ POSIX-only (setrlimit/setsid); skipped elsewhere.
 """
 
 import os
+import resource
 import sys
 
 import pytest
@@ -34,6 +35,26 @@ def test_timeout_is_enforced():
     r = sbx.run_python("while True: pass", timeout=1, cpu_seconds=10)
     assert r["timed_out"] is True
     assert r["duration_ms"] >= 900
+
+
+@pytest.mark.skipif(not hasattr(resource, "RLIMIT_NPROC"),
+                    reason="RLIMIT_NPROC unavailable")
+def test_nproc_limit_blocks_fork_bomb():
+    """RLIMIT_NPROC must stop runaway process creation (S4 fork-bomb guard)."""
+    code = (
+        "import os, sys\n"
+        "n = 0\n"
+        "try:\n"
+        "    while n < 10000:\n"
+        "        if os.fork() == 0:\n"
+        "            os._exit(0)\n"
+        "        n += 1\n"
+        "except OSError:\n"
+        "    sys.exit(7)\n"  # hit the NPROC ceiling — the limit held
+    )
+    r = sbx.run_python(code, timeout=5, nproc=16)
+    # What must NOT happen is a clean exit 0 (10k forks all succeeded).
+    assert r["exit_code"] != 0
 
 
 def test_cpu_limit_kills_busy_loop():
