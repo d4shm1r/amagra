@@ -30,7 +30,7 @@ This is the orientation map. Each area links to the canonical document — this 
 | Memory | SQLite → auto-promote to FAISS at 800 entries · 628+ vectors · P50 0.38ms · 52× LRU cache |
 | UCI health | h_UCI ≈ 80.8 (internal heuristic, not a quality measure — not surfaced publicly) |
 | API surface | 100+ endpoints (132 routes) |
-| Tests | 766 passing |
+| Tests | 790 passing |
 | Auth | API-key, deny-by-default when `REQUIRE_AUTH=1` |
 
 ---
