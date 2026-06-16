@@ -267,6 +267,15 @@ curl -X POST http://localhost:8000/admin/keys \
 
 Rate limits are returned on every authenticated response as `X-RateLimit-Limit`, `X-RateLimit-Used`, `X-RateLimit-Remaining`.
 
+### Before you expose it beyond localhost
+
+Amagra is local-first; the defaults assume a trusted single user on `localhost`. Read this before binding to a public interface:
+
+- **Set `REQUIRE_AUTH=1`.** It's off by default. The server *refuses to boot* with `ENV=production` and `REQUIRE_AUTH=0` — but that guard only fires when `ENV=production` is actually set, so set both. Without auth, all routes are open.
+- **`AMAGRA_SANDBOX=1` is a resource jail, not a security boundary.** The Python sandbox (`POST /sandbox/run`) limits CPU/memory/processes/time, but **does not isolate the network or the filesystem** — sandboxed code can open sockets and read any file the server process can. Never enable it on a network-exposed instance without OS-level isolation: run the whole server in a container with `--network none` (or `seccomp`/`nsjail`/`bubblewrap`). On localhost-only, it's fine.
+- **`AMAGRA_AGENT_TOOLS=1` + web search is a prompt-injection exfiltration path.** When the in-agent tool loop is on, untrusted content (a file the agent reads, a web-search snippet) can steer the model into leaking data through a `web_search` query. Keep it off when handling sensitive data, or run without a configured web-search provider.
+- **Set `ADMIN_TOKEN`** to a strong random value; admin routes are disabled until you do.
+
 ---
 
 ## Known limitations
