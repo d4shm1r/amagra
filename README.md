@@ -9,6 +9,10 @@
   <img alt="Self-hosted" src="https://img.shields.io/badge/self--hosted-✓-success" />
 </p>
 
+<p align="center">
+  <b>A self-hosted, local-first AI assistant with persistent memory — a private ChatGPT alternative that runs entirely on your own hardware via <a href="https://ollama.com">Ollama</a>.</b>
+</p>
+
 ### The AI you can trust with long-term work.
 
 It remembers what you've done, explains every decision, and runs entirely on your hardware.
@@ -30,6 +34,28 @@ It remembers what you've done, explains every decision, and runs entirely on you
 - **Specialists handle the work they understand best** — the right expert answers each question, automatically.
 - **Pick up where you left off** — every conversation keeps its context; switch projects without losing your place.
 - **Yours to run** — MIT licensed, self-hosted on your own machine. Nothing leaves your hardware.
+
+---
+
+## Why not just use Ollama, OpenWebUI, or ChatGPT?
+
+You can — and for one-off questions you probably should. Amagra is for the times you
+come back to the *same* work for weeks and need the tool to remember it and show its
+reasoning. The honest trade-offs:
+
+| | **Amagra** | Plain Ollama / OpenWebUI | Cloud ChatGPT / Claude |
+|---|:---:|:---:|:---:|
+| Runs fully local & offline | ✅ | ✅ | ❌ |
+| Persistent memory across sessions | ✅ built-in | ⚠️ manual / limited | ⚠️ cloud-stored |
+| Every answer inspectable & replayable | ✅ | ❌ | ❌ |
+| Routes each question to a specialist | ✅ | ❌ | ❌ |
+| Your data never leaves your machine | ✅ | ✅ | ❌ |
+| Frontier-grade model quality | ❌ your local model | ❌ | ✅ |
+| Zero setup | ❌ | ⚠️ | ✅ |
+
+If you want the strongest possible single answer right now, use a frontier cloud model.
+If you want a private workspace that *accumulates* context and never asks you to trust a
+black box, that's the gap Amagra fills.
 
 ---
 
