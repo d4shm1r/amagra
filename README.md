@@ -69,7 +69,7 @@ The experience is the point. The numbers are here if you want them.
 | Memory retrieval (FAISS, warm) | **< 1 ms** | LRU cache hit |
 | Memory retrieval (cold embed) | ~60–80 ms | nomic-embed-text via Ollama |
 | Skill graph coverage | **21 nodes** | Phrase-weighted disambiguation across all 10 agents |
-| Test suite | **766 passing** | ruff + pytest + Docker build on every push and PR |
+| Test suite | **790 passing** | ruff + pytest + Docker build on every push and PR |
 | Free tier | **100 req / day** | No card required — `POST /register/free` |
 
 > Routing quality is measured honestly, not marketed: there's a wide gap between a self-authored curated set and a held-out adversarial one, and live telemetry (`GET /telemetry/routing`) tracks the real thing. The numbers, the method, the confidence intervals, and the known failure modes all live in [docs/FINDINGS.md](docs/FINDINGS.md) — including why we don't quote a single headline accuracy figure.
@@ -370,7 +370,7 @@ Issues and PRs welcome — see **[CONTRIBUTING.md](CONTRIBUTING.md)** for setup,
 
 ```bash
 ruff check .                                  # lint
-PYTHONPATH=. python3 -m pytest tests/ -q      # 766 tests
+PYTHONPATH=. python3 -m pytest tests/ -q      # 790 tests
 PYTHONPATH=. python3 evaluation/ablation_eval.py   # routing benchmark
 ```
 
