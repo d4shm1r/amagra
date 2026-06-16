@@ -10,7 +10,9 @@ embed    Embedding — must stay consistent with the FAISS index.
 Env vars
 --------
 SIGNAL_PROVIDER = ollama (default, only option)
-BRAIN_PROVIDER  = ollama | anthropic  (default: ollama)
+BRAIN_PROVIDER  = ollama | anthropic | openai  (default: ollama)
+                  openai = any OpenAI-compatible API (OpenAI/Groq/OpenRouter/
+                  Together/LM Studio/remote Ollama) via OPENAI_BASE_URL
 EMBED_PROVIDER  = ollama (default, only option)
 
 Singletons are lazy — nothing is instantiated on import. The first
@@ -22,6 +24,9 @@ from __future__ import annotations
 import os
 
 from providers.base import EmbeddingProvider, ModelProvider
+
+# Backends served by the single OpenAI-compatible adapter (one adapter, many vendors).
+_OPENAI_COMPAT_BACKENDS = {"openai", "openai_compat", "groq", "openrouter", "together", "lmstudio"}
 
 _model_cache: dict[str, ModelProvider] = {}
 _embed_cache: dict[str, EmbeddingProvider] = {}
@@ -42,6 +47,9 @@ def get_provider(role: str) -> ModelProvider:
         if backend == "anthropic":
             from providers.anthropic import AnthropicProvider
             _model_cache[cache_key] = AnthropicProvider()
+        elif backend in _OPENAI_COMPAT_BACKENDS:
+            from providers.openai_compat import OpenAICompatProvider
+            _model_cache[cache_key] = OpenAICompatProvider()
         else:
             from providers.ollama import OllamaProvider
             _model_cache[cache_key] = OllamaProvider()
