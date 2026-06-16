@@ -1,0 +1,5 @@
+# Cloudflare Pages routing.
+# Serve the marketing landing page at the root. The Vite app's index.html is the
+# dashboard, which is a LOCAL tool (talks to localhost:8000) and is useless on the
+# public domain — so / rewrites to /landing.html (200 = rewrite, URL stays "/").
+/    /landing.html    200
