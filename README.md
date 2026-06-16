@@ -47,7 +47,7 @@ The experience is the point. The numbers are here if you want them.
 | Test suite | **766 passing** | ruff + pytest + Docker build on every push and PR |
 | Free tier | **100 req / day** | No card required — `POST /register/free` |
 
-> Real-world routing accuracy is tracked via telemetry (`GET /telemetry/routing`) from actual usage. The curated-eval figure above is an internal benchmark — treat it as indicative, not definitive. The two numbers bracket reality: the 99% says "the rules recognise prompts that resemble the rules"; the 42% (`evaluation/adversarial_eval.py`) says "on deliberately hard, keyword-free prompts the rules stop generalising and collapse to the fallback agent." Production sits somewhere between, closer to the floor than the ceiling. Both are single-author, single-rater metrics — neither is a validated benchmark.
+> Real-world routing accuracy is tracked via telemetry (`GET /telemetry/routing`) from actual usage. The curated-eval figure above is an internal benchmark — treat it as indicative, not definitive. The two numbers bracket reality: the 99% says "the rules recognise prompts that resemble the rules"; the 42% (`evaluation/adversarial_eval.py`) says "on deliberately hard, keyword-free prompts the rules stop generalising and collapse to the fallback agent." Production sits somewhere between, closer to the floor than the ceiling. Both are single-author, single-rater metrics — neither is a validated benchmark. To move past "single-rater," `evaluation/rater_harness.py` collects independent blind labels and reports Fleiss' κ; a κ ≳ 0.6 is the bar before any number here is worth defending, and its majority vote becomes the consensus gold labels.
 
 ---
 
