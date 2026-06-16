@@ -40,13 +40,14 @@ The experience is the point. The numbers are here if you want them.
 | Metric | Value | Notes |
 |---|---|---|
 | Signal-first routing (curated eval) | **99%** | 138-query ablation, same set used for tuning — not an independent benchmark |
+| Signal-first routing (adversarial) | **~42%** | 33 held-out cross-domain / keyword-decoy / paraphrase prompts, 95% CI [27%, 59%] — the honest floor |
 | Memory retrieval (FAISS, warm) | **< 1 ms** | LRU cache hit |
 | Memory retrieval (cold embed) | ~60–80 ms | nomic-embed-text via Ollama |
 | Skill graph coverage | **21 nodes** | Phrase-weighted disambiguation across all 10 agents |
 | Test suite | **766 passing** | ruff + pytest + Docker build on every push and PR |
 | Free tier | **100 req / day** | No card required — `POST /register/free` |
 
-> Real-world routing accuracy is tracked via telemetry (`GET /telemetry/routing`) from actual usage. The curated-eval figure above is an internal benchmark — treat it as indicative, not definitive.
+> Real-world routing accuracy is tracked via telemetry (`GET /telemetry/routing`) from actual usage. The curated-eval figure above is an internal benchmark — treat it as indicative, not definitive. The two numbers bracket reality: the 99% says "the rules recognise prompts that resemble the rules"; the 42% (`evaluation/adversarial_eval.py`) says "on deliberately hard, keyword-free prompts the rules stop generalising and collapse to the fallback agent." Production sits somewhere between, closer to the floor than the ceiling. Both are single-author, single-rater metrics — neither is a validated benchmark.
 
 ---
 
