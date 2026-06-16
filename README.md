@@ -10,12 +10,12 @@
 </p>
 
 <p align="center">
-  <b>A self-hosted, local-first AI assistant with persistent memory — a private ChatGPT alternative that runs entirely on your own hardware via <a href="https://ollama.com">Ollama</a>.</b>
+  <b>A self-hosted, local-first AI assistant with persistent memory — and it shows its work. Runs entirely on your own hardware via <a href="https://ollama.com">Ollama</a>.</b>
 </p>
 
 ### The AI you can trust with long-term work.
 
-It remembers what you've done, explains every decision, and runs entirely on your hardware.
+It remembers your projects across sessions, and **every routing decision is logged and replayable** — so you can see exactly why it answered the way it did. Nothing is a black box, and nothing leaves your hardware.
 
 ![Chat](docs/screenshots/chat.png)
 
@@ -65,15 +65,14 @@ The experience is the point. The numbers are here if you want them.
 
 | Metric | Value | Notes |
 |---|---|---|
-| Signal-first routing (curated eval) | **99%** | 138-query ablation, same set used for tuning — not an independent benchmark |
-| Signal-first routing (adversarial) | **~42%** | 33 held-out cross-domain / keyword-decoy / paraphrase prompts, 95% CI [27%, 59%] — the honest floor |
+| Routing | keyword-first, then LLM | Every decision is logged and replayable — see accuracy & method in [docs/FINDINGS.md](docs/FINDINGS.md) |
 | Memory retrieval (FAISS, warm) | **< 1 ms** | LRU cache hit |
 | Memory retrieval (cold embed) | ~60–80 ms | nomic-embed-text via Ollama |
 | Skill graph coverage | **21 nodes** | Phrase-weighted disambiguation across all 10 agents |
 | Test suite | **766 passing** | ruff + pytest + Docker build on every push and PR |
 | Free tier | **100 req / day** | No card required — `POST /register/free` |
 
-> Real-world routing accuracy is tracked via telemetry (`GET /telemetry/routing`) from actual usage. The curated-eval figure above is an internal benchmark — treat it as indicative, not definitive. The two numbers bracket reality: the 99% says "the rules recognise prompts that resemble the rules"; the 42% (`evaluation/adversarial_eval.py`) says "on deliberately hard, keyword-free prompts the rules stop generalising and collapse to the fallback agent." Production sits somewhere between, closer to the floor than the ceiling. Both are single-author, single-rater metrics — neither is a validated benchmark. To move past "single-rater," `evaluation/rater_harness.py` collects independent blind labels and reports Fleiss' κ; a κ ≳ 0.6 is the bar before any number here is worth defending, and its majority vote becomes the consensus gold labels.
+> Routing quality is measured honestly, not marketed: there's a wide gap between a self-authored curated set and a held-out adversarial one, and live telemetry (`GET /telemetry/routing`) tracks the real thing. The numbers, the method, the confidence intervals, and the known failure modes all live in [docs/FINDINGS.md](docs/FINDINGS.md) — including why we don't quote a single headline accuracy figure.
 
 ---
 
@@ -212,9 +211,6 @@ curl http://localhost:8000/memory/stats
 # Live routing telemetry
 curl http://localhost:8000/telemetry/routing
 
-# System intelligence score
-curl http://localhost:8000/cos/uci/hierarchical
-
 # Active execution plan (DAG)
 curl http://localhost:8000/plan/graph
 
@@ -226,9 +222,9 @@ Full API docs at `http://localhost:8000/docs`.
 
 ---
 
-## Cognitive OS
+## Observability — see and replay everything
 
-Amagra ships a runtime layer that makes agent behaviour observable and steerable at every step.
+The reason to choose Amagra over a plain local chat UI: agent behaviour is observable and replayable at every step, not a black box. These are concrete components, not a framework — each emits to a UI panel you can browse live.
 
 | Component | What it does |
 |---|---|
