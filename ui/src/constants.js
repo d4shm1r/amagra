@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.1.1";
+export const VERSION = "1.1.2";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -544,6 +544,18 @@ export const BUILD_PHASES = [
       "Test suite 719 → 766 passing",
     ],
   },
+  {
+    id: 77, version: "v1.1.2", date: "Jun 16, 2026",
+    label: "Eval Rigor & Security Hardening", title: "Eval Rigor & Security Hardening", color: "#15803D", status: "done",
+    summary: "An honesty-and-hardening release: collapses the redundant keyword router, closes routing-eval label leakage, ships a sealed adversarial routing set with confidence intervals, and lands the §3 security review fixes. Test suite grows 766 → 790.",
+    steps: [
+      "Router collapse — removed the discarded keyword router from the coordinator hot path; core_brain is the sole routing authority (#20)",
+      "Label-leakage guard — learned-router training drops fuzzy-joined and thumbs-down traces (trustworthy_only); DOMAIN_TO_AGENT KeyError guard (#19, #20)",
+      "Sealed adversarial routing set — held-out paraphrase + cross-domain prompts with Wilson CIs, plus a Fleiss' κ multi-rater agreement harness; honest accuracy floor documented in FINDINGS.md",
+      "Security (§3 review) — constant-time admin-token compare, RLIMIT_NPROC fork-bomb guard, exposure docs, and a fail-closed prod-boot regression test (S1/S4/S5, PR #24)",
+      "Test suite 766 → 790 passing",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -704,6 +716,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.1.2", label: "Eval Rigor & Security", color: "#15803D",  phases: [77] },
   { version: "v1.1.1", label: "Tools in Default Path", color: "#15803D",  phases: [76] },
   { version: "v1.1.0", label: "Tool-Using Agents",    color: "#15803D",  phases: [75] },
   { version: "v1.0.0", label: "First Public Release", color: "#15803D",  phases: [70, 71, 72, 73, 74] },

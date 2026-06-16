@@ -1,6 +1,6 @@
 # Project Map — Amagra
 
-**Updated:** 2026-06-15 · **Version:** v1.1.1
+**Updated:** 2026-06-16 · **Version:** v1.1.2
 **Mission:** the local-first cognitive runtime developers build agents on top of.
 
 This is the orientation map. Each area links to the canonical document — this file does **not** duplicate their content.
@@ -23,7 +23,7 @@ This is the orientation map. Each area links to the canonical document — this 
 
 | | |
 |---|---|
-| Version | v1.1.1 (tools in default path) |
+| Version | v1.1.2 (eval rigor & security hardening) |
 | Specialist agents | 10 (`agents/registry.py` is canonical) |
 | Skill graph | 21 nodes |
 | Routing accuracy | ~99% curated · ~42% held-out adversarial (internal metrics, not validated — see docs/FINDINGS.md §3a) |
@@ -78,6 +78,7 @@ Endpoint and UI-tab inventories live in [REFERENCE.md](REFERENCE.md); they are n
 | **v1.0.4** | **Tool-using foundations** (file/sandbox/web tools, thread mgmt, chat affordances) | ✅ Shipped |
 | **v1.1.0** | **Tool-using agents** (live web search, in-agent tool loop, Simple/Advanced UI) | ✅ Shipped |
 | **v1.1.1** | **Tools in the default path** (config-gated tool loop in all agents, domain-affinity memory, learned-router auto-retrain, multilingual leak fix) | ✅ Shipped |
+| **v1.1.2** | **Eval rigor & security hardening** (router collapse, routing-eval leakage guard, sealed adversarial set + Fleiss' κ, §3 security fixes) | ✅ Shipped |
 | v1.2 → v2.0 | Providers · workspaces · team memory · agent registry | ⬜ Planned |
 
 See [ROADMAP.md](ROADMAP.md) for the full forward plan and [HISTORY.md](HISTORY.md) for the per-phase record.
