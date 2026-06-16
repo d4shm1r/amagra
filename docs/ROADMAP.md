@@ -101,6 +101,20 @@ Agents that do things, not just say things. Closes the gap vs Continue/Cursor/Cl
 
 ---
 
+### v1.1.2 — Eval Rigor & Security Hardening *(✅ shipped 2026-06-16)*
+
+A maintenance release — no new user-facing capability, but routing claims and the threat surface are now defensible. Prompted by an external multi-model review.
+
+| Item | Status |
+|------|--------|
+| Router collapse — remove the discarded keyword router from the hot path; `core_brain` is the sole authority (#20) | ✅ shipped |
+| Routing-eval leakage guard — drop fuzzy-joined + thumbs-down traces from learned-router training (#19) | ✅ shipped |
+| Sealed adversarial routing set + Fleiss' κ multi-rater harness — the honest accuracy floor, documented in FINDINGS.md | ✅ shipped |
+| Security (§3 review) — constant-time admin compare, `RLIMIT_NPROC` fork-bomb guard, exposure docs, fail-closed boot test (PR #24) | ✅ shipped |
+| Test suite 766 → 790 | ✅ shipped |
+
+---
+
 ### v1.2 — Multi-Provider & Workspaces
 
 Break the single-model ceiling and give each project its own isolated space.

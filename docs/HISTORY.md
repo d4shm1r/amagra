@@ -322,6 +322,32 @@ Post-debut hardening — the deferred pre-launch engineering, none of which bloc
 
 Residual v1.0.1 item: the public launch (Show HN / r/LocalLLaMA / self-host catalogs) — a marketing action, not code.
 
+### v1.1.2 — Eval Rigor & Security Hardening ✅
+
+**Period:** 2026-06-16
+
+An honesty-and-hardening release prompted by an external multi-model review — no new
+user-facing features, but the routing claims and the threat surface are now defensible.
+
+- **Router collapse** (#20) — the keyword router (`router.py`) was computed and then
+  discarded on every request while `core_brain` made the real decision. Removed it from
+  the coordinator hot path; `core_brain` is now the sole routing authority, the crash
+  fallback routes to `knowledge_learning`, and `router.py` stays as a tested library.
+  Retires the keyword-table drift between `router.py` and `core_brain`.
+- **Routing-eval leakage guard** (#19) — learned-router training now drops
+  fuzzy-joined (`SequenceMatcher`) and thumbs-down traces (`trustworthy_only=True`),
+  so it stops behaviour-cloning its own historical mistakes; `DOMAIN_TO_AGENT`
+  KeyError guard added.
+- **Sealed adversarial routing set** — `evaluation/adversarial_eval.py` (held-out
+  paraphrase + cross-domain prompts) and `evaluation/rater_harness.py` (Fleiss' κ
+  multi-rater agreement + consensus gold labels). Confirms the gap between the
+  curated ceiling and the adversarial floor; numbers, method, and CIs documented in
+  `docs/FINDINGS.md` — no single headline accuracy figure.
+- **Security (§3 review, PR #24)** — constant-time `secrets.compare_digest` admin-token
+  check (S5), `RLIMIT_NPROC` fork-bomb guard in the sandbox (S4), a README "before you
+  expose it beyond localhost" section, and a fail-closed prod-boot regression test (S1).
+- Test suite **766 → 790**.
+
 ### v1.1.1 — Tools in the Default Path & Retrieval Polish ✅
 
 **Period:** 2026-06-15
@@ -441,20 +467,20 @@ ships a single file.
 - **Community profile** — `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SECURITY.md`
 - **Gilded Calm social-preview card** (1280×640) for GitHub link sharing
 
-**Live Snapshot (2026-06-15):**
+**Live Snapshot (2026-06-16):**
 
 | Metric | Value |
 |--------|-------|
-| Version | v1.1.1 (tools in default path) |
-| Routing accuracy | 97% full · 99% signal-only |
+| Version | v1.1.2 (eval rigor & security hardening) |
+| Routing accuracy | measured honestly — curated ceiling vs sealed adversarial floor, see [FINDINGS.md](FINDINGS.md) (no single headline figure) |
 | Specialist agents | 10 (registry-canonical) |
 | FAISS vectors | 628+ at 0.38ms P50 |
 | API endpoints | 100+ (132 routes) |
-| Build phases complete | 37 (+ v0.9 → v1.1.1 releases) |
+| Build phases complete | 38 (+ v0.9 → v1.1.2 releases) |
 | UCI score | ~80.8 |
 | Auth | API key auth (REQUIRE_AUTH=0 dev, 1 prod) |
 | Docker | Dockerfile + docker-compose.yml with GPU passthrough |
-| Test suite | 766 passing |
+| Test suite | 790 passing |
 
 ---
 
