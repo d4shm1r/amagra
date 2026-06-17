@@ -39,7 +39,8 @@ _REQUIRE_AUTH = os.environ.get("REQUIRE_AUTH", "0") == "1"
 _ADMIN_TOKEN  = os.environ.get("ADMIN_TOKEN", "")
 
 # Deny-by-default: only these paths bypass the customer key gate
-_PUBLIC_PATHS    = {"/", "/health", "/usage", "/openapi.json", "/pricing", "/register/free", "/setup/status", "/setup/pull"}
+_PUBLIC_PATHS    = {"/", "/health", "/usage", "/openapi.json", "/pricing", "/register/free", "/setup/status", "/setup/pull",
+                    "/checkout/session", "/checkout/status", "/webhook/stripe", "/launch/readiness"}
 _PUBLIC_PREFIXES = ("/docs", "/redoc")  # FastAPI UI and Amagra docs sub-paths
 
 # Per-minute request caps per tier (0 = unlimited)
@@ -271,6 +272,8 @@ from routes.sandbox     import router as sandbox_router
 from routes.search      import router as search_router
 from routes.tools       import router as tools_router
 from routes.settings_provider import router as settings_provider_router
+from routes.payments    import router as payments_router
+from routes.readiness   import router as readiness_router
 
 app.include_router(core_router)
 app.include_router(register_router)
@@ -293,6 +296,8 @@ app.include_router(sandbox_router)
 app.include_router(search_router)
 app.include_router(tools_router)
 app.include_router(settings_provider_router)
+app.include_router(payments_router)
+app.include_router(readiness_router)
 
 # ── Bundled UI ────────────────────────────────────────────────────────────────
 # Mounted LAST so every API route above takes precedence. html=True serves

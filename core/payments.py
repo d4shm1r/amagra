@@ -78,6 +78,16 @@ def _mark_event_processed(event_id: str, event_type: str) -> None:
         pass
 
 
+def is_configured() -> bool:
+    """Whether this deployment can create paid checkout sessions."""
+    return bool(_STRIPE_KEY and any(PLAN_TO_PRICE.values()))
+
+
+def is_webhook_configured() -> bool:
+    """Whether incoming Stripe webhooks can be signature-verified."""
+    return bool(_WEBHOOK_SECRET)
+
+
 def _stripe():
     """Lazy import stripe so missing package doesn't break the whole API."""
     try:
