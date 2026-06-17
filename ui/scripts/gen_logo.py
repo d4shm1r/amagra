@@ -1,16 +1,16 @@
 """Render the Amagra README wordmark — "AMAGRA" in the exact dashboard style.
 
-Matches ui/public/landing.html .logo-text: DM Sans ExtraBold (800), letter-spacing
-0.10em, and the symmetric 135deg gold gradient (g5 0% -> g2 52% -> g5 100%).
-Transparent background so it reads on GitHub light and dark themes. Drawn at 3x
-then downscaled with LANCZOS.
+Matches ui/src/HomeTab.jsx hero: Cormorant Garamond SemiBold (600), letter-spacing
+0.07em, and the symmetric 135deg gold gradient (LUX.goldText: g5 0% -> g2 52% ->
+g5 100%). Transparent background so it reads on GitHub light and dark themes.
+Drawn at 3x then downscaled with LANCZOS.
 """
 import os
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 OUT = "/home/dashmir/agentic-ai/docs/amagra-logo.png"
-FONT = os.path.join(os.path.dirname(__file__), "fonts", "DMSans-ExtraBold.ttf")
+FONT = os.path.join(os.path.dirname(__file__), "fonts", "CormorantGaramond-SemiBold.ttf")
 SS = 3
 
 # exact .logo-text stops: 135deg, g5/g4/g3/g2/g3/g4/g5 (symmetric metallic sheen)
@@ -39,8 +39,8 @@ def gold_lut():
     return np.array(out, dtype=np.uint8)
 
 TEXT = "AMAGRA"
-font_px = 200 * SS
-tracking = int(0.10 * font_px)          # letter-spacing: 0.10em
+font_px = 220 * SS
+tracking = int(0.07 * font_px)          # letter-spacing: 0.07em (dashboard hero)
 pad_x = 16 * SS
 pad_y = 28 * SS
 font = ImageFont.truetype(FONT, font_px)
@@ -69,4 +69,4 @@ idx = np.clip((t * 255).astype(int), 0, 255)
 rgba = np.dstack([lut[idx], np.array(mask)]).astype(np.uint8)
 img = Image.fromarray(rgba, "RGBA").resize((W // SS, H // SS), Image.LANCZOS)
 img.save(OUT)
-print(f"wrote {OUT}  {img.size}  font=DM Sans ExtraBold")
+print(f"wrote {OUT}  {img.size}  font=Cormorant Garamond SemiBold")

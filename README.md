@@ -12,14 +12,20 @@
 </p>
 
 <p align="center">
-  <b>A self-hosted, local-first AI assistant with persistent memory — and it shows its work. Runs entirely on your own hardware via <a href="https://ollama.com">Ollama</a>.</b>
+  <b>A self-hosted AI workspace that remembers your work — and shows its reasoning.</b>
 </p>
 
-### The AI you can trust with long-term work.
+<p align="center">
+  Amagra runs entirely on your own hardware via <a href="https://ollama.com">Ollama</a>. It keeps the
+  context of your projects across sessions, routes each question to the specialist that handles it
+  best, and <b>logs every decision so you can replay exactly why it answered the way it did</b>.
+  <br />
+  No black box. Nothing leaves your machine.
+</p>
 
-It remembers your projects across sessions, and **every routing decision is logged and replayable** — so you can see exactly why it answered the way it did. Nothing is a black box, and nothing leaves your hardware.
-
-![Chat](docs/screenshots/chat.png)
+<p align="center">
+  <img src="docs/screenshots/chat.png" width="90%" alt="Chat — talk to specialist agents with persistent memory" />
+</p>
 
 <p align="center">
   <img src="docs/screenshots/library.png" width="49%" alt="Library — persistent documents Amagra has read" />
