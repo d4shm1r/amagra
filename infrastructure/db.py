@@ -62,11 +62,14 @@ def path(name: str) -> str:
     if name not in REGISTRY:
         raise KeyError(f"unknown database '{name}'; known: {sorted(REGISTRY)}")
 
+    from infrastructure.paths import base_dir
+    root = base_dir()  # project dir by default; AMAGRA_DATA_DIR relocates (packaged app)
+
     single = _single_file()
     if single:
-        target = single if os.path.isabs(single) else os.path.join(_ROOT, single)
+        target = single if os.path.isabs(single) else os.path.join(root, single)
     else:
-        target = os.path.join(_ROOT, REGISTRY[name])
+        target = os.path.join(root, REGISTRY[name])
 
     parent = os.path.dirname(target)
     if parent:

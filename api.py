@@ -21,6 +21,20 @@ from fastapi.responses import JSONResponse
 
 import core.api_keys as _ak
 
+# Bundled UI: when ui/build exists, FastAPI serves it so the whole app runs as a
+# single process on one port (no Node/Vite at runtime). Desktop builds rely on this.
+_UI_BUILD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui", "build")
+
+
+def _is_static_asset(path: str) -> bool:
+    """True if path maps to a real file in the bundled UI (or the SPA root)."""
+    if not os.path.isdir(_UI_BUILD):
+        return False
+    if path == "/":
+        return True
+    candidate = os.path.normpath(os.path.join(_UI_BUILD, path.lstrip("/")))
+    return candidate.startswith(_UI_BUILD) and os.path.isfile(candidate)
+
 _REQUIRE_AUTH = os.environ.get("REQUIRE_AUTH", "0") == "1"
 _ADMIN_TOKEN  = os.environ.get("ADMIN_TOKEN", "")
 
@@ -70,6 +84,18 @@ async def lifespan(app: FastAPI):
     asyncio.create_task(maintenance_loop())
 
     _auth_safety_check(_ENV, _REQUIRE_AUTH)
+
+    # Apply any saved provider/model choice from the Settings UI before serving.
+    # This wins over import-time defaults regardless of module import order.
+    try:
+        from infrastructure import provider_config as _pc
+        _saved = _pc.load()
+        if _saved:
+            _pc.apply_to_env(_saved)
+            _pc.reload_runtime()
+            print(f"[startup] Provider config applied: {_saved.get('provider', 'ollama')}")
+    except Exception as e:
+        print(f"[startup] provider config load skipped: {e}")
 
     try:
         from memory_core.backend import get_backend, promote_if_needed
@@ -138,7 +164,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Amagra", version="1.1.2", lifespan=lifespan)
+app = FastAPI(title="Amagra", version="1.2.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -168,7 +194,11 @@ async def auth_middleware(request: Request, call_next):
     # ── Customer key gate (deny-by-default) ──────────────────────────────────
     _usage = None
     if _REQUIRE_AUTH:
-        is_public = path in _PUBLIC_PATHS or any(path.startswith(p) for p in _PUBLIC_PREFIXES)
+        is_public = (
+            path in _PUBLIC_PATHS
+            or any(path.startswith(p) for p in _PUBLIC_PREFIXES)
+            or _is_static_asset(path)  # the bundled UI shell + assets are public
+        )
         if not is_public:
             raw = request.headers.get("X-API-Key", "")
             if not raw:
@@ -240,6 +270,7 @@ from routes.workspace   import router as workspace_router
 from routes.sandbox     import router as sandbox_router
 from routes.search      import router as search_router
 from routes.tools       import router as tools_router
+from routes.settings_provider import router as settings_provider_router
 
 app.include_router(core_router)
 app.include_router(register_router)
@@ -261,3 +292,17 @@ app.include_router(workspace_router)
 app.include_router(sandbox_router)
 app.include_router(search_router)
 app.include_router(tools_router)
+app.include_router(settings_provider_router)
+
+# ── Bundled UI ────────────────────────────────────────────────────────────────
+# Mounted LAST so every API route above takes precedence. html=True serves
+# index.html at "/" and resolves static files (assets, favicon, manifest) by path.
+# When there is no build (API-only / dev with the Vite server), expose the JSON
+# status at "/" instead so the root probe still answers.
+if os.path.isdir(_UI_BUILD):
+    from fastapi.staticfiles import StaticFiles
+    app.mount("/", StaticFiles(directory=_UI_BUILD, html=True), name="ui")
+else:
+    @app.get("/")
+    def _root_status():
+        return {"status": "online", "ui": "not bundled — run `vite build` in ui/"}

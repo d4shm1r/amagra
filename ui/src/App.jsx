@@ -34,6 +34,7 @@ import { BUILD_PHASES, AGENTS, VERSION } from "./constants";
 import PromptEditorTab    from "./PromptEditorTab";
 import SkillsTab          from "./SkillsTab";
 import PromisesTab        from "./PromisesTab";
+import ProviderSettingsTab from "./ProviderSettingsTab";
 import { T, LUX, FONT_UI, FONT_DISPLAY } from "./theme";
 
 // ── 4-surface navigation ──────────────────────────────────────
@@ -74,6 +75,7 @@ const INSPECT_TABS = [
 // Simple mode — Guide / Goals / Tasks / Releases are the ones a newcomer needs.
 const SETTINGS_TABS = [
   { id: "guide",    label: "Guide" },
+  { id: "model",    label: "Model" },
   { id: "research", label: "Research", adv: true },
   { id: "prompt",   label: "Prompts",  adv: true },
   { id: "goals",    label: "Goals" },
@@ -1128,6 +1130,7 @@ export default function App() {
               {activeTab === "plan-graph"    && <PlanGraphTab />}
               {activeTab === "skills"        && <SkillsTab />}
               {activeTab === "guide"         && <GuideTab />}
+              {activeTab === "model"         && <ProviderSettingsTab />}
               {activeTab === "goals"         && <GoalTracker />}
               {activeTab === "tasks"         && <TaskQueue />}
               {activeTab === "log"           && <LogTab sessionLog={sessionLog} onClear={() => setSessionLog([])} />}

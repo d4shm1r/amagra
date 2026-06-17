@@ -32,12 +32,17 @@ HEADERS = {"X-API-Key": _key}
 # ── GET / ─────────────────────────────────────────────────────────────────────
 
 def test_root():
+    # "/" now serves the bundled UI (single-origin desktop mode). When a build
+    # is present it returns the HTML shell; with no build, api.py falls back to a
+    # JSON status. Either way the root must answer 200 — machine clients use
+    # /health or /status for structured data.
     r = client.get("/", headers=HEADERS)
     assert r.status_code == 200
-    data = r.json()
-    assert "status" in data
-    assert data["status"] == "online"
-    assert "agents" in data
+    ctype = r.headers.get("content-type", "")
+    if "application/json" in ctype:
+        assert r.json()["status"] == "online"
+    else:
+        assert "html" in ctype
 
 
 # ── GET /health ───────────────────────────────────────────────────────────────

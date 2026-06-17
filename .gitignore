@@ -84,3 +84,9 @@ workspace/
 # Harness: evaluation/rater_harness.py; only consensus_gold.json is shareable.
 evaluation/ratings/*.json
 !evaluation/ratings/consensus_gold.json
+
+# Provider/model selection from the Settings UI (may contain an API key)
+provider_config.json
+
+# Desktop packaging build output (AppImage + staging)
+/dist/
