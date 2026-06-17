@@ -9,10 +9,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.state import AgentState
 from core.context_tools import trim_messages
 
-# Files may only be read from within this directory tree.
+# Files may only be read from within this directory tree. The temp dir is
+# resolved per-OS (gettempdir() = /tmp on Linux/Mac, %TEMP% on Windows) so the
+# read jail and the exec scratch file agree across platforms.
+_TMP_DIR = tempfile.gettempdir()
 _ALLOWED_ROOTS = (
     os.path.abspath(os.path.dirname(__file__) + "/.."),
-    "/tmp",
+    _TMP_DIR,
 )
 
 # ── System Prompt ─────────────────────────────────────────────
@@ -41,7 +44,7 @@ def run_python_code(code: str) -> str:
     try:
         with tempfile.NamedTemporaryFile(
             mode='w', suffix='.py',
-            delete=False, dir='/tmp'
+            delete=False, dir=_TMP_DIR
         ) as f:
             f.write(code)
             tmp_path = f.name

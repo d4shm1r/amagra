@@ -1,0 +1,46 @@
+#!/bin/bash
+# AppRun — entrypoint baked into the Amagra AppImage.
+#
+# Responsibilities:
+#   1. Keep user data OUT of the read-only AppImage mount — point AMAGRA_DATA_DIR
+#      at the OS user-data dir (infrastructure/paths.py agrees with this default).
+#   2. Run the bundled relocatable Python (from python-appimage) against the app,
+#      which serves both the API and the built UI on one port (api.py mounts ui/build).
+#   3. Wait for health, open the browser, and shut the server down on exit.
+#
+# Override with env: AMAGRA_PORT, AMAGRA_DATA_DIR, AMAGRA_NO_BROWSER=1.
+
+set -uo pipefail
+
+HERE="$(dirname "$(readlink -f "${0}")")"
+PYBIN="$HERE/opt/python3.12/bin/python3.12"     # provided by the python-appimage base
+APP="$HERE/opt/amagra"                           # our code + ui/build live here
+
+export AMAGRA_DATA_DIR="${AMAGRA_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/amagra}"
+mkdir -p "$AMAGRA_DATA_DIR"
+
+export PYTHONPATH="$APP${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONDONTWRITEBYTECODE=1
+PORT="${AMAGRA_PORT:-8000}"
+LOG="$AMAGRA_DATA_DIR/server.log"
+
+echo "Amagra → http://127.0.0.1:$PORT/   (data: $AMAGRA_DATA_DIR, log: $LOG)"
+
+# Serve the app (UI + API) on one port, bound to localhost.
+( cd "$APP" && exec "$PYBIN" -m uvicorn api:app --host 127.0.0.1 --port "$PORT" ) \
+    >"$LOG" 2>&1 &
+SRV=$!
+trap 'kill "$SRV" 2>/dev/null' INT TERM EXIT
+
+# Wait for the server to answer before opening a browser (first boot warms models).
+for _ in $(seq 1 80); do
+    curl -sf "http://127.0.0.1:$PORT/health" >/dev/null 2>&1 && break
+    kill -0 "$SRV" 2>/dev/null || { echo "Server exited early — see $LOG"; exit 1; }
+    sleep 0.5
+done
+
+if [ "${AMAGRA_NO_BROWSER:-0}" != "1" ]; then
+    xdg-open "http://127.0.0.1:$PORT/" >/dev/null 2>&1 || echo "Open http://127.0.0.1:$PORT/"
+fi
+
+wait "$SRV"

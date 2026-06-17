@@ -4,7 +4,7 @@ import sys
 import os  # path resolution
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.state import AgentState
-from models.llm import llm
+import models.llm as _llm  # reference _llm.llm live so a runtime provider switch is picked up
 
 # ── System Prompt ─────────────────────────────────────────────
 TERSE_SYSTEM_PROMPT = """You answer in the fewest words possible.
@@ -46,7 +46,7 @@ def terse_agent_node(state: AgentState):
         *trimmed,
     ]
 
-    response = llm.invoke(messages)
+    response = _llm.llm.invoke(messages)
 
     return {
         "messages":     [response],

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Amagra
+GenericName=Local AI Assistant
+Comment=Private, offline-first agentic AI — your choice of local or API models
+Exec=AppRun
+Icon=amagra
+Categories=Development;Utility;Science;
+Terminal=false
+StartupNotify=true
+Keywords=AI;assistant;agent;LLM;local;offline;

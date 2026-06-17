@@ -14,7 +14,7 @@ import re
 from dataclasses import dataclass
 from typing import Dict, List
 from langchain_core.messages import HumanMessage
-from models.llm import llm
+import models.llm as _llm  # reference _llm.llm live so a runtime provider switch is picked up
 from models.state import AgentState
 from infrastructure.dispatch import (
     Delta, DeltaBuilder, Tier, dispatch, register, unregister,
@@ -294,7 +294,7 @@ User query: {query}
 
 Agent:"""
     try:
-        response = llm.invoke(prompt)
+        response = _llm.llm.invoke(prompt)
         result = response.content.strip().lower().replace(" ", "_").replace("-", "_")
         if result in VALID_AGENTS:
             return result

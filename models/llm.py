@@ -85,3 +85,18 @@ def build_llm():
 
 # Existing agent code imports this directly and calls llm.invoke(messages).
 llm = build_llm()
+
+
+def reload_llm():
+    """
+    Rebuild the active chat model from the current env config and reassign the
+    module global. The Settings UI calls this (via infrastructure.provider_config)
+    so a provider/model switch takes effect without restarting the server.
+
+    Hot-path callers (tools/agent_runtime.py) import `llm` at call time, so they
+    pick up the new object automatically. The two by-value importers
+    (agents/terse.py, orchestration/router.py) reference `models.llm.llm` live.
+    """
+    global llm
+    llm = build_llm()
+    return llm

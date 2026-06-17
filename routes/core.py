@@ -151,14 +151,9 @@ def _get_document_context(query: str, source_files: list[str], top_k: int = 5) -
         return ""
 
 
-@router.get("/")
-def root():
-    _has_claude = bool(os.environ.get("ANTHROPIC_API_KEY", ""))
-    return {
-        "status": "online",
-        "agents": 10,
-        "model":  "phi4-mini + claude-sonnet-4-6" if _has_claude else "phi4-mini",
-    }
+# NOTE: "/" is owned by the bundled UI (api.py serves ui/build there). Machine
+# clients use /health or the richer /status (defined below) — the old minimal
+# root JSON was redundant and was removed when the UI moved to the same origin.
 
 
 @router.get("/health")
