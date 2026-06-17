@@ -3,13 +3,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release" src="https://img.shields.io/github/v/release/d4shm1r/amagra?style=flat-square&label=release&color=C48808&labelColor=2E2010" /></a>
-  <a href="https://github.com/d4shm1r/amagra/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/d4shm1r/amagra?style=flat-square&color=C48808&labelColor=2E2010" /></a>
+  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.1.2" src="https://img.shields.io/badge/release-v1.1.2-C48808?style=flat-square&labelColor=2E2010" /></a>
+  <a href="https://github.com/d4shm1r/amagra/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-C48808?style=flat-square&labelColor=2E2010" /></a>
   <a href="https://github.com/d4shm1r/amagra/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/d4shm1r/amagra?style=flat-square&logo=github&logoColor=white&color=C48808&labelColor=2E2010" /></a>
-  <a href="https://github.com/d4shm1r/amagra/issues"><img alt="Open issues" src="https://img.shields.io/github/issues/d4shm1r/amagra?style=flat-square&color=C48808&labelColor=2E2010" /></a>
-  <a href="https://github.com/d4shm1r/amagra/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/d4shm1r/amagra?style=flat-square&color=C48808&labelColor=2E2010" /></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-C48808?style=flat-square&logo=python&logoColor=white&labelColor=2E2010" />
   <img alt="Self-hosted" src="https://img.shields.io/badge/self--hosted-✓-C48808?style=flat-square&labelColor=2E2010" />
+  <img alt="Tests: 790 passing" src="https://img.shields.io/badge/tests-790%20passing-C48808?style=flat-square&labelColor=2E2010" />
 </p>
 
 <p align="center">
