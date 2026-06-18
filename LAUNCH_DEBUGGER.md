@@ -151,8 +151,9 @@ class Amagra < Formula
 end
 ```
 
-This needs a tagged GitHub **release** (you have none yet — `/releases` is empty) and a
-real sha256 before it can work. That's why it's a "later," not a launch blocker.
+This needs a tagged GitHub **release** with a tarball + a real sha256 before it can work.
+You already publish releases (latest v1.2.0), so a formula is feasible later — it's just
+extra surface to maintain for a server app, which is why it's a "later," not a launch blocker.
 
 ---
 
