@@ -86,7 +86,20 @@ The experience is the point. The numbers are here if you want them.
 
 ## Quick start
 
-**Docker (recommended):**
+**Prebuilt image (quickest):**
+
+```bash
+docker pull d4shm1r/amagra:latest        # multi-arch: amd64 + arm64
+docker run --rm -p 8000:8000 d4shm1r/amagra:latest
+# open http://localhost:8000
+```
+
+Runs the app immediately. For **local** model answers it needs Ollama reachable — add
+`--add-host=host.docker.internal:host-gateway -e OLLAMA_BASE_URL=http://host.docker.internal:11434`,
+or use the full stack below which bundles Ollama. **Cloud** models work with your own key
+(`-e BRAIN_PROVIDER=anthropic -e ANTHROPIC_API_KEY=...`).
+
+**Full stack with Docker Compose (bundles Ollama, recommended):**
 
 ```bash
 git clone https://github.com/d4shm1r/amagra
