@@ -4,6 +4,9 @@ const FONT    = "'Consolas', 'Cascadia Code', 'Droid Sans Mono', monospace";
 const LINE_H  = 20;
 const FONT_SZ = 13;
 
+// Same origin the rest of the UI talks to (see ProviderSettingsTab).
+const API = "http://localhost:8000";
+
 const T = {
   bg:            "#F4F0E8",
   surface:       "#FAF7F2",
@@ -966,6 +969,152 @@ function TemplatesSection({ domain, currentContent, onApply }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Run Across Models — actually executes the prompt (POST /debug/prompt)
+// The static sections above say *why* a prompt is weak; this one runs it,
+// against the configured model by default and any extras side by side.
+// ─────────────────────────────────────────────────────────────
+
+// Optional comparison targets. "Current" (the saved provider) is added first
+// at runtime; these only run if the matching provider/key is configured —
+// otherwise the result slot carries the error, which is the point of a debugger.
+const COMPARE_TARGETS = [
+  { id: "ollama",    label: "Local · phi4-mini",  cfg: { provider: "ollama",    model: "phi4-mini:latest" } },
+  { id: "anthropic", label: "Claude Sonnet 4.6",  cfg: { provider: "anthropic", model: "claude-sonnet-4-6" } },
+  { id: "openai",    label: "GPT-4o-mini",        cfg: { provider: "openai",    model: "gpt-4o-mini", base_url: "https://api.openai.com/v1" } },
+];
+
+function RunAcrossModelsSection({ content }) {
+  const [current, setCurrent] = useState(null);   // { provider, model, base_url }
+  const [sel,     setSel]     = useState(() => new Set(["current"]));
+  const [running, setRunning] = useState(false);
+  const [results, setResults] = useState(null);
+  const [error,   setError]   = useState(null);
+
+  useEffect(() => {
+    fetch(`${API}/settings/llm`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.current) setCurrent(d.current); })
+      .catch(() => {});
+  }, []);
+
+  // Current first; drop any extra that duplicates the saved model.
+  const targets = useMemo(() => {
+    const list = [];
+    if (current?.provider) {
+      list.push({
+        id: "current",
+        label: `Current · ${current.provider}${current.model ? " / " + current.model : ""}`,
+        cfg: { provider: current.provider, model: current.model, base_url: current.base_url },
+      });
+    }
+    for (const t of COMPARE_TARGETS) {
+      if (current && t.cfg.provider === current.provider && t.cfg.model === current.model) continue;
+      list.push(t);
+    }
+    return list;
+  }, [current]);
+
+  const toggle = (id) => setSel(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
+  async function run() {
+    setRunning(true); setError(null); setResults(null);
+    const models = targets.filter(t => sel.has(t.id)).map(t => t.cfg);
+    try {
+      const r = await fetch(`${API}/debug/prompt`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: content, temperature: 0.2, models }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      setResults(await r.json());
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  const canRun = content.trim().length > 0 && !running;
+
+  return (
+    <Section title="Run Across Models" badge={results ? results.length : null} badgeColor={T.accent} defaultOpen={true}>
+      <div style={{ fontSize: 9, color: T.muted, marginBottom: 9, lineHeight: 1.6 }}>
+        Runs this exact prompt and shows real output. Pick targets — unconfigured ones report their error.
+      </div>
+
+      {/* Target checkboxes */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
+        {targets.length === 0 && (
+          <div style={{ fontSize: 9.5, color: T.muted }}>Loading configured model…</div>
+        )}
+        {targets.map(t => (
+          <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer", fontSize: 10.5, color: T.mutedLt }}>
+            <input type="checkbox" checked={sel.has(t.id)} onChange={() => toggle(t.id)}
+                   style={{ accentColor: T.accent, width: 13, height: 13 }} />
+            {t.label}
+          </label>
+        ))}
+      </div>
+
+      <button
+        onClick={run}
+        disabled={!canRun}
+        style={{
+          width: "100%", padding: "8px 0",
+          background: canRun ? `${T.accent}22` : "#1F140808",
+          border: `1px solid ${canRun ? T.accent + "66" : T.border}`,
+          color: canRun ? T.accent : T.muted,
+          borderRadius: 3, fontSize: 11, fontWeight: 600, fontFamily: "inherit",
+          cursor: canRun ? "pointer" : "default", transition: "background 0.15s",
+        }}
+        onMouseEnter={e => { if (canRun) e.currentTarget.style.background = `${T.accent}38`; }}
+        onMouseLeave={e => { if (canRun) e.currentTarget.style.background = `${T.accent}22`; }}
+      >
+        {running ? "Running…" : content.trim() ? "Run Prompt" : "Write a prompt first"}
+      </button>
+
+      {error && (
+        <div style={{ marginTop: 10, fontSize: 10, color: T.error, background: `${T.error}0E`,
+                      border: `1px solid ${T.error}33`, borderRadius: 3, padding: "7px 9px", lineHeight: 1.5 }}>
+          {error}
+        </div>
+      )}
+
+      {/* Result cards, stacked to fit the narrow rail */}
+      {results && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+          {results.map((res, i) => {
+            const ok = !res.error;
+            const c  = ok ? T.success : T.error;
+            return (
+              <div key={i} style={{ border: `1px solid ${c}33`, borderRadius: 3, background: `${c}08`, overflow: "hidden" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline",
+                              padding: "5px 8px", borderBottom: `1px solid ${c}22`, gap: 6 }}>
+                  <span style={{ fontSize: 9.5, fontWeight: 700, color: c, fontFamily: FONT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {res.provider}{res.model ? " / " + res.model : ""}
+                  </span>
+                  <span style={{ fontSize: 8.5, color: T.muted, fontFamily: FONT, flexShrink: 0 }}>
+                    {res.latency_ms != null ? `${res.latency_ms}ms` : ""}{ok && res.words != null ? ` · ${res.words}w` : ""}
+                  </span>
+                </div>
+                <div style={{ padding: "7px 9px", fontSize: 10, color: ok ? "#2A4030" : T.error,
+                              fontFamily: FONT, lineHeight: 1.6, maxHeight: 200, overflowY: "auto", whiteSpace: "pre-wrap" }}>
+                  {ok ? res.output : res.error}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // Metrics panel — assembles all sections
 // ─────────────────────────────────────────────────────────────
 
@@ -995,6 +1144,7 @@ function MetricsPanel({ metrics, content, onApply }) {
       <SuggestedAgentsSection domain={domain} />
       <TemplatesSection       domain={domain} currentContent={content} onApply={onApply} />
       <PromptUpgradeSection   m={metrics} domain={domain} content={content} onApply={onApply} />
+      <RunAcrossModelsSection content={content} />
     </div>
   );
 }
