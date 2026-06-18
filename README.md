@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.1.2" src="https://img.shields.io/badge/release-v1.1.2-C48808?style=flat-square&labelColor=2E2010" /></a>
+  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.3.0" src="https://img.shields.io/badge/release-v1.3.0-C48808?style=flat-square&labelColor=2E2010" /></a>
   <a href="https://github.com/d4shm1r/amagra/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-C48808?style=flat-square&labelColor=2E2010" /></a>
   <a href="https://github.com/d4shm1r/amagra/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/d4shm1r/amagra?style=flat-square&logo=github&logoColor=white&color=C48808&labelColor=2E2010" /></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-C48808?style=flat-square&logo=python&logoColor=white&labelColor=2E2010" />
@@ -86,7 +86,20 @@ The experience is the point. The numbers are here if you want them.
 
 ## Quick start
 
-**Docker (recommended):**
+**Prebuilt image (quickest):**
+
+```bash
+docker pull d4shm1r/amagra:latest        # multi-arch: amd64 + arm64
+docker run --rm -p 8000:8000 d4shm1r/amagra:latest
+# open http://localhost:8000
+```
+
+Runs the app immediately. For **local** model answers it needs Ollama reachable — add
+`--add-host=host.docker.internal:host-gateway -e OLLAMA_BASE_URL=http://host.docker.internal:11434`,
+or use the full stack below which bundles Ollama. **Cloud** models work with your own key
+(`-e BRAIN_PROVIDER=anthropic -e ANTHROPIC_API_KEY=...`).
+
+**Full stack with Docker Compose (bundles Ollama, recommended):**
 
 ```bash
 git clone https://github.com/d4shm1r/amagra
