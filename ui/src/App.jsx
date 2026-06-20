@@ -6,6 +6,7 @@ import ChatTab            from "./ChatTab";
 import LogTab             from "./LogTab";
 import TracesTab          from "./TracesTab";
 import RunsTab            from "./RunsTab";
+import CognitionView      from "./CognitionView";
 import ProgressTab        from "./ProgressTab";
 import GuideTab           from "./GuideTab";
 import TaskQueue          from "./TaskQueue";
@@ -37,66 +38,80 @@ import PromisesTab        from "./PromisesTab";
 import ProviderSettingsTab from "./ProviderSettingsTab";
 import { T, LUX, FONT_UI, FONT_DISPLAY } from "./theme";
 
-// ── 4-surface navigation ──────────────────────────────────────
-// `adv: true` surfaces are hidden in Simple mode — they're for power users.
-const NAV = [
-  { id: "chat",     label: "Chat",     sym: "↗", desc: "Talk to specialist agents" },
-  { id: "library",  label: "Library",  sym: "▤", desc: "Documents Amagra has read" },
-  { id: "memory",   label: "Memory",   sym: "◈", desc: "Browse and manage persistent memory", adv: true },
-  { id: "inspect",  label: "Inspect",  sym: "⊙", desc: "Decisions, traces, events, runs, replay", adv: true },
-  { id: "settings", label: "Settings", sym: "⚙", desc: "Guide, prompts, goals, tasks, keys" },
+// ── 6-view navigation (v1.4 Unified Workspace UI) ─────────────
+// A single source of truth: each surface owns its sub-tabs. Everything else
+// (the sidebar NAV, the SubNav dropdown, surface lookup, last-tab memory) is
+// derived from this. `adv: true` hides a surface/sub-tab in Simple mode.
+//
+//   Workspace  = do work        Memory   = manage knowledge
+//   Runs       = inspect runs    Research = experiment
+//   Cognition  = monitor system  Settings = configure
+const SURFACES = [
+  { id: "workspace", label: "Workspace", sym: "▸", desc: "Work with your project", tabs: [
+    { id: "chat",          label: "Chat" },
+    { id: "prompt",        label: "Prompt IDE" },
+    { id: "goals",         label: "Goals" },
+    { id: "tasks",         label: "Tasks" },
+    { id: "project-state", label: "Project State" },
+  ]},
+  { id: "runs", label: "Runs", sym: "⊙", desc: "Inspect agent executions", adv: true, tabs: [
+    { id: "overview",  label: "Overview",  group: "Core" },
+    { id: "runs",      label: "Runs",      group: "Core" },
+    { id: "brain",     label: "Decisions", group: "Core" },
+    { id: "traces",    label: "Trace",     group: "Detail" },
+    { id: "inspector", label: "Inspector", group: "Detail" },
+    { id: "policy",    label: "Policy",    group: "Detail" },
+    { id: "replay",    label: "Replay",    group: "Detail" },
+  ]},
+  { id: "cognition", label: "Cognition", sym: "∴", desc: "Monitor system health and reasoning", adv: true, tabs: [
+    { id: "cog-dash",   label: "Dashboard", group: "Health" },
+    { id: "uci",        label: "UCI",       group: "Health" },
+    { id: "risk-obs",   label: "Risk",      group: "Health" },
+    { id: "event-log",  label: "Events",    group: "Health" },
+    { id: "plan-graph", label: "Plan",      group: "Health" },
+    { id: "cognitive",  label: "CogOS",     group: "Advanced" },
+    { id: "skills",     label: "Skills",    group: "Advanced" },
+    { id: "timeline",   label: "Timeline",  group: "Advanced" },
+  ]},
+  { id: "memory", label: "Memory", sym: "◈", desc: "Explore stored knowledge and context", adv: true, tabs: [
+    { id: "memory",    label: "Memory" },
+    { id: "library",   label: "Library" },
+    { id: "knowledge", label: "Knowledge" },
+    { id: "map",       label: "Memory Map" },
+    { id: "mindmap",   label: "Mind Map" },
+  ]},
+  { id: "research", label: "Research", sym: "⊹", desc: "Experiment, analyze, and compare", tabs: [
+    { id: "research", label: "Lab" },
+    { id: "data",     label: "Analysis" },
+  ]},
+  { id: "settings", label: "Settings", sym: "⚙", desc: "Configure Amagra", tabs: [
+    { id: "guide",    label: "Guide" },
+    { id: "model",    label: "Model" },
+    { id: "progress", label: "Progress", adv: true },
+    { id: "promises", label: "Promises", adv: true },
+    { id: "log",      label: "Log",      adv: true },
+    { id: "releases", label: "Releases" },
+  ]},
 ];
 
-// Sub-tabs within the Inspect surface, in three levels of depth:
-// core (summary views), Advanced (graphs/diagnostics), Developer (raw state).
-const INSPECT_TABS = [
-  { id: "overview",      label: "Overview",  group: "Core" },
-  { id: "brain",         label: "Decisions", group: "Core" },
-  { id: "runs",          label: "Runs",      group: "Core" },
-  { id: "timeline",      label: "Timeline",  group: "Advanced" },
-  { id: "replay",        label: "Replay",    group: "Advanced" },
-  { id: "traces",        label: "Traces",    group: "Advanced" },
-  { id: "data",          label: "Analysis",  group: "Advanced" },
-  { id: "uci",           label: "UCI",       group: "Advanced" },
-  { id: "risk-obs",      label: "Risk",      group: "Advanced" },
-  { id: "policy",        label: "Policy",    group: "Advanced" },
-  { id: "plan-graph",    label: "Plan",      group: "Advanced" },
-  { id: "knowledge",     label: "Knowledge", group: "Advanced" },
-  { id: "mindmap",       label: "Mind Map",  group: "Advanced" },
-  { id: "cognitive",     label: "CogOS",     group: "Developer" },
-  { id: "inspector",     label: "Context",   group: "Developer" },
-  { id: "project-state", label: "World",     group: "Developer" },
-  { id: "event-log",     label: "Events",    group: "Developer" },
-  { id: "map",           label: "Memory Map",group: "Developer" },
-  { id: "skills",        label: "Skills",    group: "Developer" },
-];
+// Derived lookups
+const NAV = SURFACES.map(({ id, label, sym, desc, adv }) => ({ id, label, sym, desc, adv }));
+const TABS_BY_SURFACE = Object.fromEntries(SURFACES.map(s => [s.id, s.tabs]));
+const SURFACE_BY_TAB  = Object.fromEntries(SURFACES.flatMap(s => s.tabs.map(t => [t.id, s.id])));
+const DEFAULT_TAB     = Object.fromEntries(SURFACES.map(s => [s.id, s.tabs[0].id]));
 
-// Sub-tabs within the Settings surface. `adv: true` entries are hidden in
-// Simple mode — Guide / Goals / Tasks / Releases are the ones a newcomer needs.
-const SETTINGS_TABS = [
-  { id: "guide",    label: "Guide" },
-  { id: "model",    label: "Model" },
-  { id: "research", label: "Research", adv: true },
-  { id: "prompt",   label: "Prompts",  adv: true },
-  { id: "goals",    label: "Goals" },
-  { id: "tasks",    label: "Tasks" },
-  { id: "log",      label: "Log",      adv: true },
-  { id: "progress", label: "Progress", adv: true },
-  { id: "releases", label: "Releases" },
-];
-
-const INSPECT_IDS  = new Set(INSPECT_TABS.map(t => t.id));
-const SETTINGS_IDS = new Set(SETTINGS_TABS.map(t => t.id));
-
-// Map a raw activeTab to which top-level surface it belongs to
+// Map a raw activeTab to which top-level surface it belongs to.
 function surfaceOf(tab) {
-  if (tab === "chat")    return "chat";
-  if (tab === "home")    return "home";
-  if (tab === "library") return "library";
-  if (tab === "memory")  return "memory";
-  if (INSPECT_IDS.has(tab))  return "inspect";
-  if (SETTINGS_IDS.has(tab)) return "settings";
-  return "chat"; // fallback
+  if (tab === "home") return "home";   // pre-nav landing, not one of the 6 views
+  return SURFACE_BY_TAB[tab] || "workspace";
+}
+
+// First sub-tab of a surface that's visible in the current mode (avoids landing
+// a Simple-mode user on a hidden Advanced tab).
+function firstVisibleTab(surfaceId, mode) {
+  const tabs = TABS_BY_SURFACE[surfaceId] || [];
+  const pick = mode === "simple" ? tabs.find(t => !t.adv) : tabs[0];
+  return (pick || tabs[0])?.id;
 }
 
 // ── App-wide settings ─────────────────────────────────────────
@@ -354,21 +369,18 @@ function AgentMesh({ mesh, collapsed }) {
 }
 
 function Sidebar({ activeTab, onNav, collapsed, onToggle, apiStatus, coherence, totalQueries, agentMesh,
-                   lastInspectTab, lastSettingsTab, mode }) {
+                   lastTabBySurface, mode }) {
   const online  = apiStatus === "online";
   const surface = surfaceOf(activeTab);
   const navItems = mode === "simple" ? NAV.filter(item => !item.adv) : NAV;
 
-  const handleNav = (id) => {
-    if (id === "inspect")  { onNav(lastInspectTab  || "overview"); return; }
-    if (id === "settings") {
-      // Don't drop a Simple-mode user onto a sub-tab that's hidden for them.
-      const last = lastSettingsTab || "guide";
-      const hidden = mode === "simple" && SETTINGS_TABS.find(t => t.id === last)?.adv;
-      onNav(hidden ? "guide" : last);
-      return;
-    }
-    onNav(id);
+  // Clicking a surface reopens the sub-tab you last used there (falling back to
+  // its first visible sub-tab), so each view remembers where you left off.
+  const handleNav = (surfaceId) => {
+    const last = lastTabBySurface[surfaceId];
+    const tabs = TABS_BY_SURFACE[surfaceId] || [];
+    const lastHidden = mode === "simple" && tabs.find(t => t.id === last)?.adv;
+    onNav((last && !lastHidden) ? last : firstVisibleTab(surfaceId, mode));
   };
 
   return (
@@ -386,7 +398,7 @@ function Sidebar({ activeTab, onNav, collapsed, onToggle, apiStatus, coherence, 
       userSelect: "none",
     }}>
 
-      {/* ── 4 primary surfaces ── */}
+      {/* ── 6 primary surfaces ── */}
       <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "8px 6px" }}>
         {navItems.map((item) => {
           const isActive = surface === item.id;
@@ -495,10 +507,10 @@ function Sidebar({ activeTab, onNav, collapsed, onToggle, apiStatus, coherence, 
   );
 }
 
-// ── Sub-navigation (Inspect / Settings surfaces) ──────────────
-// Calm selector: surface name + current view + one dropdown,
-// instead of a strip of 15 always-visible tabs.
-function SubNav({ surface, tabs, activeTab, onNav }) {
+// ── Sub-navigation (any multi-tab surface) ────────────────────
+// Calm selector: surface name + current view + one dropdown + the surface's
+// one-line description, instead of a strip of always-visible tabs.
+function SubNav({ surface, desc, tabs, activeTab, onNav }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -602,6 +614,16 @@ function SubNav({ surface, tabs, activeTab, onNav }) {
           </div>
         )}
       </div>
+
+      {desc && (
+        <span style={{
+          marginLeft: "auto", fontSize: 11, color: T.muted,
+          fontStyle: "italic", userSelect: "none", whiteSpace: "nowrap",
+          overflow: "hidden", textOverflow: "ellipsis",
+        }}>
+          {desc}
+        </span>
+      )}
     </div>
   );
 }
@@ -612,12 +634,12 @@ function SubNav({ surface, tabs, activeTab, onNav }) {
 const SHORTCUT_GROUPS = [
   { title: "Primary Navigation", rows: [
     ["Introduction",      "Ctrl+1"],
-    ["Chat",              "Ctrl+2"],
+    ["Workspace",         "Ctrl+2"],
     ["Runs",              "Ctrl+3"],
-    ["Inspector",         "Ctrl+4"],
-    ["UCI Dashboard",     "Ctrl+5"],
-    ["Research Lab",      "Ctrl+6"],
-    ["Library",           "Ctrl+7"],
+    ["Cognition",         "Ctrl+4"],
+    ["Memory",            "Ctrl+5"],
+    ["Research",          "Ctrl+6"],
+    ["Settings",          "Ctrl+7"],
     ["Focus Chat input",  "Ctrl+K"],
   ]},
   { title: "Debug", rows: [
@@ -718,8 +740,8 @@ export default function App() {
   const [totalQueries, setTotalQueries] = useState(0);
   const [settings,         setSettings]         = useState(loadSettings);
   const [inspectContextId, setInspectContextId] = useState(null);
-  const [lastInspectTab,   setLastInspectTab]   = useState("overview");
-  const [lastSettingsTab,  setLastSettingsTab]  = useState("guide");
+  // Per-surface "last visited sub-tab" so each view reopens where you left it.
+  const [lastTabBySurface, setLastTabBySurface] = useState(() => ({ ...DEFAULT_TAB }));
   const [seedPrompt,       setSeedPrompt]       = useState(null);
   const [showOnboarding,   setShowOnboarding]   = useState(() => {
     try { return localStorage.getItem("onboarding_done_v1") !== "1"; } catch { return false; }
@@ -766,10 +788,10 @@ export default function App() {
     return s.defaultAgent !== "auto" ? s.defaultAgent : null;
   });
 
-  // Navigate to a tab, tracking last-visited sub-tabs for Inspect/Settings
+  // Navigate to a tab, remembering it as the last-visited sub-tab of its surface.
   const navTo = useCallback((id) => {
-    if (INSPECT_IDS.has(id))  setLastInspectTab(id);
-    if (SETTINGS_IDS.has(id)) setLastSettingsTab(id);
+    const s = SURFACE_BY_TAB[id];
+    if (s) setLastTabBySurface(prev => (prev[s] === id ? prev : { ...prev, [s]: id }));
     setActiveTab(id);
   }, []);
 
@@ -869,8 +891,12 @@ export default function App() {
   useEffect(() => {
     if (mode !== "simple") return;
     const s = surfaceOf(activeTab);
-    if (s === "memory" || s === "inspect") { navTo("chat"); return; }
-    if (SETTINGS_TABS.find(t => t.id === activeTab)?.adv) navTo("guide");
+    // Bounce off Advanced-only surfaces entirely…
+    if (NAV.find(n => n.id === s)?.adv) { navTo("chat"); return; }
+    // …and off Advanced sub-tabs of an otherwise-visible surface.
+    if ((TABS_BY_SURFACE[s] || []).find(t => t.id === activeTab)?.adv) {
+      navTo(firstVisibleTab(s, "simple"));
+    }
   }, [mode, activeTab, navTo]);
 
   useEffect(() => {
@@ -898,13 +924,13 @@ export default function App() {
           }
         } else {
           switch (e.key) {
-            case "1": e.preventDefault(); navTo("home");      break;
-            case "2": e.preventDefault(); navTo("chat");      break;
-            case "3": e.preventDefault(); navTo("runs");      break;
-            case "4": e.preventDefault(); navTo("inspector"); break;
-            case "5": e.preventDefault(); navTo("uci");       break;
-            case "6": e.preventDefault(); navTo("research");  break;
-            case "7": e.preventDefault(); navTo("library");   break;
+            case "1": e.preventDefault(); navTo("home");     break; // Introduction
+            case "2": e.preventDefault(); navTo("chat");     break; // Workspace
+            case "3": e.preventDefault(); navTo("overview"); break; // Runs
+            case "4": e.preventDefault(); navTo("cog-dash"); break; // Cognition
+            case "5": e.preventDefault(); navTo("memory");   break; // Memory
+            case "6": e.preventDefault(); navTo("research"); break; // Research
+            case "7": e.preventDefault(); navTo("guide");    break; // Settings
             case ",": e.preventDefault(); setActiveModal("settings");  break;
             case "/": e.preventDefault(); setActiveModal("shortcuts"); break;
             case "b": case "B": e.preventDefault(); toggleCollapsed(); break;
@@ -1064,8 +1090,7 @@ export default function App() {
           coherence={coherence}
           totalQueries={totalQueries}
           agentMesh={agentMesh}
-          lastInspectTab={lastInspectTab}
-          lastSettingsTab={lastSettingsTab}
+          lastTabBySurface={lastTabBySurface}
           mode={mode}
         />
 
@@ -1080,18 +1105,15 @@ export default function App() {
             }} />
           </div>
 
-          {/* Sub-nav for Inspect and Settings surfaces */}
-          {INSPECT_IDS.has(activeTab) && (
-            <SubNav surface="Inspect" tabs={INSPECT_TABS} activeTab={activeTab} onNav={navTo} />
-          )}
-          {SETTINGS_IDS.has(activeTab) && (
-            <SubNav
-              surface="Settings"
-              tabs={mode === "simple" ? SETTINGS_TABS.filter(t => !t.adv) : SETTINGS_TABS}
-              activeTab={activeTab}
-              onNav={navTo}
-            />
-          )}
+          {/* Calm sub-nav for any surface with more than one (visible) sub-tab */}
+          {(() => {
+            const s = surfaceOf(activeTab);
+            const surf = NAV.find(n => n.id === s);
+            if (!surf) return null;
+            const tabs = (TABS_BY_SURFACE[s] || []).filter(t => mode !== "simple" || !t.adv);
+            if (tabs.length <= 1) return null;
+            return <SubNav surface={surf.label} desc={surf.desc} tabs={tabs} activeTab={activeTab} onNav={navTo} />;
+          })()}
 
           <div style={{
             flex: 1,
@@ -1121,6 +1143,7 @@ export default function App() {
               {activeTab === "event-log"     && <EventLogTab />}
               {activeTab === "traces"        && <TracesTab />}
               {activeTab === "data"          && <DataTab />}
+              {activeTab === "cog-dash"      && <CognitionView />}
               {activeTab === "uci"           && <UCIDashboard />}
               {activeTab === "risk-obs"      && <RiskObservatoryTab />}
               {activeTab === "policy"        && <PolicyTab />}
