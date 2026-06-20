@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.3.1";
+export const VERSION = "1.4.0";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -589,6 +589,18 @@ export const BUILD_PHASES = [
       "Reconciled stale version state — landing badge, BUILD_PHASES history (v1.2.0, v1.3.0), and lockstep version markers",
     ],
   },
+  {
+    id: 81, version: "v1.4.0", date: "Jun 20, 2026",
+    label: "Unified Workspace UI", title: "Unified Workspace UI", color: "#7E3F8F", status: "done",
+    summary: "Consolidates the dashboard into six coherent views — Workspace · Runs · Cognition · Memory · Research · Settings — driven by a single nav model, with system health promoted to a hero dashboard. A reorganization of what already exists: no components removed, no new backend.",
+    steps: [
+      "Single data-driven nav model (SURFACES) — sidebar, calm SubNav dropdown, surface lookup, and per-surface last-tab memory all derive from one source; each view carries a one-line description",
+      "Six views replace the Chat/Library/Memory/Inspect/Settings split — Workspace (Chat · Prompt IDE · Goals · Tasks · Project State), Runs (Overview · Runs · Decisions · Trace · Inspector · Policy · Replay), Cognition, Memory (+ Library folded in), Research (Lab · Analysis), Settings",
+      "Cognition dashboard — UCIDashboard · Risk · Events · Plan composed into one responsive grid (CognitionView.jsx), 'observability as hero'",
+      "Refreshed keyboard map (Ctrl+1..7) + Go menu for the six surfaces",
+      "Deferred to v1.4.1: run-scoped Runs master-detail (needs run-id plumbing in Traces/Inspector/Policy); Monaco code pane + write endpoint; theme.js token extraction",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -723,15 +735,15 @@ export const ROADMAP = [
     ],
   },
   {
-    id: 44, version: "v1.4.0", title: "Unified Workspace UI — ~26 Views → 6", color: "#7E3F8F", status: "planned", priority: "medium",
-    summary: "The dashboard today is 5 top-level surfaces (Chat · Library · Memory · Inspect · Settings) fronting ~26 view components. This consolidates them into 6 coherent views with observability as the hero screen. Nothing deleted — reorganized into hierarchy.",
+    id: 44, version: "v1.4.0", title: "Unified Workspace UI — ~26 Views → 6", color: "#7E3F8F", status: "done", priority: "medium",
+    summary: "The dashboard was 5 top-level surfaces (Chat · Library · Memory · Inspect · Settings) fronting ~26 view components. Consolidated into 6 coherent views with observability as the hero screen. Nothing deleted — reorganized into hierarchy.",
     items: [
-      "6 primary views: Workspace · Runs · Cognition · Memory · Research · Settings (24h)",
-      "Workspace: thread rail + Project State card + chat thread (project-state-centric layout)",
-      "Runs: run list → detail with sub-tabs — Trace · Inspector · Decision · Policy",
-      "Cognition: UCI bars · Risk · Events · Plan Graph in one dashboard grid",
-      "Monaco code pane: read + DiffEditor + Apply via POST /workspace/apply (20h)",
-      "Extract all inline style tokens to theme.js — dedupe the ~26 duplicated style objects (8h)",
+      "6 primary views: Workspace · Runs · Cognition · Memory · Research · Settings ✅",
+      "Single data-driven nav model (SURFACES) — sidebar + SubNav + last-tab memory derived from one source; per-surface descriptions ✅",
+      "Cognition: UCI · Risk · Events · Plan in one dashboard grid (CognitionView) ✅",
+      "Runs: facet sub-tabs — Overview · Runs · Decisions · Trace · Inspector · Policy · Replay ✅ (run-scoped master-detail deferred to v1.4.1)",
+      "Monaco code pane: read + DiffEditor + Apply via POST /workspace/apply — deferred (security-sensitive write endpoint)",
+      "Extract inline style tokens to theme.js — deferred to a polish pass",
     ],
   },
   {
@@ -749,6 +761,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.4.0", label: "Unified Workspace UI",   color: "#7E3F8F",  phases: [81] },
   { version: "v1.3.1", label: "Debugger Divergence",    color: "#C48808",  phases: [80] },
   { version: "v1.3.0", label: "Cross-Model Debugger",   color: "#C48808",  phases: [79] },
   { version: "v1.2.0", label: "Model Choice & Desktop", color: "#15803D",  phases: [78] },
