@@ -983,6 +983,51 @@ const COMPARE_TARGETS = [
   { id: "openai",    label: "GPT-4o-mini",        cfg: { provider: "openai",    model: "gpt-4o-mini", base_url: "https://api.openai.com/v1" } },
 ];
 
+// Divergence highlight — the point of running side by side is to SEE where the
+// models disagree. We measure it client-side: each output becomes a set of
+// normalized word tokens, and we average the pairwise Jaccard overlap. High
+// overlap = the models converged on the same answer; low = the prompt is
+// under-specified enough that model choice changes the result.
+function tokenSet(text) {
+  return new Set(
+    (text || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter(w => w.length > 2)   // drop noise words / punctuation fragments
+  );
+}
+
+function computeDivergence(results) {
+  const ok = (results || []).filter(r => !r.error && r.output);
+  if (ok.length < 2) return null;
+
+  const sets = ok.map(r => tokenSet(r.output));
+  let total = 0, pairs = 0;
+  for (let i = 0; i < sets.length; i++) {
+    for (let j = i + 1; j < sets.length; j++) {
+      const a = sets[i], b = sets[j];
+      let inter = 0;
+      for (const w of a) if (b.has(w)) inter++;
+      const union = a.size + b.size - inter;
+      total += union === 0 ? 1 : inter / union;
+      pairs++;
+    }
+  }
+  const agreement = pairs ? total / pairs : 1;   // 0..1
+
+  const wordCounts = ok.map(r => r.words ?? (r.output || "").split(/\s+/).filter(Boolean).length);
+  const minW = Math.min(...wordCounts);
+  const maxW = Math.max(...wordCounts);
+
+  let verdict, color;
+  if (agreement >= 0.6)      { verdict = "Aligned";   color = T.success; }
+  else if (agreement >= 0.3) { verdict = "Mixed";     color = T.accent;  }
+  else                       { verdict = "Divergent"; color = T.error;   }
+
+  return { count: ok.length, agreement, minW, maxW, verdict, color };
+}
+
 function RunAcrossModelsSection({ content }) {
   const [current, setCurrent] = useState(null);   // { provider, model, base_url }
   const [sel,     setSel]     = useState(() => new Set(["current"]));
@@ -1083,6 +1128,37 @@ function RunAcrossModelsSection({ content }) {
           {error}
         </div>
       )}
+
+      {/* Divergence highlight — how much the models actually agree */}
+      {results && (() => {
+        const d = computeDivergence(results);
+        if (!d) return null;
+        const pct = Math.round(d.agreement * 100);
+        return (
+          <div style={{ marginTop: 12, border: `1px solid ${d.color}33`, borderRadius: 3,
+                        background: `${d.color}0C`, padding: "7px 9px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 6 }}>
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: d.color, fontFamily: FONT }}>
+                {d.verdict} · {pct}% agreement
+              </span>
+              <span style={{ fontSize: 8.5, color: T.muted, fontFamily: FONT, flexShrink: 0 }}>
+                {d.count} models · {d.minW === d.maxW ? `${d.minW}w` : `${d.minW}–${d.maxW}w`}
+              </span>
+            </div>
+            {/* agreement bar */}
+            <div style={{ marginTop: 5, height: 3, background: `${d.color}22`, borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ width: `${pct}%`, height: "100%", background: d.color }} />
+            </div>
+            <div style={{ marginTop: 5, fontSize: 8.5, color: T.muted, lineHeight: 1.5 }}>
+              {d.agreement >= 0.6
+                ? "Models converged — the prompt pins the answer down."
+                : d.agreement >= 0.3
+                ? "Partial overlap — model choice shifts the result."
+                : "Outputs diverge — the prompt is under-specified for cross-model use."}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Result cards, stacked to fit the narrow rail */}
       {results && (
