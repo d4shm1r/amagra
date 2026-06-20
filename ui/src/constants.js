@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.3.0";
+export const VERSION = "1.3.1";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -554,6 +554,39 @@ export const BUILD_PHASES = [
       "Sealed adversarial routing set — held-out paraphrase + cross-domain prompts with Wilson CIs, plus a Fleiss' κ multi-rater agreement harness; honest accuracy floor documented in FINDINGS.md",
       "Security (§3 review) — constant-time admin-token compare, RLIMIT_NPROC fork-bomb guard, exposure docs, and a fail-closed prod-boot regression test (S1/S4/S5, PR #24)",
       "Test suite 766 → 790 passing",
+    ],
+  },
+  {
+    id: 78, version: "v1.2.0", date: "Jun 17, 2026",
+    label: "Model Choice & Desktop Mode", title: "Model Choice & Desktop Mode", color: "#15803D", status: "done",
+    summary: "Switch provider/model at runtime from the UI — no env edits, no restart — and run the whole app as a single process that serves its own dashboard. Ships an AppImage build path.",
+    steps: [
+      "Settings → Model tab — runtime provider/model swap via infrastructure/provider_config.py + routes/settings_provider.py; live reload hits the agent hot path immediately",
+      "Single-process desktop mode — api.py serves the built UI from ui/build at / (StaticFiles), API routes win, UI assets bypass auth",
+      "infrastructure/paths.py — AMAGRA_DATA_DIR / OS user-data dir resolution for db.py + provider_config.py",
+      "AppImage packaging (packaging/) — relocatable-python + appimagetool",
+      "Test suite → 808 passing",
+    ],
+  },
+  {
+    id: 79, version: "v1.3.0", date: "Jun 18, 2026",
+    label: "Cross-Model Prompt Debugger", title: "Cross-Model Prompt Debugger", color: "#C48808", status: "done",
+    summary: "The launch wedge: run one prompt across many models at once and read the outputs side by side. Reuses the provider/model settings from v1.2.0, so any configured model works unchanged. Published as a multi-arch Docker image.",
+    steps: [
+      "POST /debug/prompt — fans one prompt across N models concurrently with per-model error isolation (routes/debug_prompt.py)",
+      "Run Across Models panel — target checkboxes + stacked result cards in ui/src/PromptEditorTab.jsx",
+      "Cloud SDKs (anthropic, openai) bundled — compare Claude / GPT / local; local works offline with no key",
+      "Multi-arch Docker Hub publish on every v* tag (.github/workflows/publish.yml)",
+    ],
+  },
+  {
+    id: 80, version: "v1.3.1", date: "Jun 20, 2026",
+    label: "Debugger Divergence Highlight", title: "Debugger Divergence Highlight", color: "#C48808", status: "done",
+    summary: "Completes the debugger: when two or more models answer, a summary shows how much they actually agree — the whole point of comparing side by side.",
+    steps: [
+      "Client-side divergence summary in Run Across Models — average pairwise Jaccard overlap of output word sets",
+      "Verdict (Aligned / Mixed / Divergent) + agreement %, agreement bar, and word-count spread",
+      "Reconciled stale version state — landing badge, BUILD_PHASES history (v1.2.0, v1.3.0), and lockstep version markers",
     ],
   },
 ];
