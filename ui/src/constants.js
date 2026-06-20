@@ -688,8 +688,8 @@ export const ROADMAP = [
     ],
   },
   {
-    id: 42, version: "v1.2.0", title: "Workspaces & RBAC", color: "#C2410C", status: "planned", priority: "high",
-    summary: "Multiple isolated projects per user, role-based access, and a custom agent builder. Ships alongside provider abstraction in v1.2.",
+    id: 42, version: "v1.6.0", title: "Workspaces & RBAC", color: "#C2410C", status: "planned", priority: "medium",
+    summary: "Multiple isolated projects per user, role-based access, and a custom agent builder. (Deferred past the launch-wedge pivot — the v1.2/v1.3 slots shipped as Model Choice and the Cross-Model Debugger instead.)",
     items: [
       "workspaces table — multiple isolated projects per user, per-workspace memory namespace (8h)",
       "RBAC — owner / admin / member roles, enforced at the route layer (6h)",
@@ -699,8 +699,8 @@ export const ROADMAP = [
     ],
   },
   {
-    id: 43, version: "v1.2.0", title: "LLM Provider Abstraction + Hybrid Inference", color: "#1E5A8A", status: "planned", priority: "medium",
-    summary: "Complete the multi-provider path that began in 1.0.0 (AskRequest.provider + AnthropicProvider). Formalize it into a full protocol with a routing policy that escalates compound or low-confidence queries to Claude/GPT-4o automatically. Local stays default; cloud escalates for hard tasks.",
+    id: 43, version: "v1.5.0", title: "Hybrid Inference", color: "#1E5A8A", status: "planned", priority: "medium",
+    summary: "Runtime provider/model switching already shipped (v1.2.0 Model Choice) and cross-model comparison landed in v1.3.0 (Debugger). What remains is the automatic policy: keep local default, but escalate compound or low-confidence queries to Claude/GPT-4o without the user choosing.",
     items: [
       "LLMProvider protocol: invoke(), astream(), healthy() — formalize OllamaProvider + the existing AnthropicProvider (12h)",
       "providers.yaml policy: default=local-fast, compound→cloud-claude, confidence_below:0.6→cloud (6h)",
@@ -710,7 +710,7 @@ export const ROADMAP = [
     ],
   },
   {
-    id: 46, version: "v1.3.0", title: "Team Memory & Governance", color: "#15803D", status: "planned", priority: "medium",
+    id: 46, version: "v1.7.0", title: "Team Memory & Governance", color: "#15803D", status: "planned", priority: "medium",
     summary: "The moment two users share a memory pool is the moment there's a moat no chat UI can copy. Shared team memory plus the governance surface enterprises require — every AI decision logged, explainable, and exportable, on hardware they control.",
     items: [
       "Shared team memory — per-workspace FAISS index, opt-in pooling across a team's keys (10h)",
@@ -749,6 +749,9 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.3.1", label: "Debugger Divergence",    color: "#C48808",  phases: [80] },
+  { version: "v1.3.0", label: "Cross-Model Debugger",   color: "#C48808",  phases: [79] },
+  { version: "v1.2.0", label: "Model Choice & Desktop", color: "#15803D",  phases: [78] },
   { version: "v1.1.2", label: "Eval Rigor & Security", color: "#15803D",  phases: [77] },
   { version: "v1.1.1", label: "Tools in Default Path", color: "#15803D",  phases: [76] },
   { version: "v1.1.0", label: "Tool-Using Agents",    color: "#15803D",  phases: [75] },
