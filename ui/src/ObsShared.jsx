@@ -3,28 +3,37 @@
  *
  * Import: import { ObsPanel, MetricCard, ScoreBar, EventIcon, hScore } from "./ObsShared";
  */
-import { T, LUX, FONT_UI } from "./theme";
+import { T, LUX, FONT_DISPLAY } from "./theme";
 
 // ── Page header ───────────────────────────────────────────────
 
 /** Serif display header used by every tab — matches Library and landing.html.
  *  Gold gradient wordmark by default (the AMAGRA / Memory / Chat treatment);
  *  pass gold={false} to opt a title out. */
+// Consistent header rule: an elegant gold serif title, then everything else —
+// description, then any actions/buttons/forms — stacked on new lines below it.
 export function PageHeader({ title, subtitle, children, gold = true }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <h1 style={{
-          // Sans, bold, tight — the landing .feature-title treatment, in gold.
-          margin: 0, fontFamily: FONT_UI, fontWeight: 700,
-          fontSize: 22, letterSpacing: "-0.015em", lineHeight: 1.25,
-          ...(gold ? { ...LUX.goldText, display: "inline-block" } : { color: T.text }),
-        }}>
-          {title}
-        </h1>
-        {subtitle && <div style={{ fontSize: 12, color: T.muted, marginTop: 3 }}>{subtitle}</div>}
-      </div>
-      {children}
+    <div style={{ marginBottom: 20 }}>
+      <h1 style={{
+        // Elegant serif display (Cormorant Garamond), gold gradient — the
+        // AMAGRA / Memory wordmark treatment.
+        margin: 0, fontFamily: FONT_DISPLAY, fontWeight: 600,
+        fontSize: 29, letterSpacing: "0.01em", lineHeight: 1.12,
+        ...(gold ? { ...LUX.goldText, display: "inline-block" } : { color: T.text }),
+      }}>
+        {title}
+      </h1>
+      {subtitle && (
+        <div style={{ fontSize: 12.5, color: T.muted, marginTop: 6, maxWidth: 680, lineHeight: 1.5 }}>
+          {subtitle}
+        </div>
+      )}
+      {children && (
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 13 }}>
+          {children}
+        </div>
+      )}
     </div>
   );
 }
