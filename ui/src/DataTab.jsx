@@ -531,7 +531,7 @@ export default function DataTab() {
 
       {/* Coverage stats */}
       {stats && (
-        <div style={{ background: "#FAF7F2", border: "1.5px solid #E0D6C4", borderRadius: 3, padding: "16px 20px", marginBottom: 16 }}>
+        <div className="lux-card" style={{ padding: "16px 20px", marginBottom: 16 }}>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
             <StatCard label="Total traces"    value={stats.total}            color="#1E5A8A" />
             <StatCard label="Real sessions"   value={stats.real_sessions}    color="#15803D" />
@@ -579,27 +579,27 @@ export default function DataTab() {
 
       {/* Specialization table */}
       {spec && (
-        <div style={{ background: "#FAF7F2", border: "1.5px solid #E0D6C4", borderRadius: 3, padding: "16px 20px", marginBottom: 16 }}>
+        <div className="lux-card" style={{ padding: "16px 20px", marginBottom: 16 }}>
           <SpecializationTable data={spec} />
         </div>
       )}
 
       {/* Counterfactual candidates */}
       {cands !== null && (
-        <div style={{ background: "#FAF7F2", border: "1.5px solid #E0D6C4", borderRadius: 3, padding: "16px 20px", marginBottom: 16 }}>
+        <div className="lux-card" style={{ padding: "16px 20px", marginBottom: 16 }}>
           <CounterfactualPanel candidates={cands} />
         </div>
       )}
 
       {/* Decision graph stats */}
       {graphStats && (
-        <div style={{ background: "#FAF7F2", border: "1.5px solid #E0D6C4", borderRadius: 3, padding: "16px 20px", marginBottom: 16 }}>
+        <div className="lux-card" style={{ padding: "16px 20px", marginBottom: 16 }}>
           <GraphStatsPanel graph={graphStats} />
         </div>
       )}
 
       {/* Causal path explorer */}
-      <div style={{ background: "#FAF7F2", border: "1.5px solid #E0D6C4", borderRadius: 3, padding: "16px 20px", marginBottom: 16 }}>
+      <div className="lux-card" style={{ padding: "16px 20px", marginBottom: 16 }}>
         <CausalPathPanel />
       </div>
 

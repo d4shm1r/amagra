@@ -153,7 +153,7 @@ export default function TaskQueue() {
       <PageHeader title="Tasks" subtitle="Queue specialist work — each task runs the agent you choose and reports back." />
 
       {/* ── SECTION 1 — New Task Form ── */}
-      <div style={{ background: "#FAF7F2", border: "2px solid #E0D6C4", borderRadius: 3, padding: 18, marginBottom: 14 }}>
+      <div className="lux-card" style={{ padding: 18, marginBottom: 14 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: "#9A7A60", marginBottom: 12, letterSpacing: 1 }}>
           + NEW TASK
         </div>
@@ -221,7 +221,7 @@ export default function TaskQueue() {
       </div>
 
       {/* ── SECTION 2 — Queue Controls ── */}
-      <div style={{ background: "#FAF7F2", border: "2px solid #E0D6C4", borderRadius: 3, padding: "12px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+      <div className="lux-card" style={{ padding: "12px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
         <button
           onClick={runAll}
           disabled={queueRunning || counts.pending === 0}
