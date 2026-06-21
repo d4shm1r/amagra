@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { PageHeader } from "./ObsShared";
 
 const API = "http://localhost:8000";
 
@@ -488,6 +489,8 @@ export default function KnowledgeGraph() {
   return (
     <div style={{ animation: "fadeIn .2s" }}>
 
+      <PageHeader title="Knowledge" subtitle="The semantic memory store — what Amagra has learned and how it's retrieved." />
+
       {/* ── Stats header ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10, marginBottom: 14 }}>
         {[
@@ -498,12 +501,11 @@ export default function KnowledgeGraph() {
           { label: "Backend",         value: beType.replace("Backend",""), color: beColor,
             sub: backend?.engine?.split(" ").slice(0,3).join(" ") || "" },
         ].map(stat => (
-          <div key={stat.label} style={{ background: "#FAF7F2", border: `1px solid ${stat.color}22`,
-            borderRadius: 4, padding: "12px 14px" }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: stat.color, lineHeight: 1,
-              fontFamily: "monospace", letterSpacing: -0.5 }}>{stat.value}</div>
-            <div style={{ fontSize: 10, color: "#9A7A60", marginTop: 4 }}>{stat.label}</div>
-            {stat.sub && <div style={{ fontSize: 9, color: "#9A7A60", marginTop: 2, opacity: 0.7 }}>{stat.sub}</div>}
+          <div key={stat.label} className="lux-card lux-card-i" style={{ padding: "14px 16px" }}>
+            <div style={{ fontSize: 22, fontWeight: 700, color: stat.color, lineHeight: 1.1,
+              fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>{stat.value}</div>
+            <div style={{ fontSize: 10, fontWeight: 600, color: "#9A7A60", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 5 }}>{stat.label}</div>
+            {stat.sub && <div style={{ fontSize: 9, color: "#9A7A60", marginTop: 3, opacity: 0.7 }}>{stat.sub}</div>}
           </div>
         ))}
       </div>

@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.4.0";
+export const VERSION = "1.4.1";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -601,6 +601,17 @@ export const BUILD_PHASES = [
       "Deferred to v1.4.1: run-scoped Runs master-detail (needs run-id plumbing in Traces/Inspector/Policy); Monaco code pane + write endpoint; theme.js token extraction",
     ],
   },
+  {
+    id: 82, version: "v1.4.1", date: "Jun 21, 2026",
+    label: "UI Refinement", title: "UI Refinement — Minimal & Premium", color: "#7E3F8F", status: "done",
+    summary: "A consistency and polish pass over the six-view workspace: removes the duplicate top menu bar, unifies page headers and stat cards, and de-clutters the Cognition hero dashboard for a calmer, more premium feel. No backend or behavior changes.",
+    steps: [
+      "Removed the redundant top MenuBar — its Go menu duplicated the sidebar and Debug/Observe/Explore/Tools just re-cut existing sub-tabs; rehomed the brand + global actions into the sidebar (footer cluster: Settings/Shortcuts/More + Simple-Advanced toggle), reclaiming 52px of vertical height",
+      "Consistent serif PageHeader across every view — added headers to Tasks/Overview/Knowledge/Timeline/Guide and converted Trace/Analysis/Model from bold-sans titles",
+      "Cognition hero dashboard de-cluttered — an `embedded` prop makes UCI/Risk/Events/Plan suppress their own headers so each cell shows a single uppercase title; content fills, taller cells",
+      "Unified stat cards on the lux-card look (gloss + tabular value + uppercase tracked label) across Knowledge/Analysis/Overview to match Policy/Memory",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -761,6 +772,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.4.1", label: "UI Refinement",          color: "#7E3F8F",  phases: [82] },
   { version: "v1.4.0", label: "Unified Workspace UI",   color: "#7E3F8F",  phases: [81] },
   { version: "v1.3.1", label: "Debugger Divergence",    color: "#C48808",  phases: [80] },
   { version: "v1.3.0", label: "Cross-Model Debugger",   color: "#C48808",  phases: [79] },

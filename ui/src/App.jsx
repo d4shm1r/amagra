@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import MenuBar            from "./MenuBar";
 import Onboarding         from "./Onboarding";
 import HomeTab            from "./HomeTab";
 import ChatTab            from "./ChatTab";
@@ -36,7 +35,7 @@ import PromptEditorTab    from "./PromptEditorTab";
 import SkillsTab          from "./SkillsTab";
 import PromisesTab        from "./PromisesTab";
 import ProviderSettingsTab from "./ProviderSettingsTab";
-import { T, LUX, FONT_UI, FONT_DISPLAY } from "./theme";
+import { T, LUX, GOLD, FONT_UI, FONT_DISPLAY } from "./theme";
 
 // ── 6-view navigation (v1.4 Unified Workspace UI) ─────────────
 // A single source of truth: each surface owns its sub-tabs. Everything else
@@ -369,7 +368,7 @@ function AgentMesh({ mesh, collapsed }) {
 }
 
 function Sidebar({ activeTab, onNav, collapsed, onToggle, apiStatus, coherence, totalQueries, agentMesh,
-                   lastTabBySurface, mode }) {
+                   lastTabBySurface, mode, onModal, onAction, onToggleMode }) {
   const online  = apiStatus === "online";
   const surface = surfaceOf(activeTab);
   const navItems = mode === "simple" ? NAV.filter(item => !item.adv) : NAV;
@@ -397,6 +396,36 @@ function Sidebar({ activeTab, onNav, collapsed, onToggle, apiStatus, coherence, 
       flexShrink: 0,
       userSelect: "none",
     }}>
+
+      {/* ── Brand (rehomed from the removed top bar; click → Introduction) ── */}
+      <button
+        onClick={() => onNav("home")}
+        title="Introduction"
+        className="nav-btn"
+        style={{
+          display: "flex", alignItems: "center", gap: 8, width: "100%",
+          padding: collapsed ? "13px 0" : "14px 14px",
+          justifyContent: collapsed ? "center" : "flex-start",
+          background: "transparent", border: "none",
+          borderBottom: `1px solid ${T.border}`,
+          cursor: "pointer", flexShrink: 0, outline: "none",
+          fontFamily: "inherit",
+        }}
+      >
+        <span style={{
+          width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+          background: `radial-gradient(circle at 35% 30%, ${GOLD.g1}, ${GOLD.g5})`,
+          animation: "dotPulse 4s ease-in-out infinite",
+        }} />
+        {!collapsed && (
+          <span style={{
+            fontSize: 17, fontWeight: 600, letterSpacing: "0.12em",
+            fontFamily: FONT_DISPLAY, whiteSpace: "nowrap", ...LUX.goldText,
+          }}>
+            AMAGRA
+          </span>
+        )}
+      </button>
 
       {/* ── 6 primary surfaces ── */}
       <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "8px 6px" }}>
@@ -487,12 +516,22 @@ function Sidebar({ activeTab, onNav, collapsed, onToggle, apiStatus, coherence, 
             )}
           </div>
         )}
+
+        {/* ── Global actions (rehomed from the removed top bar) ── */}
+        <SidebarActions
+          collapsed={collapsed}
+          mode={mode}
+          onModal={onModal}
+          onAction={onAction}
+          onToggleMode={onToggleMode}
+        />
+
         <button
           onClick={onToggle}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           style={{
             display: "flex", alignItems: "center", justifyContent: "center",
-            width: "100%", padding: "6px 0",
+            width: "100%", padding: "6px 0", marginTop: 8,
             background: "transparent", border: `1px solid ${T.border}`,
             borderRadius: 3, cursor: "pointer", color: T.muted,
             fontSize: 11, fontFamily: "inherit",
@@ -506,6 +545,117 @@ function Sidebar({ activeTab, onNav, collapsed, onToggle, apiStatus, coherence, 
     </aside>
   );
 }
+
+// ── Sidebar global actions ─────────────────────────────────────
+// The genuinely-unique items from the removed top MenuBar: quick Settings &
+// Shortcuts modals, the Simple/Advanced toggle, and a "More" popover for the
+// low-frequency long tail (About, Export, Clear Log, Docs viewers).
+const DOC_ITEMS = [
+  ["doc:querysignal", "QuerySignal"],
+  ["doc:methodology", "Methodology"],
+  ["doc:coherence",   "Coherence"],
+  ["doc:memory",      "Memory"],
+  ["doc:reflection",  "Reflection"],
+];
+
+function SidebarActions({ collapsed, mode, onModal, onAction, onToggleMode }) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [pos, setPos] = useState({ left: 0, bottom: 0 });
+  const moreRef = useRef(null);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const close = (e) => { if (moreRef.current && !moreRef.current.contains(e.target)) setMoreOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [moreOpen]);
+
+  const openMore = () => {
+    const r = moreRef.current?.getBoundingClientRect();
+    if (r) setPos({ left: r.left, bottom: window.innerHeight - r.top + 6 });
+    setMoreOpen(o => !o);
+  };
+
+  const iconBtn = {
+    display: "flex", alignItems: "center", justifyContent: "center",
+    flex: 1, padding: "6px 0", background: "transparent",
+    border: `1px solid ${T.border}`, borderRadius: 6, cursor: "pointer",
+    color: T.muted, fontSize: 13, fontFamily: "inherit",
+    transition: "background 0.1s, color 0.1s",
+  };
+
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{
+        display: "flex", flexDirection: collapsed ? "column" : "row", gap: 5,
+      }}>
+        <button className="nav-btn" style={iconBtn} title="Settings  (Ctrl+,)"
+          onClick={() => onModal("settings")}>⚙</button>
+        <button className="nav-btn" style={iconBtn} title="Keyboard shortcuts  (Ctrl+/)"
+          onClick={() => onModal("shortcuts")}>⌨</button>
+        <button ref={moreRef} className="nav-btn" style={iconBtn} title="More"
+          onClick={openMore}>⋯</button>
+      </div>
+
+      {/* Simple / Advanced toggle */}
+      <button
+        onClick={onToggleMode}
+        title={mode === "simple"
+          ? "Simple mode — showing the essentials. Click for all tools."
+          : "Advanced mode — all tools shown. Click to simplify."}
+        className="nav-btn"
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+          width: "100%", marginTop: 5, padding: "5px 0",
+          background: "transparent", border: `1px solid ${T.border}`,
+          borderRadius: 99, cursor: "pointer", fontFamily: "inherit",
+          fontSize: 10.5, fontWeight: 600, color: T.accent2,
+          transition: "background 0.1s",
+        }}
+      >
+        <span style={{
+          width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+          background: mode === "simple" ? T.success : T.accent,
+        }} />
+        {!collapsed && (mode === "simple" ? "Simple" : "Advanced")}
+      </button>
+
+      {moreOpen && (
+        <div style={{
+          position: "fixed", left: pos.left, bottom: pos.bottom, zIndex: 9999,
+          minWidth: 188, background: "#FCFAF7", border: `1px solid ${T.border}`,
+          borderRadius: 10, boxShadow: LUX.shadowMd, padding: "5px 0",
+        }}>
+          {[
+            ["About AMAGRA",      () => onModal("about")],
+            ["Export Memory…",    () => onAction("exportCsv")],
+            ["Clear Session Log", () => onAction("clearLog")],
+          ].map(([label, fn]) => (
+            <button key={label} className="nav-btn"
+              onClick={() => { fn(); setMoreOpen(false); }}
+              style={moreItemStyle}>{label}</button>
+          ))}
+          <div style={{ height: 1, background: T.border, margin: "5px 10px" }} />
+          <div style={{
+            fontSize: 9, fontWeight: 700, color: T.muted, letterSpacing: "0.12em",
+            textTransform: "uppercase", padding: "2px 14px 4px", userSelect: "none",
+          }}>Docs</div>
+          {DOC_ITEMS.map(([action, label]) => (
+            <button key={action} className="nav-btn"
+              onClick={() => { onAction(action); setMoreOpen(false); }}
+              style={moreItemStyle}>{label}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const moreItemStyle = {
+  display: "block", width: "100%", textAlign: "left",
+  padding: "6px 14px", border: "none", background: "transparent",
+  cursor: "pointer", fontFamily: "inherit", fontSize: 12, color: T.mutedLt,
+};
 
 // ── Sub-navigation (any multi-tab surface) ────────────────────
 // Calm selector: surface name + current view + one dropdown + the surface's
@@ -883,7 +1033,7 @@ export default function App() {
     else if (action === "toggleSidebar") toggleCollapsed();
     else if (action === "toggleMode") toggleMode();
     else if (action === "exportCsv") window.open("http://localhost:8000/memory/export.csv", "_blank");
-    else if (action.startsWith("doc:")) setResearchDoc(action.slice(4));
+    else if (action.startsWith("doc:")) { setResearchDoc(action.slice(4)); navTo("research"); }
   };
 
   // In Simple mode, hidden surfaces/sub-tabs are unreachable from the chrome but
@@ -999,6 +1149,7 @@ export default function App() {
     }}>
       <style>{`
         @keyframes fadeIn    { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+        @keyframes dotPulse  { 0%,100%{box-shadow:0 0 0 1.5px rgba(138,99,36,0.18),0 0 8px rgba(196,136,8,0.28)} 50%{box-shadow:0 0 0 2px rgba(138,99,36,0.28),0 0 18px rgba(154,108,0,0.44),0 0 32px rgba(196,136,8,0.13)} }
         @keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes dotBounce { 0%,80%,100%{transform:translateY(0);opacity:.4} 40%{transform:translateY(-5px);opacity:1} }
         @keyframes weightFade  { 0%{opacity:1;transform:scale(1.07)} 70%{opacity:1} 100%{opacity:0.45;transform:scale(1)} }
@@ -1070,16 +1221,7 @@ export default function App() {
         />
       )}
 
-      {/* ── Menu bar (full width) ── */}
-      <MenuBar
-        onNav={navTo}
-        onAction={handleMenuAction}
-        onModal={setActiveModal}
-        mode={mode}
-        onToggleMode={toggleMode}
-      />
-
-      {/* ── Body row ── */}
+      {/* ── Body row (top menu bar removed in v1.4.1; nav lives in the sidebar) ── */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <Sidebar
           activeTab={activeTab}
@@ -1092,6 +1234,9 @@ export default function App() {
           agentMesh={agentMesh}
           lastTabBySurface={lastTabBySurface}
           mode={mode}
+          onModal={setActiveModal}
+          onAction={handleMenuAction}
+          onToggleMode={toggleMode}
         />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>

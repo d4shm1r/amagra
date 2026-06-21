@@ -17,14 +17,17 @@ function Cell({ title, hint, children }) {
   return (
     <div className="lux-card" style={{
       display: "flex", flexDirection: "column",
-      minWidth: 0, minHeight: 320, overflow: "hidden",
+      minWidth: 0, minHeight: 360, maxHeight: 560, overflow: "hidden",
     }}>
       <div style={{
         flexShrink: 0, display: "flex", alignItems: "baseline", gap: 8,
-        padding: "11px 14px", borderBottom: `1px solid ${T.border}`,
+        padding: "13px 16px", borderBottom: `1px solid ${T.border}`,
       }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{title}</span>
-        {hint && <span style={{ fontSize: 10, color: T.muted }}>{hint}</span>}
+        <span style={{
+          fontSize: 11, fontWeight: 700, color: T.mutedLt,
+          letterSpacing: "0.1em", textTransform: "uppercase",
+        }}>{title}</span>
+        {hint && <span style={{ fontSize: 10, color: T.muted, letterSpacing: "0.02em" }}>{hint}</span>}
       </div>
       {/* The embedded tab components carry their own padding/headers; clip and
           scroll within the cell so one busy panel can't stretch the grid. */}
@@ -49,10 +52,10 @@ export default function CognitionView() {
         gap: 16,
         alignItems: "stretch",
       }}>
-        <Cell title="Intelligence" hint="UCI"><UCIDashboard /></Cell>
-        <Cell title="Risk" hint="Observatory"><RiskObservatoryTab /></Cell>
-        <Cell title="Events" hint="Live"><EventLogTab /></Cell>
-        <Cell title="Plan" hint="Active graph"><PlanGraphTab /></Cell>
+        <Cell title="Intelligence" hint="UCI"><UCIDashboard embedded /></Cell>
+        <Cell title="Risk" hint="Observatory"><RiskObservatoryTab embedded /></Cell>
+        <Cell title="Events" hint="Live"><EventLogTab embedded /></Cell>
+        <Cell title="Plan" hint="Active graph"><PlanGraphTab embedded /></Cell>
       </div>
     </div>
   );

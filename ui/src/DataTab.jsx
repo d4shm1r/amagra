@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { PageHeader } from "./ObsShared";
 
 const API = "http://localhost:8000";
 
@@ -20,13 +21,12 @@ const AGENT_META = {
 
 function StatCard({ label, value, sub, color = "#9A7A60", wide = false }) {
   return (
-    <div style={{
-      background: "#F4F0E8", border: `1px solid ${color}22`, borderRadius: 4,
-      padding: "12px 16px", flex: wide ? "1 1 220px" : "1 1 120px",
+    <div className="lux-card lux-card-i" style={{
+      padding: "14px 16px", flex: wide ? "1 1 220px" : "1 1 120px",
     }}>
-      <div style={{ fontSize: 22, fontWeight: 800, color }}>{value}</div>
-      <div style={{ fontSize: 11, color: "#9A7A60", marginTop: 2 }}>{label}</div>
-      {sub && <div style={{ fontSize: 10, color: "#9A7A60", marginTop: 2 }}>{sub}</div>}
+      <div style={{ fontSize: 22, fontWeight: 700, color, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", lineHeight: 1.1 }}>{value}</div>
+      <div style={{ fontSize: 10, fontWeight: 600, color: "#9A7A60", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 5 }}>{label}</div>
+      {sub && <div style={{ fontSize: 10, color: "#9A7A60", marginTop: 3 }}>{sub}</div>}
     </div>
   );
 }
@@ -509,13 +509,10 @@ export default function DataTab() {
     <div style={{ animation: "fadeIn .2s" }}>
 
       {/* Header */}
-      <div style={{ marginBottom: 18, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#1F1408" }}>🗂 Decision Trace Dataset</div>
-          <div style={{ fontSize: 12, color: "#9A7A60", marginTop: 2 }}>
-            Every routing decision joined with memory, reflection, and session data — structured for training and analysis.
-          </div>
-        </div>
+      <PageHeader
+        title="Decision Trace Dataset"
+        subtitle="Every routing decision joined with memory, reflection, and session data — structured for training and analysis."
+      >
         <div style={{ display: "flex", gap: 8 }}>
           <a href={`${API}/data/traces.jsonl`} download="trace_dataset.jsonl"
             style={{ padding: "7px 14px", borderRadius: 4, fontSize: 12, fontWeight: 700, background: "#1E5A8A22", color: "#1E5A8A", border: "1px solid #1E5A8A44", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
@@ -530,7 +527,7 @@ export default function DataTab() {
             {loading ? "…" : "↻ Refresh"}
           </button>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Coverage stats */}
       {stats && (
