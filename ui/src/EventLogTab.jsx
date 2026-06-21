@@ -45,7 +45,7 @@ function CountPills({ counts }) {
 }
 
 // ── Main component ────────────────────────────────────────────
-export default function EventLogTab() {
+export default function EventLogTab({ embedded = false } = {}) {
   const [data,       setData]       = useState({ events: [], counts: {} });
   const [filter,     setFilter]     = useState("all");
   const [search,     setSearch]     = useState("");
@@ -87,9 +87,10 @@ export default function EventLogTab() {
   });
 
   return (
-    <div style={{ maxWidth: 860, margin: "0 auto" }}>
+    <div style={{ maxWidth: embedded ? "none" : 860, margin: embedded ? 0 : "0 auto", padding: embedded ? "10px 14px 14px" : 0 }}>
 
-      {/* Header */}
+      {/* Header (suppressed when embedded — the dashboard cell carries the title) */}
+      {!embedded && (
       <PageHeader
         title="Events"
         subtitle="Typed event stream from the cognitive runtime · auto-refresh 10s"
@@ -101,6 +102,7 @@ export default function EventLogTab() {
         </label>
         <RefreshBtn onClick={load} />
       </PageHeader>
+      )}
 
       {error && (
         <div style={{ color: T.error, background: T.surface, border: `1px solid ${T.border}`,

@@ -151,7 +151,7 @@ function MiniEventFeed({ events }) {
 }
 
 // ── Main component ────────────────────────────────────────────
-export default function UCIDashboard() {
+export default function UCIDashboard({ embedded = false } = {}) {
   const [uci,     setUCI]     = useState(null);
   const [cos,     setCos]     = useState(null);
   const [events,  setEvents]  = useState([]);
@@ -186,15 +186,17 @@ export default function UCIDashboard() {
   const delta = hUCI != null ? hUCI - BASELINE_HUCI : null;
 
   return (
-    <div>
+    <div style={{ padding: embedded ? "10px 14px 14px" : 0 }}>
 
-      {/* Header */}
+      {/* Header (suppressed when embedded — the dashboard cell carries the title) */}
+      {!embedded && (
       <PageHeader
         title="Cognitive Index"
         subtitle="Unified Cognitive Index · 30% Reliability · 30% Intelligence · 25% Adaptation · 15% Productivity"
       >
         <RefreshBtn onClick={load} />
       </PageHeader>
+      )}
 
       {/* System health strip */}
       <HealthStrip health={health} />
