@@ -7,8 +7,10 @@ import { T, LUX, FONT_DISPLAY } from "./theme";
 
 // ── Page header ───────────────────────────────────────────────
 
-/** Serif display header used by every tab — matches Library and landing.html */
-export function PageHeader({ title, subtitle, children, gold }) {
+/** Serif display header used by every tab — matches Library and landing.html.
+ *  Gold gradient wordmark by default (the AMAGRA / Memory / Chat treatment);
+ *  pass gold={false} to opt a title out. */
+export function PageHeader({ title, subtitle, children, gold = true }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
       <div style={{ flex: 1, minWidth: 0 }}>

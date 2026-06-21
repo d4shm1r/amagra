@@ -325,8 +325,7 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
 
           {/* Selected agent detail */}
           {selected && selectedAgent ? (
-            <div style={{ background: "#FAF7F2", border: `1.5px solid ${selectedAgent.color}44`,
-              borderRadius: 3, padding: 14, animation: "mmFadeIn .18s ease", flex: 1 }}>
+            <div className="lux-card" style={{ padding: 14, animation: "mmFadeIn .18s ease", flex: 1 }}>
 
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                 <div style={{ width: 38, height: 38, background: `${selectedAgent.color}1a`,

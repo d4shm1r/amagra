@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.4.1";
+export const VERSION = "1.4.2";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -612,6 +612,17 @@ export const BUILD_PHASES = [
       "Unified stat cards on the lux-card look (gloss + tabular value + uppercase tracked label) across Knowledge/Analysis/Overview to match Policy/Memory",
     ],
   },
+  {
+    id: 83, version: "v1.4.2", date: "Jun 21, 2026",
+    label: "Gold Refinement", title: "Gold Refinement — Premium Polish", color: "#7E3F8F", status: "done",
+    summary: "A luxury polish pass: gold-gradient page titles, the landing-page gold hover border applied consistently to every card, and a card sweep that promotes the remaining flat panels to the lux-card recipe. Charts keep their semantic colors for readability.",
+    steps: [
+      "PageHeader titles now use the AMAGRA/Memory gold gradient by default (gold opt-out retained)",
+      "Every .lux-card gains the landing .feature-card hover treatment — a gradient gold border (g1→g3→g5) that fades in on hover, drawn as a masked ::after so it paints only the ring, never over content",
+      "Card sweep — promoted standalone flat panels to lux-card across Tasks, Analysis, Goals, Decisions, Knowledge, and Mind Map; skipped inputs/chips/rows and stat-tile-grid wrappers to avoid card-on-card nesting",
+      "Charts deliberately keep semantic colors (risk/quality/pass-fail) — gold stays on titles, hover borders, and decorative chrome",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -772,6 +783,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.4.2", label: "Gold Refinement",        color: "#7E3F8F",  phases: [83] },
   { version: "v1.4.1", label: "UI Refinement",          color: "#7E3F8F",  phases: [82] },
   { version: "v1.4.0", label: "Unified Workspace UI",   color: "#7E3F8F",  phases: [81] },
   { version: "v1.3.1", label: "Debugger Divergence",    color: "#C48808",  phases: [80] },
