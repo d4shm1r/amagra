@@ -345,7 +345,7 @@ function CreateGoalForm({ onCreated }) {
   };
 
   return (
-    <div style={{ background: "#FAF7F2", border: "1.5px solid #E0D6C4", borderRadius: 3, padding: "16px 18px", marginBottom: 20 }}>
+    <div className="lux-card" style={{ padding: "16px 18px", marginBottom: 20 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: "#9A7A60", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 }}>
         New Goal
       </div>

@@ -179,9 +179,8 @@ function BrainInspector({ decision, onReplay }) {
   };
 
   if (!decision) return (
-    <div style={{
-      flex: 1, background: "#FAF7F2", border: "1.5px solid #E0D6C4",
-      borderRadius: 3, padding: 24, display: "flex", flexDirection: "column",
+    <div className="lux-card" style={{
+      flex: 1, padding: 24, display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center", color: "#9A7A60", fontSize: 13,
     }}>
       <div style={{ fontSize: 28, marginBottom: 10 }}>🧠</div>
@@ -194,9 +193,8 @@ function BrainInspector({ decision, onReplay }) {
   const agree = !decision.conflict;
 
   return (
-    <div style={{
-      flex: 1, background: "#FAF7F2", border: "1.5px solid #E0D6C4",
-      borderRadius: 3, padding: "18px 20px", overflowY: "auto",
+    <div className="lux-card" style={{
+      flex: 1, padding: "18px 20px", overflowY: "auto",
     }}>
       {/* Header */}
       <div style={{ fontSize: 11, fontWeight: 700, color: "#9A7A60", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
@@ -364,7 +362,7 @@ function ContradictionHistoryPanel({ items }) {
   const count = items.length;
   const labelColor = count === 0 ? "#9A7A60" : "#9A6C00";
   return (
-    <div style={{ background: "#FAF7F2", border: `1.5px solid ${labelColor}44`, borderRadius: 3, padding: "12px 18px", marginBottom: 16 }}>
+    <div className="lux-card" style={{ padding: "12px 18px", marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => setOpen(o => !o)}>
         <span style={{ fontSize: 12, fontWeight: 700, color: "#9A7A60", textTransform: "uppercase", letterSpacing: 1 }}>
           ⚠ Contradiction History
@@ -423,7 +421,7 @@ function AgentStatsPanel({ agents }) {
   if (entries.length === 0) return null;
 
   return (
-    <div style={{ background: "#FAF7F2", border: "1.5px solid #E0D6C4", borderRadius: 3, padding: "12px 18px", marginBottom: 16 }}>
+    <div className="lux-card" style={{ padding: "12px 18px", marginBottom: 16 }}>
       <div
         style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
         onClick={() => setOpen(o => !o)}

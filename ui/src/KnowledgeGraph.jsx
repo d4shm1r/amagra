@@ -556,8 +556,7 @@ export default function KnowledgeGraph() {
       {view === "cards" && (
         <>
           {/* Type distribution bar */}
-          <div style={{ background: "#FAF7F2", border: "1px solid #E0D6C4", borderRadius: 4,
-            padding: "12px 16px", marginBottom: 14 }}>
+          <div className="lux-card" style={{ padding: "12px 16px", marginBottom: 14 }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: "#9A7A60", marginBottom: 8, letterSpacing: "0.1em" }}>
               TYPE DISTRIBUTION — click to filter
             </div>
