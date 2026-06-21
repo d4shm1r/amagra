@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { PageHeader } from "./ObsShared";
 
 const API = "http://localhost:8000";
 
@@ -152,11 +153,10 @@ export default function ProviderSettingsTab() {
 
   return (
     <div style={{ maxWidth: 680, color: T.text }}>
-      <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Model & Provider</h2>
-      <p style={{ margin: "0 0 20px", color: T.mutedLt, fontSize: 14, lineHeight: 1.5 }}>
-        Choose which model answers. Switch to a local model to stay private and offline,
-        or point Amagra at a hosted API. Changes apply immediately and survive a restart.
-      </p>
+      <PageHeader
+        title="Model & Provider"
+        subtitle="Choose which model answers — a local model to stay private and offline, or a hosted API. Changes apply immediately and survive a restart."
+      />
 
       {current && (
         <div style={{

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AGENTS } from "./constants";
+import { PageHeader } from "./ObsShared";
 
 // ── Metric glossary ────────────────────────────────────────────
 const METRICS = [
@@ -225,6 +226,8 @@ export default function GuideTab() {
 
   return (
     <div style={{ animation: "fadeIn .2s" }}>
+
+      <PageHeader title="Guide" subtitle="Commands, agents, and how to get the most out of Amagra." />
 
       {/* ── Quick start ── */}
       <Card mb={20} accent="#15803D33">

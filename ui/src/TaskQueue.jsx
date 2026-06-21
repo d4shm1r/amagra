@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { AGENTS } from "./constants";
+import { PageHeader } from "./ObsShared";
 
 const API = "http://localhost:8000";
 
@@ -148,6 +149,8 @@ export default function TaskQueue() {
         }
         .task-row:hover { filter: brightness(1.05); }
       `}</style>
+
+      <PageHeader title="Tasks" subtitle="Queue specialist work — each task runs the agent you choose and reports back." />
 
       {/* ── SECTION 1 — New Task Form ── */}
       <div style={{ background: "#FAF7F2", border: "2px solid #E0D6C4", borderRadius: 3, padding: 18, marginBottom: 14 }}>

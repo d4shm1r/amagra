@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AGENTS } from "./constants";
-import { T } from "./theme";
+import { T, FONT_DISPLAY } from "./theme";
 
 
 const DOMAIN_COLORS = {
@@ -189,7 +189,7 @@ export default function TracesTab() {
       }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: T.text, marginBottom: 3 }}>
+            <div style={{ fontFamily: FONT_DISPLAY, fontSize: 24, fontWeight: 600, letterSpacing: "0.02em", color: T.text, marginBottom: 3 }}>
               Routing Signal Log
             </div>
             <div style={{ fontSize: 12, color: T.muted }}>

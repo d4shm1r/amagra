@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { T } from "./theme";
+import { PageHeader } from "./ObsShared";
 
 const API = "http://localhost:8000";
 
@@ -92,6 +93,8 @@ export default function InspectOverviewTab({ onNav }) {
 
   return (
     <div>
+
+      <PageHeader title="Overview" subtitle="A live snapshot of working agents, recent decisions, and memory." />
 
       {/* ── Key numbers ── */}
       <div style={{ display: "flex", gap: 14, marginBottom: 14 }}>

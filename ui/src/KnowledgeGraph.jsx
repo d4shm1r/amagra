@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { PageHeader } from "./ObsShared";
 
 const API = "http://localhost:8000";
 
@@ -487,6 +488,8 @@ export default function KnowledgeGraph() {
 
   return (
     <div style={{ animation: "fadeIn .2s" }}>
+
+      <PageHeader title="Knowledge" subtitle="The semantic memory store — what Amagra has learned and how it's retrieved." />
 
       {/* ── Stats header ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10, marginBottom: 14 }}>
