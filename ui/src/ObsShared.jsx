@@ -3,7 +3,7 @@
  *
  * Import: import { ObsPanel, MetricCard, ScoreBar, EventIcon, hScore } from "./ObsShared";
  */
-import { T, LUX, FONT_DISPLAY } from "./theme";
+import { T, LUX, FONT_UI } from "./theme";
 
 // ── Page header ───────────────────────────────────────────────
 
@@ -15,9 +15,9 @@ export function PageHeader({ title, subtitle, children, gold = true }) {
     <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <h1 style={{
-          // gold variant mirrors the AMAGRA / Library display title exactly
-          margin: 0, fontFamily: FONT_DISPLAY, fontWeight: 600,
-          fontSize: gold ? 26 : 24, letterSpacing: "0.02em", lineHeight: 1.2,
+          // Sans, bold, tight — the landing .feature-title treatment, in gold.
+          margin: 0, fontFamily: FONT_UI, fontWeight: 700,
+          fontSize: 22, letterSpacing: "-0.015em", lineHeight: 1.25,
           ...(gold ? { ...LUX.goldText, display: "inline-block" } : { color: T.text }),
         }}>
           {title}
