@@ -20,9 +20,9 @@ function timeAgo(ts) {
 
 function Stat({ value, label, live }) {
   return (
-    <div className="lux-card lux-card-i" style={{ flex: 1, padding: "18px 22px" }}>
+    <div className="lux-card lux-card-i" style={{ flex: 1, padding: "14px 16px" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-        <span style={{ fontSize: 26, fontWeight: 700, color: T.text, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
+        <span style={{ fontSize: 22, fontWeight: 700, color: T.text, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>
           {value ?? "—"}
         </span>
         {live && (
