@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { AGENTS } from "./constants";
-import { T, FONT_DISPLAY } from "./theme";
+import { T } from "./theme";
+import { PageHeader } from "./ObsShared";
 
 
 const DOMAIN_COLORS = {
@@ -179,37 +180,25 @@ export default function TracesTab() {
   });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", animation: "fadeIn .2s" }}>
+    <div style={{ animation: "fadeIn .2s" }}>
 
-      {/* ── Header ── */}
-      <div style={{
-        padding: "16px 24px 14px",
-        borderBottom: `1px solid ${T.border}`,
-        flexShrink: 0,
-      }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
-          <div>
-            <div style={{ fontFamily: FONT_DISPLAY, fontSize: 24, fontWeight: 600, letterSpacing: "0.02em", color: T.text, marginBottom: 3 }}>
-              Routing Signal Log
-            </div>
-            <div style={{ fontSize: 12, color: T.muted }}>
-              Live routing decisions — agent selected, signal domain, confidence, and routing reason.
-            </div>
-          </div>
-          <button
-            onClick={load}
-            style={{
-              background: `${T.accent}18`, border: `1px solid ${T.accent}44`,
-              color: T.accent, padding: "6px 14px", borderRadius: 3,
-              fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-            }}
-          >
-            ↻ Refresh
-          </button>
-        </div>
+      <PageHeader
+        title="Routing Signal Log"
+        subtitle="Live routing decisions — agent selected, signal domain, confidence, and routing reason."
+      >
+        <button
+          onClick={load}
+          className="nav-btn"
+          style={{
+            background: "transparent", border: `1px solid ${T.border}`,
+            color: T.mutedLt, padding: "6px 16px", borderRadius: 16,
+            fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+          }}
+        >↻ Refresh</button>
+      </PageHeader>
 
-        {/* Filter row */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+      {/* Filter row */}
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 14 }}>
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -253,10 +242,9 @@ export default function TracesTab() {
             );
           })}
         </div>
-      </div>
 
       {/* ── Body ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px" }}>
+      <div>
         {loading ? (
           <div style={{ textAlign: "center", color: T.muted, fontSize: 13, paddingTop: 60 }}>
             Loading traces…

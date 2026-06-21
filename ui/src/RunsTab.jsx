@@ -511,10 +511,7 @@ export default function RunsTab() {
   const toggleExpand = id => setExpanded(e => e === id ? null : id);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", animation: "fadeIn .2s" }}>
-
-      {/* ── Header ── */}
-      <div style={{ padding: "16px 20px 12px", borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
+    <div style={{ animation: "fadeIn .2s" }}>
 
         {/* Title row */}
         <PageHeader title="Runs" subtitle="Every LLM invocation — generation path, critic decisions, failure traces.">
@@ -609,10 +606,9 @@ export default function RunsTab() {
             </span>
           )}
         </div>
-      </div>
 
       {/* ── Table ── */}
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      <div className="lux-card" style={{ overflow: "hidden", padding: 0, marginTop: 14 }}>
         {loading ? (
           <div style={{ padding: "60px 0", textAlign: "center", color: T.muted, fontSize: 13 }}>
             Loading runs…
