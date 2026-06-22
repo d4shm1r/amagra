@@ -480,6 +480,10 @@ def _run_with_reflection(invoke_fn, state: AgentState):
                 _emit(_ET.STEP_VERIFIED_PASS, {
                     "agent": agent, "score": _vr.raw_score,
                     "step_id": _pseudo.step_id,
+                    # disclose the conclusion on pass too (symmetric with the
+                    # fail path) so the Verifier is observably transparent —
+                    # it reports both how certain (score) and what it decided
+                    "recommendation": _vr.recommendation,
                 })
             else:
                 _emit(_ET.STEP_VERIFIED_FAIL, {
