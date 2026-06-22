@@ -360,6 +360,229 @@ def critic_calibration(scores: list[float], labels: list[bool],
 
 
 # ────────────────────────────────────────────────────────────────
+# § OCAC stability bridge  (contraction fixed-point framing)
+# ────────────────────────────────────────────────────────────────
+# The learning update  w ← (1−α)·w + α·L  (learning.py) is an affine
+# contraction toward the fixed point w* = L with Lipschitz modulus
+# K = 1−α.  This is exactly the parametrised fixed-point family of the
+# OCAC "H theorem" Lean development (Engine A, axiom A2 = uniform
+# contraction).  The functions below expose the *proved* consequences of
+# that structure as live, computable stability numbers.
+#
+# References (OCAC Lean source, ~/Desktop/lean):
+#   A2 contraction        — OCAC/Basic.lean
+#   resolvent bound       — OCAC/DerivativeRecursion.lean (norm_resolvent_le)
+#   Lyapunov decrease     — OCAC/Dynamics.lean (lyap_strictDecrease)
+#   curvature / 2nd-diff  — OCAC/Variational.lean (Delta_secondDiff)
+
+def effective_contraction(alpha: float) -> float:
+    """K = 1 − α  — Lipschitz modulus of the affine weight update.
+
+    The update w ← (1−α)w + αL contracts toward w* = L iff K < 1, i.e.
+    α > 0.  Stability is guaranteed precisely while this stays below 1
+    (OCAC axiom A2).  α is the output of adaptive_alpha(); the freeze at
+    α≈0 in learning.py is the boundary K→1 where contraction is lost.
+    """
+    return 1.0 - alpha
+
+
+def resolvent_bound(alpha: float) -> float:
+    """‖R‖ ≤ (1−K)⁻¹ = 1/α  — sensitivity of the converged weight.
+
+    OCAC's Neumann resolvent bound (norm_resolvent_le): a perturbation δ
+    in the learning signal L moves the converged weight w* by at most
+    (1/α)·δ.  Large 1/α (small α) → the fixed point is stiff/insensitive
+    (slow but stable); small 1/α (large α) → responsive but jumpy.
+    Returns +inf when α = 0 (frozen: infinitely sensitive / no contraction).
+    """
+    if alpha <= 0.0:
+        return float("inf")
+    return 1.0 / alpha
+
+
+def affine_lyapunov_decay(alpha: float) -> dict:
+    """Exact Lyapunov decrease for the affine update (OCAC P1 analogue).
+
+    With energy V(w) = (w − w*)², one step gives the *exact* increment
+        V(w') − V(w) = −α(2−α)·V(w),
+    so V decays by the factor (1−α)² each step.  Strictly negative for
+    α ∈ (0, 2) → global contraction (basin = all of weight space), the
+    affine counterpart of OCAC's lyap_strictDecrease (which gives a
+    *bounded* basin x² < −2/c for the cubic normal form).
+
+    Returns {decay_factor, delta_coeff, contracts}.
+    """
+    decay_factor = (1.0 - alpha) ** 2          # V' = decay_factor · V
+    delta_coeff  = -alpha * (2.0 - alpha)      # ΔV = delta_coeff · V
+    return {
+        "decay_factor": round(decay_factor, 6),
+        "delta_coeff":  round(delta_coeff, 6),
+        "contracts":    0.0 < alpha < 2.0,
+    }
+
+
+def instability_conjunctive(r: float, cal_error: float,
+                            weight_var: float) -> float:
+    """Soft-OR instability  I = 1 − ∏(1 − tᵢ)  (OCAC A1∧A2∧A3 form).
+
+    OCAC proves the three stability conditions A1 (smoothness ↔ regret),
+    A2 (contraction ↔ weight variance) and A3 (bounded sensitivity ↔
+    calibration error) are each *individually necessary* — each has its
+    own counterexample.  They are therefore conjunctive: the system is
+    stable only if all three hold.  A weighted average (instability_index)
+    lets one healthy term mask a failing one; this soft-OR spikes to ~1 as
+    soon as *any* single term degrades, matching the proved necessity.
+
+    Drop-in alternative to instability_index() for the adaptive_alpha gate.
+    """
+    t_r  = min(max(r, 0.0), 1.0)
+    t_c  = min(max(abs(cal_error), 0.0), 1.0)
+    t_w  = min(max(weight_var, 0.0), 1.0)
+    return 1.0 - (1.0 - t_r) * (1.0 - t_c) * (1.0 - t_w)
+
+
+def series_curvature(series: list[float]) -> list[float]:
+    """Discrete second difference  Δ²xₙ = xₙ₊₁ − 2xₙ + xₙ₋₁.
+
+    OCAC's Delta_secondDiff: curvature is a second-order signal the flat
+    level-and-rate metrics miss.  Applied to a coherence/UCI time series it
+    measures the *acceleration* of change — a leading indicator of
+    instability (a large negative Δ² while the level is still high warns of
+    an incipient downturn before the level itself drops).
+
+    Returns a list of length max(0, len(series) − 2), aligned to interior
+    points (curvature[i] corresponds to series[i+1]).
+    """
+    if len(series) < 3:
+        return []
+    return [round(series[i + 1] - 2.0 * series[i] + series[i - 1], 6)
+            for i in range(1, len(series) - 1)]
+
+
+def max_abs_curvature(series: list[float]) -> float:
+    """Peak |Δ²| over a series — single-number instability leading indicator.
+
+    0.0 for a perfectly linear (constant-rate) trajectory; grows with how
+    sharply the metric is bending.  Useful as a dashboard alarm threshold.
+    """
+    curv = series_curvature(series)
+    return round(max((abs(c) for c in curv), default=0.0), 6)
+
+
+# ────────────────────────────────────────────────────────────────
+# § Coordinate-invariant health  (OCAC Δ-invariant / 𝒞 = C/(det J)³)
+# ────────────────────────────────────────────────────────────────
+# UCI is a weighted arithmetic mean with hand-picked weights, so its numeric
+# value is coordinate-dependent: rescale a component or re-pick the weights and
+# the number shifts meaning. OCAC's lesson (normalizedCubic_invariant,
+# Delta_secondDiff) is that a trustworthy structural metric should be invariant
+# under admissible reparametrisation. The quantities below are weight-invariant
+# (floor, spread) or scale-invariant (balance), so they mean the same thing
+# across system versions and weighting choices.
+
+def invariant_health(components: dict) -> dict:
+    """Weight/scale-invariant health summary of the UCI component scores.
+
+    components: {name: score} with each score ≥ 0 (e.g. reliability, capability,
+                efficiency, learning).
+
+    Returns:
+      floor    — min component: the bottleneck. Weight-invariant (a system is
+                 only as healthy as its weakest pillar; no weighting can hide it).
+      spread   — max − min: imbalance across pillars. Weight-invariant.
+      geomean  — geometric mean: collapses toward 0 if ANY pillar is near 0,
+                 unlike the arithmetic mean which lets strong pillars mask a weak
+                 one. Far more robust to the weight choice.
+      balance  — geomean / arithmetic_mean ∈ (0, 1]. = 1 iff all pillars equal.
+                 This is the OCAC-style invariant: scale a component by a and both
+                 GM and AM pick up the same factor, so the ratio is unchanged. It
+                 measures evenness independent of overall scale or units.
+      weakest  — name of the floor pillar (where to spend effort).
+    """
+    if not components:
+        return {"floor": 0.0, "spread": 0.0, "geomean": 0.0,
+                "balance": 0.0, "weakest": None}
+    items   = [(k, max(0.0, float(v))) for k, v in components.items()]
+    vals    = [v for _, v in items]
+    n       = len(vals)
+    am      = sum(vals) / n
+    prod    = 1.0
+    for v in vals:
+        prod *= v
+    gm      = prod ** (1.0 / n)
+    lo      = min(vals)
+    hi      = max(vals)
+    weakest = min(items, key=lambda kv: kv[1])[0]
+    return {
+        "floor":   round(lo, 4),
+        "spread":  round(hi - lo, 4),
+        "geomean": round(gm, 4),
+        "balance": round(gm / am, 4) if am > 0 else 0.0,
+        "weakest": weakest,
+    }
+
+
+# ────────────────────────────────────────────────────────────────
+# § Error propagation through agent chains  (OCAC majorant engine)
+# ────────────────────────────────────────────────────────────────
+# OCAC's factorial-growth engine bounds how fast a perturbation compounds:
+# aₙ₊₁ ≤ ρ(n+1)aₙ  ⟹  aₙ ≤ a₀·ρⁿ·n!  (factorial_majorant), and
+# convolution_dominated composes per-step bounds. Each agent step has resolvent
+# sensitivity (1−K)⁻¹ = 1/α (resolvent_bound); chaining N steps gives a provable
+# worst-case on how a small mis-specification amplifies through deep recursion or
+# multi-agent orchestration — a guarantee the orchestration layer currently lacks.
+
+def chain_error_bound(eps0: float, step_factors: list[float]) -> float:
+    """Worst-case output error after a chain of steps.
+
+    eps0:         input perturbation / mis-specification magnitude
+    step_factors: per-step amplification factors, e.g. resolvent_bound(αᵢ)=1/αᵢ
+                  for each agent's learning loop, or any Lipschitz constant.
+
+    Returns eps0·∏ factorsᵢ — the composed amplification. Factors < 1 are
+    contractive (error shrinks); > 1 amplify. This is the OCAC resolvent-chain
+    bound: a contraction at every step keeps the chain stable iff ∏ factors stays
+    bounded.
+    """
+    out = eps0
+    for f in step_factors:
+        out *= f
+    return out
+
+
+def gevrey_majorant(a0: float, rho: float, n: int) -> float:
+    """OCAC factorial ceiling  aₙ ≤ a₀·ρⁿ·n!  for depth-n recursion.
+
+    The worst-case sensitivity bound when each recursion level multiplies the
+    previous by ρ·(level): self-referential reasoning that accumulates context.
+    Grows factorially — the formal warning that unbounded self-recursion is not
+    free even under a per-step contraction.
+
+    a0:  base (depth-0) sensitivity
+    rho: per-level growth rate (ρ = B·M²/(M−L) in OCAC convolution_dominated)
+    n:   recursion depth
+    """
+    return a0 * (rho ** n) * math.factorial(n)
+
+
+def stable_recursion_depth(rho: float, ceiling: float = 100.0,
+                           a0: float = 1.0, max_depth: int = 64) -> int:
+    """Largest depth n with gevrey_majorant(a0, rho, n) ≤ ceiling.
+
+    A practical "how deep can self-recursion go before the worst-case sensitivity
+    bound blows past `ceiling`" — a budget for reflection / agent-chain depth.
+    Returns 0 if even depth-0 already exceeds the ceiling.
+    """
+    depth = 0
+    for n in range(0, max_depth + 1):
+        if gevrey_majorant(a0, rho, n) <= ceiling:
+            depth = n
+        else:
+            break
+    return depth
+
+
+# ────────────────────────────────────────────────────────────────
 # § Self-tests
 # ────────────────────────────────────────────────────────────────
 
@@ -431,6 +654,55 @@ def _run_tests():
     perfect_cal = critic_calibration([1.0, 0.0], [True, False])
     assert perfect_cal["ece"] == 0.0
     assert perfect_cal["brier"] == 0.0
+
+    # OCAC stability bridge
+    assert abs(effective_contraction(0.05) - 0.95) < eps
+    assert resolvent_bound(0.05) == 20.0
+    assert resolvent_bound(0.0) == float("inf")
+    assert resolvent_bound(0.01) > resolvent_bound(0.05)   # smaller α → stiffer
+    decay = affine_lyapunov_decay(0.05)
+    assert decay["contracts"] is True
+    assert 0.0 < decay["decay_factor"] < 1.0               # energy strictly shrinks
+    assert decay["delta_coeff"] < 0.0                       # ΔV negative
+    assert affine_lyapunov_decay(0.0)["delta_coeff"] == 0.0 # frozen → no decrease
+    # soft-OR is conjunctive: one bad term dominates, unlike the weighted mean
+    i_or  = instability_conjunctive(0.9, 0.0, 0.0)
+    i_avg = instability_index(0.9, 0.0, 0.0)
+    assert i_or > i_avg, "soft-OR should not let healthy terms mask a failure"
+    assert abs(instability_conjunctive(0.0, 0.0, 0.0)) < eps
+    assert abs(instability_conjunctive(1.0, 1.0, 1.0) - 1.0) < eps
+    # curvature: zero on a straight line, nonzero on a bend
+    assert series_curvature([1.0, 2.0, 3.0, 4.0]) == [0.0, 0.0]
+    assert max_abs_curvature([1.0, 2.0, 3.0, 4.0]) == 0.0
+    assert max_abs_curvature([0.9, 0.9, 0.9, 0.6]) > 0.0    # downturn detected
+    assert series_curvature([1.0, 2.0]) == []              # too short
+
+    # Invariant health — balance is scale-invariant
+    perfect = invariant_health({"a": 0.8, "b": 0.8, "c": 0.8})
+    assert abs(perfect["balance"] - 1.0) < eps      # all equal → balance 1
+    assert perfect["spread"] == 0.0
+    h  = invariant_health({"a": 0.9, "b": 0.9, "c": 0.3})
+    h2 = invariant_health({"a": 1.8, "b": 1.8, "c": 0.6})  # all ×2
+    assert abs(h["balance"] - h2["balance"]) < 1e-6, "balance must be scale-invariant"
+    assert h["floor"] == 0.3 and h["weakest"] == "c"
+    assert h["geomean"] < (0.9 + 0.9 + 0.3) / 3      # GM penalises the weak pillar
+    assert invariant_health({})["weakest"] is None
+
+    # Chain error propagation
+    assert chain_error_bound(1.0, []) == 1.0
+    assert abs(chain_error_bound(0.1, [2.0, 3.0]) - 0.6) < 1e-9
+    assert abs(chain_error_bound(1.0, [0.5, 0.5, 0.5]) - 0.125) < 1e-9  # contractive
+    # Gevrey factorial ceiling
+    assert gevrey_majorant(1.0, 1.0, 0) == 1.0
+    assert gevrey_majorant(1.0, 1.0, 3) == 6.0               # 1·1·3!
+    assert gevrey_majorant(2.0, 0.5, 4) == 2.0 * 0.5**4 * 24
+    assert gevrey_majorant(1.0, 2.0, 5) > gevrey_majorant(1.0, 2.0, 4)  # grows
+    # Stable depth budget
+    assert stable_recursion_depth(2.0, ceiling=100.0) >= 1
+    assert stable_recursion_depth(10.0, ceiling=1.0) == 0    # blows past immediately
+    d_small = stable_recursion_depth(0.5, ceiling=100.0)
+    d_big   = stable_recursion_depth(3.0, ceiling=100.0)
+    assert d_small > d_big, "slower growth → deeper safe recursion"
 
     print("math_metrics: all tests passed ✓")
 
