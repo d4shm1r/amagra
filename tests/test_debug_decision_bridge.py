@@ -161,3 +161,15 @@ def test_post_decision_supersedes_prior_via_api():
     })
     assert second.status_code == 200
     assert model_choices.get_by_id(first)["active"] is False
+
+
+def test_post_decision_tags_project_and_filters():
+    """The UI posts a sticky `project`; it must persist and be filterable."""
+    client.post("/debug/decision", headers=HEADERS, json={
+        "prompt": "Pick a model", "chosen_provider": "anthropic",
+        "chosen_model": "claude-sonnet-4-6", "rationale": "x", "project": "billing-svc",
+    })
+    r = client.get("/debug/decisions?project=billing-svc", headers=HEADERS)
+    assert r.status_code == 200
+    decisions = r.json()["decisions"]
+    assert decisions and all(d["project"] == "billing-svc" for d in decisions)

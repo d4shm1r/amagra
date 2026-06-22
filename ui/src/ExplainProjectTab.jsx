@@ -10,7 +10,11 @@ const API = "http://localhost:8000";
 //     has passed; until then the recorded decisions are shown without synthesis.
 //   · confidence — confirmed (you stated a reason) vs tentative (a bare choice).
 export default function ExplainProjectTab() {
-  const [project, setProject] = useState("");
+  // Default to the sticky project set in the Prompt IDE so the bridge and the
+  // briefing share one project context out of the box.
+  const [project, setProject] = useState(() => {
+    try { return localStorage.getItem("amagra_project") || ""; } catch { return ""; }
+  });
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState(null);

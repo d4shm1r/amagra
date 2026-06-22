@@ -1045,6 +1045,15 @@ function RunAcrossModelsSection({ content }) {
   const [whyTags, setWhyTags] = useState(() => new Set());
   const [savedId, setSavedId] = useState(null);   // decision id once persisted
   const [saving,  setSaving]  = useState(false);
+  // Sticky project tag — without it every decision lands in "(all)" and
+  // per-project briefings are meaningless. Persisted so it carries across runs.
+  const [project, setProject] = useState(() => {
+    try { return localStorage.getItem("amagra_project") || ""; } catch { return ""; }
+  });
+  const updateProject = (v) => {
+    setProject(v);
+    try { localStorage.setItem("amagra_project", v); } catch {}
+  };
 
   const resetCapture = () => { setChosen(null); setWhy(""); setWhyTags(new Set()); setSavedId(null); };
   const toggleTag = (t) => setWhyTags(prev => {
@@ -1070,6 +1079,7 @@ function RunAcrossModelsSection({ content }) {
           })),
           rationale: why.trim(),
           rationale_tags: Array.from(whyTags),
+          project: project.trim(),
         }),
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -1254,6 +1264,12 @@ function RunAcrossModelsSection({ content }) {
           <div style={{ fontSize: 9.5, fontWeight: 700, color: T.accent, fontFamily: FONT, marginBottom: 7 }}>
             Why this one?
           </div>
+          <input
+            value={project} onChange={e => updateProject(e.target.value)}
+            placeholder="Project (optional — groups this decision)"
+            style={{ width: "100%", boxSizing: "border-box", fontFamily: FONT, fontSize: 9.5,
+                     padding: "5px 8px", borderRadius: 3, border: `1px solid ${T.border}`,
+                     background: T.surface, color: T.mutedLt, marginBottom: 8 }} />
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
             {WHY_TAGS.map(t => {
               const on = whyTags.has(t);
