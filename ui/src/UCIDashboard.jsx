@@ -138,6 +138,79 @@ function RiskStrip({ risk }) {
   );
 }
 
+// ── Component transparency ────────────────────────────────────
+const TP_COLOR = {
+  transparent: T.success,
+  partial:     T.warn,
+  opaque:      T.error,
+  unobserved:  T.muted,
+};
+
+function TransparencyPanel({ data }) {
+  if (!data) return <EmptyState msg="No transparency signal yet." />;
+
+  const { summary = {}, transparency_score = 0, components = [] } = data;
+  const pct = Math.round(transparency_score * 100);
+
+  return (
+    <div>
+      {/* Score + summary chips */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10, flexWrap: "wrap" }}>
+        <div style={{ textAlign: "center", minWidth: 54 }}>
+          <div style={{ fontFamily: FONT_MONO, fontSize: 22, fontWeight: 700, color: hScore(pct), lineHeight: 1 }}>
+            {pct}%
+          </div>
+          <div style={{ fontSize: 9, color: T.muted, marginTop: 2 }}>transparent</div>
+        </div>
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", flex: 1 }}>
+          {["transparent", "partial", "opaque", "unobserved"].map(s => (
+            summary[s] ? (
+              <span key={s} title={s} style={{
+                fontSize: 9, fontFamily: FONT_MONO, fontWeight: 700,
+                color: TP_COLOR[s], background: `${TP_COLOR[s]}18`,
+                border: `1px solid ${TP_COLOR[s]}44`, borderRadius: 3, padding: "1px 5px",
+              }}>
+                {summary[s]} {s}
+              </span>
+            ) : null
+          ))}
+        </div>
+      </div>
+
+      {/* Per-component rows */}
+      <div style={{ maxHeight: 220, overflowY: "auto" }}>
+        {components.map((c) => (
+          <div key={c.component} title={
+            c.status === "unobserved"
+              ? "Emitted no events in the observation window"
+              : `confidence: ${c.confidence_keys.join(", ") || "none"}\nevidence: ${c.evidence_keys.join(", ") || "none"}`
+          } style={{
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "5px 0", borderBottom: `1px solid ${T.border}`,
+          }}>
+            <span style={{
+              width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
+              background: TP_COLOR[c.status] || T.muted,
+              boxShadow: c.status === "transparent" ? `0 0 5px ${T.success}88` : "none",
+            }} />
+            <span style={{ fontSize: 11, color: T.mutedLt, fontWeight: 600, flex: 1 }}>
+              {c.component}
+            </span>
+            {/* confidence / evidence presence ticks */}
+            <span style={{ display: "flex", gap: 4, fontSize: 8, fontFamily: FONT_MONO }}>
+              <span title="discloses confidence" style={{ color: c.has_confidence ? T.success : T.muted + "66" }}>◆conf</span>
+              <span title="discloses evidence"   style={{ color: c.has_evidence   ? T.success : T.muted + "66" }}>◆evid</span>
+            </span>
+            <span style={{ fontSize: 9, fontFamily: FONT_MONO, color: T.muted, minWidth: 30, textAlign: "right" }}>
+              {c.events > 0 ? c.events : "—"}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Mini event feed ───────────────────────────────────────────
 function MiniEventFeed({ events }) {
   if (!events?.length) return <EmptyState msg="No events yet." />;
@@ -156,6 +229,7 @@ export default function UCIDashboard({ embedded = false } = {}) {
   const [cos,     setCos]     = useState(null);
   const [events,  setEvents]  = useState([]);
   const [health,  setHealth]  = useState(null);
+  const [transp,  setTransp]  = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
 
@@ -166,11 +240,13 @@ export default function UCIDashboard({ embedded = false } = {}) {
       fetch(`${API}/cos/state`).then(r => r.json()).catch(() => null),
       fetch(`${API}/cos/events?n=30`).then(r => r.json()).catch(() => null),
       fetch(`${API}/health`).then(r => r.json()).catch(() => null),
-    ]).then(([u, s, ev, h]) => {
+      fetch(`${API}/cos/transparency`).then(r => r.json()).catch(() => null),
+    ]).then(([u, s, ev, h, tp]) => {
       setUCI(u);
       setCos(s);
       setEvents(ev?.events || []);
       setHealth(h);
+      setTransp(tp);
       setError(null);
     }).catch(e => setError(e.message))
       .finally(() => setLoading(false));
@@ -296,6 +372,11 @@ export default function UCIDashboard({ embedded = false } = {}) {
           {/* Risk signal */}
           <ObsPanel title="Last Risk Signal" icon="⚑">
             <RiskStrip risk={risk} />
+          </ObsPanel>
+
+          {/* Component transparency */}
+          <ObsPanel title="Component Transparency" icon="◇">
+            <TransparencyPanel data={transp} />
           </ObsPanel>
 
           {/* Live event feed */}

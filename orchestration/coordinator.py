@@ -249,6 +249,21 @@ def _run_with_reflection(invoke_fn, state: AgentState):
 
     run_tracer.record_generate(run_id, agent)
 
+    # Make routing observable: who was selected, how confident, and the
+    # QuerySignal that drove it (signal-first routing's actual evidence).
+    try:
+        from infrastructure.event_bus import emit as _emit_sel, EventType as _ET_sel
+        _emit_sel(_ET_sel.AGENT_SELECTED, {
+            "run_id":     run_id,
+            "agent":      agent,
+            "confidence": confidence,
+            "action":     bd.get("action", "unknown"),
+            "signal":     f"{bd.get('signal_domain', 'general')}/"
+                          f"{bd.get('signal_shape', 'explanation')}",
+        })
+    except Exception:
+        pass
+
     try:
         import cognition.context_snapshot as _cs
         _cs.record_routing(
@@ -480,6 +495,10 @@ def _run_with_reflection(invoke_fn, state: AgentState):
                 _emit(_ET.STEP_VERIFIED_PASS, {
                     "agent": agent, "score": _vr.raw_score,
                     "step_id": _pseudo.step_id,
+                    # disclose the conclusion on pass too (symmetric with the
+                    # fail path) so the Verifier is observably transparent —
+                    # it reports both how certain (score) and what it decided
+                    "recommendation": _vr.recommendation,
                 })
             else:
                 _emit(_ET.STEP_VERIFIED_FAIL, {

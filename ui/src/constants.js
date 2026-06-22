@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.4.4";
+export const VERSION = "1.4.5";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -644,6 +644,18 @@ export const BUILD_PHASES = [
       "index.html, landing.html, and manifest.json reference only icon.svg",
     ],
   },
+  {
+    id: 86, version: "v1.4.5", date: "Jun 22, 2026",
+    label: "Observability & Favicon Fix", title: "Component Transparency & Icon-Usable Favicon", color: "#7E3F8F", status: "done",
+    summary: "Adds a transparent/opaque view of the running system on top of the event bus, fixes a latent event-key bug, and recomposes the v1.4.4 favicon so the AMAGRA wordmark is legible at icon size.",
+    steps: [
+      "Component Transparency: classify_components() + GET /cos/transparency + UCIDashboard panel — labels each component transparent | partial | opaque | unobserved from the evidence + confidence its events disclose (read-only over events.db, no new data collected)",
+      "event_bus key fix: emit/subscribe now use EventType.value, not str(enum) — repairs documented wildcard subscriptions and two dead suggestion_engine heuristics; historical events.db migrated to the dotted form",
+      "Verifier, Router, and Risk Gate now disclose evidence+confidence (transparency_score 0.0 → 0.23); routing (AGENT_SELECTED) is now emitted",
+      "Favicon: gold AMAGRA wordmark recomposed onto a square 512 dark tile with gold ring (was a 720×220 wordmark that rendered ~5px tall and illegible in the tab)",
+      "Known issues (tracked as GitHub issues): Responder & Dispatch still opaque; Intake stays partial (no routing confidence at query-receipt); 7 components read 'unobserved' until exercised by traffic; favicon is SVG-only (no raster/apple-touch fallback)",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -804,6 +816,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.4.5", label: "Observability & Favicon Fix", color: "#7E3F8F", phases: [86] },
   { version: "v1.4.4", label: "Single Gold Favicon",     color: "#7E3F8F", phases: [85] },
   { version: "v1.4.3", label: "Card & Layout Refinement", color: "#7E3F8F", phases: [84] },
   { version: "v1.4.2", label: "Gold Refinement",        color: "#7E3F8F",  phases: [83] },

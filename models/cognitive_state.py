@@ -184,6 +184,14 @@ class CognitiveState:
                 "total_risk":   risk.total_risk,
                 "reflect_level":risk.reflect_level,
                 "reflect_type": risk.reflect_type,
+                # the breakdown that produced total_risk — the evidence
+                # behind the gate's decision (makes Risk Gate transparent)
+                "factors": {
+                    "action_risk":         getattr(risk, "action_risk", None),
+                    "routing_uncertainty": getattr(risk, "routing_uncertainty", None),
+                    "planner_uncertainty": getattr(risk, "planner_uncertainty", None),
+                    "complexity_risk":     getattr(risk, "complexity_risk", None),
+                },
             })
         except Exception:
             pass

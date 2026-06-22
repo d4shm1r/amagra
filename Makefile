@@ -1,4 +1,4 @@
-.PHONY: dev stop benchmark routing-eval logs clean
+.PHONY: dev stop benchmark benchmark-memory routing-eval logs clean
 
 # Start the full stack (API + UI + Ollama)
 dev:
@@ -19,6 +19,12 @@ models:
 # Routing accuracy benchmark (no Docker needed — runs against local Python env)
 benchmark:
 	PYTHONPATH=. python3 evaluation/ablation_eval.py
+
+# Memory recall release gate — deterministic, no Ollama. Writes the gate verdict
+# that synthesis features (e.g. "Explain this project") check before running.
+# Exit code 0 = PASS (synthesis allowed), 1 = FAIL (stays gated).
+benchmark-memory:
+	PYTHONPATH=. python3 evaluation/memory_recall_bench.py
 
 # Tail API logs
 logs:

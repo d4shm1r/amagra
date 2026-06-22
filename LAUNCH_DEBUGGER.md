@@ -1,8 +1,8 @@
 # Amagra — Launch Copy (debugger-led)
 
 Issue #9 assets, reframed to lead with the **cross-model prompt debugger** — the
-differentiated wedge. The memory/replay angle in `LAUNCH_COPY.md` is kept as depth,
-not the headline. Every claim below is fact-checked against the code.
+differentiated wedge. The memory/replay angle is kept as depth, not the headline.
+Every claim below is fact-checked against the code.
 
 > **GATE before posting:** the Run Across Models GUI button is endpoint-verified but
 > not yet click-verified in a browser. Open the app, click **Run** in the Prompt
@@ -110,7 +110,7 @@ docker run --rm -p 8000:8000 d4shm1r/amagra:latest
 ```
 
 After publishing, flip the README quick-start to `docker pull d4shm1r/amagra` and
-update the LAUNCH_COPY "claims to avoid" line that currently says Docker Hub isn't live.
+update any "claims to avoid" line that currently says Docker Hub isn't live.
 
 > Note: to actually reach a cloud model from inside the container you pass the key at
 > run time, e.g. `-e BRAIN_PROVIDER=anthropic -e ANTHROPIC_API_KEY=...`. Local Ollama

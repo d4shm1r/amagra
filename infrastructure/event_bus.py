@@ -132,15 +132,26 @@ def _persist(event_type: str, payload: dict, ts: float) -> None:
 
 # ── Public API ────────────────────────────────────────────────
 
+def _key(event_type: "str | EventType") -> str:
+    """Canonical wire key for an event.
+
+    EventType is a (str, Enum), but str(EventType.X) yields the repr
+    'EventType.X', not the value 'x.y'. Using .value keeps persisted keys,
+    wildcard prefixes ('plan.*'), and substring consumers all speaking the
+    documented dotted form. Plain strings pass through unchanged.
+    """
+    return event_type.value if isinstance(event_type, EventType) else str(event_type)
+
+
 def subscribe(event_type: "str | EventType", handler: Callable) -> None:
     """Register handler for event_type (or prefix with '*' suffix)."""
-    key = str(event_type)
+    key = _key(event_type)
     with _LOCK:
         _HANDLERS[key].append(handler)
 
 
 def unsubscribe(event_type: "str | EventType", handler: Callable) -> None:
-    key = str(event_type)
+    key = _key(event_type)
     with _LOCK:
         _HANDLERS[key] = [h for h in _HANDLERS[key] if h is not handler]
 
@@ -155,7 +166,7 @@ def emit(event_type: "str | EventType", payload: dict = None,
 
     persist=False skips SQLite write (useful for high-frequency events).
     """
-    key     = str(event_type)
+    key     = _key(event_type)
     payload = payload or {}
     ts      = time.time()
 

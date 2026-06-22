@@ -1028,12 +1028,69 @@ function computeDivergence(results) {
   return { count: ok.length, agreement, minW, maxW, verdict, color };
 }
 
+// Quick rationale tags — clean, classifiable signal alongside free text. The
+// "why?" is the activation moment: the user teaches the system which output won
+// and what mattered, turning a throwaway run into a durable decision record.
+const WHY_TAGS = ["Accuracy", "Formatting", "Reasoning", "Speed", "Concise", "Tone"];
+
 function RunAcrossModelsSection({ content }) {
   const [current, setCurrent] = useState(null);   // { provider, model, base_url }
   const [sel,     setSel]     = useState(() => new Set(["current"]));
   const [running, setRunning] = useState(false);
   const [results, setResults] = useState(null);
   const [error,   setError]   = useState(null);
+  // Decision capture (the bridge): which result won, and why.
+  const [chosen,  setChosen]  = useState(null);   // index into results
+  const [why,     setWhy]     = useState("");
+  const [whyTags, setWhyTags] = useState(() => new Set());
+  const [savedId, setSavedId] = useState(null);   // decision id once persisted
+  const [saving,  setSaving]  = useState(false);
+  // Sticky project tag — without it every decision lands in "(all)" and
+  // per-project briefings are meaningless. Persisted so it carries across runs.
+  const [project, setProject] = useState(() => {
+    try { return localStorage.getItem("amagra_project") || ""; } catch { return ""; }
+  });
+  const updateProject = (v) => {
+    setProject(v);
+    try { localStorage.setItem("amagra_project", v); } catch {}
+  };
+
+  const resetCapture = () => { setChosen(null); setWhy(""); setWhyTags(new Set()); setSavedId(null); };
+  const toggleTag = (t) => setWhyTags(prev => {
+    const n = new Set(prev); n.has(t) ? n.delete(t) : n.add(t); return n;
+  });
+
+  async function saveDecision() {
+    if (chosen == null || !results) return;
+    setSaving(true);
+    const win = results[chosen];
+    try {
+      const r = await fetch(`${API}/debug/decision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: content,
+          chosen_provider: win.provider,
+          chosen_model: win.model || "",
+          temperature: 0.2,
+          candidates: results.map(x => ({
+            provider: x.provider, model: x.model, latency_ms: x.latency_ms,
+            chars: x.chars, words: x.words, error: x.error,
+          })),
+          rationale: why.trim(),
+          rationale_tags: Array.from(whyTags),
+          project: project.trim(),
+        }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const d = await r.json();
+      setSavedId(d.decision_id ?? true);
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   useEffect(() => {
     fetch(`${API}/settings/llm`)
@@ -1066,7 +1123,7 @@ function RunAcrossModelsSection({ content }) {
   });
 
   async function run() {
-    setRunning(true); setError(null); setResults(null);
+    setRunning(true); setError(null); setResults(null); resetCapture();
     const models = targets.filter(t => sel.has(t.id)).map(t => t.cfg);
     try {
       const r = await fetch(`${API}/debug/prompt`, {
@@ -1166,8 +1223,10 @@ function RunAcrossModelsSection({ content }) {
           {results.map((res, i) => {
             const ok = !res.error;
             const c  = ok ? T.success : T.error;
+            const isChosen = chosen === i;
             return (
-              <div key={i} style={{ border: `1px solid ${c}33`, borderRadius: 3, background: `${c}08`, overflow: "hidden" }}>
+              <div key={i} style={{ border: `1px solid ${isChosen ? T.accent : c}${isChosen ? "88" : "33"}`,
+                                    borderRadius: 3, background: isChosen ? `${T.accent}10` : `${c}08`, overflow: "hidden" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline",
                               padding: "5px 8px", borderBottom: `1px solid ${c}22`, gap: 6 }}>
                   <span style={{ fontSize: 9.5, fontWeight: 700, color: c, fontFamily: FONT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -1181,9 +1240,78 @@ function RunAcrossModelsSection({ content }) {
                               fontFamily: FONT, lineHeight: 1.6, maxHeight: 200, overflowY: "auto", whiteSpace: "pre-wrap" }}>
                   {ok ? res.output : res.error}
                 </div>
+                {ok && savedId == null && (
+                  <button
+                    onClick={() => setChosen(isChosen ? null : i)}
+                    style={{ width: "100%", padding: "4px 0", border: "none", borderTop: `1px solid ${c}22`,
+                             background: isChosen ? `${T.accent}22` : "transparent",
+                             color: isChosen ? T.accent : T.muted, fontSize: 9, fontWeight: 700,
+                             fontFamily: FONT, cursor: "pointer", letterSpacing: 0.3 }}>
+                    {isChosen ? "✓ CHOSEN" : "CHOOSE THIS"}
+                  </button>
+                )}
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* The "why?" tap — capture rationale on the chosen output. One interaction
+          that yields better memory, better recall, more trust, and activation. */}
+      {results && chosen != null && savedId == null && (
+        <div style={{ marginTop: 12, border: `1px solid ${T.accent}44`, borderRadius: 3,
+                      background: `${T.accent}0A`, padding: "9px 10px" }}>
+          <div style={{ fontSize: 9.5, fontWeight: 700, color: T.accent, fontFamily: FONT, marginBottom: 7 }}>
+            Why this one?
+          </div>
+          <input
+            value={project} onChange={e => updateProject(e.target.value)}
+            placeholder="Project (optional — groups this decision)"
+            style={{ width: "100%", boxSizing: "border-box", fontFamily: FONT, fontSize: 9.5,
+                     padding: "5px 8px", borderRadius: 3, border: `1px solid ${T.border}`,
+                     background: T.surface, color: T.mutedLt, marginBottom: 8 }} />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
+            {WHY_TAGS.map(t => {
+              const on = whyTags.has(t);
+              return (
+                <button key={t} onClick={() => toggleTag(t)}
+                  style={{ padding: "3px 8px", borderRadius: 10, fontSize: 9, fontWeight: 600, fontFamily: FONT,
+                           cursor: "pointer", border: `1px solid ${on ? T.accent : T.border}`,
+                           background: on ? `${T.accent}22` : "transparent", color: on ? T.accent : T.muted }}>
+                  {t}
+                </button>
+              );
+            })}
+          </div>
+          <textarea
+            value={why} onChange={e => setWhy(e.target.value)} rows={2}
+            placeholder="Optional: a sentence on what made this output better…"
+            style={{ width: "100%", boxSizing: "border-box", resize: "vertical", fontFamily: FONT,
+                     fontSize: 10, lineHeight: 1.5, padding: "6px 8px", borderRadius: 3,
+                     border: `1px solid ${T.border}`, background: T.surface, color: T.mutedLt, marginBottom: 8 }} />
+          <button
+            onClick={saveDecision} disabled={saving}
+            style={{ width: "100%", padding: "7px 0", border: `1px solid ${T.accent}66`,
+                     background: `${T.accent}22`, color: T.accent, borderRadius: 3,
+                     fontSize: 10.5, fontWeight: 700, fontFamily: "inherit", cursor: saving ? "default" : "pointer" }}>
+            {saving ? "Saving…" : "Remember this decision"}
+          </button>
+          <div style={{ marginTop: 6, fontSize: 8.5, color: T.muted, lineHeight: 1.5 }}>
+            A reason is captured as <strong>explicit</strong> (trusted) memory; a bare choice is <strong>derived</strong> (tentative).
+          </div>
+        </div>
+      )}
+
+      {/* Activation payoff — the user sees the workspace got smarter. */}
+      {savedId != null && (
+        <div style={{ marginTop: 12, border: `1px solid ${T.success}44`, borderRadius: 3,
+                      background: `${T.success}0E`, padding: "8px 10px" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.success, fontFamily: FONT, marginBottom: 3 }}>
+            ✓ Decision remembered
+          </div>
+          <div style={{ fontSize: 9, color: T.muted, lineHeight: 1.5 }}>
+            Amagra now knows you chose <strong>{results[chosen]?.provider}{results[chosen]?.model ? " / " + results[chosen].model : ""}</strong> for this kind of work. It will surface when you ask about this project.
+          </div>
         </div>
       )}
     </Section>
