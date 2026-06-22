@@ -47,12 +47,109 @@ function HealthStrip({ health }) {
   );
 }
 
+// ── UCI trajectory + curvature sparkline ──────────────────────
+function UCITrajectory({ traj }) {
+  const hist = traj?.history || [];
+  if (hist.length < 2) {
+    return <EmptyState msg="Not enough UCI samples yet — trajectory builds as metrics recompute." />;
+  }
+
+  const vals = hist.map(h => h.uci);
+  const curv = traj?.curvature?.curvature || [];   // aligns to interior points
+  const W = 560, H = 90, PX = 8, PY = 10;
+  const iW = W - 2 * PX, iH = H - 2 * PY;
+  // Fixed 0–100 UCI scale so the slope is honest across refreshes.
+  const xs = i => PX + (i / Math.max(1, vals.length - 1)) * iW;
+  const ys = v => PY + (1 - Math.max(0, Math.min(100, v)) / 100) * iH;
+  const pts = vals.map((v, i) => `${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(" ");
+
+  const last  = vals[vals.length - 1];
+  const first = vals[0];
+  const trend = last - first;
+
+  // Mark the sharpest bend (peak |Δ²|). curvature[k] corresponds to vals[k+1].
+  let peakIdx = -1, peakVal = 0;
+  curv.forEach((c, k) => { if (Math.abs(c) > Math.abs(peakVal)) { peakVal = c; peakIdx = k + 1; } });
+
+  return (
+    <div>
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block", overflow: "visible" }}>
+        {/* 80 / 60 reference grid (Healthy / Nominal thresholds) */}
+        {[80, 60].map(g => (
+          <line key={g} x1={PX} y1={ys(g)} x2={W - PX} y2={ys(g)}
+            stroke={T.border} strokeWidth={1} strokeDasharray="3 4" />
+        ))}
+        {/* UCI line */}
+        <polyline points={pts} fill="none" stroke={hScore(last)} strokeWidth={1.8}
+          strokeLinejoin="round" strokeLinecap="round" />
+        {/* Sharpest-bend marker */}
+        {peakIdx >= 0 && Math.abs(peakVal) > 1 && (
+          <circle cx={xs(peakIdx)} cy={ys(vals[peakIdx])} r={3.5}
+            fill="none" stroke={Math.abs(peakVal) > 2 ? T.error : T.warn} strokeWidth={1.5} />
+        )}
+        {/* Latest point */}
+        <circle cx={xs(vals.length - 1)} cy={ys(last)} r={3} fill={hScore(last)} />
+      </svg>
+      <div style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 10, color: T.muted, flexWrap: "wrap" }}>
+        <span>{vals.length} samples</span>
+        <span>range <span style={{ fontFamily: FONT_MONO }}>{Math.min(...vals).toFixed(1)}–{Math.max(...vals).toFixed(1)}</span></span>
+        <span style={{ color: trend >= 0 ? T.success : T.error }}>
+          {trend >= 0 ? "↑" : "↓"} {trend >= 0 ? "+" : ""}{trend.toFixed(1)} over window
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── Curvature "bend alarm" badge (OCAC Δ² leading indicator) ───
+function CurvatureBadge({ curvature }) {
+  if (!curvature || curvature.n < 3) return null;
+  const peak = curvature.peak_abs_curvature ?? 0;
+  const bending = curvature.bending;
+  const col = bending ? T.error : peak > 1 ? T.warn : T.success;
+  const label = bending ? "bending" : peak > 1 ? "flexing" : "stable";
+  return (
+    <span
+      title={`Δ² leading indicator — peak |curvature| = ${peak.toFixed(2)} UCI pts.\n>2 pts signals an accelerating downturn before the level drops (OCAC).`}
+      style={{
+        fontSize: 9, fontWeight: 700, fontFamily: FONT_MONO,
+        color: col, background: `${col}18`, border: `1px solid ${col}44`,
+        borderRadius: 3, padding: "1px 5px", whiteSpace: "nowrap",
+      }}>
+      Δ² {peak.toFixed(1)} · {label}
+    </span>
+  );
+}
+
+// ── Routing-accuracy source badge (measured vs assumed) ───────
+function SourceBadge({ source }) {
+  if (!source) return null;
+  const measured = source === "measured";
+  const col = measured ? T.success : T.muted;
+  return (
+    <span
+      title={measured
+        ? "Routing accuracy measured live from the most recent agent_arena run."
+        : "No agent_arena run on record — showing the static ablation snapshot, not a live measurement."}
+      style={{
+        fontSize: 8, fontWeight: 700, fontFamily: FONT_MONO, letterSpacing: 0.4,
+        color: col, background: `${col}14`, border: `1px solid ${col}40`,
+        borderRadius: 3, padding: "0 4px", textTransform: "uppercase",
+      }}>
+      {measured ? "measured" : "assumed"}
+    </span>
+  );
+}
+
 // ── Layer detail grid ─────────────────────────────────────────
 function LayerDetail({ name, layer }) {
   if (!layer) return null;
   const comps = { ...layer };
   delete comps.score;
   delete comps.weight;
+  // Rendered inline on the routing_accuracy card, not as its own cell.
+  const routingSource = comps.routing_accuracy_source;
+  delete comps.routing_accuracy_source;
 
   return (
     <div style={{ marginBottom: 16 }}>
@@ -77,8 +174,11 @@ function LayerDetail({ name, layer }) {
             background: T.surface2, borderRadius: 4, padding: "6px 10px",
             border: `1px solid ${T.border}`,
           }}>
-            <div style={{ fontSize: 9, color: T.muted, textTransform: "uppercase", letterSpacing: 0.8 }}>
-              {k.replace(/_/g, " ")}
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <div style={{ fontSize: 9, color: T.muted, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                {k.replace(/_/g, " ")}
+              </div>
+              {k === "routing_accuracy" && <SourceBadge source={routingSource} />}
             </div>
             <div style={{
               fontSize: 13, fontWeight: 700, fontFamily: FONT_MONO,
@@ -230,6 +330,7 @@ export default function UCIDashboard({ embedded = false } = {}) {
   const [events,  setEvents]  = useState([]);
   const [health,  setHealth]  = useState(null);
   const [transp,  setTransp]  = useState(null);
+  const [traj,    setTraj]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
 
@@ -241,12 +342,14 @@ export default function UCIDashboard({ embedded = false } = {}) {
       fetch(`${API}/cos/events?n=30`).then(r => r.json()).catch(() => null),
       fetch(`${API}/health`).then(r => r.json()).catch(() => null),
       fetch(`${API}/cos/transparency`).then(r => r.json()).catch(() => null),
-    ]).then(([u, s, ev, h, tp]) => {
+      fetch(`${API}/cos/uci/trajectory?n=100`).then(r => r.json()).catch(() => null),
+    ]).then(([u, s, ev, h, tp, tj]) => {
       setUCI(u);
       setCos(s);
       setEvents(ev?.events || []);
       setHealth(h);
       setTransp(tp);
+      setTraj(tj);
       setError(null);
     }).catch(e => setError(e.message))
       .finally(() => setLoading(false));
@@ -300,7 +403,7 @@ export default function UCIDashboard({ embedded = false } = {}) {
                 }}>
                   {hUCI != null ? hUCI.toFixed(1) : "—"}
                 </div>
-                <div style={{ fontSize: 10, color: T.muted, marginTop: 3, display: "flex", gap: 5, justifyContent: "center", alignItems: "center" }}>
+                <div style={{ fontSize: 10, color: T.muted, marginTop: 3, display: "flex", gap: 5, justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
                   <span>h_UCI</span>
                   {delta != null && (
                     <span style={{
@@ -314,6 +417,7 @@ export default function UCIDashboard({ embedded = false } = {}) {
                       {delta >= 0 ? "↑" : "↓"} {delta >= 0 ? "+" : ""}{delta.toFixed(1)}
                     </span>
                   )}
+                  <CurvatureBadge curvature={traj?.curvature} />
                 </div>
               </div>
               <div style={{ flex: 1 }}>
@@ -349,6 +453,11 @@ export default function UCIDashboard({ embedded = false } = {}) {
                 ))}
               </div>
             </div>
+          </ObsPanel>
+
+          {/* UCI trajectory + Δ² curvature */}
+          <ObsPanel title="UCI Trajectory" icon="∿">
+            <UCITrajectory traj={traj} />
           </ObsPanel>
 
           {/* Layer detail cards */}

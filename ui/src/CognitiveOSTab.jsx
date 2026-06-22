@@ -120,6 +120,13 @@ function CoherenceHero({ coh, dynamics }) {
     : tail[1].C < tail[0].C - 0.001  ? "↓" : "→";
   const trendColor = trend === "↑" ? T.success : trend === "↓" ? T.error : T.muted;
 
+  // OCAC Δ²C leading indicator: acceleration of coherence change. Peak |Δ²C|
+  // over 0.05 flags a sharp bend before C(t) itself drops (see coherence.py).
+  const curvs   = (dynamics || []).map(d => d.C_curvature).filter(v => v != null);
+  const peakD2C = curvs.reduce((m, v) => Math.abs(v) > Math.abs(m) ? v : m, 0);
+  const bending = Math.abs(peakD2C) > 0.05;
+  const d2cCol  = bending ? T.error : Math.abs(peakD2C) > 0.025 ? T.warn : T.success;
+
   const components = [
     { label: "Routing",     val: C_routing, desc: "brain–router consistency" },
     { label: "Memory",      val: C_quality, desc: "avg knowledge quality" },
@@ -171,6 +178,18 @@ function CoherenceHero({ coh, dynamics }) {
               {mode.label}
             </span>
           </div>
+          {curvs.length > 0 && (
+            <span
+              title={`Δ²C leading indicator — peak |curvature| = ${peakD2C.toFixed(4)}.\n>0.05 signals coherence bending sharply before C(t) drops (OCAC).`}
+              style={{
+                fontSize: 10, fontWeight: 700,
+                fontFamily: "'Consolas', 'Cascadia Code', monospace",
+                color: d2cCol, background: `${d2cCol}15`, border: `1px solid ${d2cCol}40`,
+                borderRadius: 12, padding: "3px 10px", whiteSpace: "nowrap",
+              }}>
+              Δ²C {peakD2C >= 0 ? "+" : ""}{peakD2C.toFixed(3)} · {bending ? "bending" : Math.abs(peakD2C) > 0.025 ? "flexing" : "smooth"}
+            </span>
+          )}
           {components.length > 0 && (
             <button onClick={() => setShowWhy(!showWhy)} style={{
               background: showWhy ? `${T.accent}20` : "transparent",
@@ -299,6 +318,15 @@ function CoherenceTimeline({ dynamics, onWindowChange, window: win }) {
   const lastX = xs(n - 1), lastY = ys(lastC);
   const gridTicks = [0.5, 0.6, 0.7, 0.82, 0.9, 1.0];
 
+  // Sharpest Δ²C bend — ring it as an instability leading indicator.
+  let bendIdx = -1, bendVal = 0;
+  dynamics.forEach((d, i) => {
+    if (d.C_curvature != null && Math.abs(d.C_curvature) > Math.abs(bendVal)) {
+      bendVal = d.C_curvature; bendIdx = i;
+    }
+  });
+  const bendCol = Math.abs(bendVal) > 0.05 ? T.error : T.warn;
+
   return (
     <div>
       {/* Window selector */}
@@ -337,6 +365,14 @@ function CoherenceTimeline({ dynamics, onWindowChange, window: win }) {
 
         {/* C(t) main line */}
         {polyline("C", T.success, 2.5)}
+
+        {/* Sharpest Δ²C bend marker */}
+        {bendIdx >= 0 && Math.abs(bendVal) > 0.025 && (
+          <circle cx={xs(bendIdx)} cy={ys(dynamics[bendIdx].C)} r={4.5}
+            fill="none" stroke={bendCol} strokeWidth={1.6}>
+            <title>{`Sharpest bend: Δ²C = ${bendVal.toFixed(4)} at w${dynamics[bendIdx].window_idx ?? bendIdx}`}</title>
+          </circle>
+        )}
 
         {/* Latest point dot */}
         <circle cx={lastX} cy={lastY} r={4} fill={hc(lastC, 0.82, 0.70)} />

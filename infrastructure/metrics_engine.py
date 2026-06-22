@@ -407,6 +407,7 @@ def hierarchical_metrics(force: bool = False) -> Dict[str, Any]:
             "reliability":  {
                 "score": reliability,
                 "routing_accuracy":  round(m["lrn_routing_accuracy"] * 100, 1),
+                "routing_accuracy_source": m.get("lrn_routing_accuracy_source", "assumed_constant"),
                 "verify_pass_rate":  round(m["rsn_step_pass_rate"] * 100, 1),
                 "gate_accept_rate":  round(m["exec_gate_accept_rate"] * 100, 1),
                 "abort_rate":        round(m.get("rsn_step_replan_rate", 0.05) * 100, 1),
