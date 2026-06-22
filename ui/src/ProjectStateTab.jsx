@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { T, FONT_MONO } from "./theme";
-import { ObsPanel, MetricCard, EventRow, RefreshBtn, EmptyState, hScore } from "./ObsShared";
+import { ObsPanel, MetricCard, EventRow, RefreshBtn, EmptyState, hScore, PageHeader } from "./ObsShared";
 
 const API = "http://localhost:8000";
 
@@ -241,15 +241,9 @@ export default function ProjectStateTab() {
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <div>
-          <h2 style={{ margin: 0, color: T.text, fontSize: 18, fontWeight: 700 }}>Project State</h2>
-          <div style={{ color: T.muted, fontSize: 11, marginTop: 2 }}>
-            Live world model — what the system knows about your project
-          </div>
-        </div>
+      <PageHeader title="Project State" subtitle="Live world model — what the system knows about your project.">
         <RefreshBtn onClick={load} />
-      </div>
+      </PageHeader>
 
       {error && (
         <div style={{ color: T.error, background: T.surface, border: `1px solid ${T.border}`,

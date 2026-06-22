@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { T, LUX, FONT_DISPLAY } from "./theme";
+import { PageHeader } from "./ObsShared";
 
 const API = "http://localhost:8000";
 
@@ -265,16 +266,13 @@ export default function LibraryTab() {
       `}</style>
 
       {/* ── Header ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
-        <h1 style={{ margin: 0, fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 600, letterSpacing: "0.02em", ...LUX.goldText }}>
-          Library
-        </h1>
+      <PageHeader title="Library" subtitle="Your saved documents and references — searchable and collection-tagged.">
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Search your library…"
           style={{
-            marginLeft: "auto", width: 230,
+            width: 230,
             background: T.surface, border: `1px solid ${T.border}`,
             borderRadius: 20, padding: "7px 16px",
             fontSize: 12.5, color: T.text, fontFamily: "inherit", outline: "none",
@@ -289,7 +287,7 @@ export default function LibraryTab() {
           accept=".txt,.md,.py,.js,.ts,.jsx,.tsx,.json,.yaml,.yml,.html,.css,.sh,.sql,.csv,.pdf,.toml,.cfg,.conf,.rst"
           onChange={e => { uploadFiles([...e.target.files]); e.target.value = ""; }}
           style={{ display: "none" }} />
-      </div>
+      </PageHeader>
 
       {/* ── Collection chips ── */}
       {(docs?.length > 0) && (
