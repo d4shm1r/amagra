@@ -32,6 +32,7 @@ import VersionHistoryTab   from "./VersionHistoryTab";
 import ResearchTab         from "./ResearchTab";
 import { BUILD_PHASES, AGENTS, VERSION } from "./constants";
 import PromptEditorTab    from "./PromptEditorTab";
+import ExplainProjectTab  from "./ExplainProjectTab";
 import SkillsTab          from "./SkillsTab";
 import PromisesTab        from "./PromisesTab";
 import ProviderSettingsTab from "./ProviderSettingsTab";
@@ -49,6 +50,7 @@ const SURFACES = [
   { id: "workspace", label: "Workspace", sym: "▸", desc: "Work with your project", tabs: [
     { id: "chat",          label: "Chat" },
     { id: "prompt",        label: "Prompt IDE" },
+    { id: "explain",       label: "Explain" },
     { id: "goals",         label: "Goals" },
     { id: "tasks",         label: "Tasks" },
     { id: "project-state", label: "Project State" },
@@ -412,11 +414,6 @@ function Sidebar({ activeTab, onNav, collapsed, onToggle, apiStatus, coherence, 
           fontFamily: "inherit",
         }}
       >
-        <span style={{
-          width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
-          background: `radial-gradient(circle at 35% 30%, ${GOLD.g1}, ${GOLD.g5})`,
-          animation: "dotPulse 4s ease-in-out infinite",
-        }} />
         {!collapsed && (
           <span style={{
             fontSize: 17, fontWeight: 600, letterSpacing: "0.12em",
@@ -1295,6 +1292,7 @@ export default function App() {
               {activeTab === "cognitive"     && <CognitiveOSTab coherence={coherence} />}
               {activeTab === "inspector"     && <ContextInspectorTab contextId={inspectContextId} />}
               {activeTab === "project-state" && <ProjectStateTab />}
+              {activeTab === "explain"       && <ExplainProjectTab />}
               {activeTab === "plan-graph"    && <PlanGraphTab />}
               {activeTab === "skills"        && <SkillsTab />}
               {activeTab === "guide"         && <GuideTab />}

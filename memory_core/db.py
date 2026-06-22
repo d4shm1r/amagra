@@ -30,6 +30,7 @@ _lock = threading.Lock()
 _TYPE_WEIGHTS = {
     # Structured types (new)
     "reflection": 1.4,   # grounded quality signal, most actionable
+    "decision":   1.35,  # structured, user-confirmed choices (debugger bridge)
     "failure":    1.3,   # negative examples are high-value
     "procedural": 1.2,   # learned reusable patterns
     "episodic":   1.0,   # conversation history (baseline)
