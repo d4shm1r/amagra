@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PROMISES } from "./constants";
-import { LUX, FONT_DISPLAY } from "./theme";
+import { PageHeader } from "./ObsShared";
 
 const T = {
   bg:      "#F4F0E8",
@@ -181,18 +181,10 @@ export default function PromisesTab() {
         borderBottom: `1px solid ${T.border}`,
         paddingBottom: 28, marginBottom: 28,
       }}>
-        <div style={{ marginBottom: 14 }}>
-          <h1 style={{
-            margin: 0, fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 600,
-            letterSpacing: "0.02em", lineHeight: 1.2, display: "inline-block", ...LUX.goldText,
-          }}>
-            Amagra Promises
-          </h1>
-          <p style={{ fontSize: 13, color: T.muted, margin: "6px 0 0", lineHeight: 1.6, maxWidth: 600 }}>
-            These are explicit commitments — not marketing copy. Each promise comes with a target version
-            and a delivery date. Delivered items stay here so you can hold us accountable.
-          </p>
-        </div>
+        <PageHeader
+          title="Amagra Promises"
+          subtitle="These are explicit commitments — not marketing copy. Each promise comes with a target version and a delivery date. Delivered items stay here so you can hold us accountable."
+        />
 
         {/* Stats */}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 18 }}>

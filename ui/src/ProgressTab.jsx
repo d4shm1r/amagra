@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { BUILD_PHASES, ROADMAP, LAUNCH_CHECKLIST } from "./constants";
 import { T } from "./theme";
+import { PageHeader } from "./ObsShared";
 
 // ── Open issues only — resolved items live in Version History ─────────────────
 const ISSUES = [
@@ -300,6 +301,8 @@ export default function ProgressTab() {
 
   return (
     <div style={{ animation: "fadeIn .2s" }}>
+
+      <PageHeader title="Progress" subtitle="Build phases, open issues, launch readiness, and memory health." />
 
       {/* ── Current phase ── */}
       {currentPhase && <CurrentPhase phase={currentPhase} />}

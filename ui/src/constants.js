@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.4.2";
+export const VERSION = "1.4.3";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -623,6 +623,17 @@ export const BUILD_PHASES = [
       "Charts deliberately keep semantic colors (risk/quality/pass-fail) — gold stays on titles, hover borders, and decorative chrome",
     ],
   },
+  {
+    id: 84, version: "v1.4.3", date: "Jun 22, 2026",
+    label: "Card & Layout Refinement", title: "Card & Layout Refinement", color: "#7E3F8F", status: "done",
+    summary: "Review-driven polish of the gold pass: fixes card-in-card nesting on the Cognition dashboard, restores an elegant serif gold title with one consistent stacked header rule, tunes the hover to match the landing card, and aligns every tab to the same page layout.",
+    steps: [
+      "Cognition dashboard: a scoped rule flattens nested lux-cards so each cell is the ONLY card — no more card-in-card (or nested gold borders)",
+      "Elegant serif (Cormorant Garamond) gold-gradient titles, and one consistent header rule everywhere — Title, then description, then actions/forms stacked on new lines below",
+      "Hover matches the landing .feature-card — gradient gold border + soft gold glow together, rounder 16px corners",
+      "Aligned Runs & Trace to the standard centered/padded page (were full-height shells) and normalized the last custom headers (Project State, Library, Releases, Progress, Promises) onto PageHeader",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -783,6 +794,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.4.3", label: "Card & Layout Refinement", color: "#7E3F8F", phases: [84] },
   { version: "v1.4.2", label: "Gold Refinement",        color: "#7E3F8F",  phases: [83] },
   { version: "v1.4.1", label: "UI Refinement",          color: "#7E3F8F",  phases: [82] },
   { version: "v1.4.0", label: "Unified Workspace UI",   color: "#7E3F8F",  phases: [81] },

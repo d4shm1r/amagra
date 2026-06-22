@@ -30,8 +30,10 @@ function Cell({ title, hint, children }) {
         {hint && <span style={{ fontSize: 10, color: T.muted, letterSpacing: "0.02em" }}>{hint}</span>}
       </div>
       {/* The embedded tab components carry their own padding/headers; clip and
-          scroll within the cell so one busy panel can't stretch the grid. */}
-      <div style={{ flex: 1, overflow: "auto", minHeight: 0 }}>
+          scroll within the cell so one busy panel can't stretch the grid. The
+          cog-cell-body class flattens any nested lux-cards so the cell is the
+          ONLY card — content inside reads flat, no card-in-card nesting. */}
+      <div className="cog-cell-body" style={{ flex: 1, overflow: "auto", minHeight: 0 }}>
         {children}
       </div>
     </div>
