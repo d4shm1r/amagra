@@ -46,7 +46,7 @@ CONFIDENCE_KEYS = frozenset({
 # evidence/reason behind its action (the essay's "what evidence / why").
 EVIDENCE_KEYS = frozenset({
     "issues", "evidence", "recommendation", "reason", "signal", "args",
-    "memory_id", "memory_ids", "source", "sources",
+    "factors", "memory_id", "memory_ids", "source", "sources",
     "query", "steps", "parallel_groups",
 })
 
