@@ -128,6 +128,17 @@ def cos_uci_hierarchical(force: bool = False):
         raise HTTPException(status_code=503, detail=str(e))
 
 
+@router.get("/cos/transparency")
+def cos_transparency(window: int = 2000):
+    """Classify each component as transparent / partial / opaque / unobserved
+    from the evidence + confidence its events disclose."""
+    try:
+        from infrastructure.transparency import classify_components
+        return classify_components(window=window)
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
 @router.get("/cos/skills")
 def cos_skills(query: str = ""):
     try:
