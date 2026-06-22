@@ -249,6 +249,21 @@ def _run_with_reflection(invoke_fn, state: AgentState):
 
     run_tracer.record_generate(run_id, agent)
 
+    # Make routing observable: who was selected, how confident, and the
+    # QuerySignal that drove it (signal-first routing's actual evidence).
+    try:
+        from infrastructure.event_bus import emit as _emit_sel, EventType as _ET_sel
+        _emit_sel(_ET_sel.AGENT_SELECTED, {
+            "run_id":     run_id,
+            "agent":      agent,
+            "confidence": confidence,
+            "action":     bd.get("action", "unknown"),
+            "signal":     f"{bd.get('signal_domain', 'general')}/"
+                          f"{bd.get('signal_shape', 'explanation')}",
+        })
+    except Exception:
+        pass
+
     try:
         import cognition.context_snapshot as _cs
         _cs.record_routing(

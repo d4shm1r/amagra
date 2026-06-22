@@ -42,9 +42,10 @@ CONFIDENCE_KEYS = frozenset({
     "confidence", "uncertainty", "total_risk", "risk",
     "score", "signal_conf", "regret",
 })
-# A payload key means the component disclosed *what it acted on*.
+# A payload key means the component disclosed *what it acted on* — the
+# evidence/reason behind its action (the essay's "what evidence / why").
 EVIDENCE_KEYS = frozenset({
-    "issues", "evidence", "recommendation", "args",
+    "issues", "evidence", "recommendation", "reason", "signal", "args",
     "memory_id", "memory_ids", "source", "sources",
     "query", "steps", "parallel_groups",
 })
