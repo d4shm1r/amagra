@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.4.3";
+export const VERSION = "1.4.4";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -634,6 +634,16 @@ export const BUILD_PHASES = [
       "Aligned Runs & Trace to the standard centered/padded page (were full-height shells) and normalized the last custom headers (Project State, Library, Releases, Progress, Promises) onto PageHeader",
     ],
   },
+  {
+    id: 85, version: "v1.4.4", date: "Jun 22, 2026",
+    label: "Single Gold Favicon", title: "Single Gold Favicon", color: "#7E3F8F", status: "done",
+    summary: "Collapse the icon set to one mark: a single gold AMAGRA wordmark SVG favicon. Every raster icon variant is removed and all references point at the one file.",
+    steps: [
+      "icon.svg is now the gold AMAGRA wordmark (serif, gold gradient, width-pinned so it renders without the web font)",
+      "Removed favicon.ico, favicon-32.png, apple-touch-icon.png, logo192.png, logo512.png",
+      "index.html, landing.html, and manifest.json reference only icon.svg",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -794,6 +804,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.4.4", label: "Single Gold Favicon",     color: "#7E3F8F", phases: [85] },
   { version: "v1.4.3", label: "Card & Layout Refinement", color: "#7E3F8F", phases: [84] },
   { version: "v1.4.2", label: "Gold Refinement",        color: "#7E3F8F",  phases: [83] },
   { version: "v1.4.1", label: "UI Refinement",          color: "#7E3F8F",  phases: [82] },
