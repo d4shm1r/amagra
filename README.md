@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.4.6" src="https://img.shields.io/badge/release-v1.4.6-C48808?style=flat-square&labelColor=2E2010" /></a>
+  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.5.1" src="https://img.shields.io/badge/release-v1.5.1-C48808?style=flat-square&labelColor=2E2010" /></a>
   <a href="https://github.com/d4shm1r/amagra/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-C48808?style=flat-square&labelColor=2E2010" /></a>
   <a href="https://github.com/d4shm1r/amagra/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/d4shm1r/amagra?style=flat-square&logo=github&logoColor=white&color=C48808&labelColor=2E2010" /></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-C48808?style=flat-square&logo=python&logoColor=white&labelColor=2E2010" />
@@ -12,13 +12,16 @@
 </p>
 
 <p align="center">
-  <b>A self-hosted AI workspace that remembers your work — and shows its reasoning.</b>
+  <b>The local cross-model prompt debugger.</b><br />
+  Run one prompt across Claude, GPT, and your local models — and see exactly where they disagree.
 </p>
 
 <p align="center">
-  Amagra runs entirely on your own hardware via <a href="https://ollama.com">Ollama</a>. It keeps the
-  context of your projects across sessions, routes each question to the specialist that handles it
-  best, and <b>logs every decision so you can replay exactly why it answered the way it did</b>.
+  Amagra is a self-hosted AI workspace built around a <b>cross-model prompt debugger</b>: send the
+  same prompt to several models at once, read every answer side by side, and get a divergence score
+  showing how much they actually agree. It runs entirely on your own hardware via
+  <a href="https://ollama.com">Ollama</a> (or your own cloud key), remembers the context of your work
+  across sessions, and <b>logs every decision so you can replay exactly why it answered the way it did</b>.
   <br />
   No black box. Nothing leaves your machine.
 </p>
@@ -36,12 +39,34 @@
 
 ## What you get
 
+- **Compare models on one prompt** — send the same prompt to Claude, GPT, and local models at once; read every answer side by side with latency and length.
+- **See where models disagree** — a divergence score quantifies how much the outputs actually agree (Aligned / Mixed / Divergent), so you catch silent prompt failures before your users do.
+- **Runs on your hardware, private by default** — self-hosted via Ollama or your own cloud key; nothing leaves your machine. MIT licensed.
 - **Nothing is hidden** — every answer can be inspected, replayed, and understood. No black box.
 - **It remembers your work** — context carries across sessions, so you stop re-explaining yourself.
-- **Fast when the answer is obvious, careful when it isn't** — simple questions return at once; hard ones get more thought.
 - **Specialists handle the work they understand best** — the right expert answers each question, automatically.
-- **Pick up where you left off** — every conversation keeps its context; switch projects without losing your place.
-- **Yours to run** — MIT licensed, self-hosted on your own machine. Nothing leaves your hardware.
+
+---
+
+## How it compares to other prompt tooling
+
+If you've used **LangSmith**, **Promptfoo**, **Helicone**, or **PromptLayer**, Amagra overlaps
+and diverges in specific ways:
+
+- **It's local-first and private.** Amagra is self-hosted and runs offline against your own
+  Ollama models — no account, no proxy, no prompts leaving your machine. Most cloud eval
+  platforms route your prompts through their infrastructure; Promptfoo is local but
+  CLI/config-file driven.
+- **It compares models in a GUI, not a config file.** Paste one prompt, tick the models, read
+  every answer side by side — latency, length, and a **divergence score** that quantifies how
+  much the outputs actually agree (Aligned / Mixed / Divergent). That agreement metric is the
+  thing most prompt tools don't surface out of the box.
+- **It remembers.** Amagra is a workspace, not a one-shot CLI run — project context, prior
+  prompts, and every routing decision persist across sessions and are replayable.
+
+Use a hosted eval platform if you need cloud dashboards and team analytics. Use Amagra if you
+want to debug prompts across models **privately, on your own hardware, with the comparison and
+the reasoning both in front of you.**
 
 ---
 
@@ -386,6 +411,41 @@ Amagra remains responsible for runtime infrastructure. Agent capabilities become
 ---
 
 > The goal is for every new model and every new agent to increase the value of Amagra's runtime — not compete with it. The memory, routing, and observability layers are the product. Models and agents are adapters.
+
+---
+
+## FAQ
+
+**What is a prompt debugger?**
+A prompt debugger lets you see how a single prompt behaves across different language models —
+side by side — so you can find where it silently breaks, drifts, or produces inconsistent
+answers. Amagra is a local, self-hosted prompt debugger: it runs one prompt across Claude, GPT,
+and local Ollama models at once and scores how much they agree.
+
+**How do I test one prompt across multiple models?**
+In Amagra, paste your prompt into the editor, select the models to compare, and run. Each
+model's output appears in its own card with latency and length, plus a divergence score
+(Aligned / Mixed / Divergent) summarizing how much the answers agree. Programmatically, send a
+`POST /debug/prompt` request with your prompt and the list of models.
+
+**Can I run it locally and offline?**
+Yes. Amagra is self-hosted and runs entirely on your own hardware via Ollama — no account and
+no internet required for local models. Cloud models (Claude, GPT, Gemini) work too if you add
+your own API key, but nothing is required to leave your machine.
+
+**How is Amagra different from LangSmith or Promptfoo?**
+LangSmith is a hosted, cloud-based tracing and eval platform. Promptfoo is an open-source but
+CLI/config-driven evaluator. Amagra is a self-hosted GUI workspace that compares models on one
+prompt, scores their divergence, keeps persistent project memory, and runs fully private on
+your own hardware.
+
+**Is it free?**
+Yes — self-hosting is free and MIT licensed, always. There's also a managed free tier (100
+requests/day, no card), with paid tiers for managed hosting and enterprise features.
+
+**Which models does it support?**
+Local models via Ollama (default), plus Anthropic (Claude), OpenAI (GPT), Google Gemini, and
+any OpenAI-compatible endpoint such as vLLM or LM Studio.
 
 ---
 
