@@ -8,8 +8,11 @@
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://amagra.dev/" />
 
-  <!-- Favicon — gold AMAGRA wordmark on a dark tile, square for icon use -->
+  <!-- Favicon — gold "A" monogram. SVG + raster fallback + apple-touch. -->
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="alternate icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta name="theme-color" content="#160F05" />
 
   <!-- Open Graph -->
@@ -768,6 +771,12 @@
       background: rgba(199,154,67,0.06);
     }
     .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table code {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 12px; color: var(--g5);
+      background: rgba(199,154,67,0.10);
+      padding: 2px 6px; border-radius: 5px;
+    }
     .check { color: #2E7A2C; font-weight: 700; font-size: 14px; }
     .cross { color: var(--t4); font-size: 13px; }
     .partial { color: var(--g4); font-size: 12px; font-weight: 600; }
@@ -986,6 +995,7 @@
       <span class="logo-text">AMAGRA</span>
     </div>
     <ul class="nav-links">
+      <li><a href="#analogy">What it is</a></li>
       <li><a href="#for">Who it's for</a></li>
       <li><a href="#features">Features</a></li>
       <li><a href="#agents">Agents</a></li>
@@ -1005,7 +1015,7 @@
     <div class="container">
       <div class="hero-badge">
         <div class="hero-badge-dot"></div>
-        v1.4.6 · Now available
+        v1.5.0 · Now available
       </div>
       <h1>
         The AI you can trust<br />
@@ -1025,6 +1035,66 @@
         <div class="metric"><div class="metric-val" style="font-size:19px;color:#A04020;">Provenance</div><div class="metric-label">Every decision can be replayed</div></div>
         <div class="metric"><div class="metric-val" style="font-size:19px;color:#2E4A9C;">Private</div><div class="metric-label">Nothing leaves your machine</div></div>
       </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ── ANALOGY: A DEBUGGER FOR PROMPTS ── -->
+  <section id="analogy" style="background: var(--compare-bg);">
+    <div class="container">
+      <div class="section-tag">What It Is</div>
+      <h2>A debugger — for prompts.</h2>
+      <p class="section-sub">You already know this loop from code: install, paste, run, see the errors, fix, run again. Amagra is that exact loop for the prompts you write — same muscle memory, no cloud.</p>
+      <div class="compare-wrap">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th class="col-feature">The loop</th>
+              <th>VS Code + Python</th>
+              <th class="col-amagra">AMAGRA</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-feature">Get it</td>
+              <td>Installer wizard · ~300&nbsp;MB · ~5&nbsp;min</td>
+              <td class="col-amagra"><code>docker pull d4shm1r/amagra</code> → localhost:8000</td>
+            </tr>
+            <tr>
+              <td class="col-feature">Runtime / engine</td>
+              <td>Install the Python extension before you can Run</td>
+              <td class="col-amagra"><span class="check">✓</span> Local model included — zero key, fully offline</td>
+            </tr>
+            <tr>
+              <td class="col-feature">New file</td>
+              <td>Open <code>test.py</code>, paste your code</td>
+              <td class="col-amagra">Open the Prompt Debugger, paste your prompt</td>
+            </tr>
+            <tr>
+              <td class="col-feature">See the problems</td>
+              <td>Hit Run → 10 errors print</td>
+              <td class="col-amagra"><strong>Instant, before Run</strong> — health score + role / task / context / format / constraints checks + token &amp; hallucination warnings</td>
+            </tr>
+            <tr>
+              <td class="col-feature">Fix</td>
+              <td>Edit all 10 by hand</td>
+              <td class="col-amagra"><span class="check">✓</span> One-click auto-repair, or edit and watch the checks turn green live</td>
+            </tr>
+            <tr>
+              <td class="col-feature">Run</td>
+              <td>▶ → one output</td>
+              <td class="col-amagra"><strong>Run Across Models</strong> → same prompt on Claude / GPT / local, side by side</td>
+            </tr>
+            <tr>
+              <td class="col-feature">Read the result</td>
+              <td>Output is output</td>
+              <td class="col-amagra">Outputs + latency + a <strong>divergence verdict</strong> — is it the prompt, or the model?</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="section-sub" style="margin: 28px auto 0; font-style: italic;">VS Code tells you your <em>code</em> is broken. Amagra tells you your <em>prompt</em> is under-specified — and runs it across every model so you see exactly where they disagree.</p>
     </div>
   </section>
 
