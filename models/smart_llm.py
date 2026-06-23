@@ -46,28 +46,53 @@ def enhance_response(
     draft: str,
     agent: str,
     complexity: str,
+    force: bool = False,
 ) -> str:
     """
     Return Claude-enhanced version of draft for compound/moderate queries.
     Falls back to draft unchanged on any error or if API key is absent.
+
+    `force=True` runs the enhancement regardless of complexity — used by the
+    v1.5 hybrid-inference policy to escalate low-confidence routes the router
+    was unsure about, even when their complexity is "simple".
     """
-    if complexity not in _ENHANCE_COMPLEXITY:
-        return draft
+    return enhance_response_detailed(task, draft, agent, complexity, force=force)[0]
+
+
+def enhance_response_detailed(
+    task: str,
+    draft: str,
+    agent: str,
+    complexity: str,
+    force: bool = False,
+):
+    """Like enhance_response but also returns the cloud-pass GenResult (or None).
+
+    Returns (text, gen_result). gen_result carries cost_usd/tokens for the
+    Cognition Productivity cost axis; it is None whenever the enhancement was
+    skipped (complexity gate, missing key, or error) and the draft is returned
+    unchanged.
+    """
+    if not force and complexity not in _ENHANCE_COMPLEXITY:
+        return draft, None
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key:
-        return draft
+        return draft, None
 
     try:
         from providers.anthropic import AnthropicProvider
         model = os.environ.get("ENHANCE_MODEL", "claude-sonnet-4-6")
         provider = AnthropicProvider(model=model, api_key=api_key)
         prompt = f"Agent specialization: {agent}\nTask: {task}\n\nDraft:\n{draft}"
-        enhanced = provider.generate(prompt, system_prompt=_ENHANCEMENT_SYSTEM, temperature=0.2)
-        return enhanced.strip() if enhanced and enhanced.strip() else draft
+        res = provider.generate_detailed(
+            prompt, system_prompt=_ENHANCEMENT_SYSTEM, temperature=0.2,
+        )
+        text = res.text.strip() if res.text and res.text.strip() else draft
+        return text, res
     except Exception as exc:
         print(f"[smart_llm] enhancement skipped ({complexity}): {exc}")
-        return draft
+        return draft, None
 
 
 async def aenhance_response(
@@ -75,9 +100,11 @@ async def aenhance_response(
     draft: str,
     agent: str,
     complexity: str,
+    force: bool = False,
 ) -> str:
-    """Async version of enhance_response."""
-    if complexity not in _ENHANCE_COMPLEXITY:
+    """Async version of enhance_response. `force=True` bypasses the complexity
+    gate (v1.5 hybrid-inference low-confidence escalation)."""
+    if not force and complexity not in _ENHANCE_COMPLEXITY:
         return draft
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")

@@ -756,6 +756,14 @@ def similar_runs(root_cause: str, exclude: str = "", limit: int = 20):
     }
 
 
+# /runs/cost must be registered BEFORE /runs/{run_id}
+@router.get("/runs/cost")
+def runs_cost(limit: int = 200):
+    """Inference-cost summary over recent runs (Cognition Productivity axis).
+    All-zero in the local-only default — escalation is opt-in (AMAGRA_HYBRID)."""
+    return run_tracer.cost_summary(limit=limit)
+
+
 @router.get("/runs/{run_id}")
 def get_run(run_id: str):
     trace = run_tracer.get_run(run_id)

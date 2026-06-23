@@ -325,20 +325,62 @@ def _run_with_reflection(invoke_fn, state: AgentState):
         except Exception as e:
             print(f"[critic_gate] gate error: {e}")
 
-    # ── Claude enhancement pass (compound/moderate queries) ──────
+    # ── Claude enhancement pass ──────────────────────────────────
     # phi4-mini generates the draft; Claude elevates it to elite quality.
     # Runs after critic gate so only passing responses are enhanced.
+    #
+    # Two escalation triggers:
+    #   - legacy (always): compound/moderate complexity → enhance when a key is
+    #     set. Unchanged behaviour, preserved for existing deployments.
+    #   - hybrid policy (opt-in, AMAGRA_HYBRID=1): also escalate routes the
+    #     router was unsure about (low confidence), via select_provider() so the
+    #     tier/budget/readiness gates apply. Local stays default when the flag
+    #     is off — the policy is disabled and this adds nothing.
     _complexity = bd.get("complexity", "simple")
-    if response_raw and _complexity in {"compound", "moderate"}:
+    _legacy_escalate = _complexity in {"compound", "moderate"}
+    _hybrid_escalate = False
+    if response_raw and not _legacy_escalate:
         try:
-            from models.smart_llm import enhance_response
+            from providers.policy import load_policy, select_provider
+            # Server-side path: the operator who set AMAGRA_HYBRID=1 is the
+            # authorizer, so escalate at an allowed service tier (override via
+            # AMAGRA_HYBRID_TIER); per-user tier gating lives at the API edge.
+            _choice = select_provider(
+                confidence=confidence,
+                complexity=_complexity,
+                tier=os.environ.get("AMAGRA_HYBRID_TIER", "pro"),
+                policy=load_policy(),
+            )
+            _hybrid_escalate = _choice.escalated
+            if _hybrid_escalate:
+                print(f"[smart_llm] hybrid policy → {_choice.reason} "
+                      f"(conf={confidence:.2f})")
+        except Exception as _e:
+            print(f"[hybrid] policy check skipped: {_e}")
+
+    if response_raw and (_legacy_escalate or _hybrid_escalate):
+        try:
+            from models.smart_llm import enhance_response_detailed
             from langchain_core.messages import AIMessage as _AIMsg
-            _enhanced = enhance_response(task, response_raw, agent, _complexity)
+            # force the enhancement when only the hybrid trigger fired (the
+            # query's complexity is "simple", which enhance_response skips).
+            _enhanced, _gen = enhance_response_detailed(
+                task, response_raw, agent, _complexity,
+                force=_hybrid_escalate and not _legacy_escalate,
+            )
             if _enhanced and _enhanced != response_raw:
                 if result.get("messages"):
                     result["messages"][-1] = _AIMsg(content=_enhanced)
                 response_raw = _enhanced
                 print(f"[smart_llm] ✦ Claude enhanced response for {agent} ({_complexity})")
+            # Record the cloud-pass cost for the Productivity axis (even if the
+            # enhanced text matched the draft — the spend still happened).
+            if _gen is not None:
+                run_tracer.record_cost(
+                    run_id, cost_usd=_gen.cost_usd,
+                    tokens_in=_gen.tokens_in, tokens_out=_gen.tokens_out,
+                    provider=_gen.provider, escalated=True,
+                )
         except Exception as _e:
             print(f"[smart_llm] enhancement error: {_e}")
 
