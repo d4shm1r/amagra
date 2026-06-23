@@ -225,13 +225,13 @@ export default function TaskQueue() {
         <button
           onClick={runAll}
           disabled={queueRunning || counts.pending === 0}
+          className={queueRunning || counts.pending === 0 ? undefined : "btn-gold"}
           style={{
-            background: queueRunning || counts.pending === 0 ? "#E0D6C4" : "#15803D",
-            border: "none", borderRadius: 4,
-            color: queueRunning || counts.pending === 0 ? "#9A7A60" : "#F4F0E8",
-            padding: "10px 20px", fontSize: 14, fontWeight: 800,
+            padding: "10px 22px", fontSize: 14, fontWeight: 800, fontFamily: "inherit",
             cursor: queueRunning || counts.pending === 0 ? "not-allowed" : "pointer",
-            fontFamily: "inherit",
+            ...(queueRunning || counts.pending === 0
+              ? { background: "#E0D6C4", color: "#9A7A60", border: "none", borderRadius: 4 }
+              : {}),
           }}>
           {queueRunning ? "⏳ Running…" : "▶ RUN ALL PENDING"}
         </button>

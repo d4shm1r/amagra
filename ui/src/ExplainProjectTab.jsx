@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { T, FONT_UI, FONT_DISPLAY, FONT_MONO } from "./theme";
+import { PageHeader } from "./ObsShared";
 
 const API = "http://localhost:8000";
 
@@ -36,13 +37,11 @@ export default function ExplainProjectTab() {
 
   return (
     <div style={{ maxWidth: 760, margin: "0 auto", fontFamily: FONT_UI, color: T.text }}>
-      <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 30, fontWeight: 600, color: T.accent,
-                   margin: "0 0 4px", letterSpacing: 0.2 }}>
-        Explain this project
-      </h1>
-      <p style={{ fontSize: 13, color: T.mutedLt, margin: "0 0 20px", lineHeight: 1.6 }}>
-        A briefing built from the decisions you've recorded — what was chosen, and why.
-      </p>
+      <PageHeader
+        title="Explain this project"
+        subtitle="A briefing built from the decisions you've recorded — what was chosen, and why."
+        gold
+      />
 
       {/* Project selector */}
       <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
@@ -55,10 +54,9 @@ export default function ExplainProjectTab() {
                    border: `1px solid ${T.border}`, background: T.surface, color: T.text }}
         />
         <button
-          onClick={explain} disabled={loading}
-          style={{ padding: "9px 20px", borderRadius: 6, fontFamily: FONT_UI, fontSize: 13, fontWeight: 600,
-                   border: `1px solid ${T.accent}`, background: T.accent, color: "#fff",
-                   cursor: loading ? "default" : "pointer" }}>
+          onClick={explain} disabled={loading} className="btn-gold"
+          style={{ padding: "9px 22px", fontSize: 13, whiteSpace: "nowrap",
+                   opacity: loading ? 0.65 : 1, cursor: loading ? "default" : "pointer" }}>
           {loading ? "Reading…" : "Explain"}
         </button>
       </div>
