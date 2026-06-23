@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.4.5";
+export const VERSION = "1.4.6";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -656,6 +656,19 @@ export const BUILD_PHASES = [
       "Known issues (tracked as GitHub issues): Responder & Dispatch still opaque; Intake stays partial (no routing confidence at query-receipt); 7 components read 'unobserved' until exercised by traffic; favicon is SVG-only (no raster/apple-touch fallback)",
     ],
   },
+  {
+    id: 87, version: "v1.4.6", date: "Jun 23, 2026",
+    label: "OCAC Stability Metrics", title: "Contraction/Lyapunov Theory + Dashboard Observability", color: "#7E3F8F", status: "done",
+    summary: "Frames the learning loop as a parametrised contraction fixed-point family (OCAC) and imports its proved consequences as live metrics — then surfaces those metrics on the dashboard so the stability signal is visible, not just computed.",
+    steps: [
+      "math_metrics.py: pure, self-tested OCAC-bridge functions (effective_contraction, resolvent_bound, affine_lyapunov_decay, instability_conjunctive, series_curvature, invariant_health, chain_error_bound, gevrey_majorant, stable_recursion_depth)",
+      "learning.py: adaptive-α gate instability switched from a 0.4/0.4/0.2 weighted average to conjunctive soft-OR — a single failing OCAC signal now halts learning instead of being diluted",
+      "coherence.py: C_quality decoupled from routing (independently-graded memory quality, restoring effective DOF) + Δ²C curvature channel & peak alarm",
+      "metrics_engine.py: routing_accuracy source-tagged (measured from arena.db vs assumed_constant) + uci_history()/uci_curvature() expose the UCI trajectory and its Δ² leading indicator",
+      "Dashboard: GET /cos/uci/trajectory; UCIDashboard UCI trajectory sparkline + Δ² bend-alarm badge + measured/assumed source badge; CognitiveOSTab Δ²C bend-alarm badge + sharpest-bend ring on the C(t) timeline",
+      "Curvature is the leading indicator: it catches the acceleration of a downturn before the level itself drops. Verified: full suite 834 passed",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -816,6 +829,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.4.6", label: "OCAC Stability Metrics", color: "#7E3F8F", phases: [87] },
   { version: "v1.4.5", label: "Observability & Favicon Fix", color: "#7E3F8F", phases: [86] },
   { version: "v1.4.4", label: "Single Gold Favicon",     color: "#7E3F8F", phases: [85] },
   { version: "v1.4.3", label: "Card & Layout Refinement", color: "#7E3F8F", phases: [84] },

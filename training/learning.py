@@ -18,7 +18,7 @@
 # Derived inside (never by callers):
 #   calibration_bias  = EMA(confidence - performance)
 #   learning_signal   = performance - 0.5 * regret
-#   instability       = 0.4*regret + 0.4*|cal_bias| + 0.2*weight_variance
+#   instability       = 1 - (1-regret)(1-|cal_bias|)(1-weight_var)  (soft-OR)
 #   adaptive_alpha    = 0.05 * f(instability)
 #   delta             = clamp(alpha * (signal - weight), -0.02, +0.02)
 # ─────────────────────────────────────────────────────────────
@@ -34,6 +34,7 @@ from decision.weights import (
     get_calibration,
     KNOWN_AGENTS, BOUNDS,
 )
+from evaluation.math_metrics import instability_conjunctive
 
 BASE_ALPHA      = 0.05
 SLOW_THRESHOLD  = 0.60   # log threshold: alpha has dropped below ~40% of BASE_ALPHA
@@ -73,20 +74,21 @@ def apply_learning_update(
     learning_signal = round(performance - 0.5 * regret, 4)
 
     # ── C. Instability composite ──────────────────────────────
-    # Three sources of uncertainty, weighted by relative importance:
-    #   routing regret     — was this even the right agent?
-    #   calibration bias   — do our confidence estimates track reality?
-    #   weight variance    — are agents diverging from neutral?
+    # Three sources of uncertainty:
+    #   routing regret     — was this even the right agent?   (OCAC A1)
+    #   calibration bias   — do confidence estimates track reality?  (OCAC A3)
+    #   weight variance    — are agents diverging from neutral / is the
+    #                        update still a contraction?       (OCAC A2)
+    # The OCAC "H theorem" formalization proves A1/A2/A3 are each *individually
+    # necessary* for stability (each has its own counterexample), so they are
+    # conjunctive: any one failing is destabilising. A weighted average would
+    # let a healthy term mask a failure, so we use the soft-OR
+    # I = 1 - ∏(1 - tᵢ), which spikes as soon as a single condition degrades.
     weights  = load_weights()
     vals     = list(weights.values())
     wt_mean  = sum(vals) / len(vals) if vals else 1.0
     wt_var   = sum((v - wt_mean) ** 2 for v in vals) / len(vals) if vals else 0.0
-    instability = round(
-        0.4 * min(regret, 1.0) +
-        0.4 * min(abs(cal_bias), 1.0) +
-        0.2 * min(wt_var, 1.0),
-        4,
-    )
+    instability = round(instability_conjunctive(regret, cal_bias, wt_var), 4)
 
     # ── D. Adaptive alpha ─────────────────────────────────────
     # Smooth sigmoid decay: alpha(I) = BASE_ALPHA / (1 + exp(k*(I - 0.5)))

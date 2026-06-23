@@ -83,6 +83,19 @@ def test_cos_uci():
 def test_cos_uci_hierarchical():
     r = client.get("/cos/uci/hierarchical", headers=HEADERS)
     _ok_or_503(r)
+    if r.status_code == 200:
+        # routing accuracy must disclose whether it is measured or assumed
+        rel = r.json()["layers"]["reliability"]
+        assert rel["routing_accuracy_source"] in ("measured", "assumed_constant")
+
+def test_cos_uci_trajectory():
+    r = client.get("/cos/uci/trajectory?n=50", headers=HEADERS)
+    _ok_or_503(r)
+    if r.status_code == 200:
+        data = r.json()
+        assert "history" in data and "curvature" in data
+        assert "peak_abs_curvature" in data["curvature"]
+        assert "bending" in data["curvature"]
 
 
 # ── /cos/skills ───────────────────────────────────────────────────────────────
