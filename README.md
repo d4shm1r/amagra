@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.4.5" src="https://img.shields.io/badge/release-v1.4.5-C48808?style=flat-square&labelColor=2E2010" /></a>
+  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.4.6" src="https://img.shields.io/badge/release-v1.4.6-C48808?style=flat-square&labelColor=2E2010" /></a>
   <a href="https://github.com/d4shm1r/amagra/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-C48808?style=flat-square&labelColor=2E2010" /></a>
   <a href="https://github.com/d4shm1r/amagra/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/d4shm1r/amagra?style=flat-square&logo=github&logoColor=white&color=C48808&labelColor=2E2010" /></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-C48808?style=flat-square&logo=python&logoColor=white&labelColor=2E2010" />
