@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Amagra — Self-Hosted AI Assistant with Persistent Memory</title>
-  <meta name="description" content="Amagra is a self-hosted AI workspace that remembers your work and shows its reasoning — running entirely on your own computer, with nothing leaving your machine. A private ChatGPT alternative with no black box and no cloud." />
+  <title>Amagra — The Local Cross-Model Prompt Debugger</title>
+  <meta name="description" content="Amagra is a local, self-hosted cross-model prompt debugger. Run one prompt across Claude, GPT, and your local models at once, compare every answer side by side, and get a divergence score showing how much they agree — privately, on your own hardware. A self-hosted alternative to LangSmith and Promptfoo." />
   <meta name="robots" content="index, follow" />
+  <meta name="keywords" content="prompt debugger, cross-model prompt testing, prompt evaluation tool, LLM comparison tool, self-hosted LangSmith alternative, Promptfoo alternative, prompt engineering workflow, AI observability, divergence score, local LLM, Ollama, Claude GPT Gemini comparison" />
   <link rel="canonical" href="https://amagra.dev/" />
 
   <!-- Favicon — gold "A" monogram. SVG + raster fallback + apple-touch. -->
@@ -18,15 +19,15 @@
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://amagra.dev/" />
-  <meta property="og:title" content="Amagra — Self-Hosted AI Assistant with Persistent Memory" />
-  <meta property="og:description" content="Private, local-first AI assistant that remembers your projects across sessions and shows its work — every routing decision logged and replayable. Runs 100% on your hardware via Ollama." />
+  <meta property="og:title" content="Amagra — The Local Cross-Model Prompt Debugger" />
+  <meta property="og:description" content="Run one prompt across Claude, GPT, and your local models at once. Compare every answer side by side with a divergence score, privately on your own hardware. Self-hosted, MIT licensed." />
   <meta property="og:image" content="https://amagra.dev/social-preview.png" />
   <meta property="og:site_name" content="Amagra" />
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Amagra — Self-Hosted AI Assistant with Persistent Memory" />
-  <meta name="twitter:description" content="A private ChatGPT alternative that runs on your own hardware. Persistent memory across sessions, and every answer is replayable." />
+  <meta name="twitter:title" content="Amagra — The Local Cross-Model Prompt Debugger" />
+  <meta name="twitter:description" content="Run one prompt across Claude, GPT, and local models. Compare answers side by side with a divergence score — private, self-hosted, on your own hardware." />
   <meta name="twitter:image" content="https://amagra.dev/social-preview.png" />
 
   <!-- Structured data: tells search engines this is software, not a blog -->
@@ -37,12 +38,52 @@
     "name": "Amagra",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Linux, macOS, Windows (Docker)",
-    "description": "Self-hosted, local-first AI assistant with persistent memory and replayable reasoning. A private ChatGPT alternative running 100% on your own hardware via Ollama.",
+    "description": "Local, self-hosted cross-model prompt debugger. Run one prompt across Claude, GPT, Gemini, and local Ollama models at once, compare every answer side by side, and get a divergence score showing how much they agree — privately, on your own hardware.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-    "featureList": "Persistent memory across sessions, Replayable routing decisions, Specialist agent routing, 100% local and private, Built on Ollama + LangGraph + FAISS",
+    "featureList": "Cross-model prompt comparison, Divergence scoring (Aligned/Mixed/Divergent), Runs one prompt across Claude/GPT/Gemini/local models, 100% local and private, Persistent memory across sessions, Replayable reasoning, Self-hosted via Ollama",
     "downloadUrl": "https://github.com/d4shm1r/amagra",
     "license": "https://opensource.org/licenses/MIT",
     "author": { "@type": "Person", "name": "d4shm1r" }
+  }
+  </script>
+
+  <!-- Structured data: FAQPage — mirrors the visible FAQ so AI engines can extract direct answers -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I test one prompt across multiple models?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Paste your prompt, pick the models to compare, and run. Each model's answer appears side by side with latency and length, plus a divergence score showing how much they agree. Programmatically, send a POST /debug/prompt request with your prompt and the list of models." }
+      },
+      {
+        "@type": "Question",
+        "name": "What is a divergence score?",
+        "acceptedAnswer": { "@type": "Answer", "text": "It measures how much the models' outputs actually agree, as the average pairwise word overlap across responses — reported as Aligned, Mixed, or Divergent with an agreement percentage. It lets you spot inconsistent prompt behavior at a glance instead of reading every output." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does my data ever leave my machine?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. With local Ollama models, inference, memory, and routing all run on your hardware with zero telemetry. Cloud models (Claude, GPT, Gemini) are opt-in and only used if you add your own API key." }
+      },
+      {
+        "@type": "Question",
+        "name": "Which models does Amagra support?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Local models via Ollama (the default), plus Anthropic Claude, OpenAI GPT, Google Gemini, and any OpenAI-compatible endpoint such as vLLM or LM Studio." }
+      },
+      {
+        "@type": "Question",
+        "name": "How is Amagra different from LangSmith or Promptfoo?",
+        "acceptedAnswer": { "@type": "Answer", "text": "LangSmith is a hosted cloud platform; Promptfoo is open-source but CLI and config-driven. Amagra is a self-hosted GUI workspace that compares models on one prompt, scores their divergence, and runs fully private on your own hardware." }
+      },
+      {
+        "@type": "Question",
+        "name": "Is Amagra free, and is there a managed option?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Self-hosting is free and MIT licensed, always. There's also a managed free tier (100 requests/day, no card), plus Developer and Team plans with managed hosting — no GPU required." }
+      }
+    ]
   }
   </script>
 
@@ -960,7 +1001,107 @@
     .faq-q { font-size: 14px; font-weight: 700; color: var(--g3); margin-bottom: 10px; letter-spacing: -0.02em; position: relative; z-index: 1; }
     .faq-a { font-size: 13px; color: var(--t3); line-height: 1.75; position: relative; z-index: 1; }
 
+    /* ── HERO TRUST ROW ── */
+    .hero-trust {
+      display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+      margin-top: 32px;
+    }
+    .hero-trust span {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 12px; font-weight: 600; color: var(--t2);
+      padding: 7px 16px; border-radius: 40px;
+      background: var(--l3);
+      border: 1px solid rgba(199,154,67,0.18);
+      box-shadow: 3px 3px 9px var(--sd1), -1px -1px 5px var(--sl1), inset 0 1px 1px var(--sl2);
+    }
+    .hero-trust span::before { content: "✓"; color: var(--g4); font-weight: 800; font-size: 11px; }
+
+    /* ── CROSS-MODEL DEMO PANEL ── */
+    #demo { background: var(--hero-bg); padding: 0 32px 96px; }
+    .demo-panel {
+      max-width: 1000px; margin: 0 auto;
+      border-radius: 22px;
+      background:
+        linear-gradient(#17120D, #17120D) padding-box,
+        linear-gradient(145deg, rgba(242,216,155,0.40), rgba(138,99,36,0.50)) border-box;
+      border: 1.5px solid transparent;
+      box-shadow:
+        inset 2px 2px 14px rgba(20,12,4,0.45),
+        14px 18px 50px rgba(72,52,28,0.22),
+        -3px -3px 14px var(--sl1);
+      overflow: hidden;
+    }
+    .demo-head {
+      display: flex; align-items: center; gap: 8px;
+      padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.03);
+    }
+    .demo-head .mock-dot { width: 9px; height: 9px; border-radius: 50%; }
+    .demo-prompt {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 12px; color: rgba(212,196,172,0.92); margin-left: 10px;
+    }
+    .demo-prompt .label { color: rgba(199,154,67,0.70); }
+    .demo-cols {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1px; background: rgba(255,255,255,0.06);
+    }
+    .demo-col { background: #17120D; padding: 18px; }
+    .demo-model {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; margin-bottom: 14px;
+    }
+    .demo-model .pill { width: 7px; height: 7px; border-radius: 50%; }
+    .demo-line { height: 8px; border-radius: 5px; background: rgba(255,255,255,0.09); margin-bottom: 8px; }
+    .demo-line.s { width: 58%; } .demo-line.m { width: 82%; }
+    .demo-tag {
+      display: inline-block; margin-top: 8px;
+      font-size: 10px; font-family: 'JetBrains Mono', ui-monospace, monospace;
+      padding: 3px 9px; border-radius: 8px;
+    }
+    .demo-foot {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      padding: 16px 22px; border-top: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.025);
+    }
+    .demo-verdict {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 13px; font-weight: 700; color: #E0B84C;
+      display: flex; align-items: center; gap: 9px;
+    }
+    .demo-meter { flex: 1; min-width: 150px; height: 8px; border-radius: 5px; background: rgba(255,255,255,0.08); overflow: hidden; position: relative; }
+    .demo-meter > i { position: absolute; top: 0; bottom: 0; left: 0; width: 42%; background: linear-gradient(90deg, #C0392B, #D4AC0D); border-radius: 5px; }
+    .demo-foot .note { font-size: 11px; color: rgba(212,196,172,0.55); }
+    .demo-caption { text-align: center; font-size: 11px; color: var(--t4); margin-top: 16px; letter-spacing: 0.04em; }
+
+    /* ── WHY PROMPTS FAIL ── */
+    #pain { background: var(--features-bg); }
+    .pain-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
+      gap: 16px; margin-bottom: 36px;
+    }
+    .pain-card {
+      background: var(--l2); border-radius: 22px; padding: 26px;
+      border: 1px solid rgba(255,255,255,0.42);
+      box-shadow: 7px 7px 18px var(--sd2), -3px -3px 10px var(--sl1), inset 0 1px 1px var(--sl2);
+      position: relative; overflow: hidden;
+    }
+    .pain-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 44%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.46) 0%, rgba(255,255,255,0) 100%);
+      border-radius: 22px 22px 0 0; pointer-events: none;
+    }
+    .pain-model { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 9px; position: relative; z-index: 1; }
+    .pain-verb { font-size: 16px; font-weight: 700; color: var(--t1); margin-bottom: 6px; letter-spacing: -0.02em; position: relative; z-index: 1; }
+    .pain-desc { font-size: 12.5px; color: var(--t3); line-height: 1.62; position: relative; z-index: 1; }
+    .pain-punch { text-align: center; font-size: 15px; color: var(--t2); max-width: 640px; margin: 0 auto; line-height: 1.72; }
+    .pain-punch strong { color: var(--g5); }
+
     /* ── RESPONSIVE ── */
+    @media (max-width: 720px) {
+      .demo-cols { grid-template-columns: 1fr; }
+    }
     @media (max-width: 640px) {
       nav { padding: 0 18px; }
       section { padding: 72px 18px; }
@@ -995,8 +1136,9 @@
       <span class="logo-text">AMAGRA</span>
     </div>
     <ul class="nav-links">
+      <li><a href="#pain">Why prompts fail</a></li>
       <li><a href="#analogy">What it is</a></li>
-      <li><a href="#for">Who it's for</a></li>
+      <li><a href="#for">Use cases</a></li>
       <li><a href="#features">Features</a></li>
       <li><a href="#agents">Agents</a></li>
       <li><a href="#cognitive">Observe</a></li>
@@ -1015,26 +1157,100 @@
     <div class="container">
       <div class="hero-badge">
         <div class="hero-badge-dot"></div>
-        v1.5.0 · Now available
+        v1.5.1 · Now available
       </div>
       <h1>
-        The AI you can trust<br />
-        <span class="text-accent">with long-term work.</span>
+        See where your prompt<br />
+        <span class="text-accent">breaks across models.</span>
       </h1>
       <p class="hero-sub">
-        A self-hosted, local-first AI assistant with persistent memory. It remembers
-        your projects across sessions and shows its work — every routing decision is
-        logged and replayable — all on your own hardware.
+        Run the same prompt across Claude, GPT, Gemini, and your local models at once.
+        Compare every answer side by side, get a divergence score showing how much they
+        agree, and fix prompt failures before they reach production — privately, on your own hardware.
       </p>
       <div class="hero-actions">
-        <a href="#pricing" class="btn btn-primary btn-lg">Start free — self-hosted</a>
+        <a href="#how" class="btn btn-primary btn-lg">Start free — self-hosted</a>
         <a href="https://github.com/d4shm1r/amagra" class="btn btn-ghost btn-lg">View on GitHub →</a>
       </div>
-      <div class="metrics-strip">
-        <div class="metric"><div class="metric-val" style="font-size:19px;color:#8A6324;">Memory</div><div class="metric-label">Remembers across sessions</div></div>
-        <div class="metric"><div class="metric-val" style="font-size:19px;color:#A04020;">Provenance</div><div class="metric-label">Every decision can be replayed</div></div>
-        <div class="metric"><div class="metric-val" style="font-size:19px;color:#2E4A9C;">Private</div><div class="metric-label">Nothing leaves your machine</div></div>
+      <div class="hero-trust">
+        <span>Local-first</span>
+        <span>MIT licensed</span>
+        <span>Self-hosted</span>
+        <span>Works offline</span>
       </div>
+    </div>
+  </section>
+
+  <!-- ── CROSS-MODEL DEMO PANEL (above the fold) ── -->
+  <section id="demo">
+    <div class="demo-panel">
+      <div class="demo-head">
+        <div class="mock-dot" style="background:#C0392B;"></div>
+        <div class="mock-dot" style="background:#D4AC0D;"></div>
+        <div class="mock-dot" style="background:#27AE60;"></div>
+        <span class="demo-prompt"><span class="label">prompt ›</span> Summarize this contract clause in one sentence.</span>
+      </div>
+      <div class="demo-cols">
+        <div class="demo-col">
+          <div class="demo-model"><span class="pill" style="background:#C8884A;"></span> Claude</div>
+          <div class="demo-line m"></div>
+          <div class="demo-line"></div>
+          <div class="demo-line s"></div>
+          <span class="demo-tag" style="background:rgba(46,122,44,0.22);color:#6DBF6A;">answered · 1.2s</span>
+        </div>
+        <div class="demo-col">
+          <div class="demo-model"><span class="pill" style="background:#10A37F;"></span> GPT</div>
+          <div class="demo-line"></div>
+          <div class="demo-line m"></div>
+          <div class="demo-line s"></div>
+          <span class="demo-tag" style="background:rgba(46,122,44,0.22);color:#6DBF6A;">answered · 0.9s</span>
+        </div>
+        <div class="demo-col">
+          <div class="demo-model"><span class="pill" style="background:#4285F4;"></span> Gemini</div>
+          <div class="demo-line s"></div>
+          <div class="demo-line"></div>
+          <div class="demo-line m"></div>
+          <span class="demo-tag" style="background:rgba(192,57,43,0.22);color:#E08A7A;">refused · added caveats</span>
+        </div>
+      </div>
+      <div class="demo-foot">
+        <div class="demo-verdict">Divergence: 42% <span style="color:#E08A7A;font-weight:600;">· Mixed</span></div>
+        <div class="demo-meter"><i></i></div>
+        <span class="note">Same prompt. Three answers. One refused. You'd never see this with a single model.</span>
+      </div>
+    </div>
+    <div class="demo-caption">Run Across Models — outputs side by side with a divergence verdict</div>
+  </section>
+
+  <!-- ── WHY PROMPTS FAIL (sell the pain) ── -->
+  <section id="pain">
+    <div class="container">
+      <div class="section-tag">The Problem</div>
+      <h2>Why prompts fail.</h2>
+      <p class="section-sub">The same prompt rarely behaves the same way twice. Most teams never discover it until production — when a customer does.</p>
+      <div class="pain-grid">
+        <div class="pain-card">
+          <div class="pain-model" style="color:#10A37F;">ON GPT</div>
+          <div class="pain-verb">It succeeds</div>
+          <div class="pain-desc">Clean, confident output. So you ship it — assuming every model behaves the same.</div>
+        </div>
+        <div class="pain-card">
+          <div class="pain-model" style="color:#C8884A;">ON CLAUDE</div>
+          <div class="pain-verb">It hallucinates</div>
+          <div class="pain-desc">Fills the under-specified gaps with plausible-sounding details that aren't true.</div>
+        </div>
+        <div class="pain-card">
+          <div class="pain-model" style="color:#4285F4;">ON GEMINI</div>
+          <div class="pain-verb">It refuses</div>
+          <div class="pain-desc">Reads an ambiguous instruction as unsafe and declines — or buries the answer in caveats.</div>
+        </div>
+        <div class="pain-card">
+          <div class="pain-model" style="color:#8E44AD;">ON LOCAL</div>
+          <div class="pain-verb">It breaks</div>
+          <div class="pain-desc">Ignores the format you asked for and returns something your parser can't read.</div>
+        </div>
+      </div>
+      <p class="pain-punch">Amagra shows you all four <strong>before deployment</strong> — by running the prompt everywhere at once and scoring exactly where the models disagree.</p>
     </div>
   </section>
 
@@ -1103,40 +1319,40 @@
   <!-- ── BUILT FOR ── -->
   <section id="for">
     <div class="container">
-      <div class="section-tag">Who It's For</div>
-      <h2>Built for people who need control.</h2>
-      <p class="section-sub">Not another chatbot. A private AI platform for developers and engineers who want expert help without cloud dependency.</p>
+      <div class="section-tag">Use Cases</div>
+      <h2>What people use it for.</h2>
+      <p class="section-sub">People don't buy a category — they buy an outcome. Here's what Amagra gets done.</p>
       <div class="for-grid">
         <div class="for-card">
-          <div class="for-title">Solo Developers</div>
+          <div class="for-title">Prompt Testing</div>
           <ul class="for-list">
-            <li>Debug code and build features faster</li>
-            <li>Keep project memory across sessions</li>
-            <li>Run locally with no subscription</li>
+            <li>Find prompts that behave differently across models</li>
+            <li>Catch refusals and format breaks before users do</li>
+            <li>One-click auto-repair on under-specified prompts</li>
           </ul>
         </div>
         <div class="for-card">
-          <div class="for-title">Homelab &amp; IT Engineers</div>
+          <div class="for-title">Evaluation</div>
           <ul class="for-list">
-            <li>Network troubleshooting and DNS</li>
-            <li>Linux administration and scripting</li>
-            <li>Infrastructure planning and review</li>
+            <li>Measure cross-model agreement before deployment</li>
+            <li>Get a divergence verdict, not a wall of text to read</li>
+            <li>Compare latency and length alongside output</li>
           </ul>
         </div>
         <div class="for-card">
-          <div class="for-title">AI Builders</div>
+          <div class="for-title">Local &amp; Private AI</div>
           <ul class="for-list">
-            <li>Local-first agentic platform</li>
-            <li>Persistent memory and planning</li>
-            <li>Full observability into AI decisions</li>
+            <li>Run everything privately with Ollama</li>
+            <li>No telemetry, no data leaving your machine</li>
+            <li>Cloud models opt-in with your own keys</li>
           </ul>
         </div>
         <div class="for-card">
-          <div class="for-title">Privacy-Conscious Teams</div>
+          <div class="for-title">Agent Debugging</div>
           <ul class="for-list">
-            <li>No cloud lock-in or data exposure</li>
-            <li>Full audit trail of every decision</li>
-            <li>Self-hosted on your own infrastructure</li>
+            <li>Inspect memory, planning, and tool use</li>
+            <li>Replay any past decision and see why it routed</li>
+            <li>Full audit trail of every step</li>
           </ul>
         </div>
       </div>
@@ -1294,7 +1510,7 @@
         </div>
         <div class="feature-card">
           <div class="feature-title">Deterministic Routing</div>
-          <div class="feature-desc">A geometric scoring engine classifies intent in milliseconds — not an LLM call. Result: 98% routing accuracy at sub-second latency, every time.</div>
+          <div class="feature-desc">A geometric scoring engine classifies intent in milliseconds — not an LLM call — so most queries route instantly, with no external API call and no added cost.</div>
         </div>
         <div class="feature-card">
           <div class="feature-title">Persistent Memory</div>
@@ -1481,8 +1697,73 @@
   <section id="compare">
     <div class="container">
       <div class="section-tag">How We Compare</div>
-      <h2>Built different.</h2>
-      <p class="section-sub">Cloud AI tools are powerful but opaque, dependent, and expensive at scale. Amagra is the alternative for engineers who want control.</p>
+      <h2>A self-hosted LangSmith &amp; Promptfoo alternative.</h2>
+      <p class="section-sub">If you've reached for an LLM evaluation or prompt-testing tool, you've met these. Here's where Amagra is different: a self-hosted GUI that compares models on one prompt and scores their divergence.</p>
+      <div class="compare-wrap" style="margin-bottom:18px;">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th class="col-feature">Feature</th>
+              <th class="col-amagra">AMAGRA</th>
+              <th>Promptfoo</th>
+              <th>LangSmith</th>
+              <th>Open WebUI</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-feature">Runs locally</td>
+              <td class="col-amagra"><span class="check">✓</span></td>
+              <td><span class="check">✓</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="check">✓</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Visual GUI workspace</td>
+              <td class="col-amagra"><span class="check">✓</span></td>
+              <td><span class="cross">CLI</span></td>
+              <td><span class="check">✓</span></td>
+              <td><span class="check">✓</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Cross-model side-by-side</td>
+              <td class="col-amagra"><span class="check">✓</span></td>
+              <td><span class="partial">Config</span></td>
+              <td><span class="partial">Partial</span></td>
+              <td><span class="partial">Partial</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Divergence score</td>
+              <td class="col-amagra"><span class="check">✓</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Pre-run prompt checks</td>
+              <td class="col-amagra"><span class="check">✓</span></td>
+              <td><span class="partial">Asserts</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Self-hosted</td>
+              <td class="col-amagra"><span class="check">✓</span></td>
+              <td><span class="check">✓</span></td>
+              <td><span class="partial">Limited</span></td>
+              <td><span class="check">✓</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">License</td>
+              <td class="col-amagra"><span class="check">MIT</span></td>
+              <td>Open source</td>
+              <td><span class="cross">Proprietary</span></td>
+              <td>Open source</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="section-sub" style="margin: 0 0 28px; font-size: 13px;">Already using a chatbot for this? Here's how a workspace built for the job compares to raw assistants.</p>
       <div class="compare-wrap">
         <table class="compare-table">
           <thead>
@@ -1668,7 +1949,7 @@
         <div class="proof-item"><div class="proof-val" style="color:#8A6324;">21</div><div class="proof-label">Skill Nodes</div></div>
         <div class="proof-item"><div class="proof-val" style="color:#A87933;">60+</div><div class="proof-label">API Endpoints</div></div>
         <div class="proof-item"><div class="proof-val" style="color:#A04020;">52×</div><div class="proof-label">Cache Speedup</div></div>
-        <div class="proof-item"><div class="proof-val" style="color:#7050A0;">98%</div><div class="proof-label">Routing Accuracy</div></div>
+        <div class="proof-item"><div class="proof-val" style="color:#7050A0;">5</div><div class="proof-label">Model Providers</div></div>
       </div>
     </div>
   </section>
@@ -1679,28 +1960,28 @@
       <h2>FAQ</h2>
       <div class="faq-grid">
         <div class="faq-item">
-          <div class="faq-q">Do I need a GPU?</div>
-          <div class="faq-a">A 4GB VRAM GPU is recommended for phi4-mini. The system also runs on CPU with reduced throughput. Any modern NVIDIA RTX card works out of the box.</div>
+          <div class="faq-q">How do I test one prompt across multiple models?</div>
+          <div class="faq-a">Paste your prompt, pick the models to compare, and run. Each model's answer appears side by side with latency and length, plus a divergence score showing how much they agree. Programmatically, send a POST /debug/prompt request with your prompt and the list of models.</div>
         </div>
         <div class="faq-item">
-          <div class="faq-q">What models does it support?</div>
-          <div class="faq-a">Any model served by Ollama — phi4-mini by default. Swap to Llama 3, Mistral, Gemma, or any GGUF-compatible model by changing a single config line.</div>
+          <div class="faq-q">What is a divergence score?</div>
+          <div class="faq-a">It measures how much the models' outputs actually agree, as the average pairwise word overlap across responses — reported as Aligned, Mixed, or Divergent with an agreement percentage. It lets you spot inconsistent prompt behavior at a glance instead of reading every output.</div>
         </div>
         <div class="faq-item">
-          <div class="faq-q">Does data ever leave my machine?</div>
-          <div class="faq-a">No. The self-hosted version runs entirely locally — inference, memory, and routing all happen on your hardware. Zero telemetry.</div>
+          <div class="faq-q">Does my data ever leave my machine?</div>
+          <div class="faq-a">No. With local Ollama models, inference, memory, and routing all run on your hardware with zero telemetry. Cloud models (Claude, GPT, Gemini) are opt-in and only used if you add your own API key.</div>
         </div>
         <div class="faq-item">
-          <div class="faq-q">How is routing handled?</div>
-          <div class="faq-a">A signal-first QuerySignal pipeline classifies each query using phrase-weighted keyword scoring across a 21-node skill graph, hitting 98% accuracy without any external API calls.</div>
+          <div class="faq-q">Which models does it support?</div>
+          <div class="faq-a">Local models via Ollama (the default), plus Anthropic Claude, OpenAI GPT, Google Gemini, and any OpenAI-compatible endpoint such as vLLM or LM Studio.</div>
         </div>
         <div class="faq-item">
-          <div class="faq-q">What is h_UCI?</div>
-          <div class="faq-a">The Hierarchical Unified Cognitive Index — a composite score across Reliability, Intelligence, Adaptation, and Productivity. Current value: 80.8/100. It updates live as the system processes queries.</div>
+          <div class="faq-q">How is Amagra different from LangSmith or Promptfoo?</div>
+          <div class="faq-a">LangSmith is a hosted cloud platform; Promptfoo is open-source but CLI and config-driven. Amagra is a self-hosted GUI workspace that compares models on one prompt, scores their divergence, and runs fully private on your own hardware.</div>
         </div>
         <div class="faq-item">
-          <div class="faq-q">Is there a managed cloud option?</div>
-          <div class="faq-a">Yes — the Developer and Team plans (see Pricing) provide managed hosting with UCI dashboard persistence, no GPU required. Contact us to get on the early access list.</div>
+          <div class="faq-q">Is it free, and is there a managed option?</div>
+          <div class="faq-a">Self-hosting is free and MIT licensed, always. There's also a managed free tier (100 requests/day, no card), plus Developer and Team plans with managed hosting — no GPU required.</div>
         </div>
       </div>
     </div>

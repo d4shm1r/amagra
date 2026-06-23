@@ -4,9 +4,9 @@ Issue #9 assets, reframed to lead with the **cross-model prompt debugger** — t
 differentiated wedge. The memory/replay angle is kept as depth, not the headline.
 Every claim below is fact-checked against the code.
 
-> **GATE before posting:** the Run Across Models GUI button is endpoint-verified but
-> not yet click-verified in a browser. Open the app, click **Run** in the Prompt
-> Debugger, confirm result cards render, *then* post. Don't launch on an unverified click.
+> **GATE:** ✅ cleared. The Run Across Models GUI is click-verified (result cards
+> render, concurrency + per-model error isolation confirmed) and the Docker Hub image
+> is live (`d4shm1r/amagra:latest`, multi-arch). Ready to post.
 
 ---
 
@@ -14,6 +14,10 @@ Every claim below is fact-checked against the code.
 - **Cross-model debugger is real:** `POST /debug/prompt` runs one prompt across N models
   concurrently and returns each output + latency + length, side by side. Verified live
   (ollama answered "Paris" in 2.4s; a second model ran in parallel, failures isolated).
+- **Divergence scoring is real (shipped v1.3.1):** the Run Across Models panel computes a
+  cross-model agreement metric — average pairwise word-set (Jaccard) overlap — and shows a
+  verdict (Aligned / Mixed / Divergent) with an agreement % and word-count spread. It's a
+  lexical-overlap signal, not a semantic diff — describe it that way.
 - **Local works with zero key, offline:** default model **phi4-mini** via Ollama.
 - **Cloud is BYO-key:** `anthropic` and `openai` ship in the image (`requirements.txt`);
   add your own Anthropic / OpenAI (or Groq / OpenRouter / Together / LM Studio) key to
@@ -27,8 +31,9 @@ Every claim below is fact-checked against the code.
 ## ⚠️ Claims to AVOID
 - ❌ "Frontier-quality answers." Output quality = whatever model you point it at. Say so.
 - ❌ Any bare accuracy % for routing. Not relevant to the debugger pitch — leave it out.
-- ❌ "Diff / divergence view." Not built yet (scope #3). Outputs are shown stacked; *you*
-  compare them. Don't claim automatic divergence highlighting.
+- ❌ "Semantic diff." The divergence score is lexical (word-set overlap), not a
+  meaning-aware comparison. Claim the agreement score (Aligned / Mixed / Divergent), not a
+  semantic diff or a judgment of which answer is better.
 - ❌ "No telemetry." There's a local `logs/telemetry.db`. Say "no phone-home, nothing
   leaves your machine."
 
@@ -50,8 +55,9 @@ local prompt debugger.
 You paste a prompt, hit Run, and it executes the SAME prompt across whatever models
 you've configured — side by side, with latency and length for each. Local models
 (via Ollama) work offline with no API key. Add your own Anthropic/OpenAI key and you
-can put Claude or GPT next to your local model on the same prompt and see exactly
-where they diverge.
+can put Claude or GPT next to your local model on the same prompt. It also scores how
+much the outputs agree — an "Aligned / Mixed / Divergent" verdict — so you can spot
+where they drift apart at a glance instead of re-reading every answer.
 
 Next to the run, a static analyzer scores the prompt, flags missing context for the
 detected domain, and offers a one-click repair (adds role/output-format/constraints).
@@ -61,7 +67,8 @@ that started as the whole app, but the debugger is the part I now use every day.
 
 Honest about what it is:
 - Output quality is whatever model you run — I don't fight on answer quality.
-- The "diff" is your eyes for now; automatic divergence highlighting isn't built yet.
+- The agreement score is lexical (word overlap), not a semantic diff — a quick signal of
+  drift, not a judge of which answer is better.
 - Runs 100% locally. No phone-home, no third-party telemetry. MIT, self-hosted.
 
   docker pull d4shm1r/amagra        # or: git clone + docker compose up
@@ -83,10 +90,14 @@ to go into the routing/memory layer if useful.
 
 ---
 
-## 2. Docker Hub — publish steps (run these; nothing is pushed yet)
+## 2. Docker Hub — ✅ PUBLISHED (automated)
 
-The Dockerfile already builds clean (`pip install -r requirements.txt`, serves
-`uvicorn api:app` on 8000, `REQUIRE_AUTH=0`). To publish:
+`d4shm1r/amagra:latest` and every `v*` tag are live and multi-arch (amd64 + arm64),
+published automatically by `.github/workflows/publish.yml` on each tag. The manual steps
+below are kept for reference / disaster recovery only.
+
+The Dockerfile builds clean (`pip install -r requirements.txt`, serves
+`uvicorn api:app` on 8000, `REQUIRE_AUTH=0`). To publish manually:
 
 ```bash
 # 1. Log in (uses your Docker Hub account)

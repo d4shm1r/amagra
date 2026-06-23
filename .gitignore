@@ -19,13 +19,8 @@ data/
 faiss_index.bin
 *.pre-consolidation
 
-# Runtime logs and session artifacts
-logs/*.log
-**/logs/*.log
-logs/*.json
-logs/*.jsonl
-logs/*.html
-logs/*.pkl
+# Runtime logs and session artifacts — entirely generated, never source
+logs/
 auto_train_results.json
 auto_train_run*.log
 
