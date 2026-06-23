@@ -144,7 +144,57 @@ The differentiated wedge (issue #9) — compare any prompt across your local mod
 
 ---
 
-### v1.5 — Team Memory & Enterprise Governance
+### v1.4 — Unified Workspace UI *(✅ shipped v1.4.0–1.4.6)*
+
+The dashboard's top-level surfaces consolidated into 6 coherent views with observability as the hero screen — a reorganization, not a deletion — followed by a brand/UI refinement pass.
+
+| Item | Status |
+|------|--------|
+| 6 primary views — Workspace · Runs · Cognition · Memory · Research · Settings | ✅ shipped (v1.4.0) |
+| Single sidebar nav, consistent serif `PageHeader` across all views | ✅ shipped (v1.4.1) |
+| Runs: list → detail aligned to the standard page layout | ✅ shipped (v1.4.3) |
+| Cognition: UCI · Risk · Events · Plan Graph in one dashboard grid | ✅ shipped (v1.4.1) |
+| Brand pass — lux-card sweep, gold-gradient titles, AMAGRA wordmark favicon | ✅ shipped (v1.4.2–1.4.4) |
+| Risk Gate factor disclosure + OCAC stability metrics on the dashboard | ✅ shipped (v1.4.5–1.4.6) |
+| Monaco code pane — read + DiffEditor + Apply via `POST /workspace/apply` | ⬜ planned |
+
+**Why a standalone milestone:** the view consolidation was orthogonal to the capability work — it reorganized what already exists rather than adding runtime features, so it shipped on its own track.
+
+---
+
+### v1.5 — Hybrid Inference *(◑ next)*
+
+Provider/model switching already shipped (v1.2.0 Model Choice) and cross-model comparison landed in v1.3.0 (Debugger). What remains is the **automatic policy**: keep local as the default, but escalate compound or low-confidence queries to a cloud model (Claude/GPT-4o) *without the user choosing* — and account for the cost so escalation stays budgeted and visible.
+
+| Item | Impact | Difficulty | ROI | Status |
+|------|--------|-----------|-----|--------|
+| `LLMProvider` protocol — formalize Ollama + Anthropic + OpenAI-compat adapters | 8 | 6 | ★★★★ | ✅ shipped (`providers/` — base/registry + 3 adapters) |
+| `GenResult` — text + tokens + `cost_usd` + latency on the generation path | 7 | 3 | ★★★★ | ✅ shipped (additive `generate_detailed()`; exact usage from Anthropic) |
+| Routing confidence signal — `decide_with_confidence()` exposes how decisive the route was | 7 | 2 | ★★★★ | ✅ shipped |
+| Declarative escalation policy — `default=local-fast`, `compound→cloud`, `confidence_below:0.6→cloud` | 8 | 5 | ★★★★ | ✅ shipped (`providers/policy.py` `EscalationPolicy` + `load_policy`, off by default behind `AMAGRA_HYBRID=1`) |
+| `select_provider(decision, tier)` — tier gate, budget check, fallback chain | 8 | 4 | ★★★★ | ✅ shipped (`providers/policy.py`; cheap no-network readiness gate, falls back to local with a reason) |
+| Agent hot path through `select_provider` (flag-gated, local stays default) | 7 | 2 | ★★★★ | ✅ shipped (coordinator enhancement gate; legacy compound/moderate preserved, hybrid adds low-confidence escalation) |
+| `cost_usd` → traces table → UCI Productivity cost axis | 6 | 4 | ★★★★ | ✅ shipped (`runs` cost columns + `record_cost`/`cost_summary`, `GET /runs/cost`, Cognition "Inference Cost" cell) |
+
+**Escalation happens below the coordinator** — routing, memory, and telemetry are unaffected. Local stays the default; cloud escalates only for hard or ambiguous tasks, behind a flag, with cost surfaced on the Cognition dashboard.
+
+---
+
+### v1.6 — Workspaces & RBAC
+
+Multiple isolated projects per user, role-based access, and a custom agent builder. (Deferred past the launch-wedge pivot — the original v1.2/v1.3 slots shipped as Model Choice and the Cross-Model Debugger instead.)
+
+| Item | Impact | Difficulty | ROI |
+|------|--------|-----------|-----|
+| Workspaces — multiple isolated projects per user, per-workspace memory namespace | 8 | 5 | ★★★★ |
+| RBAC — owner / admin / member roles, enforced at the route layer | 8 | 5 | ★★★★ |
+| Custom agent builder — name, system prompt, keyword triggers via admin UI | 8 | 4 | ★★★★ |
+| Workspace switcher in nav — active-workspace `ContextVar` through routing + memory | 6 | 4 | ★★★★ |
+| Per-workspace settings — default provider, enabled agents, routing preferences | 6 | 4 | ★★★★ |
+
+---
+
+### v1.7 — Team Memory & Enterprise Governance
 
 The moment two users share a memory is the moment you have a moat no chat UI can copy. The governance angle is category-defining: "Every AI decision in your org — logged, explainable, replayable, on-prem."
 
@@ -160,23 +210,6 @@ The moment two users share a memory is the moment you have a moat no chat UI can
 | Air-gapped installer | 8 | 5 | ★★★★ |
 
 **Team memory:** every useful exchange any team member has is available to all agents. Org knowledge that compounds — a switching cost no competitor can clone.
-
----
-
-### v1.4 — Unified Workspace UI *(✅ shipped v1.4.0–1.4.4)*
-
-The dashboard's top-level surfaces consolidated into 6 coherent views with observability as the hero screen — a reorganization, not a deletion — followed by a brand/UI refinement pass.
-
-| Item | Status |
-|------|--------|
-| 6 primary views — Workspace · Runs · Cognition · Memory · Research · Settings | ✅ shipped (v1.4.0) |
-| Single sidebar nav, consistent serif `PageHeader` across all views | ✅ shipped (v1.4.1) |
-| Runs: list → detail aligned to the standard page layout | ✅ shipped (v1.4.3) |
-| Cognition: UCI · Risk · Events · Plan Graph in one dashboard grid | ✅ shipped (v1.4.1) |
-| Brand pass — lux-card sweep, gold-gradient titles, AMAGRA wordmark favicon | ✅ shipped (v1.4.2–1.4.4) |
-| Monaco code pane — read + DiffEditor + Apply via `POST /workspace/apply` | ⬜ planned |
-
-**Why a standalone milestone:** the view consolidation was orthogonal to the capability work — it reorganized what already exists rather than adding runtime features, so it shipped on its own track.
 
 ---
 

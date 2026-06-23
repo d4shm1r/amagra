@@ -220,12 +220,30 @@ def decide(query: str, scores: Dict[str, int]) -> str:
     """
     Runtime-owned decision over the score vector + query signals.
 
-    `query` must already be lowercased. The terse/factual policy now flows
-    through dispatch() as a CORE `pin` delta rather than a hardcoded early
-    return; extension hooks registered on ROUTING_EVENT can bias the vector,
-    but a CORE pin (and any veto) still wins. The threshold/default projection
-    over the RAW integer scores stays here — it is cardinal (counts, "all
-    zeros → default") and is not recoverable from a normalized distribution.
+    Thin wrapper over decide_with_confidence() — returns just the agent so all
+    existing callers are unaffected. See decide_with_confidence() for the logic.
+    """
+    return decide_with_confidence(query, scores)[0]
+
+
+def decide_with_confidence(query: str, scores: Dict[str, int]) -> tuple[str, float]:
+    """
+    Decision + a routing-confidence score in [0, 1] (v1.5 Hybrid Inference).
+
+    `query` must already be lowercased. The terse/factual policy flows through
+    dispatch() as a CORE `pin` delta; extension hooks may bias the vector, but a
+    CORE pin (and any veto) still wins. The threshold/default projection over the
+    RAW integer scores stays here — it is cardinal (counts, "all zeros →
+    default") and is not recoverable from a normalized distribution.
+
+    Confidence reflects how decisively the keyword signal picked the agent, so
+    the hybrid-inference policy can escalate ambiguous (low-confidence) queries
+    to a cloud model without the user choosing. Calibration:
+      - 0.95  deterministic CORE pin (terse/factual short-circuit)
+      - 0.70+ clear keyword winner (≥2 hits, ahead of runner-up); grows w/ margin
+      - 0.50  single keyword in a longer, context-bearing query
+      - 0.30  single keyword in a short query → ambiguous default fallback
+      - 0.25  no keyword match at all → default fallback (most ambiguous)
     """
     base = {agent: float(s) for agent, s in scores.items()}
     result = dispatch(ROUTING_EVENT, RoutingEvent(query, dict(scores)), base)
@@ -233,7 +251,7 @@ def decide(query: str, scores: Dict[str, int]) -> str:
     # A committed pin sets exactly one logit to +inf (§3 Phase E).
     pinned = [k for k, logit in result.raw.items() if logit == float("inf")]
     if pinned:
-        return pinned[0]
+        return pinned[0], 0.95
 
     best_agent = max(scores, key=scores.get)
     best_score = scores[best_agent]
@@ -241,7 +259,9 @@ def decide(query: str, scores: Dict[str, int]) -> str:
     second_score = sorted_scores[1] if len(sorted_scores) > 1 else 0
 
     if best_score >= 2 and best_score > second_score:
-        return best_agent
+        # Confidence grows with the margin over the runner-up, capped at 0.95.
+        confidence = min(0.95, 0.60 + 0.10 * (best_score - second_score))
+        return best_agent, confidence
 
     if best_score == 1:
         # A lone keyword in a very short query is usually ambiguous (issue #10):
@@ -252,11 +272,11 @@ def decide(query: str, scores: Dict[str, int]) -> str:
         if token_count < SHORT_QUERY_TOKENS:
             print(f"[router] short query ({token_count} tok), 1 keyword → "
                   "knowledge_learning (default)")
-            return "knowledge_learning"
-        return best_agent
+            return "knowledge_learning", 0.30
+        return best_agent, 0.50
 
     print("[router] no keyword match → knowledge_learning (default)")
-    return "knowledge_learning"
+    return "knowledge_learning", 0.25
 
 
 def hybrid_router(state: AgentState) -> str:

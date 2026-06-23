@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.4.6";
+export const VERSION = "1.5.0";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -669,6 +669,19 @@ export const BUILD_PHASES = [
       "Curvature is the leading indicator: it catches the acceleration of a downturn before the level itself drops. Verified: full suite 834 passed",
     ],
   },
+  {
+    id: 88, version: "v1.5.0", date: "Jun 23, 2026",
+    label: "Hybrid Inference", title: "Automatic Local→Cloud Escalation + Cost Telemetry", color: "#1E5A8A", status: "done",
+    summary: "Keeps the local model as the default but escalates hard or low-confidence queries to a cloud model automatically — without the user choosing — and accounts for the spend. Opt-in behind AMAGRA_HYBRID; local-only stays the default.",
+    steps: [
+      "providers/base.py: GenResult (text + tokens + cost_usd + latency) + estimate_tokens/price_for/estimate_cost; additive generate_detailed() — Anthropic reports exact usage, others char-estimate. Sync generate() hot path unchanged",
+      "orchestration/router.py: decide_with_confidence() exposes a calibrated routing-confidence signal (0.95 pin → 0.25 no-match); decide() is now a thin wrapper",
+      "providers/policy.py: declarative EscalationPolicy + load_policy() (off by default) + select_provider() — tier gate, budget check, cheap no-network readiness check, fall back to local with a reason",
+      "coordinator enhancement gate routes through select_provider(): legacy compound/moderate preserved, hybrid adds low-confidence escalation; smart_llm gained force= + enhance_response_detailed()",
+      "run_tracer cost columns (idempotent migration) + record_cost()/cost_summary(); GET /runs/cost; Cognition 'Inference Cost · Productivity' cell — reads '$0.00 fully local' by default",
+      "Verified: full suite 865 passed, 35 new hybrid-inference tests across 3 files",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -779,14 +792,14 @@ export const ROADMAP = [
     ],
   },
   {
-    id: 43, version: "v1.5.0", title: "Hybrid Inference", color: "#1E5A8A", status: "planned", priority: "medium",
-    summary: "Runtime provider/model switching already shipped (v1.2.0 Model Choice) and cross-model comparison landed in v1.3.0 (Debugger). What remains is the automatic policy: keep local default, but escalate compound or low-confidence queries to Claude/GPT-4o without the user choosing.",
+    id: 43, version: "v1.5.0", title: "Hybrid Inference", color: "#1E5A8A", status: "done", priority: "medium",
+    summary: "Runtime provider/model switching shipped in v1.2.0 (Model Choice) and cross-model comparison in v1.3.0 (Debugger). v1.5.0 adds the automatic policy: keep local default, but escalate compound or low-confidence queries to a cloud model without the user choosing — opt-in behind AMAGRA_HYBRID, with cost surfaced on the dashboard.",
     items: [
-      "LLMProvider protocol: invoke(), astream(), healthy() — formalize OllamaProvider + the existing AnthropicProvider (12h)",
-      "providers.yaml policy: default=local-fast, compound→cloud-claude, confidence_below:0.6→cloud (6h)",
-      "select_provider(decision, tier) — tier gate, budget check, fallback chain (4h)",
-      "Agent nodes: replace 'from llm import llm' with get_provider(state) — one line per agent (2h)",
-      "GenResult.cost_usd → traces table → UCI Productivity cost axis (4h)",
+      "LLMProvider protocol + GenResult (cost_usd/tokens/latency) — generate_detailed(), exact usage from Anthropic ✅",
+      "Declarative EscalationPolicy + load_policy() — default=local-fast, compound→cloud, confidence_below:0.6→cloud (off by default) ✅",
+      "select_provider(confidence, complexity, tier) — tier gate, budget check, cheap readiness check, fallback chain ✅",
+      "decide_with_confidence() routing signal; coordinator enhancement gate routes through select_provider (flag-gated, local default) ✅",
+      "cost_usd → runs traces → GET /runs/cost → Cognition 'Inference Cost' Productivity cell ✅",
     ],
   },
   {
@@ -829,6 +842,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.5.0", label: "Hybrid Inference",        color: "#1E5A8A", phases: [88] },
   { version: "v1.4.6", label: "OCAC Stability Metrics", color: "#7E3F8F", phases: [87] },
   { version: "v1.4.5", label: "Observability & Favicon Fix", color: "#7E3F8F", phases: [86] },
   { version: "v1.4.4", label: "Single Gold Favicon",     color: "#7E3F8F", phases: [85] },

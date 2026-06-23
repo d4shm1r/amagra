@@ -11,9 +11,10 @@ Configuration (all optional, fall back to these defaults):
 """
 
 import os
+import time
 from typing import AsyncIterator
 
-from providers.base import ModelProvider
+from providers.base import GenResult, ModelProvider, estimate_cost
 
 
 class AnthropicProvider(ModelProvider):
@@ -44,6 +45,14 @@ class AnthropicProvider(ModelProvider):
         system_prompt: str | None = None,
         temperature: float = 0.2,
     ) -> str:
+        return self.generate_detailed(prompt, system_prompt, temperature).text
+
+    def generate_detailed(
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
+        temperature: float = 0.2,
+    ) -> GenResult:
         import anthropic
         kwargs: dict = {
             "model": self._model,
@@ -57,13 +66,28 @@ class AnthropicProvider(ModelProvider):
             kwargs["temperature"] = temperature
 
         client = self._client()
+        t0 = time.perf_counter()
         try:
             response = client.messages.create(**kwargs)
-            return next(
-                (block.text for block in response.content if block.type == "text"), ""
-            )
         except anthropic.APIError as exc:
             raise RuntimeError(f"Anthropic API error: {exc}") from exc
+        latency_ms = (time.perf_counter() - t0) * 1000.0
+
+        text = next(
+            (block.text for block in response.content if block.type == "text"), ""
+        )
+        usage = getattr(response, "usage", None)
+        tin = getattr(usage, "input_tokens", 0) or 0
+        tout = getattr(usage, "output_tokens", 0) or 0
+        return GenResult(
+            text=text,
+            provider=self.name,
+            tokens_in=tin,
+            tokens_out=tout,
+            cost_usd=estimate_cost(self.name, tin, tout),
+            latency_ms=latency_ms,
+            estimated=False,
+        )
 
     async def agenerate(
         self,

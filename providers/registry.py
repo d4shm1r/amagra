@@ -32,27 +32,40 @@ _model_cache: dict[str, ModelProvider] = {}
 _embed_cache: dict[str, EmbeddingProvider] = {}
 
 
+def build_provider(backend: str) -> ModelProvider:
+    """
+    Construct a fresh ModelProvider for an explicit backend name, ignoring the
+    env role mapping. A pure factory (no caching) — callers that want a singleton
+    cache it themselves (see get_provider's per-role cache). Used by the
+    hybrid-inference policy, which picks a concrete backend (force local fallback
+    or a named cloud) rather than whatever the role env var resolves to. Provider
+    construction is cheap — the heavy SDK client is created lazily on first call.
+    """
+    backend = (backend or "ollama").lower()
+    if backend == "anthropic":
+        from providers.anthropic import AnthropicProvider
+        return AnthropicProvider()
+    if backend in _OPENAI_COMPAT_BACKENDS:
+        from providers.openai_compat import OpenAICompatProvider
+        return OpenAICompatProvider()
+    from providers.ollama import OllamaProvider
+    return OllamaProvider()
+
+
 def get_provider(role: str) -> ModelProvider:
     """
     Return the singleton ModelProvider configured for role.
 
     role must be "signal" or "brain".  For embeddings use
-    get_embedding_provider().
+    get_embedding_provider().  Each role keeps its own cached instance, so
+    swapping one role's backend never disturbs another's.
     """
     env_key = f"{role.upper()}_PROVIDER"
     backend = os.environ.get(env_key, "ollama").lower()
     cache_key = f"{role}:{backend}"
 
     if cache_key not in _model_cache:
-        if backend == "anthropic":
-            from providers.anthropic import AnthropicProvider
-            _model_cache[cache_key] = AnthropicProvider()
-        elif backend in _OPENAI_COMPAT_BACKENDS:
-            from providers.openai_compat import OpenAICompatProvider
-            _model_cache[cache_key] = OpenAICompatProvider()
-        else:
-            from providers.ollama import OllamaProvider
-            _model_cache[cache_key] = OllamaProvider()
+        _model_cache[cache_key] = build_provider(backend)
 
     return _model_cache[cache_key]
 

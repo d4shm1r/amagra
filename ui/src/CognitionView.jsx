@@ -4,6 +4,7 @@ import UCIDashboard from "./UCIDashboard";
 import RiskObservatoryTab from "./RiskObservatoryTab";
 import EventLogTab from "./EventLogTab";
 import PlanGraphTab from "./PlanGraphTab";
+import InferenceCostTab from "./InferenceCostTab";
 
 // ── Cognition dashboard (v1.4) ────────────────────────────────
 // The "observability as hero" screen: the four system-health views — UCI,
@@ -58,6 +59,7 @@ export default function CognitionView() {
         <Cell title="Risk" hint="Observatory"><RiskObservatoryTab embedded /></Cell>
         <Cell title="Events" hint="Live"><EventLogTab embedded /></Cell>
         <Cell title="Plan" hint="Active graph"><PlanGraphTab embedded /></Cell>
+        <Cell title="Inference Cost" hint="Productivity"><InferenceCostTab embedded /></Cell>
       </div>
     </div>
   );
