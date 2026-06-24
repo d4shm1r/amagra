@@ -305,24 +305,77 @@ _SKILLS: List[SkillNode] = [
     ),
 ]
 
+# ── A ← R coupling (reasoning state → action selection) ───────
+# Which skill complexity profiles each detected action favours. Used as a
+# small re-rank nudge, never a filter — keyword score still leads. The map
+# mirrors risk_gate's action vocabulary; "mixed" fits any action, so it is
+# omitted here and handled in _action_fits().
+_ACTION_AFFINITY: dict[str, set[str]] = {
+    "build":    {"engineering"},
+    "debug":    {"engineering", "ops"},
+    "explain":  {"theory"},
+    "research": {"theory"},
+    "compare":  {"theory"},
+    "plan":     {"ops"},
+    # "lookup" / "unknown" carry no complexity signal → no affinity nudge.
+}
+
+# Re-rank bias weights. prefer_agents (R's chosen agent) dominates the
+# action-affinity nudge so a tie breaks toward what reasoning already picked,
+# while a strongly keyword-matched off-agent skill can still win outright.
+#
+# CALIBRATION PENDING — these are hand-tuned coupling *gains*, not learned
+# parameters. They set the stability regime of the R→A→M→R feedback loop, so
+# they are deliberately fixed until there is a diagnostic for it. The signal to
+# watch before tuning them is rolling skill-selection *entropy*: if it falls
+# while task success stays flat, the closed loop is saturating (skill diversity
+# collapsing onto R's prior) and these gains should be attenuated — or made
+# confidence-dependent — rather than raised. Do not learn these against routing
+# outcomes until that entropy diagnostic exists, or the feedback loop tunes
+# itself blind. See docs/design/TCST_AGENT_MODEL.md §5.
+_BIAS_PREFER_AGENT = 0.15
+_BIAS_ACTION_FIT   = 0.05
+
+
+def _action_fits(action: str, skill: "SkillNode") -> bool:
+    """True if the skill's complexity profile suits the detected action."""
+    if skill.complexity == "mixed":
+        return True
+    return skill.complexity in _ACTION_AFFINITY.get(action, set())
+
+
 # ── Public API ────────────────────────────────────────────────
 
-def select_skills(query: str, n: int = 3) -> List[SkillNode]:
+def select_skills(query: str, n: int = 3, *,
+                  action: str | None = None,
+                  prefer_agents: List[str] | None = None) -> List[SkillNode]:
     """
     Score all skills against the query and return the top-n matches.
 
     Scoring: keyword hit count normalised by skill keyword count,
     so skills with fewer but more specific keywords can still win.
+
+    Optional reasoning-state coupling (A ← R): when ``action`` and/or
+    ``prefer_agents`` are supplied (the action type and agents CoreBrain
+    already chose), matching skills get a small additive re-rank bias. This
+    is a tie-breaker, not a filter — a strongly keyword-matched off-agent
+    skill still wins, preserving the skill graph's ability to correct a
+    mis-route. With both kwargs omitted, behaviour is unchanged.
     """
     q = query.lower()
+    prefer = set(prefer_agents or [])
     scored = []
     for skill in _SKILLS:
         hits = skill.matches(q)
         if hits > 0:
             normalised = hits / skill.max_score()
+            if skill.agent in prefer:
+                normalised += _BIAS_PREFER_AGENT
+            if action and _action_fits(action, skill):
+                normalised += _BIAS_ACTION_FIT
             node = SkillNode(**{
                 **skill.__dict__,
-                "score": round(normalised, 4),
+                "score": round(min(normalised, 1.0), 4),
             })
             scored.append(node)
 
@@ -335,11 +388,15 @@ def skill_to_agent(skill: SkillNode) -> str:
     return skill.agent
 
 
-def top_agent(query: str, fallback: str = "knowledge_learning") -> str:
+def top_agent(query: str, fallback: str = "knowledge_learning", *,
+              action: str | None = None,
+              prefer_agents: List[str] | None = None) -> str:
     """
     Quick helper: return the agent for the highest-scoring skill.
+
+    Forwards the optional reasoning-state coupling kwargs to select_skills.
     """
-    skills = select_skills(query, n=1)
+    skills = select_skills(query, n=1, action=action, prefer_agents=prefer_agents)
     return skills[0].agent if skills else fallback
 
 
