@@ -322,6 +322,59 @@ Post-debut hardening — the deferred pre-launch engineering, none of which bloc
 
 Residual v1.0.1 item: the public launch (Show HN / r/LocalLLaMA / self-host catalogs) — a marketing action, not code.
 
+### v1.5.0 — Hybrid Inference ✅
+
+**Period:** 2026-06-23
+
+Keeps the local model as the default but escalates hard or low-confidence queries to a cloud
+model **automatically** — without the user choosing — and accounts for the spend. Opt-in behind
+`AMAGRA_HYBRID`; local-only stays the default, so the change is inert until enabled.
+
+- **Provider protocol + cost** — `providers/base.py` `GenResult` (text + tokens + `cost_usd` +
+  latency) and an additive `generate_detailed()`; Anthropic reports exact usage, others
+  char-estimate. The synchronous `generate()` hot path is unchanged.
+- **Routing confidence** — `decide_with_confidence()` exposes a calibrated signal (0.95 pin →
+  0.25 no-match); `decide()` is now a thin wrapper over it.
+- **Escalation policy** — `providers/policy.py` declarative `EscalationPolicy` + `load_policy()`
+  (off by default) + `select_provider()` with a tier gate, budget check, a cheap no-network
+  readiness check, and a fall-back-to-local chain that always explains itself.
+- **Wiring** — the coordinator's enhancement gate routes through `select_provider()`: the legacy
+  compound/moderate path is preserved, the hybrid policy adds low-confidence escalation.
+- **Cost telemetry** — `runs` table cost columns (idempotent migration) + `record_cost()` /
+  `cost_summary()`; `GET /runs/cost`; a Cognition **"Inference Cost · Productivity"** cell that
+  reads "$0.00 — fully local" in the default posture.
+- Test suite **834 → 865** (35 new hybrid-inference tests across 3 files).
+
+### v1.4.0–v1.4.6 — Unified Workspace UI & Brand ✅
+
+**Period:** 2026-06-20 → 2026-06-23
+
+- **v1.4.0** — unified workspace UI: the dashboard's surfaces consolidate into 6 coherent views, observability as the hero screen (#40)
+- **v1.4.1** — UI refinement: single sidebar nav (removed duplicate MenuBar), consistent serif `PageHeader` across all views, de-cluttered Cognition hero, unified stat cards (#41)
+- **v1.4.2** — gold refinement: lux-card sweep across Tasks/Analysis/section panels, gold-gradient titles, landing-style gold hover borders
+- **v1.4.3** — card & layout refinement: Runs & Trace aligned to the standard page layout, remaining custom headers normalized onto `PageHeader`
+- **v1.4.4** — single gold AMAGRA wordmark favicon
+- **v1.4.5** — observability & favicon fix: Risk Gate discloses risk factors; latent event-key bug fixed; favicon recomposed so the AMAGRA wordmark is legible at icon size
+- **v1.4.6** — OCAC stability metrics: contraction/Lyapunov theory applied to the learning loop and surfaced on the dashboard
+
+### v1.3.0–v1.3.1 — Cross-Model Prompt Debugger ✅
+
+**Period:** 2026-06
+
+The differentiated wedge (issue #9). `POST /debug/prompt` runs one prompt across N models
+concurrently and returns each output + latency + length, side by side, with failures isolated;
+the **Run Across Models** panel surfaces it in the UI. v1.3.1 added a cross-model divergence
+highlight (#38). Static, client-side prompt analysis (health score, missing-context detection,
+one-click auto-repair) ships alongside it.
+
+### v1.2.0 — BYO Model & Desktop Mode ✅
+
+**Period:** 2026-06
+
+In-app model/provider settings — pick a local (Ollama) or cloud (Anthropic/OpenAI, BYO-key)
+backend without editing config — plus a single-process desktop mode. The provider swap happens
+below the coordinator, so routing, memory, and telemetry are unaffected.
+
 ### v1.1.2 — Eval Rigor & Security Hardening ✅
 
 **Period:** 2026-06-16
@@ -467,20 +520,20 @@ ships a single file.
 - **Community profile** — `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SECURITY.md`
 - **Gilded Calm social-preview card** (1280×640) for GitHub link sharing
 
-**Live Snapshot (2026-06-16):**
+**Live Snapshot (2026-06-23):**
 
 | Metric | Value |
 |--------|-------|
-| Version | v1.1.2 (eval rigor & security hardening) |
+| Version | v1.5.0 (hybrid inference) |
 | Routing accuracy | measured honestly — curated ceiling vs sealed adversarial floor, see [FINDINGS.md](FINDINGS.md) (no single headline figure) |
 | Specialist agents | 10 (registry-canonical) |
 | FAISS vectors | 628+ at 0.38ms P50 |
-| API endpoints | 100+ (132 routes) |
-| Build phases complete | 38 (+ v0.9 → v1.1.2 releases) |
+| API endpoints | 100+ (141 routes) |
+| Build phases complete | 39 (+ v0.9 → v1.5.0 releases) |
 | UCI score | ~80.8 |
 | Auth | API key auth (REQUIRE_AUTH=0 dev, 1 prod) |
 | Docker | Dockerfile + docker-compose.yml with GPU passthrough |
-| Test suite | 790 passing |
+| Test suite | 865 passing |
 
 ---
 

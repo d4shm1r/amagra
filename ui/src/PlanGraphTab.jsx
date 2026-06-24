@@ -270,7 +270,7 @@ function NodeDetail({ node, onClose }) {
 
 
 // ── Main component ────────────────────────────────────────────
-export default function PlanGraphTab() {
+export default function PlanGraphTab({ embedded = false } = {}) {
   const [data,       setData]       = useState(null);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState(null);
@@ -331,9 +331,10 @@ export default function PlanGraphTab() {
     : {};
 
   return (
-    <div style={{ color: T.text, fontFamily: "inherit" }}>
+    <div style={{ color: T.text, fontFamily: "inherit", padding: embedded ? "10px 14px 14px" : 0 }}>
 
-      {/* ── Header ── */}
+      {/* ── Header (suppressed when embedded — the dashboard cell carries the title) ── */}
+      {!embedded && (
       <PageHeader
         title="Plan Graph"
         subtitle={hasGraph && data.meta
@@ -342,6 +343,7 @@ export default function PlanGraphTab() {
       >
         <RefreshBtn onClick={fetch_} />
       </PageHeader>
+      )}
 
       {/* ── Status counts ── */}
       {hasGraph && Object.keys(statusCounts).length > 0 && (

@@ -1,6 +1,6 @@
 # Project Map — Amagra
 
-**Updated:** 2026-06-16 · **Version:** v1.1.2
+**Updated:** 2026-06-23 · **Version:** v1.5.0
 **Mission:** the local-first cognitive runtime developers build agents on top of.
 
 This is the orientation map. Each area links to the canonical document — this file does **not** duplicate their content.
@@ -23,14 +23,14 @@ This is the orientation map. Each area links to the canonical document — this 
 
 | | |
 |---|---|
-| Version | v1.1.2 (eval rigor & security hardening) |
+| Version | v1.5.0 (hybrid inference) |
 | Specialist agents | 10 (`agents/registry.py` is canonical) |
 | Skill graph | 21 nodes |
 | Routing accuracy | ~99% curated · ~42% held-out adversarial (internal metrics, not validated — see docs/FINDINGS.md §3a) |
 | Memory | SQLite → auto-promote to FAISS at 800 entries · 628+ vectors · P50 0.38ms · 52× LRU cache |
 | UCI health | h_UCI ≈ 80.8 (internal heuristic, not a quality measure — not surfaced publicly) |
-| API surface | 100+ endpoints (132 routes) |
-| Tests | 790 passing |
+| API surface | 100+ endpoints (141 routes) |
+| Tests | 865 passing |
 | Auth | API-key, deny-by-default when `REQUIRE_AUTH=1` |
 
 ---
@@ -79,7 +79,12 @@ Endpoint and UI-tab inventories live in [REFERENCE.md](REFERENCE.md); they are n
 | **v1.1.0** | **Tool-using agents** (live web search, in-agent tool loop, Simple/Advanced UI) | ✅ Shipped |
 | **v1.1.1** | **Tools in the default path** (config-gated tool loop in all agents, domain-affinity memory, learned-router auto-retrain, multilingual leak fix) | ✅ Shipped |
 | **v1.1.2** | **Eval rigor & security hardening** (router collapse, routing-eval leakage guard, sealed adversarial set + Fleiss' κ, §3 security fixes) | ✅ Shipped |
-| v1.2 → v2.0 | Providers · workspaces · team memory · agent registry | ⬜ Planned |
+| **v1.2.0** | **BYO model & desktop mode** (in-app model/provider settings, single-process desktop mode) | ✅ Shipped |
+| **v1.3.0** | **Cross-model prompt debugger** (`POST /debug/prompt`, Run Across Models panel; v1.3.1 divergence highlight) | ✅ Shipped |
+| **v1.4.0** | **Unified workspace UI** (6-view consolidation, serif PageHeader, sidebar nav) | ✅ Shipped |
+| **v1.4.1–1.4.6** | **UI & brand refinement + OCAC stability metrics** (lux-card sweep, gold titles, AMAGRA wordmark favicon, contraction/Lyapunov metrics) | ✅ Shipped |
+| **v1.5.0** | **Hybrid inference** (auto local→cloud escalation policy, cost telemetry; opt-in `AMAGRA_HYBRID`) | ✅ Shipped |
+| v1.6 → v2.0 | Workspaces & RBAC · team memory & governance · agent registry | ⬜ Planned |
 
 See [ROADMAP.md](ROADMAP.md) for the full forward plan and [HISTORY.md](HISTORY.md) for the per-phase record.
 

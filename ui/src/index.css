@@ -47,13 +47,59 @@ code, pre, .mono {
     linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 42%),
     #FAF7F2;
   border: 1px solid rgba(255, 255, 255, 0.45);
-  border-radius: 14px;
+  border-radius: 16px;
   box-shadow:
     7px 7px 20px rgba(72, 52, 28, 0.10),
     -3px -3px 11px rgba(255, 255, 255, 0.75),
     inset 0 1px 1px rgba(255, 255, 255, 0.92),
     inset 0 -1px 1px rgba(138, 99, 36, 0.04);
+  transition: box-shadow 280ms ease-out;
 }
+
+/* Gradient gold border that fades in on hover — the landing .feature-card
+   treatment. A masked overlay paints ONLY the 1.5px border ring (never over
+   card content), so every card lights up consistently on hover. */
+.lux-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(145deg, #FFE880 0%, #C48808 45%, #6C4C00 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 280ms ease;
+  pointer-events: none;
+}
+.lux-card:hover::after { opacity: 1; }
+/* Gold glow on hover — pairs with the border so the whole card lights up like
+   the landing .feature-card (which adds a 0 0 36px gold glow on hover). */
+.lux-card:hover {
+  box-shadow:
+    7px 7px 20px rgba(72, 52, 28, 0.10),
+    -3px -3px 11px rgba(255, 255, 255, 0.75),
+    inset 0 1px 1px rgba(255, 255, 255, 0.92),
+    inset 0 -1px 1px rgba(138, 99, 36, 0.04),
+    0 0 32px rgba(196, 136, 8, 0.13);
+}
+
+/* ── Cognition dashboard: the cell IS the card ──────────────────
+   Flatten any lux-card nested inside a dashboard cell so we never get
+   card-in-card nesting (or nested gold hover borders). Inner panels keep
+   their padding/content but lose the card chrome. */
+.cog-cell-body .lux-card {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  transition: none;
+}
+.cog-cell-body .lux-card::after { content: none; }
+.cog-cell-body .lux-card-i:hover { transform: none; }
 
 /* Interactive variant — discrete "objects" (stat tiles) earn a calm lift.
    Containers stay still; gold glow stays a whisper, per the grayscale rule. */

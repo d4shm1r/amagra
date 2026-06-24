@@ -4,6 +4,9 @@ const FONT    = "'Consolas', 'Cascadia Code', 'Droid Sans Mono', monospace";
 const LINE_H  = 20;
 const FONT_SZ = 13;
 
+// Same origin the rest of the UI talks to (see ProviderSettingsTab).
+const API = "http://localhost:8000";
+
 const T = {
   bg:            "#F4F0E8",
   surface:       "#FAF7F2",
@@ -966,6 +969,356 @@ function TemplatesSection({ domain, currentContent, onApply }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Run Across Models — actually executes the prompt (POST /debug/prompt)
+// The static sections above say *why* a prompt is weak; this one runs it,
+// against the configured model by default and any extras side by side.
+// ─────────────────────────────────────────────────────────────
+
+// Optional comparison targets. "Current" (the saved provider) is added first
+// at runtime; these only run if the matching provider/key is configured —
+// otherwise the result slot carries the error, which is the point of a debugger.
+const COMPARE_TARGETS = [
+  { id: "ollama",    label: "Local · phi4-mini",  cfg: { provider: "ollama",    model: "phi4-mini:latest" } },
+  { id: "anthropic", label: "Claude Sonnet 4.6",  cfg: { provider: "anthropic", model: "claude-sonnet-4-6" } },
+  { id: "openai",    label: "GPT-4o-mini",        cfg: { provider: "openai",    model: "gpt-4o-mini", base_url: "https://api.openai.com/v1" } },
+];
+
+// Divergence highlight — the point of running side by side is to SEE where the
+// models disagree. We measure it client-side: each output becomes a set of
+// normalized word tokens, and we average the pairwise Jaccard overlap. High
+// overlap = the models converged on the same answer; low = the prompt is
+// under-specified enough that model choice changes the result.
+function tokenSet(text) {
+  return new Set(
+    (text || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter(w => w.length > 2)   // drop noise words / punctuation fragments
+  );
+}
+
+function computeDivergence(results) {
+  const ok = (results || []).filter(r => !r.error && r.output);
+  if (ok.length < 2) return null;
+
+  const sets = ok.map(r => tokenSet(r.output));
+  let total = 0, pairs = 0;
+  for (let i = 0; i < sets.length; i++) {
+    for (let j = i + 1; j < sets.length; j++) {
+      const a = sets[i], b = sets[j];
+      let inter = 0;
+      for (const w of a) if (b.has(w)) inter++;
+      const union = a.size + b.size - inter;
+      total += union === 0 ? 1 : inter / union;
+      pairs++;
+    }
+  }
+  const agreement = pairs ? total / pairs : 1;   // 0..1
+
+  const wordCounts = ok.map(r => r.words ?? (r.output || "").split(/\s+/).filter(Boolean).length);
+  const minW = Math.min(...wordCounts);
+  const maxW = Math.max(...wordCounts);
+
+  let verdict, color;
+  if (agreement >= 0.6)      { verdict = "Aligned";   color = T.success; }
+  else if (agreement >= 0.3) { verdict = "Mixed";     color = T.accent;  }
+  else                       { verdict = "Divergent"; color = T.error;   }
+
+  return { count: ok.length, agreement, minW, maxW, verdict, color };
+}
+
+// Quick rationale tags — clean, classifiable signal alongside free text. The
+// "why?" is the activation moment: the user teaches the system which output won
+// and what mattered, turning a throwaway run into a durable decision record.
+const WHY_TAGS = ["Accuracy", "Formatting", "Reasoning", "Speed", "Concise", "Tone"];
+
+function RunAcrossModelsSection({ content }) {
+  const [current, setCurrent] = useState(null);   // { provider, model, base_url }
+  const [sel,     setSel]     = useState(() => new Set(["current"]));
+  const [running, setRunning] = useState(false);
+  const [results, setResults] = useState(null);
+  const [error,   setError]   = useState(null);
+  // Decision capture (the bridge): which result won, and why.
+  const [chosen,  setChosen]  = useState(null);   // index into results
+  const [why,     setWhy]     = useState("");
+  const [whyTags, setWhyTags] = useState(() => new Set());
+  const [savedId, setSavedId] = useState(null);   // decision id once persisted
+  const [saving,  setSaving]  = useState(false);
+  // Sticky project tag — without it every decision lands in "(all)" and
+  // per-project briefings are meaningless. Persisted so it carries across runs.
+  const [project, setProject] = useState(() => {
+    try { return localStorage.getItem("amagra_project") || ""; } catch { return ""; }
+  });
+  const updateProject = (v) => {
+    setProject(v);
+    try { localStorage.setItem("amagra_project", v); } catch {}
+  };
+
+  const resetCapture = () => { setChosen(null); setWhy(""); setWhyTags(new Set()); setSavedId(null); };
+  const toggleTag = (t) => setWhyTags(prev => {
+    const n = new Set(prev); n.has(t) ? n.delete(t) : n.add(t); return n;
+  });
+
+  async function saveDecision() {
+    if (chosen == null || !results) return;
+    setSaving(true);
+    const win = results[chosen];
+    try {
+      const r = await fetch(`${API}/debug/decision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: content,
+          chosen_provider: win.provider,
+          chosen_model: win.model || "",
+          temperature: 0.2,
+          candidates: results.map(x => ({
+            provider: x.provider, model: x.model, latency_ms: x.latency_ms,
+            chars: x.chars, words: x.words, error: x.error,
+          })),
+          rationale: why.trim(),
+          rationale_tags: Array.from(whyTags),
+          project: project.trim(),
+        }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const d = await r.json();
+      setSavedId(d.decision_id ?? true);
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  useEffect(() => {
+    fetch(`${API}/settings/llm`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.current) setCurrent(d.current); })
+      .catch(() => {});
+  }, []);
+
+  // Current first; drop any extra that duplicates the saved model.
+  const targets = useMemo(() => {
+    const list = [];
+    if (current?.provider) {
+      list.push({
+        id: "current",
+        label: `Current · ${current.provider}${current.model ? " / " + current.model : ""}`,
+        cfg: { provider: current.provider, model: current.model, base_url: current.base_url },
+      });
+    }
+    for (const t of COMPARE_TARGETS) {
+      if (current && t.cfg.provider === current.provider && t.cfg.model === current.model) continue;
+      list.push(t);
+    }
+    return list;
+  }, [current]);
+
+  const toggle = (id) => setSel(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
+  async function run() {
+    setRunning(true); setError(null); setResults(null); resetCapture();
+    const models = targets.filter(t => sel.has(t.id)).map(t => t.cfg);
+    try {
+      const r = await fetch(`${API}/debug/prompt`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: content, temperature: 0.2, models }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      setResults(await r.json());
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  const canRun = content.trim().length > 0 && !running;
+
+  return (
+    <Section title="Run Across Models" badge={results ? results.length : null} badgeColor={T.accent} defaultOpen={true}>
+      <div style={{ fontSize: 9, color: T.muted, marginBottom: 9, lineHeight: 1.6 }}>
+        Runs this exact prompt and shows real output. Pick targets — unconfigured ones report their error.
+      </div>
+
+      {/* Target checkboxes */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
+        {targets.length === 0 && (
+          <div style={{ fontSize: 9.5, color: T.muted }}>Loading configured model…</div>
+        )}
+        {targets.map(t => (
+          <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer", fontSize: 10.5, color: T.mutedLt }}>
+            <input type="checkbox" checked={sel.has(t.id)} onChange={() => toggle(t.id)}
+                   style={{ accentColor: T.accent, width: 13, height: 13 }} />
+            {t.label}
+          </label>
+        ))}
+      </div>
+
+      <button
+        onClick={run}
+        disabled={!canRun}
+        style={{
+          width: "100%", padding: "8px 0",
+          background: canRun ? `${T.accent}22` : "#1F140808",
+          border: `1px solid ${canRun ? T.accent + "66" : T.border}`,
+          color: canRun ? T.accent : T.muted,
+          borderRadius: 3, fontSize: 11, fontWeight: 600, fontFamily: "inherit",
+          cursor: canRun ? "pointer" : "default", transition: "background 0.15s",
+        }}
+        onMouseEnter={e => { if (canRun) e.currentTarget.style.background = `${T.accent}38`; }}
+        onMouseLeave={e => { if (canRun) e.currentTarget.style.background = `${T.accent}22`; }}
+      >
+        {running ? "Running…" : content.trim() ? "Run Prompt" : "Write a prompt first"}
+      </button>
+
+      {error && (
+        <div style={{ marginTop: 10, fontSize: 10, color: T.error, background: `${T.error}0E`,
+                      border: `1px solid ${T.error}33`, borderRadius: 3, padding: "7px 9px", lineHeight: 1.5 }}>
+          {error}
+        </div>
+      )}
+
+      {/* Divergence highlight — how much the models actually agree */}
+      {results && (() => {
+        const d = computeDivergence(results);
+        if (!d) return null;
+        const pct = Math.round(d.agreement * 100);
+        return (
+          <div style={{ marginTop: 12, border: `1px solid ${d.color}33`, borderRadius: 3,
+                        background: `${d.color}0C`, padding: "7px 9px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 6 }}>
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: d.color, fontFamily: FONT }}>
+                {d.verdict} · {pct}% agreement
+              </span>
+              <span style={{ fontSize: 8.5, color: T.muted, fontFamily: FONT, flexShrink: 0 }}>
+                {d.count} models · {d.minW === d.maxW ? `${d.minW}w` : `${d.minW}–${d.maxW}w`}
+              </span>
+            </div>
+            {/* agreement bar */}
+            <div style={{ marginTop: 5, height: 3, background: `${d.color}22`, borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ width: `${pct}%`, height: "100%", background: d.color }} />
+            </div>
+            <div style={{ marginTop: 5, fontSize: 8.5, color: T.muted, lineHeight: 1.5 }}>
+              {d.agreement >= 0.6
+                ? "Models converged — the prompt pins the answer down."
+                : d.agreement >= 0.3
+                ? "Partial overlap — model choice shifts the result."
+                : "Outputs diverge — the prompt is under-specified for cross-model use."}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Result cards, stacked to fit the narrow rail */}
+      {results && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+          {results.map((res, i) => {
+            const ok = !res.error;
+            const c  = ok ? T.success : T.error;
+            const isChosen = chosen === i;
+            return (
+              <div key={i} style={{ border: `1px solid ${isChosen ? T.accent : c}${isChosen ? "88" : "33"}`,
+                                    borderRadius: 3, background: isChosen ? `${T.accent}10` : `${c}08`, overflow: "hidden" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline",
+                              padding: "5px 8px", borderBottom: `1px solid ${c}22`, gap: 6 }}>
+                  <span style={{ fontSize: 9.5, fontWeight: 700, color: c, fontFamily: FONT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {res.provider}{res.model ? " / " + res.model : ""}
+                  </span>
+                  <span style={{ fontSize: 8.5, color: T.muted, fontFamily: FONT, flexShrink: 0 }}>
+                    {res.latency_ms != null ? `${res.latency_ms}ms` : ""}{ok && res.words != null ? ` · ${res.words}w` : ""}
+                  </span>
+                </div>
+                <div style={{ padding: "7px 9px", fontSize: 10, color: ok ? "#2A4030" : T.error,
+                              fontFamily: FONT, lineHeight: 1.6, maxHeight: 200, overflowY: "auto", whiteSpace: "pre-wrap" }}>
+                  {ok ? res.output : res.error}
+                </div>
+                {ok && savedId == null && (
+                  <button
+                    onClick={() => setChosen(isChosen ? null : i)}
+                    style={{ width: "100%", padding: "4px 0", border: "none", borderTop: `1px solid ${c}22`,
+                             background: isChosen ? `${T.accent}22` : "transparent",
+                             color: isChosen ? T.accent : T.muted, fontSize: 9, fontWeight: 700,
+                             fontFamily: FONT, cursor: "pointer", letterSpacing: 0.3 }}>
+                    {isChosen ? "✓ CHOSEN" : "CHOOSE THIS"}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* The "why?" tap — capture rationale on the chosen output. One interaction
+          that yields better memory, better recall, more trust, and activation. */}
+      {results && chosen != null && savedId == null && (
+        <div style={{ marginTop: 12, border: `1px solid ${T.accent}44`, borderRadius: 3,
+                      background: `${T.accent}0A`, padding: "9px 10px" }}>
+          <div style={{ fontSize: 9.5, fontWeight: 700, color: T.accent, fontFamily: FONT, marginBottom: 7 }}>
+            Why this one?
+          </div>
+          <input
+            value={project} onChange={e => updateProject(e.target.value)}
+            placeholder="Project (optional — groups this decision)"
+            style={{ width: "100%", boxSizing: "border-box", fontFamily: FONT, fontSize: 9.5,
+                     padding: "5px 8px", borderRadius: 3, border: `1px solid ${T.border}`,
+                     background: T.surface, color: T.mutedLt, marginBottom: 8 }} />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
+            {WHY_TAGS.map(t => {
+              const on = whyTags.has(t);
+              return (
+                <button key={t} onClick={() => toggleTag(t)}
+                  style={{ padding: "3px 8px", borderRadius: 10, fontSize: 9, fontWeight: 600, fontFamily: FONT,
+                           cursor: "pointer", border: `1px solid ${on ? T.accent : T.border}`,
+                           background: on ? `${T.accent}22` : "transparent", color: on ? T.accent : T.muted }}>
+                  {t}
+                </button>
+              );
+            })}
+          </div>
+          <textarea
+            value={why} onChange={e => setWhy(e.target.value)} rows={2}
+            placeholder="Optional: a sentence on what made this output better…"
+            style={{ width: "100%", boxSizing: "border-box", resize: "vertical", fontFamily: FONT,
+                     fontSize: 10, lineHeight: 1.5, padding: "6px 8px", borderRadius: 3,
+                     border: `1px solid ${T.border}`, background: T.surface, color: T.mutedLt, marginBottom: 8 }} />
+          <button
+            onClick={saveDecision} disabled={saving}
+            style={{ width: "100%", padding: "7px 0", border: `1px solid ${T.accent}66`,
+                     background: `${T.accent}22`, color: T.accent, borderRadius: 3,
+                     fontSize: 10.5, fontWeight: 700, fontFamily: "inherit", cursor: saving ? "default" : "pointer" }}>
+            {saving ? "Saving…" : "Remember this decision"}
+          </button>
+          <div style={{ marginTop: 6, fontSize: 8.5, color: T.muted, lineHeight: 1.5 }}>
+            A reason is captured as <strong>explicit</strong> (trusted) memory; a bare choice is <strong>derived</strong> (tentative).
+          </div>
+        </div>
+      )}
+
+      {/* Activation payoff — the user sees the workspace got smarter. */}
+      {savedId != null && (
+        <div style={{ marginTop: 12, border: `1px solid ${T.success}44`, borderRadius: 3,
+                      background: `${T.success}0E`, padding: "8px 10px" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.success, fontFamily: FONT, marginBottom: 3 }}>
+            ✓ Decision remembered
+          </div>
+          <div style={{ fontSize: 9, color: T.muted, lineHeight: 1.5 }}>
+            Amagra now knows you chose <strong>{results[chosen]?.provider}{results[chosen]?.model ? " / " + results[chosen].model : ""}</strong> for this kind of work. It will surface when you ask about this project.
+          </div>
+        </div>
+      )}
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // Metrics panel — assembles all sections
 // ─────────────────────────────────────────────────────────────
 
@@ -995,6 +1348,7 @@ function MetricsPanel({ metrics, content, onApply }) {
       <SuggestedAgentsSection domain={domain} />
       <TemplatesSection       domain={domain} currentContent={content} onApply={onApply} />
       <PromptUpgradeSection   m={metrics} domain={domain} content={content} onApply={onApply} />
+      <RunAcrossModelsSection content={content} />
     </div>
   );
 }

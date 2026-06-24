@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.2.0";
+export const VERSION = "1.5.1";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -556,6 +556,132 @@ export const BUILD_PHASES = [
       "Test suite 766 → 790 passing",
     ],
   },
+  {
+    id: 78, version: "v1.2.0", date: "Jun 17, 2026",
+    label: "Model Choice & Desktop Mode", title: "Model Choice & Desktop Mode", color: "#15803D", status: "done",
+    summary: "Switch provider/model at runtime from the UI — no env edits, no restart — and run the whole app as a single process that serves its own dashboard. Ships an AppImage build path.",
+    steps: [
+      "Settings → Model tab — runtime provider/model swap via infrastructure/provider_config.py + routes/settings_provider.py; live reload hits the agent hot path immediately",
+      "Single-process desktop mode — api.py serves the built UI from ui/build at / (StaticFiles), API routes win, UI assets bypass auth",
+      "infrastructure/paths.py — AMAGRA_DATA_DIR / OS user-data dir resolution for db.py + provider_config.py",
+      "AppImage packaging (packaging/) — relocatable-python + appimagetool",
+      "Test suite → 808 passing",
+    ],
+  },
+  {
+    id: 79, version: "v1.3.0", date: "Jun 18, 2026",
+    label: "Cross-Model Prompt Debugger", title: "Cross-Model Prompt Debugger", color: "#C48808", status: "done",
+    summary: "The launch wedge: run one prompt across many models at once and read the outputs side by side. Reuses the provider/model settings from v1.2.0, so any configured model works unchanged. Published as a multi-arch Docker image.",
+    steps: [
+      "POST /debug/prompt — fans one prompt across N models concurrently with per-model error isolation (routes/debug_prompt.py)",
+      "Run Across Models panel — target checkboxes + stacked result cards in ui/src/PromptEditorTab.jsx",
+      "Cloud SDKs (anthropic, openai) bundled — compare Claude / GPT / local; local works offline with no key",
+      "Multi-arch Docker Hub publish on every v* tag (.github/workflows/publish.yml)",
+    ],
+  },
+  {
+    id: 80, version: "v1.3.1", date: "Jun 20, 2026",
+    label: "Debugger Divergence Highlight", title: "Debugger Divergence Highlight", color: "#C48808", status: "done",
+    summary: "Completes the debugger: when two or more models answer, a summary shows how much they actually agree — the whole point of comparing side by side.",
+    steps: [
+      "Client-side divergence summary in Run Across Models — average pairwise Jaccard overlap of output word sets",
+      "Verdict (Aligned / Mixed / Divergent) + agreement %, agreement bar, and word-count spread",
+      "Reconciled stale version state — landing badge, BUILD_PHASES history (v1.2.0, v1.3.0), and lockstep version markers",
+    ],
+  },
+  {
+    id: 81, version: "v1.4.0", date: "Jun 20, 2026",
+    label: "Unified Workspace UI", title: "Unified Workspace UI", color: "#7E3F8F", status: "done",
+    summary: "Consolidates the dashboard into six coherent views — Workspace · Runs · Cognition · Memory · Research · Settings — driven by a single nav model, with system health promoted to a hero dashboard. A reorganization of what already exists: no components removed, no new backend.",
+    steps: [
+      "Single data-driven nav model (SURFACES) — sidebar, calm SubNav dropdown, surface lookup, and per-surface last-tab memory all derive from one source; each view carries a one-line description",
+      "Six views replace the Chat/Library/Memory/Inspect/Settings split — Workspace (Chat · Prompt IDE · Goals · Tasks · Project State), Runs (Overview · Runs · Decisions · Trace · Inspector · Policy · Replay), Cognition, Memory (+ Library folded in), Research (Lab · Analysis), Settings",
+      "Cognition dashboard — UCIDashboard · Risk · Events · Plan composed into one responsive grid (CognitionView.jsx), 'observability as hero'",
+      "Refreshed keyboard map (Ctrl+1..7) + Go menu for the six surfaces",
+      "Deferred to v1.4.1: run-scoped Runs master-detail (needs run-id plumbing in Traces/Inspector/Policy); Monaco code pane + write endpoint; theme.js token extraction",
+    ],
+  },
+  {
+    id: 82, version: "v1.4.1", date: "Jun 21, 2026",
+    label: "UI Refinement", title: "UI Refinement — Minimal & Premium", color: "#7E3F8F", status: "done",
+    summary: "A consistency and polish pass over the six-view workspace: removes the duplicate top menu bar, unifies page headers and stat cards, and de-clutters the Cognition hero dashboard for a calmer, more premium feel. No backend or behavior changes.",
+    steps: [
+      "Removed the redundant top MenuBar — its Go menu duplicated the sidebar and Debug/Observe/Explore/Tools just re-cut existing sub-tabs; rehomed the brand + global actions into the sidebar (footer cluster: Settings/Shortcuts/More + Simple-Advanced toggle), reclaiming 52px of vertical height",
+      "Consistent serif PageHeader across every view — added headers to Tasks/Overview/Knowledge/Timeline/Guide and converted Trace/Analysis/Model from bold-sans titles",
+      "Cognition hero dashboard de-cluttered — an `embedded` prop makes UCI/Risk/Events/Plan suppress their own headers so each cell shows a single uppercase title; content fills, taller cells",
+      "Unified stat cards on the lux-card look (gloss + tabular value + uppercase tracked label) across Knowledge/Analysis/Overview to match Policy/Memory",
+    ],
+  },
+  {
+    id: 83, version: "v1.4.2", date: "Jun 21, 2026",
+    label: "Gold Refinement", title: "Gold Refinement — Premium Polish", color: "#7E3F8F", status: "done",
+    summary: "A luxury polish pass: gold-gradient page titles, the landing-page gold hover border applied consistently to every card, and a card sweep that promotes the remaining flat panels to the lux-card recipe. Charts keep their semantic colors for readability.",
+    steps: [
+      "PageHeader titles now use the AMAGRA/Memory gold gradient by default (gold opt-out retained)",
+      "Every .lux-card gains the landing .feature-card hover treatment — a gradient gold border (g1→g3→g5) that fades in on hover, drawn as a masked ::after so it paints only the ring, never over content",
+      "Card sweep — promoted standalone flat panels to lux-card across Tasks, Analysis, Goals, Decisions, Knowledge, and Mind Map; skipped inputs/chips/rows and stat-tile-grid wrappers to avoid card-on-card nesting",
+      "Charts deliberately keep semantic colors (risk/quality/pass-fail) — gold stays on titles, hover borders, and decorative chrome",
+    ],
+  },
+  {
+    id: 84, version: "v1.4.3", date: "Jun 22, 2026",
+    label: "Card & Layout Refinement", title: "Card & Layout Refinement", color: "#7E3F8F", status: "done",
+    summary: "Review-driven polish of the gold pass: fixes card-in-card nesting on the Cognition dashboard, restores an elegant serif gold title with one consistent stacked header rule, tunes the hover to match the landing card, and aligns every tab to the same page layout.",
+    steps: [
+      "Cognition dashboard: a scoped rule flattens nested lux-cards so each cell is the ONLY card — no more card-in-card (or nested gold borders)",
+      "Elegant serif (Cormorant Garamond) gold-gradient titles, and one consistent header rule everywhere — Title, then description, then actions/forms stacked on new lines below",
+      "Hover matches the landing .feature-card — gradient gold border + soft gold glow together, rounder 16px corners",
+      "Aligned Runs & Trace to the standard centered/padded page (were full-height shells) and normalized the last custom headers (Project State, Library, Releases, Progress, Promises) onto PageHeader",
+    ],
+  },
+  {
+    id: 85, version: "v1.4.4", date: "Jun 22, 2026",
+    label: "Single Gold Favicon", title: "Single Gold Favicon", color: "#7E3F8F", status: "done",
+    summary: "Collapse the icon set to one mark: a single gold AMAGRA wordmark SVG favicon. Every raster icon variant is removed and all references point at the one file.",
+    steps: [
+      "icon.svg is now the gold AMAGRA wordmark (serif, gold gradient, width-pinned so it renders without the web font)",
+      "Removed favicon.ico, favicon-32.png, apple-touch-icon.png, logo192.png, logo512.png",
+      "index.html, landing.html, and manifest.json reference only icon.svg",
+    ],
+  },
+  {
+    id: 86, version: "v1.4.5", date: "Jun 22, 2026",
+    label: "Observability & Favicon Fix", title: "Component Transparency & Icon-Usable Favicon", color: "#7E3F8F", status: "done",
+    summary: "Adds a transparent/opaque view of the running system on top of the event bus, fixes a latent event-key bug, and recomposes the v1.4.4 favicon so the AMAGRA wordmark is legible at icon size.",
+    steps: [
+      "Component Transparency: classify_components() + GET /cos/transparency + UCIDashboard panel — labels each component transparent | partial | opaque | unobserved from the evidence + confidence its events disclose (read-only over events.db, no new data collected)",
+      "event_bus key fix: emit/subscribe now use EventType.value, not str(enum) — repairs documented wildcard subscriptions and two dead suggestion_engine heuristics; historical events.db migrated to the dotted form",
+      "Verifier, Router, and Risk Gate now disclose evidence+confidence (transparency_score 0.0 → 0.23); routing (AGENT_SELECTED) is now emitted",
+      "Favicon: gold AMAGRA wordmark recomposed onto a square 512 dark tile with gold ring (was a 720×220 wordmark that rendered ~5px tall and illegible in the tab)",
+      "Known issues (tracked as GitHub issues): Responder & Dispatch still opaque; Intake stays partial (no routing confidence at query-receipt); 7 components read 'unobserved' until exercised by traffic; favicon is SVG-only (no raster/apple-touch fallback)",
+    ],
+  },
+  {
+    id: 87, version: "v1.4.6", date: "Jun 23, 2026",
+    label: "OCAC Stability Metrics", title: "Contraction/Lyapunov Theory + Dashboard Observability", color: "#7E3F8F", status: "done",
+    summary: "Frames the learning loop as a parametrised contraction fixed-point family (OCAC) and imports its proved consequences as live metrics — then surfaces those metrics on the dashboard so the stability signal is visible, not just computed.",
+    steps: [
+      "math_metrics.py: pure, self-tested OCAC-bridge functions (effective_contraction, resolvent_bound, affine_lyapunov_decay, instability_conjunctive, series_curvature, invariant_health, chain_error_bound, gevrey_majorant, stable_recursion_depth)",
+      "learning.py: adaptive-α gate instability switched from a 0.4/0.4/0.2 weighted average to conjunctive soft-OR — a single failing OCAC signal now halts learning instead of being diluted",
+      "coherence.py: C_quality decoupled from routing (independently-graded memory quality, restoring effective DOF) + Δ²C curvature channel & peak alarm",
+      "metrics_engine.py: routing_accuracy source-tagged (measured from arena.db vs assumed_constant) + uci_history()/uci_curvature() expose the UCI trajectory and its Δ² leading indicator",
+      "Dashboard: GET /cos/uci/trajectory; UCIDashboard UCI trajectory sparkline + Δ² bend-alarm badge + measured/assumed source badge; CognitiveOSTab Δ²C bend-alarm badge + sharpest-bend ring on the C(t) timeline",
+      "Curvature is the leading indicator: it catches the acceleration of a downturn before the level itself drops. Verified: full suite 834 passed",
+    ],
+  },
+  {
+    id: 88, version: "v1.5.0", date: "Jun 23, 2026",
+    label: "Hybrid Inference", title: "Automatic Local→Cloud Escalation + Cost Telemetry", color: "#1E5A8A", status: "done",
+    summary: "Keeps the local model as the default but escalates hard or low-confidence queries to a cloud model automatically — without the user choosing — and accounts for the spend. Opt-in behind AMAGRA_HYBRID; local-only stays the default.",
+    steps: [
+      "providers/base.py: GenResult (text + tokens + cost_usd + latency) + estimate_tokens/price_for/estimate_cost; additive generate_detailed() — Anthropic reports exact usage, others char-estimate. Sync generate() hot path unchanged",
+      "orchestration/router.py: decide_with_confidence() exposes a calibrated routing-confidence signal (0.95 pin → 0.25 no-match); decide() is now a thin wrapper",
+      "providers/policy.py: declarative EscalationPolicy + load_policy() (off by default) + select_provider() — tier gate, budget check, cheap no-network readiness check, fall back to local with a reason",
+      "coordinator enhancement gate routes through select_provider(): legacy compound/moderate preserved, hybrid adds low-confidence escalation; smart_llm gained force= + enhance_response_detailed()",
+      "run_tracer cost columns (idempotent migration) + record_cost()/cost_summary(); GET /runs/cost; Cognition 'Inference Cost · Productivity' cell — reads '$0.00 fully local' by default",
+      "Verified: full suite 865 passed, 35 new hybrid-inference tests across 3 files",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -655,8 +781,8 @@ export const ROADMAP = [
     ],
   },
   {
-    id: 42, version: "v1.2.0", title: "Workspaces & RBAC", color: "#C2410C", status: "planned", priority: "high",
-    summary: "Multiple isolated projects per user, role-based access, and a custom agent builder. Ships alongside provider abstraction in v1.2.",
+    id: 42, version: "v1.6.0", title: "Workspaces & RBAC", color: "#C2410C", status: "planned", priority: "medium",
+    summary: "Multiple isolated projects per user, role-based access, and a custom agent builder. (Deferred past the launch-wedge pivot — the v1.2/v1.3 slots shipped as Model Choice and the Cross-Model Debugger instead.)",
     items: [
       "workspaces table — multiple isolated projects per user, per-workspace memory namespace (8h)",
       "RBAC — owner / admin / member roles, enforced at the route layer (6h)",
@@ -666,18 +792,18 @@ export const ROADMAP = [
     ],
   },
   {
-    id: 43, version: "v1.2.0", title: "LLM Provider Abstraction + Hybrid Inference", color: "#1E5A8A", status: "planned", priority: "medium",
-    summary: "Complete the multi-provider path that began in 1.0.0 (AskRequest.provider + AnthropicProvider). Formalize it into a full protocol with a routing policy that escalates compound or low-confidence queries to Claude/GPT-4o automatically. Local stays default; cloud escalates for hard tasks.",
+    id: 43, version: "v1.5.0", title: "Hybrid Inference", color: "#1E5A8A", status: "done", priority: "medium",
+    summary: "Runtime provider/model switching shipped in v1.2.0 (Model Choice) and cross-model comparison in v1.3.0 (Debugger). v1.5.0 adds the automatic policy: keep local default, but escalate compound or low-confidence queries to a cloud model without the user choosing — opt-in behind AMAGRA_HYBRID, with cost surfaced on the dashboard.",
     items: [
-      "LLMProvider protocol: invoke(), astream(), healthy() — formalize OllamaProvider + the existing AnthropicProvider (12h)",
-      "providers.yaml policy: default=local-fast, compound→cloud-claude, confidence_below:0.6→cloud (6h)",
-      "select_provider(decision, tier) — tier gate, budget check, fallback chain (4h)",
-      "Agent nodes: replace 'from llm import llm' with get_provider(state) — one line per agent (2h)",
-      "GenResult.cost_usd → traces table → UCI Productivity cost axis (4h)",
+      "LLMProvider protocol + GenResult (cost_usd/tokens/latency) — generate_detailed(), exact usage from Anthropic ✅",
+      "Declarative EscalationPolicy + load_policy() — default=local-fast, compound→cloud, confidence_below:0.6→cloud (off by default) ✅",
+      "select_provider(confidence, complexity, tier) — tier gate, budget check, cheap readiness check, fallback chain ✅",
+      "decide_with_confidence() routing signal; coordinator enhancement gate routes through select_provider (flag-gated, local default) ✅",
+      "cost_usd → runs traces → GET /runs/cost → Cognition 'Inference Cost' Productivity cell ✅",
     ],
   },
   {
-    id: 46, version: "v1.3.0", title: "Team Memory & Governance", color: "#15803D", status: "planned", priority: "medium",
+    id: 46, version: "v1.7.0", title: "Team Memory & Governance", color: "#15803D", status: "planned", priority: "medium",
     summary: "The moment two users share a memory pool is the moment there's a moat no chat UI can copy. Shared team memory plus the governance surface enterprises require — every AI decision logged, explainable, and exportable, on hardware they control.",
     items: [
       "Shared team memory — per-workspace FAISS index, opt-in pooling across a team's keys (10h)",
@@ -690,15 +816,15 @@ export const ROADMAP = [
     ],
   },
   {
-    id: 44, version: "v1.4.0", title: "Unified Workspace UI — ~26 Views → 6", color: "#7E3F8F", status: "planned", priority: "medium",
-    summary: "The dashboard today is 5 top-level surfaces (Chat · Library · Memory · Inspect · Settings) fronting ~26 view components. This consolidates them into 6 coherent views with observability as the hero screen. Nothing deleted — reorganized into hierarchy.",
+    id: 44, version: "v1.4.0", title: "Unified Workspace UI — ~26 Views → 6", color: "#7E3F8F", status: "done", priority: "medium",
+    summary: "The dashboard was 5 top-level surfaces (Chat · Library · Memory · Inspect · Settings) fronting ~26 view components. Consolidated into 6 coherent views with observability as the hero screen. Nothing deleted — reorganized into hierarchy.",
     items: [
-      "6 primary views: Workspace · Runs · Cognition · Memory · Research · Settings (24h)",
-      "Workspace: thread rail + Project State card + chat thread (project-state-centric layout)",
-      "Runs: run list → detail with sub-tabs — Trace · Inspector · Decision · Policy",
-      "Cognition: UCI bars · Risk · Events · Plan Graph in one dashboard grid",
-      "Monaco code pane: read + DiffEditor + Apply via POST /workspace/apply (20h)",
-      "Extract all inline style tokens to theme.js — dedupe the ~26 duplicated style objects (8h)",
+      "6 primary views: Workspace · Runs · Cognition · Memory · Research · Settings ✅",
+      "Single data-driven nav model (SURFACES) — sidebar + SubNav + last-tab memory derived from one source; per-surface descriptions ✅",
+      "Cognition: UCI · Risk · Events · Plan in one dashboard grid (CognitionView) ✅",
+      "Runs: facet sub-tabs — Overview · Runs · Decisions · Trace · Inspector · Policy · Replay ✅ (run-scoped master-detail deferred to v1.4.1)",
+      "Monaco code pane: read + DiffEditor + Apply via POST /workspace/apply — deferred (security-sensitive write endpoint)",
+      "Extract inline style tokens to theme.js — deferred to a polish pass",
     ],
   },
   {
@@ -716,6 +842,17 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.5.0", label: "Hybrid Inference",        color: "#1E5A8A", phases: [88] },
+  { version: "v1.4.6", label: "OCAC Stability Metrics", color: "#7E3F8F", phases: [87] },
+  { version: "v1.4.5", label: "Observability & Favicon Fix", color: "#7E3F8F", phases: [86] },
+  { version: "v1.4.4", label: "Single Gold Favicon",     color: "#7E3F8F", phases: [85] },
+  { version: "v1.4.3", label: "Card & Layout Refinement", color: "#7E3F8F", phases: [84] },
+  { version: "v1.4.2", label: "Gold Refinement",        color: "#7E3F8F",  phases: [83] },
+  { version: "v1.4.1", label: "UI Refinement",          color: "#7E3F8F",  phases: [82] },
+  { version: "v1.4.0", label: "Unified Workspace UI",   color: "#7E3F8F",  phases: [81] },
+  { version: "v1.3.1", label: "Debugger Divergence",    color: "#C48808",  phases: [80] },
+  { version: "v1.3.0", label: "Cross-Model Debugger",   color: "#C48808",  phases: [79] },
+  { version: "v1.2.0", label: "Model Choice & Desktop", color: "#15803D",  phases: [78] },
   { version: "v1.1.2", label: "Eval Rigor & Security", color: "#15803D",  phases: [77] },
   { version: "v1.1.1", label: "Tools in Default Path", color: "#15803D",  phases: [76] },
   { version: "v1.1.0", label: "Tool-Using Agents",    color: "#15803D",  phases: [75] },

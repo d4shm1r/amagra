@@ -123,12 +123,6 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
                 fontFamily: FONT_DISPLAY, letterSpacing: "0.07em", lineHeight: 1.05,
                 ...LUX.goldText,
               }}>AMAGRA</h1>
-              <span style={{
-                fontSize: 13, fontWeight: 600, color: T.accent2,
-                marginTop: 4, letterSpacing: "0.02em",
-              }}>
-                — local agentic AI
-              </span>
             </div>
 
             {/* Version + phase badges */}
@@ -147,9 +141,9 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
               margin: "0 0 16px", fontSize: 13.5, color: T.mutedLt,
               lineHeight: 1.65, maxWidth: 700,
             }}>
-              A locally-running multi-agent reasoning system that routes natural language queries
-              to 10 specialist LLM agents using signal-first classification. No cloud dependency,
-              no telemetry, no vendor lock-in. Full source on GitHub under MIT.
+              Your personal AI workspace that runs entirely on your own computer. It remembers
+              your projects, hands every question to the right expert, and shows you exactly how
+              it reached each answer — private by design, with nothing leaving your machine.
             </p>
 
             {/* Live status strip */}

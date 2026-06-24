@@ -162,6 +162,31 @@ def _reasoning_metrics(n: int = 200) -> Dict[str, Any]:
 
 # ── Level 3: Learning metrics ─────────────────────────────────
 
+# Static ablation snapshot (signal_only routing, 98/100). Used ONLY when no
+# live agent_arena run has been recorded — never lets a hardcoded value
+# silently masquerade as a live measurement (see _routing_accuracy).
+_ASSUMED_ROUTING_ACCURACY = 0.98
+
+
+def _routing_accuracy() -> tuple:
+    """(accuracy, source) — live routing accuracy if agent_arena has run.
+
+    Reads logs/arena.db (written by evaluation/agent_arena.py): the signal_only
+    strategy accuracy of the most recent run, tagged 'measured'. Falls back to
+    the static ablation snapshot tagged 'assumed_constant' when no run exists.
+    """
+    arena  = _dbpath("arena")
+    run_id = _q(arena, "SELECT MAX(run_id) FROM arena_results", default=None)
+    if run_id is not None:
+        acc = _q(arena,
+            "SELECT AVG(correct) FROM arena_results "
+            "WHERE run_id = ? AND strategy = 'signal_only'",
+            (run_id,), default=None)
+        if acc is not None:
+            return round(float(acc), 4), "measured"
+    return _ASSUMED_ROUTING_ACCURACY, "assumed_constant"
+
+
 def _learning_metrics(n: int = 300) -> Dict[str, Any]:
     """
     Routing accuracy, reflection delta, feedback score.
@@ -187,12 +212,13 @@ def _learning_metrics(n: int = 300) -> Dict[str, Any]:
     else:
         positive_rate = 0.80
 
-    # Routing accuracy proxy: ablation result (constant from eval)
-    # Updated manually when ablation eval runs
-    routing_accuracy = 0.98   # from ablation_eval: 98/100
+    # Routing accuracy: live from agent_arena (logs/arena.db) when available,
+    # else a clearly-tagged static ablation snapshot.
+    routing_accuracy, routing_accuracy_source = _routing_accuracy()
 
     return {
         "routing_accuracy":  routing_accuracy,
+        "routing_accuracy_source": routing_accuracy_source,
         "mean_confidence":   round(mean_conf, 3),
         "mean_regret":       round(mean_regret, 3),
         "feedback_positive": round(positive_rate, 3),
@@ -381,6 +407,7 @@ def hierarchical_metrics(force: bool = False) -> Dict[str, Any]:
             "reliability":  {
                 "score": reliability,
                 "routing_accuracy":  round(m["lrn_routing_accuracy"] * 100, 1),
+                "routing_accuracy_source": m.get("lrn_routing_accuracy_source", "assumed_constant"),
                 "verify_pass_rate":  round(m["rsn_step_pass_rate"] * 100, 1),
                 "gate_accept_rate":  round(m["exec_gate_accept_rate"] * 100, 1),
                 "abort_rate":        round(m.get("rsn_step_replan_rate", 0.05) * 100, 1),
@@ -432,10 +459,12 @@ def get_metrics(force: bool = False) -> Dict[str, Any]:
     sys_m    = _system_metrics(exec_m, reason_m, learn_m)
     uci      = _compute_uci(sys_m)
 
-    # Emit UCI event if event_bus is available
+    # Emit UCI event if event_bus is available. Persisted so a UCI trajectory
+    # accumulates in events.db — fed to uci_curvature() as a leading indicator.
+    # get_metrics is cached 30s, so this writes at most ~1 row / 30s.
     try:
         from infrastructure.event_bus import emit, EventType
-        emit(EventType.UCI_COMPUTED, {"uci": uci, **sys_m}, persist=False)
+        emit(EventType.UCI_COMPUTED, {"uci": uci, **sys_m}, persist=True)
     except Exception:
         pass
 
@@ -462,6 +491,43 @@ def get_metrics(force: bool = False) -> Dict[str, Any]:
 def compute_uci(force: bool = False) -> float:
     """Convenience: return only the UCI score (0–100)."""
     return get_metrics(force=force)["uci"]
+
+
+# ── UCI trajectory + curvature (OCAC Delta_secondDiff) ────────
+
+def uci_history(n: int = 100) -> list:
+    """Chronological list of recent UCI values from events.db (uci.computed)."""
+    try:
+        from infrastructure.event_bus import recent_events
+        rows = recent_events(n, "uci.computed")   # newest-first
+    except Exception:
+        return []
+    hist = []
+    for ev in reversed(rows):                      # → chronological
+        u = (ev.get("payload") or {}).get("uci")
+        if u is not None:
+            hist.append({"ts": ev.get("ts"), "uci": float(u)})
+    return hist
+
+
+def uci_curvature(n: int = 100) -> dict:
+    """Second-difference (Δ²) of the UCI trajectory — instability leading indicator.
+
+    OCAC's Delta_secondDiff: curvature catches the *acceleration* of a downturn
+    before the level itself drops. Returns the per-point curvature series, the
+    peak |Δ²|, and a bending flag (peak > 2.0 points of UCI, i.e. UCI is on a
+    0–100 scale so 2 points of curvature is a sharp bend).
+    """
+    from evaluation.math_metrics import series_curvature, max_abs_curvature
+    series = [h["uci"] for h in uci_history(n)]
+    curv   = series_curvature(series)
+    peak   = max_abs_curvature(series)
+    return {
+        "n":        len(series),
+        "curvature": curv,
+        "peak_abs_curvature": peak,
+        "bending":  peak > 2.0,
+    }
 
 
 # ── CLI report ────────────────────────────────────────────────

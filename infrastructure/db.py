@@ -36,6 +36,7 @@ REGISTRY: dict[str, str] = {
     "tasks":          "tasks.db",
     # Telemetry / decision cluster
     "decisions":      os.path.join("logs", "decisions.db"),
+    "model_decisions": os.path.join("logs", "model_decisions.db"),
     "runs":           os.path.join("logs", "runs.db"),
     "gate":           os.path.join("logs", "gate.db"),
     "risk_gate":      os.path.join("logs", "risk_gate.db"),

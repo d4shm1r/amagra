@@ -165,7 +165,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Amagra", version="1.2.0", lifespan=lifespan)
+app = FastAPI(title="Amagra", version="1.5.1", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -274,6 +274,8 @@ from routes.tools       import router as tools_router
 from routes.settings_provider import router as settings_provider_router
 from routes.payments    import router as payments_router
 from routes.readiness   import router as readiness_router
+from routes.debug_prompt import router as debug_prompt_router
+from routes.project      import router as project_router
 
 app.include_router(core_router)
 app.include_router(register_router)
@@ -298,6 +300,8 @@ app.include_router(tools_router)
 app.include_router(settings_provider_router)
 app.include_router(payments_router)
 app.include_router(readiness_router)
+app.include_router(debug_prompt_router)
+app.include_router(project_router)
 
 # ── Bundled UI ────────────────────────────────────────────────────────────────
 # Mounted LAST so every API route above takes precedence. html=True serves

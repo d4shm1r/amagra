@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { AGENTS } from "./constants";
+import { PageHeader } from "./ObsShared";
 
 const API = "http://localhost:8000";
 
@@ -149,8 +150,10 @@ export default function TaskQueue() {
         .task-row:hover { filter: brightness(1.05); }
       `}</style>
 
+      <PageHeader title="Tasks" subtitle="Queue specialist work — each task runs the agent you choose and reports back." />
+
       {/* ── SECTION 1 — New Task Form ── */}
-      <div style={{ background: "#FAF7F2", border: "2px solid #E0D6C4", borderRadius: 3, padding: 18, marginBottom: 14 }}>
+      <div className="lux-card" style={{ padding: 18, marginBottom: 14 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: "#9A7A60", marginBottom: 12, letterSpacing: 1 }}>
           + NEW TASK
         </div>
@@ -218,17 +221,17 @@ export default function TaskQueue() {
       </div>
 
       {/* ── SECTION 2 — Queue Controls ── */}
-      <div style={{ background: "#FAF7F2", border: "2px solid #E0D6C4", borderRadius: 3, padding: "12px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+      <div className="lux-card" style={{ padding: "12px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
         <button
           onClick={runAll}
           disabled={queueRunning || counts.pending === 0}
+          className={queueRunning || counts.pending === 0 ? undefined : "btn-gold"}
           style={{
-            background: queueRunning || counts.pending === 0 ? "#E0D6C4" : "#15803D",
-            border: "none", borderRadius: 4,
-            color: queueRunning || counts.pending === 0 ? "#9A7A60" : "#F4F0E8",
-            padding: "10px 20px", fontSize: 14, fontWeight: 800,
+            padding: "10px 22px", fontSize: 14, fontWeight: 800, fontFamily: "inherit",
             cursor: queueRunning || counts.pending === 0 ? "not-allowed" : "pointer",
-            fontFamily: "inherit",
+            ...(queueRunning || counts.pending === 0
+              ? { background: "#E0D6C4", color: "#9A7A60", border: "none", borderRadius: 4 }
+              : {}),
           }}>
           {queueRunning ? "⏳ Running…" : "▶ RUN ALL PENDING"}
         </button>

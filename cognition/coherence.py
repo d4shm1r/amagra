@@ -42,6 +42,7 @@ from dataclasses import dataclass, asdict
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from infrastructure.db import path as _dbpath
+from evaluation.math_metrics import series_curvature, max_abs_curvature
 _DECISIONS_DB = _dbpath("decisions")
 _MEMORY_DB    = _dbpath("memory")
 
@@ -192,13 +193,21 @@ def _c_calib(cal_errors: dict[str, float]) -> float:
     return round(1.0 - min(1.0, mean_err), 4)
 
 
-def _c_quality(decisions: list[dict]) -> float:
+def _c_quality(decisions: list[dict], mem_q: float = 0.0, mem_n: int = 0) -> float:
     """
-    C_quality = mean proxy performance over recent decisions.
-    Reflected decisions: use proxy 0.75/0.55 (logged reflection
-    quality is stored in memory, not in decisions DB directly).
-    For each decision: quality = 0.75 if no conflict else 0.55.
+    C_quality = independently-graded response/memory quality.
+
+    Primary source: mean memory quality (graded by the Bayesian quality_update
+    path), which is independent of routing conflict. The previous conflict-derived
+    proxy (0.75 if no conflict else 0.55) made C_quality a deterministic affine
+    function of conflict_rate — hence perfectly correlated with C_routing
+    (= 1 − conflict_rate), so the composite C had only 2 effective degrees of
+    freedom, not 3. Using graded memory quality restores a genuine third axis.
+
+    Falls back to the conflict proxy only at cold start (no graded memory yet).
     """
+    if mem_n > 0:
+        return round(mem_q, 4)
     if not decisions:
         return 0.75
     scores = [
@@ -277,6 +286,7 @@ def coherence_time_series(window: int = WINDOW) -> list[dict]:
 
     decisions = list(reversed(decisions))  # chronological order
     cal_errors = _load_calibration()
+    mem_q, mem_n = _load_memory_quality()  # system-level, independent of routing
 
     series = []
     step = max(1, window // 2)  # 50% overlap between windows
@@ -285,7 +295,7 @@ def coherence_time_series(window: int = WINDOW) -> list[dict]:
         window_slice = decisions[start : start + window]
         cr, conflict_rate = _c_routing(window_slice)
         cc = _c_calib(cal_errors)  # calibration is system-level, not window-specific
-        cq = _c_quality(window_slice)
+        cq = _c_quality(window_slice, mem_q, mem_n)
         composite = round((cr + cc + cq) / 3, 4)
 
         series.append({
@@ -299,6 +309,17 @@ def coherence_time_series(window: int = WINDOW) -> list[dict]:
             "conflict_rate":  conflict_rate,
             "reflect_rate":   round(sum(1 for d in window_slice if d["reflect"]) / len(window_slice), 3),
         })
+
+    # Second-order signal (OCAC Delta_secondDiff): curvature of C(t).
+    # Δ²Cₙ = Cₙ₊₁ − 2Cₙ + Cₙ₋₁ — the acceleration of coherence change, a
+    # leading indicator the level/rate metrics miss. Aligned to interior
+    # windows; endpoints have no curvature (None).
+    curv = series_curvature([row["C"] for row in series])
+    for row in series:
+        row["C_curvature"] = None
+    for i, cv in enumerate(curv):
+        series[i + 1]["C_curvature"] = cv
+
     return series
 
 
@@ -316,7 +337,7 @@ def current_coherence(window: int = WINDOW) -> CoherenceState:
 
     cr, conflict_rate  = _c_routing(decisions)
     cc                 = _c_calib(cal_errors)
-    cq                 = _c_quality(decisions)
+    cq                 = _c_quality(decisions, mem_q, mem_n)
     composite          = round((cr + cc + cq) / 3, 4)
 
     n = len(decisions)
@@ -368,17 +389,23 @@ def print_dynamics(series: list[dict]) -> None:
     print(f"\n{'='*60}")
     print(f"  Coherence Dynamics  C(t)  — rolling windows of {WINDOW}")
     print(f"{'='*60}")
-    print(f"  {'Win':>4}  {'C(t)':>6}  {'C_rt':>6}  {'C_ca':>6}  {'C_ql':>6}  {'conf%':>6}  {'refl%':>6}  Trend")
-    print(f"  {'─'*55}")
+    print(f"  {'Win':>4}  {'C(t)':>6}  {'C_rt':>6}  {'C_ca':>6}  {'C_ql':>6}  {'Δ²C':>8}  {'conf%':>6}  {'refl%':>6}  Trend")
+    print(f"  {'─'*66}")
     prev = None
     for row in series:
         delta = ""
         if prev is not None:
             delta = "▲" if row["C"] > prev + 0.005 else ("▼" if row["C"] < prev - 0.005 else "→")
+        cv = row.get("C_curvature")
+        cv_str = f"{cv:>+8.4f}" if cv is not None else f"{'·':>8}"
         print(f"  {row['window_idx']:>4}  {row['C']:>6.4f}  {row['c_routing']:>6.4f}  "
-              f"{row['c_calib']:>6.4f}  {row['c_quality']:>6.4f}  "
+              f"{row['c_calib']:>6.4f}  {row['c_quality']:>6.4f}  {cv_str}  "
               f"{row['conflict_rate']*100:>5.1f}%  {row['reflect_rate']*100:>5.1f}%  {delta}")
         prev = row["C"]
+
+    peak = max_abs_curvature([row["C"] for row in series])
+    print(f"\n  Peak |Δ²C| = {peak:.4f}  "
+          f"({'⚠ bending sharply — instability leading indicator' if peak > 0.05 else 'trajectory smooth'})")
     print()
 
 

@@ -128,6 +128,33 @@ def cos_uci_hierarchical(force: bool = False):
         raise HTTPException(status_code=503, detail=str(e))
 
 
+@router.get("/cos/uci/trajectory")
+def cos_uci_trajectory(n: int = 100):
+    """UCI trajectory + Δ² curvature (OCAC leading indicator).
+
+    history    — chronological UCI samples from events.db (uci.computed)
+    curvature  — per-point second-difference series, peak |Δ²|, and a `bending`
+                 flag that fires when curvature exceeds 2 UCI points (a sharp
+                 downturn accelerating *before* the level itself drops).
+    """
+    try:
+        from infrastructure.metrics_engine import uci_history, uci_curvature
+        return {"history": uci_history(n), "curvature": uci_curvature(n)}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+@router.get("/cos/transparency")
+def cos_transparency(window: int = 2000):
+    """Classify each component as transparent / partial / opaque / unobserved
+    from the evidence + confidence its events disclose."""
+    try:
+        from infrastructure.transparency import classify_components
+        return classify_components(window=window)
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
 @router.get("/cos/skills")
 def cos_skills(query: str = ""):
     try:

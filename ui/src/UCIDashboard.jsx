@@ -47,12 +47,109 @@ function HealthStrip({ health }) {
   );
 }
 
+// ── UCI trajectory + curvature sparkline ──────────────────────
+function UCITrajectory({ traj }) {
+  const hist = traj?.history || [];
+  if (hist.length < 2) {
+    return <EmptyState msg="Not enough UCI samples yet — trajectory builds as metrics recompute." />;
+  }
+
+  const vals = hist.map(h => h.uci);
+  const curv = traj?.curvature?.curvature || [];   // aligns to interior points
+  const W = 560, H = 90, PX = 8, PY = 10;
+  const iW = W - 2 * PX, iH = H - 2 * PY;
+  // Fixed 0–100 UCI scale so the slope is honest across refreshes.
+  const xs = i => PX + (i / Math.max(1, vals.length - 1)) * iW;
+  const ys = v => PY + (1 - Math.max(0, Math.min(100, v)) / 100) * iH;
+  const pts = vals.map((v, i) => `${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(" ");
+
+  const last  = vals[vals.length - 1];
+  const first = vals[0];
+  const trend = last - first;
+
+  // Mark the sharpest bend (peak |Δ²|). curvature[k] corresponds to vals[k+1].
+  let peakIdx = -1, peakVal = 0;
+  curv.forEach((c, k) => { if (Math.abs(c) > Math.abs(peakVal)) { peakVal = c; peakIdx = k + 1; } });
+
+  return (
+    <div>
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block", overflow: "visible" }}>
+        {/* 80 / 60 reference grid (Healthy / Nominal thresholds) */}
+        {[80, 60].map(g => (
+          <line key={g} x1={PX} y1={ys(g)} x2={W - PX} y2={ys(g)}
+            stroke={T.border} strokeWidth={1} strokeDasharray="3 4" />
+        ))}
+        {/* UCI line */}
+        <polyline points={pts} fill="none" stroke={hScore(last)} strokeWidth={1.8}
+          strokeLinejoin="round" strokeLinecap="round" />
+        {/* Sharpest-bend marker */}
+        {peakIdx >= 0 && Math.abs(peakVal) > 1 && (
+          <circle cx={xs(peakIdx)} cy={ys(vals[peakIdx])} r={3.5}
+            fill="none" stroke={Math.abs(peakVal) > 2 ? T.error : T.warn} strokeWidth={1.5} />
+        )}
+        {/* Latest point */}
+        <circle cx={xs(vals.length - 1)} cy={ys(last)} r={3} fill={hScore(last)} />
+      </svg>
+      <div style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 10, color: T.muted, flexWrap: "wrap" }}>
+        <span>{vals.length} samples</span>
+        <span>range <span style={{ fontFamily: FONT_MONO }}>{Math.min(...vals).toFixed(1)}–{Math.max(...vals).toFixed(1)}</span></span>
+        <span style={{ color: trend >= 0 ? T.success : T.error }}>
+          {trend >= 0 ? "↑" : "↓"} {trend >= 0 ? "+" : ""}{trend.toFixed(1)} over window
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── Curvature "bend alarm" badge (OCAC Δ² leading indicator) ───
+function CurvatureBadge({ curvature }) {
+  if (!curvature || curvature.n < 3) return null;
+  const peak = curvature.peak_abs_curvature ?? 0;
+  const bending = curvature.bending;
+  const col = bending ? T.error : peak > 1 ? T.warn : T.success;
+  const label = bending ? "bending" : peak > 1 ? "flexing" : "stable";
+  return (
+    <span
+      title={`Δ² leading indicator — peak |curvature| = ${peak.toFixed(2)} UCI pts.\n>2 pts signals an accelerating downturn before the level drops (OCAC).`}
+      style={{
+        fontSize: 9, fontWeight: 700, fontFamily: FONT_MONO,
+        color: col, background: `${col}18`, border: `1px solid ${col}44`,
+        borderRadius: 3, padding: "1px 5px", whiteSpace: "nowrap",
+      }}>
+      Δ² {peak.toFixed(1)} · {label}
+    </span>
+  );
+}
+
+// ── Routing-accuracy source badge (measured vs assumed) ───────
+function SourceBadge({ source }) {
+  if (!source) return null;
+  const measured = source === "measured";
+  const col = measured ? T.success : T.muted;
+  return (
+    <span
+      title={measured
+        ? "Routing accuracy measured live from the most recent agent_arena run."
+        : "No agent_arena run on record — showing the static ablation snapshot, not a live measurement."}
+      style={{
+        fontSize: 8, fontWeight: 700, fontFamily: FONT_MONO, letterSpacing: 0.4,
+        color: col, background: `${col}14`, border: `1px solid ${col}40`,
+        borderRadius: 3, padding: "0 4px", textTransform: "uppercase",
+      }}>
+      {measured ? "measured" : "assumed"}
+    </span>
+  );
+}
+
 // ── Layer detail grid ─────────────────────────────────────────
 function LayerDetail({ name, layer }) {
   if (!layer) return null;
   const comps = { ...layer };
   delete comps.score;
   delete comps.weight;
+  // Rendered inline on the routing_accuracy card, not as its own cell.
+  const routingSource = comps.routing_accuracy_source;
+  delete comps.routing_accuracy_source;
 
   return (
     <div style={{ marginBottom: 16 }}>
@@ -77,8 +174,11 @@ function LayerDetail({ name, layer }) {
             background: T.surface2, borderRadius: 4, padding: "6px 10px",
             border: `1px solid ${T.border}`,
           }}>
-            <div style={{ fontSize: 9, color: T.muted, textTransform: "uppercase", letterSpacing: 0.8 }}>
-              {k.replace(/_/g, " ")}
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <div style={{ fontSize: 9, color: T.muted, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                {k.replace(/_/g, " ")}
+              </div>
+              {k === "routing_accuracy" && <SourceBadge source={routingSource} />}
             </div>
             <div style={{
               fontSize: 13, fontWeight: 700, fontFamily: FONT_MONO,
@@ -138,6 +238,79 @@ function RiskStrip({ risk }) {
   );
 }
 
+// ── Component transparency ────────────────────────────────────
+const TP_COLOR = {
+  transparent: T.success,
+  partial:     T.warn,
+  opaque:      T.error,
+  unobserved:  T.muted,
+};
+
+function TransparencyPanel({ data }) {
+  if (!data) return <EmptyState msg="No transparency signal yet." />;
+
+  const { summary = {}, transparency_score = 0, components = [] } = data;
+  const pct = Math.round(transparency_score * 100);
+
+  return (
+    <div>
+      {/* Score + summary chips */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10, flexWrap: "wrap" }}>
+        <div style={{ textAlign: "center", minWidth: 54 }}>
+          <div style={{ fontFamily: FONT_MONO, fontSize: 22, fontWeight: 700, color: hScore(pct), lineHeight: 1 }}>
+            {pct}%
+          </div>
+          <div style={{ fontSize: 9, color: T.muted, marginTop: 2 }}>transparent</div>
+        </div>
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", flex: 1 }}>
+          {["transparent", "partial", "opaque", "unobserved"].map(s => (
+            summary[s] ? (
+              <span key={s} title={s} style={{
+                fontSize: 9, fontFamily: FONT_MONO, fontWeight: 700,
+                color: TP_COLOR[s], background: `${TP_COLOR[s]}18`,
+                border: `1px solid ${TP_COLOR[s]}44`, borderRadius: 3, padding: "1px 5px",
+              }}>
+                {summary[s]} {s}
+              </span>
+            ) : null
+          ))}
+        </div>
+      </div>
+
+      {/* Per-component rows */}
+      <div style={{ maxHeight: 220, overflowY: "auto" }}>
+        {components.map((c) => (
+          <div key={c.component} title={
+            c.status === "unobserved"
+              ? "Emitted no events in the observation window"
+              : `confidence: ${c.confidence_keys.join(", ") || "none"}\nevidence: ${c.evidence_keys.join(", ") || "none"}`
+          } style={{
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "5px 0", borderBottom: `1px solid ${T.border}`,
+          }}>
+            <span style={{
+              width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
+              background: TP_COLOR[c.status] || T.muted,
+              boxShadow: c.status === "transparent" ? `0 0 5px ${T.success}88` : "none",
+            }} />
+            <span style={{ fontSize: 11, color: T.mutedLt, fontWeight: 600, flex: 1 }}>
+              {c.component}
+            </span>
+            {/* confidence / evidence presence ticks */}
+            <span style={{ display: "flex", gap: 4, fontSize: 8, fontFamily: FONT_MONO }}>
+              <span title="discloses confidence" style={{ color: c.has_confidence ? T.success : T.muted + "66" }}>◆conf</span>
+              <span title="discloses evidence"   style={{ color: c.has_evidence   ? T.success : T.muted + "66" }}>◆evid</span>
+            </span>
+            <span style={{ fontSize: 9, fontFamily: FONT_MONO, color: T.muted, minWidth: 30, textAlign: "right" }}>
+              {c.events > 0 ? c.events : "—"}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Mini event feed ───────────────────────────────────────────
 function MiniEventFeed({ events }) {
   if (!events?.length) return <EmptyState msg="No events yet." />;
@@ -151,11 +324,13 @@ function MiniEventFeed({ events }) {
 }
 
 // ── Main component ────────────────────────────────────────────
-export default function UCIDashboard() {
+export default function UCIDashboard({ embedded = false } = {}) {
   const [uci,     setUCI]     = useState(null);
   const [cos,     setCos]     = useState(null);
   const [events,  setEvents]  = useState([]);
   const [health,  setHealth]  = useState(null);
+  const [transp,  setTransp]  = useState(null);
+  const [traj,    setTraj]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
 
@@ -166,11 +341,15 @@ export default function UCIDashboard() {
       fetch(`${API}/cos/state`).then(r => r.json()).catch(() => null),
       fetch(`${API}/cos/events?n=30`).then(r => r.json()).catch(() => null),
       fetch(`${API}/health`).then(r => r.json()).catch(() => null),
-    ]).then(([u, s, ev, h]) => {
+      fetch(`${API}/cos/transparency`).then(r => r.json()).catch(() => null),
+      fetch(`${API}/cos/uci/trajectory?n=100`).then(r => r.json()).catch(() => null),
+    ]).then(([u, s, ev, h, tp, tj]) => {
       setUCI(u);
       setCos(s);
       setEvents(ev?.events || []);
       setHealth(h);
+      setTransp(tp);
+      setTraj(tj);
       setError(null);
     }).catch(e => setError(e.message))
       .finally(() => setLoading(false));
@@ -186,15 +365,17 @@ export default function UCIDashboard() {
   const delta = hUCI != null ? hUCI - BASELINE_HUCI : null;
 
   return (
-    <div>
+    <div style={{ padding: embedded ? "10px 14px 14px" : 0 }}>
 
-      {/* Header */}
+      {/* Header (suppressed when embedded — the dashboard cell carries the title) */}
+      {!embedded && (
       <PageHeader
         title="Cognitive Index"
         subtitle="Unified Cognitive Index · 30% Reliability · 30% Intelligence · 25% Adaptation · 15% Productivity"
       >
         <RefreshBtn onClick={load} />
       </PageHeader>
+      )}
 
       {/* System health strip */}
       <HealthStrip health={health} />
@@ -222,7 +403,7 @@ export default function UCIDashboard() {
                 }}>
                   {hUCI != null ? hUCI.toFixed(1) : "—"}
                 </div>
-                <div style={{ fontSize: 10, color: T.muted, marginTop: 3, display: "flex", gap: 5, justifyContent: "center", alignItems: "center" }}>
+                <div style={{ fontSize: 10, color: T.muted, marginTop: 3, display: "flex", gap: 5, justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
                   <span>h_UCI</span>
                   {delta != null && (
                     <span style={{
@@ -236,6 +417,7 @@ export default function UCIDashboard() {
                       {delta >= 0 ? "↑" : "↓"} {delta >= 0 ? "+" : ""}{delta.toFixed(1)}
                     </span>
                   )}
+                  <CurvatureBadge curvature={traj?.curvature} />
                 </div>
               </div>
               <div style={{ flex: 1 }}>
@@ -273,6 +455,11 @@ export default function UCIDashboard() {
             </div>
           </ObsPanel>
 
+          {/* UCI trajectory + Δ² curvature */}
+          <ObsPanel title="UCI Trajectory" icon="∿">
+            <UCITrajectory traj={traj} />
+          </ObsPanel>
+
           {/* Layer detail cards */}
           <ObsPanel title="Layer Components" icon="◑">
             {loading && !uci ? (
@@ -294,6 +481,11 @@ export default function UCIDashboard() {
           {/* Risk signal */}
           <ObsPanel title="Last Risk Signal" icon="⚑">
             <RiskStrip risk={risk} />
+          </ObsPanel>
+
+          {/* Component transparency */}
+          <ObsPanel title="Component Transparency" icon="◇">
+            <TransparencyPanel data={transp} />
           </ObsPanel>
 
           {/* Live event feed */}

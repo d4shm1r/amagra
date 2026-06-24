@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { T as C } from "./theme";
+import { PageHeader } from "./ObsShared";
 
 const API = "http://localhost:8000";
 
@@ -533,10 +534,10 @@ export default function TimelineTab() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20, animation: "fadeIn .2s" }}>
 
-      {/* ── Header: auto-refresh ── */}
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      {/* ── Header ── */}
+      <PageHeader title="Learning Timeline" subtitle="Coherence dynamics, drift health, and how the system learns over time.">
         <RefreshTimer onRefresh={load} interval={30} />
-      </div>
+      </PageHeader>
 
       {/* ── Drift health ── */}
       {drift && <DriftHealth drift={drift} />}

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { BUILD_PHASES, VERSION_EPOCHS, ROADMAP } from "./constants";
 import { T } from "./theme";
+import { PageHeader } from "./ObsShared";
 
 const STATUS_STYLE = {
   done:    { label: "Complete",    color: "#15803D" },
@@ -217,6 +218,8 @@ export default function VersionHistoryTab() {
 
   return (
     <div style={{ animation: "fadeIn .2s" }}>
+
+      <PageHeader title="Releases" subtitle="Every shipped phase and version epoch — the full build history." />
 
       {/* ── Stats bar ── */}
       <div className="lux-card" style={{
