@@ -180,9 +180,38 @@ Provider/model switching already shipped (v1.2.0 Model Choice) and cross-model c
 
 ---
 
+### v1.5.2 — Release Hygiene & Adoption Floor *(proposed)*
+
+The "make it adoptable" floor (revenueGPT Phase A) plus release mechanics. All non-breaking — clears the runway before the v1.6 workspace schema change.
+
+| Item | Impact | Difficulty | ROI | Status |
+|------|--------|-----------|-----|--------|
+| Version bump 1.5.1 → 1.5.2 (`api.py`, `ui/package.json`, `ui/src/constants.js`) | — | 1 | — | ⬜ |
+| Land Platform Entity Model RFC (`docs/PLATFORM_ENTITY_MODEL.md`, PR #54) — the v1.6 architecture | 7 | 1 | ★★★★ | ◑ in review |
+| Land `feat/payments-launch-readiness` — Stripe checkout + launch endpoints (already built) | 8 | 3 | ★★★★ | ⬜ |
+| Onboarding finish — 5-min clone→first-answer, startup diagnostics, auto thread titles | 8 | 4 | ★★★★★ | ⬜ |
+| **Public launch** — Show HN / r/LocalLLaMA / Docker Hub / Homebrew (the one ★★★★★ still pending) | 9 | 3 | ★★★★★ | ⏳ |
+
+---
+
+### v1.5.3 — Leverage & Workspace Groundwork *(proposed)*
+
+Additive features that compound adoption and lay seams for v1.6 **without** the schema break. The bridge into the workspace milestone.
+
+| Item | Impact | Difficulty | ROI | Status |
+|------|--------|-----------|-----|--------|
+| OpenAI-compatible `/v1` API — `OPENAI_BASE_URL=localhost:8000/v1` drop-in (revenueGPT #2, pulled earlier) | 9 | 5 | ★★★★★ | ⬜ |
+| Decision-replay polish — visual timeline, memory-influence view, exportable + permalink (revenueGPT #3) | 8 | 4 | ★★★★★ | ⬜ |
+| Per-workspace memory **namespace seam** — extend the existing `ContextVar[int]` tenant scope as a latent namespace so v1.6 adds UI/RBAC, not a migration | 7 | 4 | ★★★★ | ⬜ |
+| Monaco code pane — read + DiffEditor + Apply via `POST /workspace/apply` (last open v1.4 item) | 6 | 4 | ★★★★ | ⬜ |
+
+---
+
 ### v1.6 — Workspaces & RBAC
 
 Multiple isolated projects per user, role-based access, and a custom agent builder. (Deferred past the launch-wedge pivot — the original v1.2/v1.3 slots shipped as Model Choice and the Cross-Model Debugger instead.)
+
+**Scope (decided):** v1.6 ships **single-user workspaces** — per-user isolated projects, RBAC roles, and the agent builder. The full multi-tenant model (Organization → Project → Workspace + billing tenancy) in [`PLATFORM_ENTITY_MODEL.md`](PLATFORM_ENTITY_MODEL.md) is the **north-star target, implemented in layers**: v1.6 builds the Workspace + binding + cascade core for a single user; the Organization/tenancy tier lands with team memory in **v1.7**. Org/billing tenancy is explicitly deferred — not built dormant — to keep this milestone shippable.
 
 | Item | Impact | Difficulty | ROI |
 |------|--------|-----------|-----|
