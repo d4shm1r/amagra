@@ -123,9 +123,23 @@ function LaunchChecklist() {
     try { return new Set(JSON.parse(localStorage.getItem(CHECKLIST_KEY) || "[]")); }
     catch { return new Set(); }
   });
+  // Auto-detected status from the backend, keyed by checklist item id.
+  const [auto, setAuto] = useState({});
   const [collapsed, setCollapsed] = useState(true);
 
+  useEffect(() => {
+    fetch("http://localhost:8000/launch/readiness")
+      .then(r => r.json())
+      .then(d => setAuto(d.items || {}))
+      .catch(() => {});
+  }, []);
+
+  // An item is done if the server verified it, otherwise fall back to the
+  // manual checkbox. Auto-detected items can't be toggled by hand.
+  const isDone = (item) => (item.id in auto ? auto[item.id].done : checked.has(item.id));
+
   const toggle = (id) => {
+    if (id in auto) return;  // server-verified — not manually editable
     setChecked(prev => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -135,9 +149,10 @@ function LaunchChecklist() {
   };
 
   const allItems   = LAUNCH_CHECKLIST.flatMap(g => g.items);
-  const totalDone  = allItems.filter(i => checked.has(i.id)).length;
+  const totalDone  = allItems.filter(isDone).length;
   const totalCount = allItems.length;
   const overallPct = Math.round((totalDone / totalCount) * 100);
+  const autoCount  = allItems.filter(i => i.id in auto).length;
 
   return (
     <div style={{ background: T.surface, border: `2px solid #C2410C33`, borderRadius: 14, padding: "18px 22px", marginBottom: 20 }}>
@@ -151,6 +166,7 @@ function LaunchChecklist() {
           </div>
           <div style={{ fontSize: 11, color: T.muted }}>
             {totalDone} of {totalCount} items complete
+            {autoCount > 0 && <span> · {autoCount} auto-detected</span>}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -175,7 +191,7 @@ function LaunchChecklist() {
       {!collapsed && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {LAUNCH_CHECKLIST.map(gate => {
-            const gateDone  = gate.items.filter(i => checked.has(i.id)).length;
+            const gateDone  = gate.items.filter(isDone).length;
             const gateTotal = gate.items.length;
             const gatePct   = Math.round((gateDone / gateTotal) * 100);
             const allDone   = gateDone === gateTotal;
@@ -199,15 +215,21 @@ function LaunchChecklist() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                   {gate.items.map(item => {
-                    const done = checked.has(item.id);
+                    const done   = isDone(item);
+                    const isAuto = item.id in auto;
                     return (
-                      <div key={item.id} onClick={() => toggle(item.id)} style={{ display: "flex", alignItems: "flex-start", gap: 9, cursor: "pointer", padding: "5px 8px", borderRadius: 5, background: done ? `${gate.color}0D` : "transparent" }}>
+                      <div key={item.id} onClick={() => toggle(item.id)} title={isAuto ? auto[item.id].detail : ""} style={{ display: "flex", alignItems: "flex-start", gap: 9, cursor: isAuto ? "default" : "pointer", padding: "5px 8px", borderRadius: 5, background: done ? `${gate.color}0D` : "transparent" }}>
                         <div style={{ width: 14, height: 14, borderRadius: 3, flexShrink: 0, marginTop: 1, border: `1.5px solid ${done ? gate.color : T.border}`, background: done ? gate.color : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
                           {done && <span style={{ fontSize: 9, color: "#111", fontWeight: 800, lineHeight: 1 }}>✓</span>}
                         </div>
-                        <span style={{ fontSize: 12, lineHeight: 1.55, color: done ? T.muted : T.text, textDecoration: done ? "line-through" : "none", textDecorationColor: T.muted }}>
+                        <span style={{ fontSize: 12, lineHeight: 1.55, color: done ? T.muted : T.text, textDecoration: done ? "line-through" : "none", textDecorationColor: T.muted, flex: 1 }}>
                           {item.text}
                         </span>
+                        {isAuto && (
+                          <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.06em", flexShrink: 0, marginTop: 2, padding: "1px 5px", borderRadius: 3, textTransform: "uppercase", color: done ? T.success : "#9A6C00", background: done ? `${T.success}14` : "#9A6C0014", border: `1px solid ${done ? T.success + "44" : "#9A6C0040"}` }}>
+                            {done ? "✓ Live" : "Auto"}
+                          </span>
+                        )}
                       </div>
                     );
                   })}
