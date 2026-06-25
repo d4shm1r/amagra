@@ -268,7 +268,7 @@ is to **unify and open what's already modular**, via strangler-fig (no rewrite):
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Declare the philosophy — `PLUGIN_ARCHITECTURE.md` + this track | ✅ |
-| 2 | **`Router` protocol** + `SignalRouter` (the one organ still as bare functions); coordinator depends on the protocol | ⬜ next |
+| 2 | **`Router` protocol** + `BrainRouter` (core_brain is already the structured routing authority → thin adapter); coordinator depends on `get_router()`; retire the drifted off-hot-path `router.py` decision fns | ⬜ next |
 | 3 | Unify per-subsystem registries → one `contributes:` manifest; built-ins re-register as first-party plugins | ⬜ |
 | 4 | First-party **SDK** — documented contracts + manifest (trusted authors) | ⬜ |
 | **separate milestone** | **Isolation & third-party marketplace** — out-of-process host, *enforced* permissions, vetted registry/trust tiers | ⬜ |

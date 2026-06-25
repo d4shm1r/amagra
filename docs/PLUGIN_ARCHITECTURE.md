@@ -81,31 +81,39 @@ to **unify and open what's modular**, not to break up a monolith.
 | Runtime contract | ✅ core | `core/contract.py` (`Context`/`Result`), `runtime.py` (onion middleware), `run_log.py` |
 | Event bus | ✅ core | `infrastructure/event_bus.py` `emit` / `subscribe` |
 | Agents | ◑ registry | `agents/registry.py` — registry exists; not yet a unified contribution |
-| **Routing** | ❌ **built-in** | `orchestration/router.py` — still module functions (`decide`, `decide_with_confidence`), **the one organ not behind an interface** |
+| **Routing** | ◑ **structured, but no `Protocol`** | Production routing is `core_brain.think() → BrainDecision` — **already a structured decision object** (the sole routing authority, `coordinator.py:627`, issue #20). What's missing is a formal `Router` *interface* so it's swappable. The `decide`/`decide_with_confidence`/`score` in `orchestration/router.py` are **legacy/diagnostic, off the hot path** (drifted from core_brain's keyword table) — to be reconciled or retired, not wrapped. |
 | Contribution model | ❌ fragmented | separate registries per subsystem; no single `contributes:` manifest |
+
+> **Correction (verified in code):** an earlier read suggested routing was "bare
+> functions." It isn't — `core_brain.think()` already returns a structured
+> `BrainDecision`. The routing organ is closer to *done* than the other audits
+> implied; the real gap is a `Router` **Protocol** around it (so `LLMRouter` /
+> `GraphRouter` / `EnterpriseRouter` can be swapped) plus deleting the drifted
+> `router.py` decision functions that are no longer on the hot path.
 
 ---
 
-## Router — the obvious next seam
+## Router — the next seam (with the correction above in mind)
 
-Everything else converged on interfaces; routing is still a concrete mechanism.
-Formalizing it is small and high-leverage:
+Routing already *produces* a structured decision (`core_brain.think → BrainDecision`);
+what it lacks is a formal **interface** so the decision-maker is swappable. Formalize:
 
 ```python
-@dataclass(frozen=True)
-class RoutingDecision:
-    agent: str
-    confidence: float
-    signal: dict          # domain / shape / verbosity / etc.
-
 class Router(Protocol):
-    def decide(self, query: str, context: Context) -> RoutingDecision: ...
+    def decide(self, query: str, context: Context) -> BrainDecision: ...
 ```
 
-Today's signal router becomes `SignalRouter`; the coordinator depends on the
-`Router` protocol, not the functions. That immediately unlocks `LLMRouter`,
-`HybridRouter`, `GraphRouter`, `EnterpriseRouter` — without touching the
-coordinator, exactly mirroring where providers and memory already are.
+The current core brain becomes the default `BrainRouter` (it already returns the
+`BrainDecision` the coordinator consumes — so the adapter is thin, no behavior
+change). The coordinator depends on `get_router().decide(...)`, not on `think()`
+directly. That unlocks `LLMRouter`, `GraphRouter`, `EnterpriseRouter` — mirroring
+where providers and memory already are — and lets the **drifted, off-hot-path
+`router.py` decision functions be retired** (or kept as a diagnostic router *behind*
+the same protocol) rather than silently diverging.
+
+The subtlety: `BrainDecision` is a rich object the coordinator reads many fields
+from, so the protocol returns `BrainDecision` (not a slim `RoutingDecision`) to
+keep the rewire behavior-preserving. A leaner decision type is a later cleanup.
 
 ---
 
@@ -169,8 +177,9 @@ VS Code tolerates extension latency; Amagra's hot path is ~1 ms routing and
 ## Refactor path (strangler-fig — no big-bang rewrite)
 
 1. **Declare the philosophy** — this document + the roadmap track. *(now)*
-2. **Close the interface gap** — `Router` protocol + `SignalRouter`; coordinator
-   depends on the protocol. No behavior change.
+2. **Close the interface gap** — `Router` protocol + `BrainRouter` (thin adapter
+   over the existing `core_brain.think`); coordinator depends on `get_router()`;
+   retire the drifted off-hot-path `router.py` decision functions. No behavior change.
 3. **Unify the registries** — one contribution model (`contributes:`), built-ins
    re-registered through it as first-party plugins. Still no third-party loading.
 4. **Expose the SDK** — documented contracts + manifest, so first-party/trusted
