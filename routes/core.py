@@ -13,6 +13,7 @@ from orchestration.coordinator import coordinator
 from core.logger import log_response, read_log
 import cognition.run_tracer as run_tracer
 from infrastructure.db import path as _dbpath
+from infrastructure.inference_limit import inference_slot
 
 from .deps import (
     _cos, session_history, _SESSIONS_DB, _CONTRADICTIONS_DB,
@@ -204,6 +205,32 @@ def health():
     return result
 
 
+def _is_offline_error(exc: Exception) -> bool:
+    """True when `exc` looks like the LLM backend being unreachable (errno 111
+    and friends) — even when wrapped by httpx / requests / the ollama client,
+    which is why a bare `except ConnectionRefusedError` misses it and the error
+    used to leak as a raw 500 instead of a friendly 503."""
+    seen: set[int] = set()
+    e: BaseException | None = exc
+    while e is not None and id(e) not in seen:
+        seen.add(id(e))
+        if isinstance(e, ConnectionRefusedError):
+            return True
+        if isinstance(e, OSError) and getattr(e, "errno", None) == 111:
+            return True
+        e = e.__cause__ or e.__context__
+    msg = str(exc).lower()
+    return any(s in msg for s in (
+        "connection refused", "[errno 111]", "max retries exceeded",
+        "failed to establish a new connection", "all connection attempts failed",
+        "cannot connect to host", "connection error",
+    ))
+
+
+_OFFLINE_DETAIL = ("LLM backend offline — start Ollama (ollama serve) "
+                   "or check your provider in Settings → Model")
+
+
 @router.post("/ask", response_model=AskResponse)
 async def ask(req: AskRequest, request: Request):
     start = time.time()
@@ -315,12 +342,16 @@ async def ask(req: AskRequest, request: Request):
     else:
         try:
             loop   = asyncio.get_event_loop()
-            result = await loop.run_in_executor(None, lambda: coordinator.invoke(_invoke_input))
+            # Gate local inference: a burst of concurrent calls OOMs the GPU.
+            async with inference_slot():
+                result = await loop.run_in_executor(None, lambda: coordinator.invoke(_invoke_input))
         except ConnectionRefusedError:
             run_tracer.mark_failed(_run_id, "LLM backend offline")
-            raise HTTPException(status_code=503, detail="LLM backend offline — start Ollama with: ollama serve")
+            raise HTTPException(status_code=503, detail=_OFFLINE_DETAIL)
         except Exception as e:
             run_tracer.mark_failed(_run_id, str(e))
+            if _is_offline_error(e):
+                raise HTTPException(status_code=503, detail=_OFFLINE_DETAIL)
             raise HTTPException(status_code=500, detail=str(e))
 
         duration_ms = int((time.time() - start) * 1000)
@@ -1125,9 +1156,10 @@ async def ask_stream(req: AskRequest):
         try:
             import cognition.run_tracer as _rt
             _run_id = _rt.start(req.message)
-            result = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: coordinator.invoke({
+            async with inference_slot():  # gate local inference (GPU OOM guard)
+                result = await asyncio.get_event_loop().run_in_executor(
+                  None,
+                  lambda: coordinator.invoke({
                     "messages":              [{"role": "user", "content": _stream_msg}],
                     "active_agent": "", "task": _stream_msg, "result": "",
                     "next_agent": "", "memory": {}, "force_agent": req.force_agent or "",
