@@ -32,6 +32,7 @@ import VersionHistoryTab   from "./VersionHistoryTab";
 import ResearchTab         from "./ResearchTab";
 import { BUILD_PHASES, AGENTS, VERSION } from "./constants";
 import PromptEditorTab    from "./PromptEditorTab";
+import ConsensusTab       from "./ConsensusTab";
 import ExplainProjectTab  from "./ExplainProjectTab";
 import SkillsTab          from "./SkillsTab";
 import PromisesTab        from "./PromisesTab";
@@ -50,6 +51,7 @@ const SURFACES = [
   { id: "workspace", label: "Workspace", sym: "▸", desc: "Work with your project", tabs: [
     { id: "chat",          label: "Chat" },
     { id: "prompt",        label: "Prompt IDE" },
+    { id: "consensus",     label: "Consensus" },
     { id: "explain",       label: "Explain" },
     { id: "goals",         label: "Goals" },
     { id: "tasks",         label: "Tasks" },
@@ -1293,6 +1295,7 @@ export default function App() {
               {activeTab === "cognitive"     && <CognitiveOSTab coherence={coherence} />}
               {activeTab === "inspector"     && <ContextInspectorTab contextId={inspectContextId} />}
               {activeTab === "project-state" && <ProjectStateTab />}
+              {activeTab === "consensus"     && <ConsensusTab />}
               {activeTab === "explain"       && <ExplainProjectTab />}
               {activeTab === "plan-graph"    && <PlanGraphTab />}
               {activeTab === "skills"        && <SkillsTab />}

@@ -285,6 +285,8 @@ candidates, not commitments — each compounds an existing strength rather than 
 | **Taste Engine** — learn this user's notion of quality + communication/decision patterns | Outcome-weighted memory | v2.x | 7 | 8 |
 | **Cross-device memory** — desktop / mobile / browser ext / IDE all see the same project; memory follows the person | Memory import/export + namespace seam | v2.x | 9 | 8 |
 
+**Shipped — Consensus Engine (first slice, 2026-06-25):** `POST /consensus` runs a prompt across N models (reuses the debugger fan-out), then computes a pairwise cosine **agreement matrix** over the answers (local nomic embeddings), a verdict (consensus / partial / divergent), the most-representative answer, and named dissenters — with an optional neutral-judge synthesis of a merged answer + disagreement note. Pure analysis in `core/consensus.py` (injectable embedder, fully unit-tested); route in `routes/consensus.py`; UI = Workspace → **Consensus** (`ui/src/ConsensusTab.jsx`). The full matrix ships with the verdict so it stays inspectable. *Open:* persist a consensus run as a durable decision/memory; calibrate thresholds on real outputs; this is the first stress-test of accountability spanning multiple X's.
+
 ---
 
 ## Strategic Positioning
