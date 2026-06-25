@@ -268,6 +268,27 @@ Registered agents automatically participate in routing, telemetry, memory retrie
 
 ---
 
+### Vision alignment — "AI operating layer"
+
+The long-horizon framing (Amagra as the operating layer above models, agents, and devices —
+*the layer survives every model generation*) lives in [`VISION.md`](VISION.md).
+These are the **buildable seeds** distilled from it, mapped to where they fit. They are
+candidates, not commitments — each compounds an existing strength rather than adding a new pillar.
+
+| Seed | Builds on | Natural slot | Impact | Difficulty |
+|------|-----------|--------------|--------|-----------|
+| **Consensus Engine** — multi-model agreement/confidence/contradiction map → consensus answer or "models disagree, here's why" (turns divergence from a *debug* feature into a *trust* feature) | Cross-model debugger (v1.3) + critic gate | v1.5 / v1.8 | 9 | 6 |
+| **Trust Layer** — tag every claim fact / estimate / assumption / opinion, traceable | Provenance + decision replay | v1.8 | 8 | 6 |
+| **Executive Mode** — return *decisions* (Option A/B + trade-offs + recommendation + confidence), not just answers | World model + risk engine | v1.8 | 7 | 5 |
+| **Proactive surface** — "What needs my attention today?" → one prioritized answer; risk warnings, prepared materials | Cognitive OS suggestion engine + world model | v1.9 | 8 | 7 |
+| **Memory vaults + zero-knowledge** — personal / business / financial vaults, user-owned, granular permissions, "show me everything you accessed" | Tenant scope + audit trail | v1.7 (governance) | 8 | 7 |
+| **Taste Engine** — learn this user's notion of quality + communication/decision patterns | Outcome-weighted memory | v2.x | 7 | 8 |
+| **Cross-device memory** — desktop / mobile / browser ext / IDE all see the same project; memory follows the person | Memory import/export + namespace seam | v2.x | 9 | 8 |
+
+**Shipped — Consensus Engine (first slice, 2026-06-25):** `POST /consensus` runs a prompt across N models (reuses the debugger fan-out), then computes a pairwise cosine **agreement matrix** over the answers (local nomic embeddings), a verdict (consensus / partial / divergent), the most-representative answer, and named dissenters — with an optional neutral-judge synthesis of a merged answer + disagreement note. Pure analysis in `core/consensus.py` (injectable embedder, fully unit-tested); route in `routes/consensus.py`; UI = Workspace → **Consensus** (`ui/src/ConsensusTab.jsx`). The full matrix ships with the verdict so it stays inspectable. *Open:* persist a consensus run as a durable decision/memory; calibrate thresholds on real outputs; this is the first stress-test of accountability spanning multiple X's.
+
+---
+
 ## Strategic Positioning
 
 **The category to own:** not "local chat UI" — Open WebUI owns that. The winnable category is **the accountable AI runtime**: memory + explainability + verification as infrastructure.

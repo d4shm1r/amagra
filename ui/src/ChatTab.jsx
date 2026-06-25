@@ -605,21 +605,48 @@ export default function ChatTab({
                   AMAGRA
                 </div>
 
-                {/* Description */}
-                <div style={{ fontSize: 13, fontWeight: 500, color: T.mutedLt, marginBottom: 6, letterSpacing: "-0.01em" }}>
-                  The Cognitive OS for Developers
+                {/* Brand line — lead with trust, not machinery */}
+                <div style={{
+                  fontSize: 16, fontWeight: 500, color: T.text, marginBottom: 5,
+                  fontFamily: FONT_DISPLAY, letterSpacing: "0.005em",
+                }}>
+                  The AI you can trust with long-term work.
                 </div>
-                <div style={{ fontSize: 12, color: T.muted, maxWidth: 400, margin: "0 auto 10px", lineHeight: 1.65 }}>
-                  A self-improving AI that thinks, routes, and reflects — automatically selecting the right specialist agent for every query, learning from feedback, and building a persistent memory of your work.
+                <div style={{ fontSize: 12, color: T.muted, maxWidth: 420, margin: "0 auto 28px", lineHeight: 1.65 }}>
+                  Ask anything. The right specialist answers, remembers your work, and shows you
+                  exactly how it got there.
                 </div>
 
-                {/* Status */}
-                <div style={{ fontSize: 11, color: T.muted, marginBottom: 36 }}>
-                  {online
-                    ? <span style={{ color: "#9A6C00" }}>◈ Ready — queries routed automatically to the right specialist</span>
-                    : <span style={{ color: T.error }}>⚠ Backend offline — run <code style={{ background: "#B4231818", padding: "1px 5px", borderRadius: 3 }}>ai-start</code></span>
-                  }
-                </div>
+                {/* Starter prompts — elegant entry points (online only) */}
+                {online ? (
+                  <div style={{
+                    display: "grid", gap: 8, maxWidth: 560, margin: "0 auto",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(248px, 1fr))",
+                  }}>
+                    {STARTER_PROMPTS.map(s => (
+                      <button
+                        key={s.text}
+                        onClick={() => {
+                          setInput(s.text);
+                          setTimeout(() => { autoResize(); textareaRef.current?.focus(); }, 0);
+                        }}
+                        className="lux-card lux-card-i"
+                        style={{
+                          display: "flex", alignItems: "center", gap: 11,
+                          padding: "11px 14px", cursor: "pointer",
+                          fontFamily: "inherit", textAlign: "left",
+                        }}
+                      >
+                        <span style={{ fontSize: 15, color: T.accent, flexShrink: 0, lineHeight: 1, fontFamily: "monospace" }}>{s.icon}</span>
+                        <span style={{ fontSize: 12, color: T.mutedLt, lineHeight: 1.4 }}>{s.text}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 11, color: T.error, marginBottom: 36 }}>
+                    ⚠ Backend offline — run <code style={{ background: "#B4231818", padding: "1px 5px", borderRadius: 3 }}>ai-start</code>
+                  </div>
+                )}
 
               </div>
             )}
@@ -668,7 +695,7 @@ export default function ChatTab({
               const isPipeline = msg.pipeline_agents?.length > 0;
 
               return (
-                <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", animation: "fadeIn .3s ease both" }}>
                   <div style={{
                     width: 36, height: 36, flexShrink: 0, marginTop: 2,
                     background: `${ac}18`, border: `2px solid ${ac}66`,
@@ -1023,7 +1050,7 @@ export default function ChatTab({
                 <div style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
                   <SideLabel>Coherence</SideLabel>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 11, color: T.muted }}>
-                    <span style={{ fontFamily: "monospace", color, fontWeight: 700 }}>C(t) {c?.toFixed(3)}</span>
+                    <span style={{ fontVariantNumeric: "tabular-nums", color, fontWeight: 700 }}>C(t) {c?.toFixed(3)}</span>
                     <span>mem <span style={{ color: T.mutedLt }}>{coherence.mem_n}</span></span>
                     <span>reflect <span style={{ color: T.mutedLt }}>{Math.round((coherence.reflection_rate || 0) * 100)}%</span></span>
                     <span>conflict <span style={{ color: T.mutedLt }}>{Math.round((coherence.conflict_rate || 0) * 100)}%</span></span>

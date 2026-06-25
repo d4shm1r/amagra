@@ -81,11 +81,14 @@ export function ObsPanel({ title, icon, children, action, style = {} }) {
 
 /** Small stat card — label / big value / sub-text (matches Overview Stat cards) */
 export function MetricCard({ label, value, sub, color, mono = false }) {
+  // `mono` is accepted for call-site compatibility but no longer forces a
+  // code font — luxury numbers use the UI typeface with tabular figures.
+  void mono;
   return (
     <div className="lux-card lux-card-i" style={{ padding: "14px 16px" }}>
       <div style={{
         fontSize: 22, fontWeight: 700, color: color ?? T.text,
-        fontFamily: mono ? "'Consolas','Cascadia Code',monospace" : "inherit",
+        fontFamily: "inherit",
         fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em",
         lineHeight: 1.1,
       }}>
@@ -111,7 +114,7 @@ export function ScoreBar({ label, value, sub, style = {} }) {
     <div style={{ marginBottom: 14, ...style }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: T.mutedLt }}>{label}</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color, fontFamily: "'Consolas',monospace" }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color, fontVariantNumeric: "tabular-nums" }}>
           {value == null ? "—" : value.toFixed(1)}
         </span>
       </div>

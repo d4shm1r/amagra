@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { T, LUX, GOLD, FONT_DISPLAY } from "./theme";
 import { BUILD_PHASES, ROADMAP, VERSION } from "./constants";
 
@@ -83,29 +83,8 @@ const PIPELINE = [
 
 export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
   const online  = apiStatus === "online";
-  const ct      = coherence?.C;
-  const ctColor = ct == null ? T.muted : ct >= 0.82 ? T.success : ct >= 0.70 ? T.warn : T.error;
-  const ctLabel = ct == null ? "—" : ct.toFixed(3);
 
-  const [runStats, setRunStats] = useState(null);
-
-  useEffect(() => {
-    if (!online) return;
-    fetch("http://localhost:8000/runs?limit=200")
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (!d?.runs) return;
-        const runs     = d.runs;
-        const total    = runs.length;
-        const passing  = runs.filter(r => r.status === "pass").length;
-        const failing  = runs.filter(r => r.status === "fail").length;
-        const avgMs    = total > 0
-          ? Math.round(runs.reduce((s, r) => s + (r.duration_ms || 0), 0) / total) : 0;
-        const passRate = total > 0 ? Math.round((passing / total) * 100) : null;
-        setRunStats({ total, passing, failing, avgMs, passRate });
-      })
-      .catch(() => {});
-  }, [online]);
+  const [showInternals, setShowInternals] = useState(false);
 
   const currentPhase = ROADMAP.find(p => p.status === "next");
 
@@ -136,36 +115,31 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
               )}
             </div>
 
-            {/* Tagline */}
+            {/* Tagline — brand anchor (lead with trust, not machinery) */}
+            <p style={{
+              margin: "0 0 8px", fontSize: 19, color: T.text,
+              fontFamily: FONT_DISPLAY, fontWeight: 500,
+              lineHeight: 1.3, maxWidth: 640, letterSpacing: "0.005em",
+            }}>
+              The AI you can trust with long-term work.
+            </p>
             <p style={{
               margin: "0 0 16px", fontSize: 13.5, color: T.mutedLt,
-              lineHeight: 1.65, maxWidth: 700,
+              lineHeight: 1.65, maxWidth: 640,
             }}>
-              Your personal AI workspace that runs entirely on your own computer. It remembers
-              your projects, hands every question to the right expert, and shows you exactly how
-              it reached each answer — private by design, with nothing leaving your machine.
+              It remembers what you've done, explains every decision, and runs entirely on your
+              hardware.
             </p>
 
-            {/* Live status strip */}
-            <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+            {/* Live status — one calm reassurance, not a metrics pile.
+                The real numbers live in Cognition; keep the hero serene. */}
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
               <StatusPill
-                label="API"
-                value={online ? "Online" : apiStatus === "checking" ? "Checking…" : "Offline"}
+                label="Status"
+                value={online ? "Ready · 100% local" : apiStatus === "checking" ? "Connecting…" : "Offline"}
                 color={online ? T.success : T.error}
                 dot
               />
-              {ct != null && <StatusPill label="Coherence C(t)" value={ctLabel} color={ctColor} mono />}
-              {coherence?.mem_n != null && <StatusPill label="Memories" value={coherence.mem_n} color={T.muted} mono />}
-              {runStats?.passRate != null && (
-                <StatusPill
-                  label="Pass rate"
-                  value={`${runStats.passRate}%`}
-                  color={runStats.passRate >= 90 ? T.success : runStats.passRate >= 70 ? T.warn : T.error}
-                  mono
-                />
-              )}
-              {runStats?.total > 0 && <StatusPill label="Runs" value={runStats.total} color={T.muted} mono />}
-              {runStats?.avgMs > 0 && <StatusPill label="Avg latency" value={`${runStats.avgMs}ms`} color={T.muted} mono />}
               {!online && (
                 <span style={{ fontSize: 11, color: T.error, alignSelf: "center", marginLeft: 4 }}>
                   Start with{" "}
@@ -185,115 +159,14 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
         }} />
       </div>
 
-      {/* ── How it works ── */}
-      <Section title="How it works">
-        <div className="lux-card" style={{
-          padding: "22px 26px",
-        }}>
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-            gap: "18px 36px",
-          }}>
-            {[
-              {
-                step: "01",
-                title: "Classify the query",
-                body: "QuerySignal extracts domain, shape, verbosity, and topic keywords in under 1ms — routing happens before any LLM call is made.",
-              },
-              {
-                step: "02",
-                title: "Select the right agent",
-                body: "Core Brain maps the signal to one of 10 specialist agents: Python Dev, .NET Dev, IT Networking, AI/ML, Web Dev, DevOps, Data Analyst, Writer, Knowledge, or Terse.",
-              },
-              {
-                step: "03",
-                title: "Execute with memory",
-                body: "The agent runs inside a LangGraph graph, retrieving semantically relevant memories from the FAISS index and domain-specific tools before synthesising a response.",
-              },
-              {
-                step: "04",
-                title: "Reflect and improve",
-                body: "Triaged reflection updates memory quality scores after each run. User feedback (👍/👎) and outcome weights continuously improve future routing.",
-              },
-            ].map(s => (
-              <div key={s.step} style={{ display: "flex", gap: 14 }}>
-                <div style={{
-                  width: 32, height: 32, flexShrink: 0,
-                  borderRadius: "50%", background: LUX.goldTint,
-                  border: `1px solid ${GOLD.g2}55`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 10, fontWeight: 800, color: T.accent,
-                  fontFamily: "monospace", letterSpacing: "0.04em",
-                  boxShadow: "inset 0 1px 1px rgba(255,255,255,0.7)",
-                }}>{s.step}</div>
-                <div>
-                  <div style={{
-                    fontSize: 12.5, fontWeight: 700, color: T.accent,
-                    marginBottom: 5, letterSpacing: "-0.01em",
-                  }}>{s.title}</div>
-                  <div style={{ fontSize: 11.5, color: T.mutedLt, lineHeight: 1.6 }}>{s.body}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Section>
-
-      {/* ── Architecture flow ── */}
-      <Section title="Architecture">
-        <div className="lux-card" style={{
-          padding: "20px 26px", overflowX: "auto",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", minWidth: 640 }}>
-            {PIPELINE.map((node, i, arr) => (
-              <div key={node.label} style={{ display: "flex", alignItems: "center", flex: i < arr.length - 1 ? 1 : 0 }}>
-                <div style={{
-                  background: T.surface2, border: `1px solid ${node.color}44`,
-                  borderRadius: 6, padding: "10px 14px",
-                  textAlign: "center", flexShrink: 0, minWidth: 95,
-                }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: node.color, lineHeight: 1.2 }}>{node.label}</div>
-                  <div style={{ fontSize: 9.5, color: T.muted, marginTop: 3 }}>{node.sub}</div>
-                </div>
-                {i < arr.length - 1 && (
-                  <div style={{ flex: 1, height: 1, background: T.border, position: "relative", minWidth: 18 }}>
-                    <span style={{ position: "absolute", right: -4, top: "50%", transform: "translateY(-50%)", color: T.border, fontSize: 10, lineHeight: 1 }}>▶</span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 14, fontSize: 11, color: T.muted, lineHeight: 1.6 }}>
-            All stages emit events to the Cognitive OS event bus. Coherence C(t) is tracked continuously.
-            Reflection and memory updates happen after every run — the system improves from use.
-          </div>
-        </div>
-      </Section>
-
-      {/* ── Feature pillars ── */}
-      <Section title="Core capabilities">
+      {/* ── Feature pillars (experience first — the point of the product) ── */}
+      <Section title="What it does for you">
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
           gap: 10,
         }}>
           {FEATURES.map(f => <FeatureCard key={f.title} {...f} />)}
-        </div>
-      </Section>
-
-      {/* ── Tech stack ── */}
-      <Section title="Stack">
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {STACK.map(s => (
-            <span key={s.label} style={{
-              fontSize: 11, fontWeight: 600,
-              color: s.color, background: `${s.color}14`,
-              border: `1px solid ${s.color}30`,
-              borderRadius: 99, padding: "5px 13px",
-              fontFamily: "'Consolas', 'Cascadia Code', monospace",
-            }}>{s.label}</span>
-          ))}
         </div>
       </Section>
 
@@ -321,6 +194,137 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
           ))}
         </div>
       </Section>
+
+      {/* ── Under the hood (collapsed — the experience is the point; ─────────
+              the machinery is reassurance, available on demand, not the pitch) */}
+      <div style={{ marginBottom: 36 }}>
+        <button
+          onClick={() => setShowInternals(v => !v)}
+          className="nav-btn"
+          style={{
+            display: "flex", alignItems: "center", gap: 12, width: "100%",
+            background: "transparent", border: "none", cursor: "pointer",
+            padding: "2px 0", marginBottom: 14, fontFamily: "inherit",
+            fontSize: 10, fontWeight: 800, color: T.muted,
+            letterSpacing: "0.16em", textTransform: "uppercase",
+          }}
+        >
+          <span>Under the hood</span>
+          <span style={{
+            flex: 1, height: 1,
+            background: `linear-gradient(90deg, ${T.border} 0%, ${T.border} 60%, transparent 100%)`,
+          }} />
+          <span style={{
+            fontSize: 9, color: T.muted, transition: "transform .2s",
+            transform: showInternals ? "rotate(180deg)" : "none",
+          }}>▾</span>
+        </button>
+
+        {showInternals && (
+          <div style={{ animation: "fadeIn .2s" }}>
+            <p style={{ margin: "0 0 22px", fontSize: 12, color: T.muted, lineHeight: 1.6, fontStyle: "italic", maxWidth: 640 }}>
+              The experience is the point — the mechanics below are here if you want them.
+            </p>
+
+            {/* How it works */}
+            <Section title="How it works">
+              <div className="lux-card" style={{ padding: "22px 26px" }}>
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                  gap: "18px 36px",
+                }}>
+                  {[
+                    {
+                      step: "01",
+                      title: "Classify the query",
+                      body: "QuerySignal extracts domain, shape, verbosity, and topic keywords in under 1ms — routing happens before any LLM call is made.",
+                    },
+                    {
+                      step: "02",
+                      title: "Select the right agent",
+                      body: "Core Brain maps the signal to one of 10 specialist agents: Python Dev, .NET Dev, IT Networking, AI/ML, Web Dev, DevOps, Data Analyst, Writer, Knowledge, or Terse.",
+                    },
+                    {
+                      step: "03",
+                      title: "Execute with memory",
+                      body: "The agent runs inside a LangGraph graph, retrieving semantically relevant memories from the FAISS index and domain-specific tools before synthesising a response.",
+                    },
+                    {
+                      step: "04",
+                      title: "Reflect and improve",
+                      body: "Triaged reflection updates memory quality scores after each run. User feedback (👍/👎) and outcome weights continuously improve future routing.",
+                    },
+                  ].map(s => (
+                    <div key={s.step} style={{ display: "flex", gap: 14 }}>
+                      <div style={{
+                        width: 32, height: 32, flexShrink: 0,
+                        borderRadius: "50%", background: LUX.goldTint,
+                        border: `1px solid ${GOLD.g2}55`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 10, fontWeight: 800, color: T.accent,
+                        fontVariantNumeric: "tabular-nums", letterSpacing: "0.04em",
+                        boxShadow: "inset 0 1px 1px rgba(255,255,255,0.7)",
+                      }}>{s.step}</div>
+                      <div>
+                        <div style={{
+                          fontSize: 12.5, fontWeight: 700, color: T.accent,
+                          marginBottom: 5, letterSpacing: "-0.01em",
+                        }}>{s.title}</div>
+                        <div style={{ fontSize: 11.5, color: T.mutedLt, lineHeight: 1.6 }}>{s.body}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Section>
+
+            {/* Architecture flow */}
+            <Section title="Architecture">
+              <div className="lux-card" style={{ padding: "20px 26px", overflowX: "auto" }}>
+                <div style={{ display: "flex", alignItems: "center", minWidth: 640 }}>
+                  {PIPELINE.map((node, i, arr) => (
+                    <div key={node.label} style={{ display: "flex", alignItems: "center", flex: i < arr.length - 1 ? 1 : 0 }}>
+                      <div style={{
+                        background: T.surface2, border: `1px solid ${node.color}44`,
+                        borderRadius: 6, padding: "10px 14px",
+                        textAlign: "center", flexShrink: 0, minWidth: 95,
+                      }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: node.color, lineHeight: 1.2 }}>{node.label}</div>
+                        <div style={{ fontSize: 9.5, color: T.muted, marginTop: 3 }}>{node.sub}</div>
+                      </div>
+                      {i < arr.length - 1 && (
+                        <div style={{ flex: 1, height: 1, background: T.border, position: "relative", minWidth: 18 }}>
+                          <span style={{ position: "absolute", right: -4, top: "50%", transform: "translateY(-50%)", color: T.border, fontSize: 10, lineHeight: 1 }}>▶</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: 14, fontSize: 11, color: T.muted, lineHeight: 1.6 }}>
+                  All stages emit events to the Cognitive OS event bus. Coherence C(t) is tracked continuously.
+                  Reflection and memory updates happen after every run — the system improves from use.
+                </div>
+              </div>
+            </Section>
+
+            {/* Tech stack */}
+            <Section title="Stack">
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {STACK.map(s => (
+                  <span key={s.label} style={{
+                    fontSize: 11, fontWeight: 600,
+                    color: s.color, background: `${s.color}14`,
+                    border: `1px solid ${s.color}30`,
+                    borderRadius: 99, padding: "5px 13px",
+                    fontFamily: "'Consolas', 'Cascadia Code', monospace",
+                  }}>{s.label}</span>
+                ))}
+              </div>
+            </Section>
+          </div>
+        )}
+      </div>
 
       {/* ── Footer ── */}
       <div style={{
