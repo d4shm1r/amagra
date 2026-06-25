@@ -94,3 +94,41 @@ def test_overlong_message_422():
     msg = "a" * 100_001
     r = client.post("/ask", json={"message": msg}, headers=HEADERS)
     assert r.status_code == 422, r.status_code
+
+
+# ── inference concurrency gate ───────────────────────────────────────────────
+
+def test_inference_slot_caps_concurrency(monkeypatch):
+    import asyncio
+    from infrastructure import inference_limit as il
+    monkeypatch.setattr(il, "_LIMIT", 2)
+    monkeypatch.setattr(il, "_sem", None)
+    monkeypatch.setattr(il, "_sem_loop", None)
+
+    state = {"cur": 0, "peak": 0}
+
+    async def worker():
+        async with il.inference_slot():
+            state["cur"] += 1
+            state["peak"] = max(state["peak"], state["cur"])
+            await asyncio.sleep(0.02)
+            state["cur"] -= 1
+
+    async def main():
+        await asyncio.gather(*[worker() for _ in range(8)])
+
+    asyncio.run(main())
+    assert state["peak"] <= 2, state["peak"]   # never more than the limit in flight
+    assert state["peak"] >= 1                    # but it did run concurrently
+
+
+def test_inference_limit_reads_env(monkeypatch):
+    import importlib
+    from infrastructure import inference_limit as il
+    monkeypatch.setenv("AMAGRA_MAX_CONCURRENT_INFERENCE", "5")
+    try:
+        importlib.reload(il)
+        assert il.limit() == 5
+    finally:
+        monkeypatch.delenv("AMAGRA_MAX_CONCURRENT_INFERENCE", raising=False)
+        importlib.reload(il)  # restore default for any later import
