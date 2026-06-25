@@ -151,12 +151,14 @@ def build_favicons():
     ico_sizes = [16, 32, 48, 64]
     mark.save(os.path.join(PUB, "favicon.ico"),
               sizes=[(s, s) for s in ico_sizes])
-    # apple-touch: A on opaque tile
+    # apple-touch: A on opaque tile. Composited at 512 for quality, then
+    # downscaled to the iOS-standard 180x180 (matches the manifest declaration).
     tile = warm_tile(512)
     inset = mark.resize((int(512 * .82),) * 2, Image.LANCZOS)
     off = (512 - inset.width) // 2
     tile.alpha_composite(inset, (off, off))
-    tile.convert("RGB").save(os.path.join(PUB, "apple-touch-icon.png"))
+    tile.resize((180, 180), Image.LANCZOS).convert("RGB").save(
+        os.path.join(PUB, "apple-touch-icon.png"))
     # transparent SVG (no tile/ring)
     with open(os.path.join(PUB, "icon.svg"), "w") as f:
         f.write(ICON_SVG)
