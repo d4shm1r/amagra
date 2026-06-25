@@ -257,6 +257,31 @@ Registered agents automatically participate in routing, telemetry, memory retrie
 
 ---
 
+### Platformization — small runtime, large ecosystem
+
+Generalize v2.0 from *agent* extensibility to a unified **contribution model** —
+the "modular runtime, not modular app" thesis in [`PLUGIN_ARCHITECTURE.md`](PLUGIN_ARCHITECTURE.md).
+Much of this already exists at the provider layer (`MemoryBackend` ABC + 3 backends,
+`ModelProvider`/`EmbeddingProvider`, the `core/registry.py` extension host); the work
+is to **unify and open what's already modular**, via strangler-fig (no rewrite):
+
+| Step | Item | Status |
+|------|------|--------|
+| 1 | Declare the philosophy — `PLUGIN_ARCHITECTURE.md` + this track | ✅ |
+| 2 | **`Router` protocol** + `SignalRouter` (the one organ still as bare functions); coordinator depends on the protocol | ⬜ next |
+| 3 | Unify per-subsystem registries → one `contributes:` manifest; built-ins re-register as first-party plugins | ⬜ |
+| 4 | First-party **SDK** — documented contracts + manifest (trusted authors) | ⬜ |
+| **separate milestone** | **Isolation & third-party marketplace** — out-of-process host, *enforced* permissions, vetted registry/trust tiers | ⬜ |
+
+**Hard boundary:** extensibility ≠ trust. The in-process host is a convenience
+layer; a third-party marketplace makes it a **security boundary** (an AI
+extension reaches prompts, memory, docs, API keys, tool calls — far past a VS Code
+theme). The current `sandbox` is a resource jail, *not* a security boundary. Ship
+the marketplace only on a real isolation model — as its own milestone, never folded
+into the contribution model.
+
+---
+
 ### Long-term Bets
 
 | Item | Impact | Difficulty | ROI |
