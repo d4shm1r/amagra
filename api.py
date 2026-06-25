@@ -175,6 +175,36 @@ app.add_middleware(
 )
 
 
+# ── Request body-size guard ──────────────────────────────────────────────────
+# Reject oversized request bodies fast (413) instead of spending CPU normalizing
+# /embedding a multi-MB prompt before it fails. Registered after auth_middleware
+# so it runs OUTERMOST (Starlette runs last-added first) — the cheapest check
+# happens before auth or routing. Document uploads get headroom over their own
+# 10 MB cap; everything else is a JSON API request and stays small.
+_MAX_BODY_DEFAULT = 1 * 1024 * 1024    # 1 MB for JSON API requests
+_MAX_BODY_UPLOAD  = 12 * 1024 * 1024   # headroom over the 10 MB /documents/upload cap
+
+
+@app.middleware("http")
+async def body_size_guard(request: Request, call_next):
+    cl = request.headers.get("content-length")
+    if cl is not None:
+        try:
+            size = int(cl)
+        except ValueError:
+            return JSONResponse({"detail": "Invalid Content-Length header"}, status_code=400)
+        limit = _MAX_BODY_UPLOAD if request.url.path.startswith("/documents/upload") else _MAX_BODY_DEFAULT
+        if size > limit:
+            return JSONResponse(
+                {"detail": f"Request body too large: {size} bytes (limit {limit // (1024 * 1024)} MB)."},
+                status_code=413,
+            )
+    # Note: bodies sent with chunked transfer-encoding carry no Content-Length and
+    # bypass this check; the per-endpoint caps (e.g. _MAX_BYTES on upload) remain
+    # the backstop there.
+    return await call_next(request)
+
+
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
     path = request.url.path

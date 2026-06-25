@@ -1,6 +1,6 @@
 import os
 import sqlite3
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -138,7 +138,9 @@ _init_threads()
 
 
 class AskRequest(BaseModel):
-    message:             str
+    # Semantic cap (defense in depth behind the 1 MB body-size middleware): a
+    # prompt this long is almost certainly a paste that belongs in /documents.
+    message:             str = Field(..., max_length=100_000)
     force_agent:         str | None = None
     force_reflect_level: str | None = None
     thread_id:           str | None = None
