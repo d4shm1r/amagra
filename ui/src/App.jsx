@@ -168,7 +168,7 @@ function SettingsModal({ settings, onUpdate, coherence, apiStatus, mode, onSetMo
   );
 
   const ButtonGroup = ({ options, value, onChange }) => (
-    <div style={{ display: "flex", borderRadius: 3, overflow: "hidden", border: `1px solid ${T.border}` }}>
+    <div style={{ display: "flex", borderRadius: 8, overflow: "hidden", border: `1px solid ${T.border}` }}>
       {options.map(({ val, label }) => (
         <button key={val} onClick={() => onChange(val)}
           style={{
@@ -210,7 +210,7 @@ function SettingsModal({ settings, onUpdate, coherence, apiStatus, mode, onSetMo
         <select value={settings.defaultAgent} onChange={e => set("defaultAgent", e.target.value)}
           style={{
             background: T.surface2, border: `1px solid ${T.border}`, color: T.text,
-            borderRadius: 3, padding: "4px 8px", fontSize: 11, fontFamily: "inherit", cursor: "pointer",
+            borderRadius: 8, padding: "4px 8px", fontSize: 11, fontFamily: "inherit", cursor: "pointer",
             minWidth: 160,
           }}>
           <option value="auto">Auto (Coordinator routes)</option>
@@ -264,8 +264,8 @@ function SettingsModal({ settings, onUpdate, coherence, apiStatus, mode, onSetMo
             ["Prune ready",   memStats.prune_candidates ?? "—"],
             ["Never recalled",memStats.never_used       ?? "—"],
           ].map(([k, v]) => (
-            <div key={k} style={{ background: T.surface2, borderRadius: 3, padding: "8px 10px", textAlign: "center" }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: T.text, fontFamily: "monospace" }}>{v}</div>
+            <div key={k} style={{ background: T.surface2, borderRadius: 8, padding: "8px 10px", textAlign: "center" }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: T.text, fontVariantNumeric: "tabular-nums" }}>{v}</div>
               <div style={{ fontSize: 9, color: T.muted, marginTop: 2 }}>{k}</div>
             </div>
           ))}
@@ -293,7 +293,7 @@ function SettingsModal({ settings, onUpdate, coherence, apiStatus, mode, onSetMo
       ))}
 
       <div style={{ marginTop: 14, padding: "8px 10px", background: T.surface2,
-                    borderRadius: 3, fontSize: 10, color: T.muted }}>
+                    borderRadius: 8, fontSize: 10, color: T.muted }}>
         Settings persist in <code style={{ color: T.accent2 }}>localStorage</code>.
         Reflect mode and default agent apply on next message.
       </div>
@@ -502,9 +502,9 @@ function Sidebar({ activeTab, onNav, collapsed, onToggle, apiStatus, coherence, 
             </div>
             {coherence && online && (
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <span style={{ fontSize: 10, color: T.muted, fontFamily: "monospace" }}>C(t)</span>
+                <span style={{ fontSize: 10, color: T.muted, letterSpacing: "0.02em" }}>C(t)</span>
                 <span style={{
-                  fontSize: 11, fontWeight: 700, fontFamily: "monospace",
+                  fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums",
                   color: coherence.C >= 0.82 ? T.success : coherence.C >= 0.70 ? T.warn : T.error,
                 }}>
                   {coherence.C?.toFixed(3)}
@@ -1114,12 +1114,13 @@ export default function App() {
           </span>
         </div>
         <p style={{ margin: "0 0 8px", fontSize: 12, color: T.mutedLt, lineHeight: 1.6 }}>
-          A local execution debugger and cognitive monitoring system for multi-agent AI pipelines.
+          The AI you can trust with long-term work — it remembers what you've done, explains every
+          decision, and runs entirely on your hardware.
         </p>
         <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px" }}>
           {[["Architecture","Signal-first routing"],["Memory","FAISS + LRU cache"],
             ["Agents","Specialist + Coordinator"],["Eval","Dual-trajectory critic"],
-            ["UI","React (CRA)"],["API","FastAPI / Python"]].map(([k,v]) => (
+            ["UI","React + Vite"],["API","FastAPI / Python"]].map(([k,v]) => (
             <div key={k} style={{ fontSize: 11 }}>
               <span style={{ color: T.muted }}>{k}: </span>
               <span style={{ color: T.text }}>{v}</span>

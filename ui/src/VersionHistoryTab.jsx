@@ -238,7 +238,7 @@ export default function VersionHistoryTab() {
             flex: 1, padding: "12px 14px", textAlign: "center",
             borderRight: i < arr.length - 1 ? `1px solid ${T.border}` : "none",
           }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: s.color, fontFamily: "monospace", lineHeight: 1.1 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: s.color, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>
               {s.value}
             </div>
             <div style={{ fontSize: 10, color: T.muted, marginTop: 3, letterSpacing: "0.05em" }}>
