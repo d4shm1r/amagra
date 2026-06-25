@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { BUILD_PHASES, ROADMAP, LAUNCH_CHECKLIST } from "./constants";
+import { ROADMAP } from "./constants";
 import { T } from "./theme";
 import { PageHeader } from "./ObsShared";
 
@@ -23,8 +23,6 @@ const STATUS_META = {
   partial:  { color: "#C2410C", label: "Partial" },
 };
 const PRIO_COLOR = { high: "#B42318", medium: "#9A6C00", low: "#9A7A60" };
-
-const CHECKLIST_KEY = "amagra_launch_checklist_v1";
 
 // ── Current Phase block ───────────────────────────────────────────────────────
 function CurrentPhase({ phase }) {
@@ -117,132 +115,6 @@ function CurrentPhase({ phase }) {
   );
 }
 
-// ── Launch Checklist ──────────────────────────────────────────────────────────
-function LaunchChecklist() {
-  const [checked, setChecked] = useState(() => {
-    try { return new Set(JSON.parse(localStorage.getItem(CHECKLIST_KEY) || "[]")); }
-    catch { return new Set(); }
-  });
-  // Auto-detected status from the backend, keyed by checklist item id.
-  const [auto, setAuto] = useState({});
-  const [collapsed, setCollapsed] = useState(true);
-
-  useEffect(() => {
-    fetch("http://localhost:8000/launch/readiness")
-      .then(r => r.json())
-      .then(d => setAuto(d.items || {}))
-      .catch(() => {});
-  }, []);
-
-  // An item is done if the server verified it, otherwise fall back to the
-  // manual checkbox. Auto-detected items can't be toggled by hand.
-  const isDone = (item) => (item.id in auto ? auto[item.id].done : checked.has(item.id));
-
-  const toggle = (id) => {
-    if (id in auto) return;  // server-verified — not manually editable
-    setChecked(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      localStorage.setItem(CHECKLIST_KEY, JSON.stringify([...next]));
-      return next;
-    });
-  };
-
-  const allItems   = LAUNCH_CHECKLIST.flatMap(g => g.items);
-  const totalDone  = allItems.filter(isDone).length;
-  const totalCount = allItems.length;
-  const overallPct = Math.round((totalDone / totalCount) * 100);
-  const autoCount  = allItems.filter(i => i.id in auto).length;
-
-  return (
-    <div style={{ background: T.surface, border: `2px solid #C2410C33`, borderRadius: 14, padding: "18px 22px", marginBottom: 20 }}>
-      <div
-        onClick={() => setCollapsed(c => !c)}
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}
-      >
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>
-            Launch Readiness
-          </div>
-          <div style={{ fontSize: 11, color: T.muted }}>
-            {totalDone} of {totalCount} items complete
-            {autoCount > 0 && <span> · {autoCount} auto-detected</span>}
-          </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 26, fontWeight: 800, fontFamily: "monospace", color: overallPct === 100 ? T.success : "#C2410C", lineHeight: 1 }}>
-              {overallPct}%
-            </div>
-          </div>
-          <span style={{ fontSize: 11, color: T.muted }}>{collapsed ? "▼" : "▲"}</span>
-        </div>
-      </div>
-
-      {/* Overall bar */}
-      <div style={{ height: 3, background: T.border, borderRadius: 2, marginTop: 10, marginBottom: collapsed ? 0 : 18 }}>
-        <div style={{
-          height: 3, borderRadius: 2, width: `${overallPct}%`,
-          background: overallPct === 100 ? T.success : "linear-gradient(90deg, #C2410C, #9A6C00)",
-          transition: "width .4s ease",
-        }} />
-      </div>
-
-      {!collapsed && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {LAUNCH_CHECKLIST.map(gate => {
-            const gateDone  = gate.items.filter(isDone).length;
-            const gateTotal = gate.items.length;
-            const gatePct   = Math.round((gateDone / gateTotal) * 100);
-            const allDone   = gateDone === gateTotal;
-            return (
-              <div key={gate.id} style={{
-                background: T.bg, borderRadius: 8,
-                border: `1px solid ${allDone ? gate.color + "55" : gate.color + "22"}`,
-                padding: "12px 14px", opacity: allDone ? 0.85 : 1,
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: gate.color, background: `${gate.color}18`, border: `1px solid ${gate.color}40`, padding: "2px 8px", borderRadius: 3, letterSpacing: "0.06em", textTransform: "uppercase", flexShrink: 0 }}>
-                    {allDone ? "✓ " : ""}{gate.label}
-                  </span>
-                  <span style={{ fontSize: 11, color: T.muted, flex: 1 }}>{gate.description}</span>
-                  <span style={{ fontSize: 11, fontFamily: "monospace", color: allDone ? T.success : gate.color, fontWeight: 700, flexShrink: 0 }}>
-                    {gateDone}/{gateTotal}
-                  </span>
-                </div>
-                <div style={{ height: 2, background: T.border, borderRadius: 1, marginBottom: 10 }}>
-                  <div style={{ height: 2, borderRadius: 1, width: `${gatePct}%`, background: allDone ? T.success : gate.color, transition: "width .3s ease" }} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  {gate.items.map(item => {
-                    const done   = isDone(item);
-                    const isAuto = item.id in auto;
-                    return (
-                      <div key={item.id} onClick={() => toggle(item.id)} title={isAuto ? auto[item.id].detail : ""} style={{ display: "flex", alignItems: "flex-start", gap: 9, cursor: isAuto ? "default" : "pointer", padding: "5px 8px", borderRadius: 5, background: done ? `${gate.color}0D` : "transparent" }}>
-                        <div style={{ width: 14, height: 14, borderRadius: 3, flexShrink: 0, marginTop: 1, border: `1.5px solid ${done ? gate.color : T.border}`, background: done ? gate.color : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          {done && <span style={{ fontSize: 9, color: "#111", fontWeight: 800, lineHeight: 1 }}>✓</span>}
-                        </div>
-                        <span style={{ fontSize: 12, lineHeight: 1.55, color: done ? T.muted : T.text, textDecoration: done ? "line-through" : "none", textDecorationColor: T.muted, flex: 1 }}>
-                          {item.text}
-                        </span>
-                        {isAuto && (
-                          <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.06em", flexShrink: 0, marginTop: 2, padding: "1px 5px", borderRadius: 3, textTransform: "uppercase", color: done ? T.success : "#9A6C00", background: done ? `${T.success}14` : "#9A6C0014", border: `1px solid ${done ? T.success + "44" : "#9A6C0040"}` }}>
-                            {done ? "✓ Live" : "Auto"}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function StatCard({ label, value, color, sub }) {
   return (
     <div style={{ background: T.bg, borderRadius: 4, padding: "12px 16px", border: `1px solid ${color}22` }}>
@@ -324,7 +196,7 @@ export default function ProgressTab() {
   return (
     <div style={{ animation: "fadeIn .2s" }}>
 
-      <PageHeader title="Progress" subtitle="Build phases, open issues, launch readiness, and memory health." />
+      <PageHeader title="Progress" subtitle="What's shipping next, open issues, and live system health." />
 
       {/* ── Current phase ── */}
       {currentPhase && <CurrentPhase phase={currentPhase} />}
@@ -461,9 +333,6 @@ export default function ProgressTab() {
           )}
         </Card>
       )}
-
-      {/* ── Launch readiness (collapsible) ── */}
-      <LaunchChecklist />
 
       {/* ── Feedback loop ── */}
       {(() => {

@@ -3,12 +3,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.5.1" src="https://img.shields.io/badge/release-v1.5.1-C48808?style=flat-square&labelColor=2E2010" /></a>
+  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.5.2" src="https://img.shields.io/badge/release-v1.5.2-C48808?style=flat-square&labelColor=2E2010" /></a>
   <a href="https://github.com/d4shm1r/amagra/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-C48808?style=flat-square&labelColor=2E2010" /></a>
   <a href="https://github.com/d4shm1r/amagra/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/d4shm1r/amagra?style=flat-square&logo=github&logoColor=white&color=C48808&labelColor=2E2010" /></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-C48808?style=flat-square&logo=python&logoColor=white&labelColor=2E2010" />
   <img alt="Self-hosted" src="https://img.shields.io/badge/self--hosted-✓-C48808?style=flat-square&labelColor=2E2010" />
-  <img alt="Tests: 808 passing" src="https://img.shields.io/badge/tests-808%20passing-C48808?style=flat-square&labelColor=2E2010" />
+  <img alt="Tests: 889 passing" src="https://img.shields.io/badge/tests-889%20passing-C48808?style=flat-square&labelColor=2E2010" />
 </p>
 
 <p align="center">
@@ -102,7 +102,7 @@ The experience is the point. The numbers are here if you want them.
 | Memory retrieval (FAISS, warm) | **< 1 ms** | LRU cache hit |
 | Memory retrieval (cold embed) | ~60–80 ms | nomic-embed-text via Ollama |
 | Skill graph coverage | **21 nodes** | Phrase-weighted disambiguation across all 10 agents |
-| Test suite | **808 passing** | ruff + pytest + Docker build on every push and PR |
+| Test suite | **889 passing** | ruff + pytest + Docker build on every push and PR |
 | Free tier | **100 req / day** | No card required — `POST /register/free` |
 
 > Routing quality is measured honestly, not marketed: there's a wide gap between a self-authored curated set and a held-out adversarial one, and live telemetry (`GET /telemetry/routing`) tracks the real thing. The numbers, the method, the confidence intervals, and the known failure modes all live in [docs/FINDINGS.md](docs/FINDINGS.md) — including why we don't quote a single headline accuracy figure.
@@ -352,11 +352,11 @@ Amagra is local-first; the defaults assume a trusted single user on `localhost`.
 
 Post-debut hardening: tests to ~60% coverage, in-product onboarding (Ollama detection, model-pull progress, guided first prompt), Vite migration to retire CRA, single consolidated `amagra.db`, and public launch (Show HN, r/LocalLLaMA, Docker Hub, Homebrew).
 
-### v1.1 — Tool-using agents · Q3 2026 *(✅ shipped v1.1.1)*
+### v1.1 — Tool-using agents *(✅ shipped v1.1.1)*
 
 Agents gain real capabilities, not just text. **Shipped:** thread management (rename, fork, archive); memory import/export (JSON/Markdown); the jailed file/folder tool (`GET /workspace/read|list|search`, confined via `Path.resolve().is_relative_to(root)`); sandboxed code execution (`POST /sandbox/run`, `setrlimit` + isolated `python3 -I`, opt-in via `AMAGRA_SANDBOX=1`); chat stop/regenerate/edit affordances; live web search (`GET /search/web`, default self-hosted SearXNG, opt-in Brave/Tavily); and a structured tool loop (`POST /tools/run`) that lets the model call the file/sandbox/web tools mid-reasoning. **Remaining polish:** auto-invoking the tool loop inside the default specialist-agent chat flow.
 
-### v1.2 — Multi-provider models · Q4 2026 *(✅ shipped v1.2.0)*
+### v1.2 — Multi-provider models *(✅ shipped v1.2.0)*
 
 **Shipped:** in-app model/provider settings and single-process desktop mode — pick a local or cloud backend without editing config. Additional inference backends supported:
 
@@ -370,19 +370,31 @@ Agents gain real capabilities, not just text. **Shipped:** thread management (re
 
 Users select the inference model in-app. Routing, memory, and telemetry are unaffected — the provider swap happens below the coordinator. *Still planned:* workspaces (isolated projects per user), RBAC, and a custom agent builder (name, system prompt, keywords via admin UI — no code deploy).
 
-### v1.3 — Cross-model prompt debugger · Q4 2026 *(✅ shipped v1.3.0–1.3.1)*
+### v1.3 — Cross-model prompt debugger *(✅ shipped v1.3.0–1.3.1)*
 
 **Shipped:** run one prompt across N models concurrently (`POST /debug/prompt` + the Run Across Models panel), each output with latency and length side by side, plus a cross-model divergence highlight (v1.3.1). Static, client-side prompt analysis (health score, missing-context detection, one-click auto-repair) ships alongside it.
 
-### v1.4 — Unified workspace UI · Q1 2027 *(✅ shipped v1.4.0–1.4.4)*
+### v1.4 — Unified workspace UI *(✅ shipped v1.4.0–1.4.6)*
 
-The dashboard's surfaces consolidated into 6 coherent views with observability as the hero screen — a reorganization, not a deletion. Followed by a brand/UI refinement pass (v1.4.1–1.4.4): serif PageHeaders, the lux-card sweep, gold titles, and the AMAGRA wordmark favicon.
+The dashboard's surfaces consolidated into 6 coherent views with observability as the hero screen — a reorganization, not a deletion. Followed by a brand/UI refinement pass (v1.4.1–1.4.6): serif PageHeaders, the lux-card sweep, gold titles, the AMAGRA favicon set, and live component-transparency + stability metrics.
 
-### v1.5 — Team memory & governance · Q1 2027
+### v1.5 — Hybrid inference *(✅ shipped v1.5.0–1.5.2)*
 
-Shared team memory (per-workspace FAISS index), admin console, encrypted cross-machine sync, SSO/SAML, audit-log export + Chain-of-Authorization trail, configurable retention, and an air-gapped installer. Still planned: a Monaco code pane (read + diff + apply).
+Local by default, cloud when it counts. Hard or low-confidence queries escalate to a cloud model **automatically** — without you choosing — and the spend is accounted for (`GET /runs/cost`; reads `$0.00 fully local` until you opt in via `AMAGRA_HYBRID`). Local-only stays the default. Followed by the brand/social polish and the v1.6 workspace runway.
 
-### v2.0 — Agent registry & SDK · 2027
+### Cross-model consensus *(✅ shipped)*
+
+When an answer matters, ask several models at once and see how much they actually **agree** — an agreement score, the most representative answer, and named dissenters, with the full comparison shown (`POST /consensus`, or **Workspace → Consensus**). The cross-model debugger turned from a *debug* feature into a *trust* feature: verify before you trust, on hardware you control.
+
+### v1.6 — Workspaces & RBAC *(next)*
+
+Multiple isolated projects per user, role-based access (owner / admin / member), and a custom agent builder — name, system prompt, and keyword triggers via the admin UI, no code deploy.
+
+### v1.7 — Team memory & governance
+
+Shared team memory (per-workspace FAISS index), admin console, encrypted cross-machine sync, SSO/SAML, audit-log export + Chain-of-Authorization trail, configurable retention, and an air-gapped installer.
+
+### v2.0 — Agent registry & SDK
 
 A supported interface for building custom agents. Agents declare a manifest:
 
@@ -455,7 +467,7 @@ Issues and PRs welcome — see **[CONTRIBUTING.md](CONTRIBUTING.md)** for setup,
 
 ```bash
 ruff check .                                  # lint
-PYTHONPATH=. python3 -m pytest tests/ -q      # 808 tests
+PYTHONPATH=. python3 -m pytest tests/ -q      # 889 tests
 PYTHONPATH=. python3 evaluation/ablation_eval.py   # routing benchmark
 ```
 
