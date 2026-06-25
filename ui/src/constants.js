@@ -682,6 +682,25 @@ export const BUILD_PHASES = [
       "Verified: full suite 865 passed, 35 new hybrid-inference tests across 3 files",
     ],
   },
+  {
+    id: 89, version: "v1.5.1", date: "Jun 24, 2026",
+    label: "Brand & Social Polish", title: "Favicon Raster Set + Social Card", color: "#1E5A8A", status: "done",
+    summary: "Rounds out the brand surface: a complete gold AMAGRA favicon set (the SVG plus .ico, apple-touch, and PWA rasters) and a refreshed social-preview / og:image card so shared links look intentional.",
+    steps: [
+      "Gold 'A' monogram favicon set — favicon.ico (16/32/48/64), favicon-32.png, apple-touch-icon.png, logo192/512.png, generated from icon.svg by tools/gen_brand_assets.py (Pillow, no SVG rasterizer needed)",
+      "Refreshed social-preview card + og:image meta so GitHub/social unfurls render the brand",
+    ],
+  },
+  {
+    id: 90, version: "v1.5.2", date: "Jun 24, 2026",
+    label: "Release Hygiene & Roadmap Runway", title: "v1.6 Workspace Runway + Platform Entity Model", color: "#1E5A8A", status: "done",
+    summary: "A non-breaking runway release that clears the path to the v1.6 workspaces milestone: the platform entity model RFC and the v1.5.2/v1.5.3 adoption-floor plan land as records, with version markers reconciled.",
+    steps: [
+      "docs/ROADMAP.md: v1.5.2/v1.5.3 runway sequenced into the v1.6 workspaces milestone (additive, no schema break)",
+      "docs/PLATFORM_ENTITY_MODEL.md: the Organization → Project → Workspace entity model RFC for v1.6",
+      "Version markers reconciled to v1.5.2 across api.py, package.json, constants.js",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -781,7 +800,7 @@ export const ROADMAP = [
     ],
   },
   {
-    id: 42, version: "v1.6.0", title: "Workspaces & RBAC", color: "#C2410C", status: "planned", priority: "medium",
+    id: 42, version: "v1.6.0", title: "Workspaces & RBAC", color: "#C2410C", status: "next", priority: "high",
     summary: "Multiple isolated projects per user, role-based access, and a custom agent builder. (Deferred past the launch-wedge pivot — the v1.2/v1.3 slots shipped as Model Choice and the Cross-Model Debugger instead.)",
     items: [
       "workspaces table — multiple isolated projects per user, per-workspace memory namespace (8h)",
@@ -842,6 +861,8 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.5.2", label: "Release Hygiene & Runway", color: "#1E5A8A", phases: [90] },
+  { version: "v1.5.1", label: "Brand & Social Polish",    color: "#1E5A8A", phases: [89] },
   { version: "v1.5.0", label: "Hybrid Inference",        color: "#1E5A8A", phases: [88] },
   { version: "v1.4.6", label: "OCAC Stability Metrics", color: "#7E3F8F", phases: [87] },
   { version: "v1.4.5", label: "Observability & Favicon Fix", color: "#7E3F8F", phases: [86] },
@@ -867,78 +888,6 @@ export const VERSION_EPOCHS = [
   { version: "v0.3", label: "Integration",           color: "#0E7490",  phases: [7,  8,  9] },
   { version: "v0.2", label: "Core Systems",          color: "#9A6C00",  phases: [4,  5,  6] },
   { version: "v0.1", label: "Foundation",            color: "#15803D",  phases: [1,  2,  3] },
-];
-
-export const LAUNCH_CHECKLIST = [
-  {
-    id: "security",
-    label: "Security Gate",
-    color: "#B42318",
-    description: "Must be fixed before any public exposure — these are confirmed vulnerabilities",
-    items: [
-      { id: "s1", text: "F1 FIXED: /admin/keys removed from _PUBLIC_PATHS — ADMIN_TOKEN env guard active ✅" },
-      { id: "s2", text: "F7 FIXED: {user_profile} format bug fixed in python_dev, it_networking, ai_ml ✅" },
-      { id: "s3", text: "F2 FIXED: agents/registry.py — canonical registry, 20-file rename, boot assertion active ✅" },
-      { id: "s4", text: "F6 FIXED: Keyword-triggered RCE removed from python_dev.py — path allowlist enforced ✅" },
-      { id: "s5", text: "ADMIN_TOKEN set to a random 64-char hex secret in production .env (not empty string)" },
-      { id: "s6", text: "docker-compose REQUIRE_AUTH defaults to 1 ✅ (was 0 — anyone reaching the port had full access)" },
-    ],
-  },
-  {
-    id: "tech",
-    label: "Technical Gate",
-    color: "#0F766E",
-    description: "Must be complete before any public announcement",
-    items: [
-      { id: "t1", text: "Stripe Checkout live — $39/mo Developer tier, webhook provisions API key automatically" },
-      { id: "t2", text: "API key auth tested end-to-end (X-API-Key header, usage metering, memory namespace isolation)" },
-      { id: "t3", text: "docker-compose install tested on a clean machine — zero to running in under 10 minutes" },
-      { id: "t4", text: "Landing page live at public domain (not localhost)" },
-      { id: "t5", text: "Privacy Policy + Terms of Service published on landing page" },
-      { id: "t6", text: "Rate limiting on all public API endpoints (prevent abuse on launch day)" },
-    ],
-  },
-  {
-    id: "docs",
-    label: "Documentation Gate",
-    color: "#1E5A8A",
-    description: "Developers check GitHub before they visit your website",
-    items: [
-      { id: "d1", text: "Zenodo preprint submitted — QuerySignal architecture, 97% routing accuracy, ablation eval (99% signal-only)" },
-      { id: "d2", text: "GitHub README: what it does, 1-command quick-start, architecture overview, paper DOI, managed hosting CTA" },
-      { id: "d3", text: "3-minute demo video: live routing decision, dashboard, memory system (upload to YouTube)" },
-      { id: "d4", text: "DEPLOY.md: prerequisites, GPU passthrough, Caddy SSL, firewall config, environment variables" },
-      { id: "d5", text: "MIT LICENSE committed + CONTRIBUTING.md skeleton (signals openness to contributors)" },
-      { id: "d6", text: "Rename product to Amagra consistently across GitHub repo, README, all docs" },
-    ],
-  },
-  {
-    id: "dist",
-    label: "Distribution — in this order",
-    color: "#C2410C",
-    description: "Each post builds on the previous one — sequence matters",
-    items: [
-      { id: "p1", text: "GitHub repository made public (step 1 — everything else links here)" },
-      { id: "p2", text: "Hacker News Show HN — open with 99% routing accuracy + Zenodo DOI + video link" },
-      { id: "p3", text: "r/LocalLLaMA — demo video first, answer every technical comment personally" },
-      { id: "p4", text: "r/selfhosted — privacy + consumer hardware angle (4GB VRAM, no cloud)" },
-      { id: "p5", text: "Product Hunt — schedule Tuesday or Thursday, 00:01 PST, have 5 friends ready to upvote at open" },
-      { id: "p6", text: "IndieHackers — start a build-in-public thread documenting the journey from here" },
-      { id: "p7", text: "X/Twitter thread — architecture screenshots, routing accuracy numbers, Zenodo + GitHub links" },
-    ],
-  },
-  {
-    id: "rev",
-    label: "Revenue Gate",
-    color: "#15803D",
-    description: "Interest spikes last 48 hours — payment must work before you post",
-    items: [
-      { id: "r1", text: "Stripe webhook → key delivery email tested live (not just Stripe test mode)" },
-      { id: "r2", text: "First real paying customer — even $1 validates the complete payment flow" },
-      { id: "r3", text: "Usage dashboard visible to customers (requests today, memories, agent distribution)" },
-      { id: "r4", text: "Support channel live — email or Discord, commit to replying within 24h during launch week" },
-    ],
-  },
 ];
 
 export const PROGRESS_STEPS = [
@@ -1057,9 +1006,8 @@ export const PROMISES = [
     title: "Live Web Search",
     description: "Search the web when a question needs up-to-date information — docs, changelogs, errors. Self-hosted SearXNG by default; opt-in Brave/Tavily. GET /search/web.",
     category: "AI",
-    status: "building",
-    target: "v1.1",
-    target_quarter: "Q3 2026",
+    status: "delivered",
+    delivered_on: "2026-06-14",
     priority: "high",
   },
   {
@@ -1068,9 +1016,8 @@ export const PROMISES = [
     title: "Multiple LLM Backends",
     description: "Choose your own model: Claude, GPT-4o, Gemini, Llama 3, Mistral, Gemma. Swap the inference backend without touching your agents or memory.",
     category: "Platform",
-    status: "committed",
-    target: "v1.2",
-    target_quarter: "Q4 2026",
+    status: "delivered",
+    delivered_on: "2026-06-17",
     priority: "medium",
   },
   {
@@ -1080,8 +1027,8 @@ export const PROMISES = [
     description: "Define your own specialist agent via the admin UI — give it a name, system prompt, and keyword triggers. No code deployment required.",
     category: "Platform",
     status: "committed",
-    target: "v1.2",
-    target_quarter: "Q4 2026",
+    target: "v1.6",
+    target_quarter: "Q1 2027",
     priority: "medium",
   },
   {
@@ -1102,7 +1049,7 @@ export const PROMISES = [
     description: "Your whole team shares one knowledge base. Ask a question answered by a colleague last week — the agent already knows the answer.",
     category: "Platform",
     status: "committed",
-    target: "v1.3",
+    target: "v1.7",
     target_quarter: "Q1 2027",
     priority: "medium",
   },
@@ -1110,11 +1057,30 @@ export const PROMISES = [
     id: 14,
     icon: "◷",
     title: "No Regressions Guarantee",
-    description: "Every release runs the full eval suite before shipping. Routing accuracy, response quality, and latency benchmarks are published in the release notes.",
+    description: "Every release runs the full eval suite before shipping — 889 tests on the latest. Routing accuracy, response quality, and latency benchmarks are published in the release notes.",
     category: "Performance",
-    status: "committed",
-    target: "v1.1",
-    target_quarter: "Q3 2026",
+    status: "delivered",
+    delivered_on: "2026-06-25",
+    priority: "high",
+  },
+  {
+    id: 15,
+    icon: "⊕",
+    title: "Hybrid Inference — Local by Default, Cloud When It Counts",
+    description: "Stay fully local for everyday work, and let hard or low-confidence queries escalate to a cloud model automatically — with the spend accounted for. Opt-in; local-only stays the default.",
+    category: "AI",
+    status: "delivered",
+    delivered_on: "2026-06-23",
+    priority: "high",
+  },
+  {
+    id: 16,
+    icon: "◎",
+    title: "Cross-Model Consensus",
+    description: "When an answer matters, ask several models at once and see how much they actually agree — an agreement score, the most representative answer, and named dissenters, with the full comparison shown. Verify before you trust.",
+    category: "AI",
+    status: "delivered",
+    delivered_on: "2026-06-25",
     priority: "high",
   },
 ];
