@@ -9,6 +9,7 @@
 # even if memory_db is unavailable.
 # ─────────────────────────────────────────────────────────────
 
+import re
 import sys
 import threading as _threading
 import os  # path resolution
@@ -16,6 +17,35 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Thread-local: memory IDs excluded during a fork replay
 _fork_local = _threading.local()
+
+# Integers / decimals, but NOT tokens glued to letters (so "v3"/"port8080" or
+# "python3" are ignored — those are identifiers, not problem quantities).
+_NUMBER_RE = re.compile(r"(?<![A-Za-z0-9_])-?\d+(?:\.\d+)?(?![A-Za-z0-9_])")
+
+
+def _numbers(text: str) -> set:
+    return {n for n in _NUMBER_RE.findall(text or "")}
+
+
+def _is_instance_mismatch(query: str, content: str) -> bool:
+    """True when ``content`` is most likely a *different instance of the same
+    template* as ``query`` rather than relevant prior knowledge.
+
+    The signal: a self-contained quantitative query supplies its own numbers
+    (e.g. "A farmer has 10 cows…"); a bled memory carries a number set that is
+    wholly disjoint (e.g. a stored "15 sheep / 8 remain" answer). Embedding
+    similarity is high because the *template* matches, but injecting the other
+    problem's quantities anchors the model on the wrong numbers — the context
+    bleed the cow/sheep eval exposed.
+
+    Guard fires only when BOTH sides are quantitative and share NO number. It
+    never fires for non-numeric recall (the common case), and because the query
+    has its own givens, dropping a disjoint-number memory degrades safely to
+    "answer from the prompt alone".
+    """
+    q_nums = _numbers(query)
+    c_nums = _numbers(content)
+    return bool(q_nums) and bool(c_nums) and q_nums.isdisjoint(c_nums)
 
 def _set_fork_excluded_ids(ids) -> None:
     _fork_local.excluded_ids = set(ids or [])
@@ -48,6 +78,10 @@ def get_memory_context(query: str, agent_name: str, top_k: int = 3, min_score: f
         _excl = getattr(_fork_local, 'excluded_ids', set())
         if _excl:
             relevant = [r for r in relevant if getattr(r, 'id', None) not in _excl]
+        # Drop template-collision bleed: a different instance of the same
+        # quantitative problem (cow/sheep eval). See _is_instance_mismatch.
+        relevant = [r for r in relevant
+                    if not _is_instance_mismatch(query, r.content)]
         if not relevant:
             return ""
 
