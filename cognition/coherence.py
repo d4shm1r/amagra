@@ -42,7 +42,9 @@ from dataclasses import dataclass, asdict
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from infrastructure.db import path as _dbpath
-from evaluation.math_metrics import series_curvature, max_abs_curvature
+from evaluation.math_metrics import (
+    series_curvature, max_abs_curvature, curvature_leading_indicator,
+)
 _DECISIONS_DB = _dbpath("decisions")
 _MEMORY_DB    = _dbpath("memory")
 
@@ -403,9 +405,22 @@ def print_dynamics(series: list[dict]) -> None:
               f"{row['conflict_rate']*100:>5.1f}%  {row['reflect_rate']*100:>5.1f}%  {delta}")
         prev = row["C"]
 
-    peak = max_abs_curvature([row["C"] for row in series])
-    print(f"\n  Peak |Δ²C| = {peak:.4f}  "
-          f"({'⚠ bending sharply — instability leading indicator' if peak > 0.05 else 'trajectory smooth'})")
+    c_series = [row["C"] for row in series]
+    peak = max_abs_curvature(c_series)
+    # Signed alarm of record: keep the sign max_abs_curvature folds away, so a
+    # downturn (concave, bending down from a high level) reads differently from a
+    # self-correcting rebound (convex). Traces to OCAC Delta_secondDiff.
+    signed = curvature_leading_indicator(c_series)
+    if signed["warn"]:
+        verdict = "⚠ downturn — bending down from a high level (instability leading indicator)"
+    elif signed["regime"] == "rebound":
+        verdict = "↻ rebound — self-correcting (safe)"
+    elif peak > 0.05:
+        verdict = "bending sharply"
+    else:
+        verdict = "trajectory smooth"
+    print(f"\n  Peak |Δ²C| = {peak:.4f}  (signed {signed['signed_peak']:+.4f}, "
+          f"{signed['regime']})\n  {verdict}")
     print()
 
 

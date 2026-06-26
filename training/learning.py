@@ -147,4 +147,19 @@ def apply_learning_update(
             f"signal={learning_signal:.3f}, delta={bounded_delta:.4f})"
         )
 
+    # Persist the weight transition so drift_status can reconstruct per-agent
+    # tracks for the signed lens-of-stability test (math_metrics.drift_status_v2).
+    # Best-effort: a telemetry failure must never break the learning path.
+    if new_weight != current:
+        try:
+            from infrastructure.event_bus import emit, EventType
+            emit(EventType.ROUTING_WEIGHT_CHANGED, {
+                "agent":         agent,
+                "weight_before": current,
+                "weight_after":  new_weight,
+                "delta":         round(bounded_delta, 4),
+            })
+        except Exception as e:
+            print(f"[learning] weight-change emit failed: {e}")
+
     return summary

@@ -464,9 +464,93 @@ def max_abs_curvature(series: list[float]) -> float:
 
     0.0 for a perfectly linear (constant-rate) trajectory; grows with how
     sharply the metric is bending.  Useful as a dashboard alarm threshold.
+
+    NOTE: this folds away the sign of Δ², so an incipient downturn and a
+    recovery overshoot collapse to the same number.  For the dashboard alarm
+    use ``curvature_leading_indicator`` (the signed alarm of record); this
+    magnitude form is retained for back-compat only.
     """
     curv = series_curvature(series)
     return round(max((abs(c) for c in curv), default=0.0), 6)
+
+
+def curvature_leading_indicator(series: list[float]) -> dict:
+    """Signed Δ² alarm — keeps the sign the OCAC cubic finding says is load-bearing.
+
+    ``max_abs_curvature`` collapses the curvature through ``abs``, so a downturn
+    and a rebound become indistinguishable.  This keeps the sign: the second
+    difference is *negative* when a series is bending downward (concave) and
+    *positive* when bending upward (convex).  A negative peak while the level is
+    still high is the incipient-downturn alarm the OCAC bridge §4.1 wants;
+    a positive peak is a self-correcting rebound (safe).
+
+    Returns ``{signed_peak, regime, warn}`` where
+    ``regime ∈ {downturn, rebound, linear, flat}`` and ``warn`` is True only
+    when the series is bending down from a high level (``signed_peak < 0`` and
+    the latest value > 0.7).
+
+    Traces to: ``Delta_secondDiff`` (OCAC/Variational.lean) + the sign lesson of
+    ``cubicCoeff_neg_iff`` — a norm erases the attractor/repeller distinction.
+    """
+    curv = series_curvature(series)
+    if not curv:
+        return {"signed_peak": 0.0, "regime": "flat", "warn": False}
+    signed_peak = max(curv, key=abs)            # largest |Δ²|, sign preserved
+    regime = ("downturn" if signed_peak < 0
+              else "rebound" if signed_peak > 0
+              else "linear")
+    return {
+        "signed_peak": round(signed_peak, 6),
+        "regime": regime,
+        "warn": signed_peak < 0 and series[-1] > 0.7,   # bending down from a high level
+    }
+
+
+def drift_status_v2(weight_history: dict, *, divergence_eps: float = 0.05) -> dict:
+    """Signed lens-of-stability verdict on per-agent weight tracks.
+
+    Replaces the sign-blind ``variance > 0.05`` cutoff in ``decision.weights``.
+    Variance cannot tell a cluster *converging* to a new stable configuration
+    from a cluster *diverging* — both can show the same spread. This asks two
+    signed questions of each agent's weight track instead:
+
+      1. **Direction** — is the weight diverging from where the track started by
+         more than ``divergence_eps``? (Inside that radius it is in the recovery
+         basin; nothing to flag.)
+      2. **Curvature sign** — is the latest signed Δ² accelerating the excursion
+         *away* from the start (same sign as the drift ⇒ runaway) or curving it
+         *back* toward the start (opposite sign ⇒ self-correcting)?
+
+    A track is ``runaway`` only when it is **both** diverging **and**
+    accelerating away. Note this is sign-relative to the drift direction, so it
+    catches downward divergence too — a plain ``Δ² > 0`` test would miss a weight
+    collapsing toward the lower bound.
+
+    Returns ``{status, regime, agent, signed_accel}`` where
+    ``status ∈ {runaway, self_correcting}``, ``agent`` is the worst runaway agent
+    (or None), and ``signed_accel`` is that agent's away-acceleration.
+
+    Traces to: ``lyap_strictDecrease`` / basin ``x² < −2/c`` (OCAC/Dynamics.lean).
+    """
+    worst = None   # (agent, away_accel)
+    for agent, track in weight_history.items():
+        c2 = series_curvature(track)
+        if not c2:
+            continue                               # track too short
+        drift = track[-1] - track[0]
+        if abs(drift) <= divergence_eps:
+            continue                               # inside basin — not diverging
+        # away_accel > 0 ⇒ Δ² reinforces the drift direction (accelerating away)
+        away_accel = c2[-1] * (1.0 if drift > 0 else -1.0)
+        if away_accel > 0 and (worst is None or away_accel > worst[1]):
+            worst = (agent, away_accel)
+    return {
+        "status": "runaway" if worst else "self_correcting",
+        "regime": ("no recovery guarantee — diverging and accelerating away"
+                   if worst else "inside basin — provably returns"),
+        "agent":  worst[0] if worst else None,
+        "signed_accel": round(worst[1], 6) if worst else 0.0,
+    }
 
 
 # ────────────────────────────────────────────────────────────────
@@ -676,6 +760,42 @@ def _run_tests():
     assert max_abs_curvature([1.0, 2.0, 3.0, 4.0]) == 0.0
     assert max_abs_curvature([0.9, 0.9, 0.9, 0.6]) > 0.0    # downturn detected
     assert series_curvature([1.0, 2.0]) == []              # too short
+    # signed curvature alarm: sign is load-bearing (the OCAC "put the sign back")
+    down = curvature_leading_indicator([0.9, 0.9, 0.9, 0.6])
+    assert down["signed_peak"] < 0 and down["regime"] == "downturn"
+    up = curvature_leading_indicator([0.6, 0.6, 0.6, 0.9])
+    assert up["signed_peak"] > 0 and up["regime"] == "rebound"
+    assert up["warn"] is False                             # rebound never warns
+    # warn requires BOTH a downturn AND a still-high level (last > 0.7)
+    high_down = curvature_leading_indicator([0.9, 0.9, 0.9, 0.8])
+    assert high_down["regime"] == "downturn" and high_down["warn"] is True
+    low_down = curvature_leading_indicator([0.9, 0.9, 0.9, 0.6])
+    assert low_down["regime"] == "downturn" and low_down["warn"] is False  # last 0.6 ≤ 0.7
+    flat = curvature_leading_indicator([1.0, 2.0])         # too short → safe default
+    assert flat == {"signed_peak": 0.0, "regime": "flat", "warn": False}
+
+    # signed drift_status: basin not threshold (the OCAC lens of stability)
+    # self-correcting: diverged but the latest Δ² curves back toward neutral
+    sc = drift_status_v2({"planner": [1.0, 1.1, 1.18, 1.20]})
+    assert sc["status"] == "self_correcting" and sc["agent"] is None
+    # runaway up: diverging AND accelerating away from start
+    ru = drift_status_v2({"coder": [1.0, 1.05, 1.12, 1.22]})
+    assert ru["status"] == "runaway" and ru["agent"] == "coder" and ru["signed_accel"] > 0
+    # runaway down: sign-relative test catches a weight collapsing toward the floor
+    rd = drift_status_v2({"critic": [1.0, 0.95, 0.88, 0.78]})
+    assert rd["status"] == "runaway" and rd["agent"] == "critic"
+    # not diverging: excursion inside the basin ⇒ no flag even with curvature
+    nd = drift_status_v2({"a": [1.0, 1.01, 1.02, 1.03]})
+    assert nd["status"] == "self_correcting"
+    # empty / short tracks are safe
+    assert drift_status_v2({})["status"] == "self_correcting"
+    assert drift_status_v2({"a": [1.0, 1.0]})["status"] == "self_correcting"
+    # picks the worst among multiple runaways
+    worst = drift_status_v2({
+        "mild":  [1.0, 1.03, 1.07, 1.12],   # smaller away-accel
+        "sharp": [1.0, 1.02, 1.08, 1.20],   # larger away-accel
+    })
+    assert worst["status"] == "runaway" and worst["agent"] == "sharp"
 
     # Invariant health — balance is scale-invariant
     perfect = invariant_health({"a": 0.8, "b": 0.8, "c": 0.8})
