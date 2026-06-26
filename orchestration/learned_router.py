@@ -158,6 +158,20 @@ def train(traces: list = None, *, verbose: bool = False,
     X = np.vstack([r[0] for r in rows])
     y = np.array([r[1] for r in rows])
 
+    # Class distribution — a classifier needs ≥2 classes. Guard BEFORE fitting
+    # so an undertrained corpus (e.g. all traces routed to one agent) degrades
+    # gracefully to a 503 "not ready" instead of crashing the stats endpoint.
+    unique, counts = np.unique(y, return_counts=True)
+    class_counts   = {str(a): int(c) for a, c in zip(unique, counts)}
+    if len(unique) < 2:
+        return {
+            "error":        "insufficient class diversity to train",
+            "n_samples":    len(rows),
+            "n_classes":    int(len(unique)),
+            "class_counts": class_counts,
+            "dropped_untrustworthy": dropped,
+        }
+
     le = LabelEncoder()
     y_enc = le.fit_transform(y)
 
@@ -168,17 +182,20 @@ def train(traces: list = None, *, verbose: bool = False,
     )
     model.fit(X, y_enc)
 
-    # 5-fold cross-validation accuracy
-    cv_scores = cross_val_score(model, X, y_enc, cv=5, scoring="accuracy")
-    cv_mean   = round(float(cv_scores.mean()), 4)
-    cv_std    = round(float(cv_scores.std()), 4)
+    # Cross-validation accuracy — StratifiedKFold needs ≥ n_splits members per
+    # class, so cap folds at the smallest class count. Below 2 members in the
+    # rarest class, CV isn't meaningful; report None rather than crash/mislead.
+    min_class = int(counts.min())
+    if min_class >= 2:
+        n_splits  = min(5, min_class)
+        cv_scores = cross_val_score(model, X, y_enc, cv=n_splits, scoring="accuracy")
+        cv_mean   = round(float(cv_scores.mean()), 4)
+        cv_std    = round(float(cv_scores.std()), 4)
+    else:
+        cv_mean = cv_std = None
 
     # Train accuracy
     train_acc = round(float((model.predict(X) == y_enc).mean()), 4)
-
-    # Class distribution
-    unique, counts = np.unique(y, return_counts=True)
-    class_counts   = {str(a): int(c) for a, c in zip(unique, counts)}
 
     # Feature importances (mean abs coef across classes)
     feat_names = (
@@ -240,7 +257,12 @@ def _load_or_train() -> dict:
             pass
 
     # No model on disk → train now
-    _cached_payload = train(verbose=False)
+    payload = train(verbose=False)
+    if payload.get("error"):
+        # Don't cache a failure — recover automatically once data accumulates.
+        return payload
+
+    _cached_payload = payload
     # Inject model + encoder back into the dict if train succeeded
     if "model" not in _cached_payload:
         # train() strips model from the return dict for the stats API;

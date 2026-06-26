@@ -102,6 +102,42 @@ def test_stats_has_expected_keys():
     assert len(result) > 0
 
 
+# ── train — graceful degradation guards ──────────────────────────────────────
+
+def _trace(agent, _id):
+    return {
+        "id": f"t{_id}",
+        "signal": {"domain": "python", "conf": 0.8, "shape": "code", "verbosity": "normal"},
+        "routing": {"final_agent": agent, "action": "build"},
+        "labels": {"correct_agent": agent, "label_trustworthy": True},
+    }
+
+def test_train_single_class_returns_error_not_crash():
+    # All traces route to one agent → can't fit a classifier. Must return a
+    # graceful error dict (→ 503), never raise (regression: stats endpoint 500).
+    traces = [_trace("python_dev", i) for i in range(6)]
+    result = lr.train(traces)
+    assert result.get("error") == "insufficient class diversity to train"
+    assert result["n_classes"] == 1
+
+def test_train_two_classes_fits_and_reports_cv(tmp_path, monkeypatch):
+    monkeypatch.setattr(lr, "_MODEL_PATH", str(tmp_path / "model.pkl"))
+    traces = ([_trace("python_dev", i) for i in range(4)]
+              + [_trace("ai_ml", 10 + i) for i in range(4)])
+    result = lr.train(traces)
+    assert "error" not in result
+    assert result["n_samples"] == 8
+    assert result["cv_accuracy"] is not None   # ≥2 per class → CV runs
+
+def test_train_rare_class_skips_cv_without_crashing(tmp_path, monkeypatch):
+    monkeypatch.setattr(lr, "_MODEL_PATH", str(tmp_path / "model.pkl"))
+    # 5 python_dev + 1 ai_ml: 2 classes (fits) but rarest class < 2 → CV skipped.
+    traces = ([_trace("python_dev", i) for i in range(5)] + [_trace("ai_ml", 99)])
+    result = lr.train(traces)
+    assert "error" not in result
+    assert result["cv_accuracy"] is None
+
+
 # ── predict (no traces = untrained model) ────────────────────────────────────
 
 def test_predict_returns_result_or_none():
