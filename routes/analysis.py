@@ -321,12 +321,18 @@ def get_learned_router_stats():
     try:
         from orchestration.learned_router import stats
         result = stats()
+        # Model not trainable yet (too few traces / one class) → 503 not-ready,
+        # not a 500 server error.
+        if isinstance(result, dict) and result.get("error"):
+            raise HTTPException(status_code=503, detail=result["error"])
         try:
             from orchestration.auto_retrain import retrain_state
             result["auto_retrain"] = retrain_state()
         except Exception:
             pass
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
