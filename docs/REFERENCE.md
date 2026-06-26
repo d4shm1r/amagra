@@ -94,7 +94,14 @@ c(hits) = 1 − exp(−0.40 × hits)
 4. Learned router override: if `lr_conf > 0.85` and `signal_conf < 0.50`, LR wins
 5. Ambiguous → LLM clarify fallback
 
-**Routing accuracy:**
+**Routing accuracy (internal dev metrics):**
+
+> These figures are measured on self-authored prompts (the prompts and the routing
+> rules share an author), i.e. evaluation-on-development-distribution — not a validated,
+> held-out number. Treat them as internal dev metrics. The honest counterweight is the
+> held-out adversarial set (`evaluation/adversarial_eval.py`, Wilson 95% CI); method,
+> failure modes, and why we don't quote a single headline figure live in
+> [FINDINGS.md](FINDINGS.md).
 
 | Mode | Accuracy |
 |------|----------|
@@ -298,7 +305,7 @@ Current: **h_UCI ≈ 80.8**
 | Metric | Value |
 |--------|-------|
 | Build phases completed | 37 |
-| Routing accuracy | 97% (live) · 99% (ablation) |
+| Routing accuracy | 97% · 99% ablation (internal dev metrics — see [FINDINGS.md](FINDINGS.md)) |
 | Skill graph nodes | 21 |
 | FAISS vectors | 628+ |
 | FAISS search P50 | 0.38ms |
