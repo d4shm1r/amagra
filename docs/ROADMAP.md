@@ -4,6 +4,22 @@
 
 ---
 
+## Near-Term Execution Plan *(as of 2026-06-26)*
+
+The milestone sections below are capability-ordered; this is the **dated** view — what to do next, soonest first. The single highest-ROI item still pending is the public launch (#9).
+
+| When | Focus | Concrete steps | Tracking |
+|------|-------|----------------|----------|
+| **Tomorrow / this weekend** (Jun 27–28) | Land today's follow-ups + launch assets | Wire the coordinator onto `get_router()` (Router seam Phase 2 — the seam shipped today in #62 but nothing calls it yet); delete the stale `scripts/memory_context.py` duplicate; record the 30-second routing GIF + comparison table for the launch post | #64, #65, #19 |
+| **Next week** (Jun 29 – Jul 3) | **Public launch** | Show HN ("self-hosted AI that shows you *why* it answered"), r/LocalLLaMA, Docker Hub image, Homebrew formula; onboarding finish — 5-min clone→first-answer, startup diagnostics, auto thread titles | **#9** |
+| **Following week** (Jul 6–10) | Adoption leverage (v1.5.3) | OpenAI-compatible `/v1` drop-in (`OPENAI_BASE_URL=…/v1`); harden non-English detection against a labeled set; transparency for the opaque components | #18, #47, #48 |
+| **Two weeks out** (Jul 13–17) | Workspace groundwork | Per-workspace memory **namespace seam** (extend the `ContextVar[int]` tenant scope, no migration); decision-replay polish (timeline + permalink); Monaco code pane (last open v1.4 item) | v1.5.3 |
+| **Month+** (late Jul → Aug) | v1.6 Workspaces & RBAC | Workspaces + RBAC + custom agent builder; Deep Pipeline v2 (LLM sub-question split); persist Consensus runs as durable decisions | #16, v1.6 |
+
+> **Rule of thumb:** nothing after the launch row starts until launch ships — distribution is the bottleneck, not features.
+
+---
+
 ## v1.0.0 — First Public Release
 
 The public debut. Everything below shipped in 1.0.0 — the development phases that led here (v0.1 → v0.10 internal builds) are preserved as the in-app build log, but **1.0.0 is the first version released to the public.**
@@ -162,7 +178,7 @@ The dashboard's top-level surfaces consolidated into 6 coherent views with obser
 
 ---
 
-### v1.5 — Hybrid Inference *(◑ next)*
+### v1.5 — Hybrid Inference *(✅ shipped v1.5.0, 2026-06-23)*
 
 Provider/model switching already shipped (v1.2.0 Model Choice) and cross-model comparison landed in v1.3.0 (Debugger). What remains is the **automatic policy**: keep local as the default, but escalate compound or low-confidence queries to a cloud model (Claude/GPT-4o) *without the user choosing* — and account for the cost so escalation stays budgeted and visible.
 
@@ -180,17 +196,17 @@ Provider/model switching already shipped (v1.2.0 Model Choice) and cross-model c
 
 ---
 
-### v1.5.2 — Release Hygiene & Adoption Floor *(proposed)*
+### v1.5.2 — Release Hygiene & Adoption Floor *(◑ shipped v1.5.2, 2026-06-24 — launch + onboarding still open)*
 
 The "make it adoptable" floor (revenueGPT Phase A) plus release mechanics. All non-breaking — clears the runway before the v1.6 workspace schema change.
 
 | Item | Impact | Difficulty | ROI | Status |
 |------|--------|-----------|-----|--------|
-| Version bump 1.5.1 → 1.5.2 (`api.py`, `ui/package.json`, `ui/src/constants.js`) | — | 1 | — | ⬜ |
-| Land Platform Entity Model RFC (`docs/PLATFORM_ENTITY_MODEL.md`, PR #54) — the v1.6 architecture | 7 | 1 | ★★★★ | ◑ in review |
-| Land `feat/payments-launch-readiness` — Stripe checkout + launch endpoints (already built) | 8 | 3 | ★★★★ | ⬜ |
-| Onboarding finish — 5-min clone→first-answer, startup diagnostics, auto thread titles | 8 | 4 | ★★★★★ | ⬜ |
-| **Public launch** — Show HN / r/LocalLLaMA / Docker Hub / Homebrew (the one ★★★★★ still pending) | 9 | 3 | ★★★★★ | ⏳ |
+| Version bump 1.5.1 → 1.5.2 (`api.py`, `ui/package.json`, `ui/src/constants.js`) | — | 1 | — | ✅ shipped (tag v1.5.2) |
+| Land Platform Entity Model RFC (`docs/PLATFORM_ENTITY_MODEL.md`, PR #54) — the v1.6 architecture | 7 | 1 | ★★★★ | ✅ shipped (PR #54) |
+| Land `feat/payments-launch-readiness` — Stripe checkout + launch endpoints (already built) | 8 | 3 | ★★★★ | ✅ shipped (PR #33) |
+| Onboarding finish — 5-min clone→first-answer, startup diagnostics, auto thread titles | 8 | 4 | ★★★★★ | ⬜ next-week target |
+| **Public launch** — Show HN / r/LocalLLaMA / Docker Hub / Homebrew (the one ★★★★★ still pending) | 9 | 3 | ★★★★★ | ⏳ next-week target (#9) |
 
 ---
 
@@ -204,6 +220,22 @@ Additive features that compound adoption and lay seams for v1.6 **without** the 
 | Decision-replay polish — visual timeline, memory-influence view, exportable + permalink (revenueGPT #3) | 8 | 4 | ★★★★★ | ⬜ |
 | Per-workspace memory **namespace seam** — extend the existing `ContextVar[int]` tenant scope as a latent namespace so v1.6 adds UI/RBAC, not a migration | 7 | 4 | ★★★★ | ⬜ |
 | Monaco code pane — read + DiffEditor + Apply via `POST /workspace/apply` (last open v1.4 item) | 6 | 4 | ★★★★ | ⬜ |
+
+---
+
+### v1.5.4 — Routing Seam & Recall Robustness *(✅ shipped 2026-06-26)*
+
+A small correctness + extensibility release surfaced while hardening the runtime. No new user-facing capability; the routing layer gains its extension seam and two latent bugs are closed.
+
+| Item | Status |
+|------|--------|
+| Swappable `Router` seam over `core_brain` — `orchestration/router_interface.py` (`Router` Protocol, `BrainRouter` adapter, `get_router`/`set_router`), additive, off the hot path (PR #62) | ✅ shipped |
+| Context-bleed recall guard — `get_memory_context` no longer injects a different quantitative *instance* of the same template (the cow/sheep eval anchored answers on stale numbers at ~0.77 cosine) (PR #63) | ✅ shipped |
+| Learned-router graceful degradation — `train()` returns a 503-mapped error on an undertrainable corpus instead of a 500; adaptive CV folds; no caching of failed trains (PR #63) | ✅ shipped |
+| Eval-rigor doc framing — REFERENCE.md accuracy numbers reframed as internal dev metrics, closing #20 (PR #61) | ✅ shipped |
+| Test suite → 914 passing (+ regression tests for both bugs) | ✅ shipped |
+
+**Open follow-up:** wire the coordinator's hot path onto `get_router()` (the seam exists but nothing imports it — Router Phase 2, #64, relates to #19); remove the stale unimported `scripts/memory_context.py` duplicate (#65).
 
 ---
 
