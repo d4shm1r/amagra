@@ -152,6 +152,53 @@ def quality_update(q: float, delta_f: float, gamma: float = 4.0) -> float:
     return 1.0 / (1.0 + math.exp(-l_new))
 
 
+def quality_update_basin(q: float, gamma: float = 4.0, delta_f: float = 0.0,
+                         *, saturation: float = 0.9) -> dict:
+    """Is q in the contracting region of the *nonlinear* quality update?
+
+    ``quality_update`` is the logistic log-odds map ``q ← σ(σ⁻¹(q) + γδ)``. The
+    affine weight theory (global basin) does **not** cover it; the *cubic* theory
+    does. The sigmoid's responsiveness ``σ'(q) = q(1−q)`` collapses toward the
+    saturated ends, and its second derivative ``σ''(q) = q(1−q)(1−2q)`` flips sign
+    at ``q = 0.5`` (convex below, concave above). So a fixed point near a corner
+    (``q→0`` or ``q→1``) sits in a **bounded** basin, not a global one: the same
+    ``q(1−q)`` factor that resists noise also resists *recovery* once a memory is
+    pushed into the corner — corrective feedback can't pull it back out.
+
+    Reports:
+      ``responsiveness``  σ'(q) = q(1−q) — local sensitivity to a log-odds shift
+      ``corner_distance`` min(q, 1−q) — monotonic distance to the nearest corner
+      ``regime``          convex / concave / inflection (sign of σ'')
+      ``in_basin``        True while q stays inside the interior contracting band
+                          [1−saturation, saturation]
+      ``corrective_feedback`` True when δ points back toward 0.5 (trying to recover)
+      ``projected_step``  q_next − q under one update with ``delta_f``
+      ``warn``            not in_basin — quality has entered the bounded corner
+
+    Traces to: ``lyap_strictDecrease_radius`` (bounded basin) + ``cubicCoeff_neg_iff``
+    (sign-dependent stability).
+    """
+    q = max(1e-9, min(1.0 - 1e-9, q))
+    responsiveness  = q * (1.0 - q)
+    corner_distance = min(q, 1.0 - q)
+    sigma2 = responsiveness * (1.0 - 2.0 * q)
+    regime = ("convex" if sigma2 > 0
+              else "concave" if sigma2 < 0
+              else "inflection")
+    in_basin   = corner_distance >= (1.0 - saturation)
+    q_next     = quality_update(q, delta_f, gamma)
+    corrective = (q > 0.5 and delta_f < 0) or (q < 0.5 and delta_f > 0)
+    return {
+        "responsiveness":      round(responsiveness, 6),
+        "corner_distance":     round(corner_distance, 6),
+        "regime":              regime,
+        "in_basin":            in_basin,
+        "corrective_feedback": corrective,
+        "projected_step":      round(q_next - q, 6),
+        "warn":                not in_basin,
+    }
+
+
 # ────────────────────────────────────────────────────────────────
 # § Coherence C(t)  (Paper Eq. 11–14)
 # ────────────────────────────────────────────────────────────────
@@ -796,6 +843,28 @@ def _run_tests():
         "sharp": [1.0, 1.02, 1.08, 1.20],   # larger away-accel
     })
     assert worst["status"] == "runaway" and worst["agent"] == "sharp"
+
+    # cubic basin: the nonlinear quality update has a bounded (not global) basin
+    mid = quality_update_basin(0.5)
+    assert mid["in_basin"] and not mid["warn"] and mid["regime"] == "inflection"
+    assert abs(mid["responsiveness"] - 0.25) < 1e-9   # σ' peaks at q=0.5
+    # near the upper corner, corrective (negative) feedback is suppressed → warn
+    corner = quality_update_basin(0.98, delta_f=-0.05)
+    assert corner["warn"] and not corner["in_basin"]
+    assert corner["corrective_feedback"] is True       # δ<0 tries to pull q down
+    # lower corner is symmetric
+    low = quality_update_basin(0.02, delta_f=0.03)
+    assert low["warn"] and low["corrective_feedback"] is True
+    # corner_distance is monotonic toward the saturated ends
+    assert (quality_update_basin(0.5)["corner_distance"]
+            > quality_update_basin(0.8)["corner_distance"]
+            > quality_update_basin(0.95)["corner_distance"])
+    # σ'' sign flip across the inflection
+    assert quality_update_basin(0.3)["regime"] == "convex"
+    assert quality_update_basin(0.7)["regime"] == "concave"
+    # basin boundary is inclusive at the saturation threshold
+    assert quality_update_basin(0.9)["in_basin"] is True       # corner_dist 0.1 ≥ 0.1
+    assert quality_update_basin(0.91)["in_basin"] is False
 
     # Invariant health — balance is scale-invariant
     perfect = invariant_health({"a": 0.8, "b": 0.8, "c": 0.8})
