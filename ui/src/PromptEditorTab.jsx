@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Editor from "@monaco-editor/react";
 import { MONACO_THEME } from "./monacoSetup";
+import { computeDiagnostics } from "./promptDiagnostics";
+
+const MARKER_OWNER = "amagra";
+let _codeActionsRegistered = false;   // module-level: register the quick-fix provider once
 
 const FONT    = "'Consolas', 'Cascadia Code', 'Droid Sans Mono', monospace";
 const LINE_H  = 20;
@@ -1389,8 +1393,10 @@ export default function PromptEditorTab() {
   const [editingId,   setEditingId]   = useState(null);
   const [editingTitle,setEditingTitle]= useState("");
   const [cursor,      setCursor]      = useState({ line: 1, col: 1 });
+  const [editorReady, setEditorReady] = useState(false);
 
   const editorRef      = useRef(null);
+  const monacoRef      = useRef(null);
   const copyTimerRef   = useRef(null);
   const [copied, setCopied] = useState(false);
 
@@ -1398,6 +1404,7 @@ export default function PromptEditorTab() {
   const content   = activeTab?.content ?? "";
   const lines     = content.split("\n");
   const metrics   = useMemo(() => computeMetrics(content), [content]);
+  const diagnostics = useMemo(() => computeDiagnostics(content), [content]);
 
   useEffect(() => { persist(tabs, activeId, showMetrics); }, [tabs, activeId, showMetrics]);
   useEffect(() => { editorRef.current?.focus(); }, [activeId]);
@@ -1422,14 +1429,65 @@ export default function PromptEditorTab() {
 
   const handleEditorMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
+    monacoRef.current = monaco;
     editor.onDidChangeCursorPosition(e =>
       setCursor({ line: e.position.lineNumber, col: e.position.column }));
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
       () => handleCopyRef.current());
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyK,
       () => updateContentRef.current(""));
+
+    // Click-to-fix: markers tagged `amagra.remove` (filler) get a quick-fix that
+    // deletes just that span — "applies the fix to one node" (#71).
+    if (!_codeActionsRegistered) {
+      _codeActionsRegistered = true;
+      monaco.languages.registerCodeActionProvider("markdown", {
+        provideCodeActions(model, _range, context) {
+          const actions = [];
+          for (const m of context.markers) {
+            if (m.code !== "amagra.remove") continue;
+            actions.push({
+              title: "Remove — filler, safe to cut",
+              kind: "quickfix",
+              diagnostics: [m],
+              isPreferred: true,
+              edit: { edits: [{
+                resource: model.uri,
+                versionId: model.getVersionId(),
+                textEdit: { range: m, text: "" },
+              }] },
+            });
+          }
+          return { actions, dispose() {} };
+        },
+      });
+    }
+
     editor.focus();
+    setEditorReady(true);
   }, []);
+
+  // Project diagnostics onto Monaco markers (squiggle + hover) whenever the
+  // prompt changes. The whole-prompt scores still live in computeMetrics().
+  useEffect(() => {
+    const monaco = monacoRef.current, editor = editorRef.current;
+    if (!monaco || !editor) return;
+    const model = editor.getModel();
+    if (!model) return;
+    const sev = {
+      warning: monaco.MarkerSeverity.Warning,
+      info:    monaco.MarkerSeverity.Info,
+      hint:    monaco.MarkerSeverity.Hint,
+    };
+    monaco.editor.setModelMarkers(model, MARKER_OWNER, diagnostics.map(d => ({
+      startLineNumber: d.startLine, startColumn: d.startCol,
+      endLineNumber:   d.endLine,   endColumn:   d.endCol,
+      message: d.message,
+      severity: sev[d.severity] ?? monaco.MarkerSeverity.Info,
+      source: "Amagra",
+      code: d.fix === "remove" ? "amagra.remove" : undefined,
+    })));
+  }, [diagnostics, editorReady]);
 
   function addTab() {
     const id = nextRef.current++;
@@ -1571,6 +1629,27 @@ export default function PromptEditorTab() {
           <>
             <span style={{ color: T.border, margin: "0 10px" }}>│</span>
             <span style={{ fontSize: 10, fontWeight: 700, color: overallColor, fontFamily: FONT }}>{overallScore} overall</span>
+          </>
+        )}
+        {diagnostics.length > 0 && (
+          <>
+            <span style={{ color: T.border, margin: "0 10px" }}>│</span>
+            <span
+              onClick={() => {
+                const d = diagnostics[0], ed = editorRef.current;
+                if (!ed) return;
+                ed.revealLineInCenter(d.startLine);
+                ed.setPosition({ lineNumber: d.startLine, column: d.startCol });
+                ed.focus();
+              }}
+              title="Inline suggestions — hover a squiggle in the editor to read each one"
+              style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", color: T.warn, fontFamily: FONT }}
+            >
+              <span style={{ fontSize: 11 }}>⚑</span>
+              <span style={{ fontSize: 10, fontWeight: 700 }}>
+                {diagnostics.length} suggestion{diagnostics.length > 1 ? "s" : ""}
+              </span>
+            </span>
           </>
         )}
         <div style={{ flex: 1 }} />
