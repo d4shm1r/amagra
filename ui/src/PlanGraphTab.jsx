@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { API } from "./api";
 import { T, FONT_MONO } from "./theme";
 import { RefreshBtn, PageHeader } from "./ObsShared";
 
@@ -280,7 +281,7 @@ export default function PlanGraphTab({ embedded = false } = {}) {
   const fetch_ = useCallback(async () => {
     try {
       setLoading(true);
-      const r = await fetch("http://localhost:8000/plan/graph");
+      const r = await fetch(`${API}/plan/graph`);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const d = await r.json();
       setData(d);

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { T, LUX, FONT_DISPLAY } from "./theme";
 import { PageHeader } from "./ObsShared";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 // Library — the persistent knowledge layer. Documents are presented as
 // objects in a collection, never as chunks or embeddings. Status language

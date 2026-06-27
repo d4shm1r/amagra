@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { T } from "./theme";
 import { PageHeader } from "./ObsShared";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 // Level-1 Inspect: the calm summary. Key numbers, recent decisions,
 // recent work — everything else lives one level deeper (Advanced /

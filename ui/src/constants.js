@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.5.4";
+export const VERSION = "1.5.5";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -701,6 +701,30 @@ export const BUILD_PHASES = [
       "Version markers reconciled to v1.5.2 across api.py, package.json, constants.js",
     ],
   },
+  {
+    id: 91, version: "v1.5.4", date: "Jun 26, 2026",
+    label: "Routing Seam & Recall Robustness", title: "Extensible routing + two recall bugs closed", color: "#1E5A8A", status: "done",
+    summary: "A correctness + extensibility release. The routing layer gains its extension seam, two latent recall bugs are closed, and the v1.6 foundation lands in docs.",
+    steps: [
+      "Swappable Router seam over core_brain — orchestration/router_interface.py (Router Protocol, BrainRouter, get_router/set_router), additive (#62)",
+      "Context-bleed recall guard — get_memory_context no longer injects a stale quantitative instance of the same template (#63)",
+      "Learned-router graceful degradation — 503 on undertrainable corpus, adaptive CV folds, no caching of failed trains (#63)",
+      "Signed-stability metrics (curvature alarm, drift lens), eval-rigor doc framing (#20/#61), Prompt-as-Artifact contract (#73), plugin-architecture docs (#60)",
+      "Test suite → 914 passing",
+    ],
+  },
+  {
+    id: 92, version: "v1.5.5", date: "Jun 28, 2026",
+    label: "UI Consolidation & Prompt IDE", title: "Leaner nav, one API seam, a real editor", color: "#7E3F8F", status: "done",
+    summary: "A premium UI hardening pass ahead of v1.6: the Runs surface collapses 7 tabs to 4, the backend URL is centralized into one seam, the Prompt IDE moves to Monaco, and the dashboard signals an offline engine instead of failing silently.",
+    steps: [
+      "Runs surface 7→4 — Trace folded into Decisions (History|Live), Policy moved to Cognition, Replay demoted to a per-decision action",
+      "Centralized API base (ui/src/api.js, VITE_API_BASE) — 62 hardcoded localhost sites repointed; the seam v1.6 #69 needs",
+      "Premium API-offline banner with start command + working Retry",
+      "App.jsx de-monolithed 1,395→1,037 — extracted navConfig.js + Modals.jsx",
+      "Monaco-powered Prompt IDE (v1.6 #71 foundation) — bundled locally (no CDN), slim core, lazy-loaded; initial bundle stays ~1.24MB gzip 358KB",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -861,6 +885,8 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.5.5", label: "UI Consolidation & Prompt IDE", color: "#7E3F8F", phases: [92] },
+  { version: "v1.5.4", label: "Routing Seam & Recall Robustness", color: "#1E5A8A", phases: [91] },
   { version: "v1.5.2", label: "Release Hygiene & Runway", color: "#1E5A8A", phases: [90] },
   { version: "v1.5.1", label: "Brand & Social Polish",    color: "#1E5A8A", phases: [89] },
   { version: "v1.5.0", label: "Hybrid Inference",        color: "#1E5A8A", phases: [88] },

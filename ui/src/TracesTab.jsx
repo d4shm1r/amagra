@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { API } from "./api";
 import { AGENTS } from "./constants";
 import { T } from "./theme";
 import { PageHeader } from "./ObsShared";
@@ -150,7 +151,7 @@ function TraceCard({ t, idx }) {
   );
 }
 
-export default function TracesTab() {
+export default function TracesTab({ embedded = false }) {
   const [traces,      setTraces]      = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [agentFilter, setAgentFilter] = useState("all");
@@ -158,7 +159,7 @@ export default function TracesTab() {
 
   const load = useCallback(() => {
     setLoading(true);
-    fetch("http://localhost:8000/traces")
+    fetch(`${API}/traces`)
       .then(r => r.ok ? r.json() : { traces: [] })
       .then(d => { setTraces(d.traces || []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -182,23 +183,36 @@ export default function TracesTab() {
   return (
     <div style={{ animation: "fadeIn .2s" }}>
 
-      <PageHeader
-        title="Routing Signal Log"
-        subtitle="Live routing decisions — agent selected, signal domain, confidence, and routing reason."
-      >
-        <button
-          onClick={load}
-          className="nav-btn"
-          style={{
-            background: "transparent", border: `1px solid ${T.border}`,
-            color: T.mutedLt, padding: "6px 16px", borderRadius: 16,
-            fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-          }}
-        >↻ Refresh</button>
-      </PageHeader>
+      {!embedded && (
+        <PageHeader
+          title="Routing Signal Log"
+          subtitle="Live routing decisions — agent selected, signal domain, confidence, and routing reason."
+        >
+          <button
+            onClick={load}
+            className="nav-btn"
+            style={{
+              background: "transparent", border: `1px solid ${T.border}`,
+              color: T.mutedLt, padding: "6px 16px", borderRadius: 16,
+              fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+            }}
+          >↻ Refresh</button>
+        </PageHeader>
+      )}
 
       {/* Filter row */}
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 14 }}>
+          {embedded && (
+            <button
+              onClick={load}
+              className="nav-btn"
+              style={{
+                background: "transparent", border: `1px solid ${T.border}`,
+                color: T.mutedLt, padding: "5px 14px", borderRadius: 16,
+                fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+              }}
+            >↻ Refresh</button>
+          )}
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "./ObsShared";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 const T = {
   bg:      "#F4F0E8",
@@ -152,7 +152,7 @@ export default function ProviderSettingsTab() {
   };
 
   return (
-    <div style={{ maxWidth: 680, color: T.text }}>
+    <div style={{ color: T.text }}>
       <PageHeader
         title="Model & Provider"
         subtitle="Choose which model answers — a local model to stay private and offline, or a hosted API. Changes apply immediately and survive a restart."

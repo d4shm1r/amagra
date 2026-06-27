@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { AGENTS as AGENTS_LIST } from "./constants";
 import { PageHeader } from "./ObsShared";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 // Keyed by id for O(1) lookup; label shortened for chip display
 const AGENTS = Object.fromEntries(

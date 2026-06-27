@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { T, FONT_MONO } from "./theme";
 import { ObsPanel, EventRow, RefreshBtn, EmptyState, hScore, PageHeader } from "./ObsShared";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 const BASELINE_HUCI = 75.1;   // h_UCI before Phase 37 fixes
 
 // ── System health strip ────────────────────────────────────────

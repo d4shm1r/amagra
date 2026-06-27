@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { T, FONT_MONO } from "./theme";
 import { ObsPanel, EventRow, RefreshBtn, EmptyState, eventMeta, PageHeader } from "./ObsShared";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 const EVENT_CATEGORIES = [
   { id: "all",     label: "All" },

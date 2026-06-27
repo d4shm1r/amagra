@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { API } from "./api";
 
 const T = {
   bg:      "#F4F0E8",
@@ -321,7 +322,7 @@ function SuggestionsSection({ suggestions, onApply }) {
 }
 
 // ── Root component ─────────────────────────────────────────────
-export default function AgentContextPanel({ lastMeta, onApply, apiBase = "http://localhost:8000" }) {
+export default function AgentContextPanel({ lastMeta, onApply, apiBase = API }) {
   const [world,       setWorld]       = useState(null);
   const [events,      setEvents]      = useState([]);
   const [suggestions, setSuggestions] = useState(null);

@@ -1,10 +1,12 @@
 {
   "name": "mission-control",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "private": true,
   "type": "module",
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "katex": "^0.17.0",
+    "monaco-editor": "^0.55.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-markdown": "^10.1.0",

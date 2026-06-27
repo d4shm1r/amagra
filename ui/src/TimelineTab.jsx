@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { T as C } from "./theme";
 import { PageHeader } from "./ObsShared";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 const AGENT_META = {
   coordinator:        { label: "Coordinator",  icon: "👑", color: "#9A6C00" },

@@ -222,3 +222,56 @@ export function EmptyState({ msg = "No data yet — run a query to populate this
     </div>
   );
 }
+
+// ── API-offline banner ────────────────────────────────────────
+// Calm, premium signal shown when the local backend is unreachable. Every data
+// tab fetches the API; without this they fail silently and the dashboard reads
+// as broken. Non-blocking (static tabs still render), with the exact fix.
+export function ApiOfflineBanner({ onRetry, checking = false }) {
+  return (
+    <div style={{
+      margin: "0 0 18px",
+      display: "flex", alignItems: "center", gap: 16,
+      padding: "15px 20px", borderRadius: 14,
+      background: "linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 46%), #FBF7F1",
+      border: `1px solid ${T.accent}33`,
+      boxShadow: LUX.cardShadow,
+    }}>
+      <span style={{
+        width: 9, height: 9, borderRadius: "50%", flexShrink: 0,
+        background: checking ? T.warn : T.error,
+        boxShadow: `0 0 8px ${(checking ? T.warn : T.error)}66`,
+        animation: "dotPulse 1.6s ease-in-out infinite",
+      }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 18,
+          color: T.text, lineHeight: 1.2,
+        }}>
+          {checking ? "Connecting to the engine…" : "The engine is offline"}
+        </div>
+        <div style={{ fontSize: 12, color: T.muted, marginTop: 4, lineHeight: 1.5 }}>
+          Amagra runs entirely on your hardware. Start the local engine to bring the workspace online —{" "}
+          <code style={{
+            fontFamily: "monospace", fontSize: 11.5, color: T.accent2,
+            background: T.surface2, border: `1px solid ${T.border}`,
+            borderRadius: 5, padding: "1px 7px",
+          }}>./start-agents.sh</code>
+        </div>
+      </div>
+      <button
+        onClick={onRetry}
+        disabled={checking}
+        className="nav-btn"
+        style={{
+          flexShrink: 0, padding: "7px 18px", borderRadius: 20,
+          background: "transparent", border: `1px solid ${T.border}`,
+          color: T.mutedLt, fontSize: 12, fontWeight: 600,
+          fontFamily: "inherit", cursor: checking ? "default" : "pointer",
+        }}
+      >
+        {checking ? "Checking…" : "Retry"}
+      </button>
+    </div>
+  );
+}

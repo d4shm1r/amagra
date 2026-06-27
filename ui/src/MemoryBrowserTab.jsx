@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { API } from "./api";
 import { T, LUX, GOLD, FONT_MONO } from "./theme";
 import { RefreshBtn, EmptyState, PageHeader, MetricCard } from "./ObsShared";
 
@@ -162,8 +163,8 @@ export default function MemoryBrowserTab() {
     setLoading(true);
     try {
       const [rRes, sRes] = await Promise.all([
-        fetch("http://localhost:8000/memory/records?limit=500"),
-        fetch("http://localhost:8000/memory/stats"),
+        fetch(`${API}/memory/records?limit=500`),
+        fetch(`${API}/memory/stats`),
       ]);
       if (rRes.ok) {
         const d = await rRes.json();

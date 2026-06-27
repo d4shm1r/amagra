@@ -239,6 +239,22 @@ A small correctness + extensibility release surfaced while hardening the runtime
 
 ---
 
+### v1.5.5 — UI Consolidation & Prompt IDE *(✅ shipped 2026-06-28)*
+
+A premium UI hardening pass ahead of v1.6 — leaner navigation, one API seam, a real editor, and a dashboard that signals an offline engine instead of failing silently. No backend changes.
+
+| Item | Status |
+|------|--------|
+| **Runs surface 7 → 4** — Trace folded into Decisions as a `History\|Live` toggle, Policy moved to Cognition/Health, Replay demoted to a per-decision action (it already lived in the Brain Inspector); old deep-links aliased | ✅ shipped |
+| **Centralized API base** — `ui/src/api.js` (`VITE_API_BASE` override); 62 hardcoded `localhost:8000` sites repointed. The seam **v1.6 #69** threads the per-workspace `/workspace/*` namespace through | ✅ shipped |
+| **Premium API-offline banner** — start command + working Retry; no more silent fetch failures | ✅ shipped |
+| **App.jsx de-monolithed** 1,395 → 1,037 lines — extracted `navConfig.js` + `Modals.jsx` | ✅ shipped |
+| **Monaco-powered Prompt IDE** (**v1.6 #71** foundation) — bundled locally (no CDN, honors privacy), slim core, lazy-loaded; initial bundle stays ~1.24 MB (358 KB gzip) | ✅ shipped |
+
+**Open follow-up:** project `computeMetrics`/`structChecks` onto Monaco markers for true inline diagnostics (completes #71).
+
+---
+
 ### v1.6 — Workspaces & RBAC
 
 Multiple isolated projects per user, role-based access, and a custom agent builder. (Deferred past the launch-wedge pivot — the original v1.2/v1.3 slots shipped as Model Choice and the Cross-Model Debugger instead.)

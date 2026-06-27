@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { AGENTS } from "./constants";
 import { PageHeader } from "./ObsShared";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 const STATUS_COLOR = {
   pending: "#9A7A60",

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { API } from "./api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AGENTS, PROGRESS_STEPS, AGENT_ID_REVERSE } from "./constants";
@@ -175,7 +176,7 @@ export default function ChatTab({
 
   const fetchCoherence = useCallback(() => {
     if (!online) return;
-    fetch("http://localhost:8000/coherence")
+    fetch(`${API}/coherence`)
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) { setCoherence(d); onCoherenceUpdate?.(d); } })
       .catch(() => {});
@@ -185,7 +186,7 @@ export default function ChatTab({
 
   const fetchThreads = useCallback(() => {
     if (!online) return;
-    fetch("http://localhost:8000/threads?limit=20")
+    fetch(`${API}/threads?limit=20`)
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.threads) setThreads(d.threads); })
       .catch(() => {});
@@ -200,7 +201,7 @@ export default function ChatTab({
   // Live events for context tab
   useEffect(() => {
     const fn = () => {
-      fetch("http://localhost:8000/cos/events?n=5")
+      fetch(`${API}/cos/events?n=5`)
         .then(r => r.ok ? r.json() : null)
         .then(d => { if (d?.events) setLiveEvents(d.events.slice(0, 4)); })
         .catch(() => {});
@@ -272,7 +273,7 @@ export default function ChatTab({
       try {
         const fd = new FormData();
         fd.append("file", file);
-        const r = await fetch("http://localhost:8000/documents/upload", { method: "POST", body: fd });
+        const r = await fetch(`${API}/documents/upload`, { method: "POST", body: fd });
         if (r.ok) {
           const res = await r.json();
           setAttachedFiles(prev => prev.map(f => f.name === name ? { ...f, status: "ready", chunks: res.chunks_stored } : f));
@@ -309,7 +310,7 @@ export default function ChatTab({
 
     const t0 = Date.now();
     try {
-      const r = await fetch("http://localhost:8000/ask/stream", {
+      const r = await fetch(`${API}/ask/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -459,9 +460,9 @@ export default function ChatTab({
     setMessages(prev => prev.slice(0, lastUserIdx + 1));  // drop the old reply
     if (currentThreadId) {
       try {
-        const tc = await fetch(`http://localhost:8000/threads/${currentThreadId}/turns`).then(r => r.json());
+        const tc = await fetch(`${API}/threads/${currentThreadId}/turns`).then(r => r.json());
         const keep = Math.max(0, (tc.turns?.length || 0) - 1);
-        await fetch(`http://localhost:8000/threads/${currentThreadId}/truncate?keep=${keep}`, { method: "POST" });
+        await fetch(`${API}/threads/${currentThreadId}/truncate?keep=${keep}`, { method: "POST" });
       } catch { /* best effort */ }
     }
     sendMessage(lastUserText, { appendUser: false });
@@ -475,7 +476,7 @@ export default function ChatTab({
     for (let i = 0; i < uiIndex; i++) if (messages[i]?.role === "user") keep++;
     setMessages(prev => prev.slice(0, uiIndex));
     if (currentThreadId) {
-      try { await fetch(`http://localhost:8000/threads/${currentThreadId}/truncate?keep=${keep}`, { method: "POST" }); }
+      try { await fetch(`${API}/threads/${currentThreadId}/truncate?keep=${keep}`, { method: "POST" }); }
       catch { /* best effort */ }
     }
     sendMessage(t, { appendUser: true });
@@ -525,7 +526,7 @@ export default function ChatTab({
     setFeedbackAck(prev => ({ ...prev, [msgIdx]: rating > 0 ? "positive" : "negative" }));
     setTimeout(() => setFeedbackAck(prev => ({ ...prev, [msgIdx]: null })), 3500);
     try {
-      await fetch("http://localhost:8000/feedback", {
+      await fetch(`${API}/feedback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query, response: msg.text, agent: msg.agent || "unknown", rating }),
@@ -1095,7 +1096,6 @@ export default function ChatTab({
               <AgentContextPanel
                 lastMeta={lastMeta}
                 onApply={handleApplySuggestion}
-                apiBase="http://localhost:8000"
               />
             </div>
           </div>
