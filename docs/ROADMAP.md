@@ -13,8 +13,8 @@ The milestone sections below are capability-ordered; this is the **dated** view 
 | **Tomorrow / this weekend** (Jun 27–28) | Land today's follow-ups + launch assets | Wire the coordinator onto `get_router()` (Router seam Phase 2 — the seam shipped today in #62 but nothing calls it yet); delete the stale `scripts/memory_context.py` duplicate; record the 30-second routing GIF + comparison table for the launch post | #64, #65, #19 |
 | **Next week** (Jun 29 – Jul 3) | **Public launch** | Show HN ("self-hosted AI that shows you *why* it answered"), r/LocalLLaMA, Docker Hub image, Homebrew formula; onboarding finish — 5-min clone→first-answer, startup diagnostics, auto thread titles | **#9** |
 | **Following week** (Jul 6–10) | Adoption leverage (v1.5.3) | OpenAI-compatible `/v1` drop-in (`OPENAI_BASE_URL=…/v1`); harden non-English detection against a labeled set; transparency for the opaque components | #18, #47, #48 |
-| **Two weeks out** (Jul 13–17) | Workspace groundwork | Per-workspace memory **namespace seam** (extend the `ContextVar[int]` tenant scope, no migration); decision-replay polish (timeline + permalink); Monaco code pane (last open v1.4 item) | v1.5.3 |
-| **Month+** (late Jul → Aug) | v1.6 Workspaces & RBAC | Workspaces + RBAC + custom agent builder; Deep Pipeline v2 (LLM sub-question split); persist Consensus runs as durable decisions | #16, v1.6 |
+| **Two weeks out** (Jul 13–17) | Workspace groundwork | Per-workspace memory **namespace seam** (extend the `ContextVar[int]` tenant scope, no migration); decision-replay polish (timeline + permalink); Monaco code pane (last open v1.4 item — now part of the Prompt-as-Artifact foundation) | v1.5.3 |
+| **Month+** (late Jul → Aug) | v1.6 Workspaces & RBAC | Workspaces + RBAC + custom agent builder; **Prompt-as-Artifact foundation** ([`PROMPT_ARTIFACT_CONTRACT.md`](docs/PROMPT_ARTIFACT_CONTRACT.md) — Track D); Deep Pipeline v2 (LLM sub-question split); persist Consensus runs as durable decisions | #16, v1.6 |
 
 > **Rule of thumb:** nothing after the launch row starts until launch ships — distribution is the bottleneck, not features.
 
@@ -219,7 +219,7 @@ Additive features that compound adoption and lay seams for v1.6 **without** the 
 | OpenAI-compatible `/v1` API — `OPENAI_BASE_URL=localhost:8000/v1` drop-in (revenueGPT #2, pulled earlier) | 9 | 5 | ★★★★★ | ⬜ |
 | Decision-replay polish — visual timeline, memory-influence view, exportable + permalink (revenueGPT #3) | 8 | 4 | ★★★★★ | ⬜ |
 | Per-workspace memory **namespace seam** — extend the existing `ContextVar[int]` tenant scope as a latent namespace so v1.6 adds UI/RBAC, not a migration | 7 | 4 | ★★★★ | ⬜ |
-| Monaco code pane — read + DiffEditor + Apply via `POST /workspace/apply` (last open v1.4 item) | 6 | 4 | ★★★★ | ⬜ |
+| Monaco code pane — read + DiffEditor + Apply via `POST /workspace/apply` (last open v1.4 item) — **now folded into the v1.6 Prompt-as-Artifact foundation; see [`PROMPT_ARTIFACT_CONTRACT.md`](PROMPT_ARTIFACT_CONTRACT.md)** | 6 | 4 | ★★★★ | ⬜ |
 
 ---
 
@@ -252,6 +252,25 @@ Multiple isolated projects per user, role-based access, and a custom agent build
 | Custom agent builder — name, system prompt, keyword triggers via admin UI | 8 | 4 | ★★★★ |
 | Workspace switcher in nav — active-workspace `ContextVar` through routing + memory | 6 | 4 | ★★★★ |
 | Per-workspace settings — default provider, enabled agents, routing preferences | 6 | 4 | ★★★★ |
+
+#### v1.6 foundation — Prompt-as-Artifact (Track D)
+
+The keystone of the "Prompt-IDE" pivot, and the spine several v1.6 items were independently groping toward. Spec: [`PROMPT_ARTIFACT_CONTRACT.md`](PROMPT_ARTIFACT_CONTRACT.md) (proposed **v4 amendment** to [`PLATFORM_ENTITY_MODEL.md`](PLATFORM_ENTITY_MODEL.md)).
+
+**The finding:** the entity model makes the *response* first-class (`Artifact`, §5 — versioned, durable) and the *prompt* nothing at all (browser `localStorage` + a raw-string field in `model_choices`). → execution memory but no source memory. Fixing this asymmetry is what every downstream IDE feature (Explorer, inline diagnostics, AI Actions, extensions, marketplace) hangs off.
+
+**The amendment:** add `Prompt` + `PromptVersion` as a design-plane resource and a `Run.prompt_version_id` link, making P and R symmetric. Inherits versioning, reference-not-own, templates/marketplace for free.
+
+Tracked under epic **#67**.
+
+| Item (dependency order) | Impact | Difficulty | ROI | Issue |
+|------|--------|-----------|-----|-------|
+| FS jail: add write ops (write/mkdir/move/delete) behind owner-action gate — the one foundation task | 8 | 3 | ★★★★★ | #68 |
+| Repoint Prompt editor off `localStorage` → `/workspace/*` (prompts become files) | 7 | 3 | ★★★★ | #69 |
+| Persist responses as artifacts with `prompt_version_id`; decisions key on it (**absorbs** "persist Consensus runs as durable decisions") | 8 | 4 | ★★★★ | #70 |
+| Monaco + AST projection over existing analysis → inline diagnostics (**replaces** the loose "Monaco code pane" line above) | 6 | 4 | ★★★★ | #71 |
+
+**Decisions locked:** substrate = real files on disk (git-diff for free), not localStorage/DB; chat is **demoted to an input shim, not deleted** (retire only after `R*.response` reaches parity — it's the current activation path); AST = index layer over existing `computeMetrics`/`structChecks`, not a rewrite. **Gated behind launch (#9).**
 
 ---
 

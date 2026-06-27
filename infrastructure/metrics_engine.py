@@ -348,6 +348,24 @@ def _productivity_metrics() -> Dict[str, float]:
     }
 
 
+# Provenance vocabulary — mirrors OCAC's PROVED / PROOF-GAP / DEFINITION-GAP
+# honesty tagging. Every numeric pillar input carries a `<name>_source` so a
+# dashboard can never show an assumed fallback (or a stand-in) as if it were a
+# live measurement of the named quantity.
+_PROVENANCE = ("measured", "proxy", "assumed_constant")
+
+
+def _src(sample_count: int, *, kind: str = "measured") -> str:
+    """Provenance tag for a sub-metric.
+
+    Returns ``kind`` ("measured" or "proxy") when the underlying source had data,
+    else "assumed_constant" — the cold-start hardcoded fallback. This makes the
+    tag *dynamic*: the same metric is "measured" once its source logs rows and
+    honestly "assumed_constant" before then.
+    """
+    return kind if (sample_count or 0) > 0 else "assumed_constant"
+
+
 def hierarchical_metrics(force: bool = False) -> Dict[str, Any]:
     """
     Return the 4-layer interpretable metric stack alongside the UCI.
@@ -401,38 +419,71 @@ def hierarchical_metrics(force: bool = False) -> Dict[str, Any]:
         + 0.15 * productivity, 1
     )
 
+    # Provenance: sample counts already tracked per source decide measured vs.
+    # assumed_constant; the two productivity signals are explicit proxies.
+    n_gate   = m.get("exec_n_gate_decisions", 0)
+    n_verify = m.get("rsn_n_verified_steps", 0)
+    n_risk   = m.get("rsn_n_risk_decisions", 0)
+    n_dec    = m.get("lrn_n_decisions", 0)
+    n_fb     = m.get("lrn_n_feedback", 0)
+    n_prod   = prod_m.get("total_sessions", 0)
+
+    layers = {
+        "reliability":  {
+            "score": reliability,
+            "routing_accuracy":  round(m["lrn_routing_accuracy"] * 100, 1),
+            "routing_accuracy_source": m.get("lrn_routing_accuracy_source", "assumed_constant"),
+            "verify_pass_rate":  round(m["rsn_step_pass_rate"] * 100, 1),
+            "verify_pass_rate_source": _src(n_verify),
+            "gate_accept_rate":  round(m["exec_gate_accept_rate"] * 100, 1),
+            "gate_accept_rate_source": _src(n_gate),
+            "abort_rate":        round(m.get("rsn_step_replan_rate", 0.05) * 100, 1),
+            "abort_rate_source": _src(n_verify),
+        },
+        "intelligence": {
+            "score": intelligence,
+            "plan_quality":      round(m["rsn_step_mean_score"] * 100, 1),
+            "plan_quality_source": _src(n_verify),
+            "risk_clearance":    round((1.0 - m["rsn_mean_risk"]) * 100, 1),
+            "risk_clearance_source": _src(n_risk),
+            "retry_clearance":   round((1.0 - m["exec_retry_rate"]) * 100, 1),
+            "retry_clearance_source": _src(n_gate),
+        },
+        "adaptation": {
+            "score": adaptation,
+            "feedback_positive": round(m["lrn_feedback_positive"] * 100, 1),
+            "feedback_positive_source": _src(n_fb),
+            "confidence":        round(m["lrn_mean_confidence"] * 100, 1),
+            "confidence_source": _src(n_dec),
+            "regret_clearance":  round((1.0 - m["lrn_mean_regret"]) * 100, 1),
+            "regret_clearance_source": _src(n_dec),
+        },
+        "productivity": {
+            "score": productivity,
+            "completed_tasks":   prod_m["completed_tasks"],
+            "total_sessions":    prod_m["total_sessions"],
+            # goal_completion proxies true goal completion via runs.db pass/fail;
+            # latency_score proxies productivity via normalized session latency.
+            "goal_completion":   round(prod_m["goal_completion"] * 100, 1),
+            "goal_completion_source": _src(n_prod, kind="proxy"),
+            "latency_score":     round(prod_m["latency_score"] * 100, 1),
+            "latency_score_source": _src(n_prod, kind="proxy"),
+            "mean_latency_ms":   prod_m["mean_latency_ms"],
+        },
+    }
+
+    # Provenance summary: counts of each source kind across all pillar inputs, so
+    # a UI can show "N measured · N proxy · N assumed_constant" at a glance.
+    provenance = {k: 0 for k in _PROVENANCE}
+    for layer in layers.values():
+        for key, val in layer.items():
+            if key.endswith("_source") and val in provenance:
+                provenance[val] += 1
+
     return {
         "h_uci":          h_uci,
-        "layers": {
-            "reliability":  {
-                "score": reliability,
-                "routing_accuracy":  round(m["lrn_routing_accuracy"] * 100, 1),
-                "routing_accuracy_source": m.get("lrn_routing_accuracy_source", "assumed_constant"),
-                "verify_pass_rate":  round(m["rsn_step_pass_rate"] * 100, 1),
-                "gate_accept_rate":  round(m["exec_gate_accept_rate"] * 100, 1),
-                "abort_rate":        round(m.get("rsn_step_replan_rate", 0.05) * 100, 1),
-            },
-            "intelligence": {
-                "score": intelligence,
-                "plan_quality":      round(m["rsn_step_mean_score"] * 100, 1),
-                "risk_clearance":    round((1.0 - m["rsn_mean_risk"]) * 100, 1),
-                "retry_clearance":   round((1.0 - m["exec_retry_rate"]) * 100, 1),
-            },
-            "adaptation": {
-                "score": adaptation,
-                "feedback_positive": round(m["lrn_feedback_positive"] * 100, 1),
-                "confidence":        round(m["lrn_mean_confidence"] * 100, 1),
-                "regret_clearance":  round((1.0 - m["lrn_mean_regret"]) * 100, 1),
-            },
-            "productivity": {
-                "score": productivity,
-                "completed_tasks":   prod_m["completed_tasks"],
-                "total_sessions":    prod_m["total_sessions"],
-                "goal_completion":   round(prod_m["goal_completion"] * 100, 1),
-                "latency_score":     round(prod_m["latency_score"] * 100, 1),
-                "mean_latency_ms":   prod_m["mean_latency_ms"],
-            },
-        },
+        "layers":         layers,
+        "provenance":     provenance,
         "legacy_uci": m["uci"],   # original flat UCI for continuity
         "computed_at": m["computed_at"],
     }
@@ -517,16 +568,28 @@ def uci_curvature(n: int = 100) -> dict:
     before the level itself drops. Returns the per-point curvature series, the
     peak |Δ²|, and a bending flag (peak > 2.0 points of UCI, i.e. UCI is on a
     0–100 scale so 2 points of curvature is a sharp bend).
+
+    The signed leading indicator is the alarm of record: ``peak_abs_curvature``
+    folds away the sign, so a downturn and a rebound look identical. ``regime``
+    and ``warn`` keep the sign the OCAC cubic finding says is load-bearing.
     """
-    from evaluation.math_metrics import series_curvature, max_abs_curvature
+    from evaluation.math_metrics import (
+        series_curvature, max_abs_curvature, curvature_leading_indicator,
+    )
     series = [h["uci"] for h in uci_history(n)]
     curv   = series_curvature(series)
     peak   = max_abs_curvature(series)
+    # UCI rides a 0–100 scale; the signed alarm's "high level" gate is 0.7 on a
+    # 0–1 scale, so normalise before asking for the regime/warn verdict.
+    signed = curvature_leading_indicator([v / 100.0 for v in series])
     return {
         "n":        len(series),
         "curvature": curv,
         "peak_abs_curvature": peak,
         "bending":  peak > 2.0,
+        "signed_peak": round(signed["signed_peak"] * 100.0, 6),  # back to UCI points
+        "regime":   signed["regime"],
+        "warn":     signed["warn"],
     }
 
 

@@ -341,6 +341,12 @@ def drift_status() -> dict:
       weight_volatility   — variance(weights) > 0.05
         agent weights are spreading far from neutral
 
+      drift_runaway       — signed lens of stability (math_metrics.drift_status_v2)
+        a per-agent weight track that is BOTH diverging from its start AND
+        accelerating away (no recovery guarantee). Variance is sign-blind — it
+        cannot tell convergence-to-a-new-config from divergence — so this signed
+        test is the verdict of record; the variance number is kept for back-compat.
+
     Returns {"healthy": bool, "flags": list, ...} for dashboard + freeze decisions.
     """
     try:
@@ -386,14 +392,59 @@ def drift_status() -> dict:
             "detail":   f"weight variance {variance:.5f} — agents diverging from neutral",
         })
 
+    # Signed lens of stability: reconstruct per-agent weight tracks from the
+    # event log and ask the theorem-backed question (diverging AND accelerating
+    # away?) rather than a sign-blind variance cutoff.
+    drift = _signed_drift_status()
+    if drift["status"] == "runaway":
+        flags.append({
+            "type":   "drift_runaway",
+            "agent":  drift["agent"],
+            "value":  drift["signed_accel"],
+            "detail": (f"{drift['agent']} weight diverging and accelerating away "
+                       f"— {drift['regime']}"),
+        })
+
     return {
         "healthy":            len(flags) == 0,
         "flags":              flags,
         "regret_mean_50":     r_mean,
         "weight_variance":    variance,
+        "drift_status":       drift["status"],
+        "drift_regime":       drift["regime"],
+        "drift_agent":        drift["agent"],
         "calibration_errors": {a: round(e, 3) for a, e in cal_errors.items()},
         "weights":            weights,
     }
+
+
+def _signed_drift_status(n: int = 200) -> dict:
+    """Reconstruct per-agent weight tracks from the event log and run the signed
+    lens-of-stability test (math_metrics.drift_status_v2).
+
+    Best-effort: if the event log is unavailable or empty, returns the benign
+    'self_correcting' verdict so callers always get a well-formed dict.
+    """
+    from evaluation.math_metrics import drift_status_v2
+    try:
+        from infrastructure.event_bus import recent_events, EventType
+        events = recent_events(n, EventType.ROUTING_WEIGHT_CHANGED.value)
+    except Exception:
+        events = []
+
+    # recent_events is newest-first; rebuild each agent's track chronologically.
+    history: dict[str, list[float]] = {}
+    for ev in reversed(events):
+        p = ev.get("payload", {})
+        agent = p.get("agent")
+        if agent is None or "weight_after" not in p:
+            continue
+        track = history.setdefault(agent, [])
+        if not track and "weight_before" in p:
+            track.append(p["weight_before"])   # seed the track's starting point
+        track.append(p["weight_after"])
+
+    return drift_status_v2(history)
 
 
 # Auto-init on import

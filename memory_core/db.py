@@ -379,6 +379,27 @@ def _logit_update(q: float, delta: float) -> float:
     return round(max(0.0, min(1.0, new_q)), 4)
 
 
+def _advise_quality_basin(mid: int, new_q: float, delta: float) -> None:
+    """Advisory only (Phase 4) — warn, never block, when a quality update lands a
+    memory in the saturated corner where the nonlinear log-odds map's basin is
+    bounded. Emits MEMORY_QUALITY_SATURATED so noisy feedback near saturation
+    can't *silently* push a memory's quality into a non-recoverable corner.
+    Best-effort: any failure here must never affect the quality write."""
+    try:
+        from evaluation.math_metrics import quality_update_basin
+        basin = quality_update_basin(new_q, gamma=_QUALITY_GAMMA, delta_f=delta)
+        if basin["warn"]:
+            from infrastructure.event_bus import emit, EventType
+            emit(EventType.MEMORY_QUALITY_SATURATED, {
+                "memory_id":       mid,
+                "quality":         new_q,
+                "corner_distance": basin["corner_distance"],
+                "corrective_feedback": basin["corrective_feedback"],
+            })
+    except Exception:
+        pass
+
+
 def update_quality(memory_ids: list, delta: float) -> int:
     """
     Apply a quality update to a list of memory IDs via log-odds arithmetic.
@@ -405,6 +426,7 @@ def update_quality(memory_ids: list, delta: float) -> int:
                             "UPDATE memories SET quality=? WHERE id=?",
                             (new_q, int(mid)),
                         )
+                        _advise_quality_basin(int(mid), new_q, delta)
                         updated += 1
                 conn.commit()
                 return updated

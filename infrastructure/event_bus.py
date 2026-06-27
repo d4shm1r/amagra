@@ -74,6 +74,7 @@ class EventType(str, Enum):
     # Memory
     MEMORY_RETRIEVED       = "memory.retrieved"
     MEMORY_STORED          = "memory.stored"
+    MEMORY_QUALITY_SATURATED = "memory.quality.saturated"
     CONTRADICTION_DETECTED = "contradiction.detected"
 
     # Learning
