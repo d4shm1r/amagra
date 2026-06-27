@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { T, LUX, GOLD, FONT_DISPLAY } from "./theme";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 // Consensus Engine — ask several models the same thing, then show how much they
 // AGREE. The debugger's divergence view turned into a trust feature: the result

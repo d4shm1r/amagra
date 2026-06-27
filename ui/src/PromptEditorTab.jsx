@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import Editor from "@monaco-editor/react";
+import { MONACO_THEME } from "./monacoSetup";
 
 const FONT    = "'Consolas', 'Cascadia Code', 'Droid Sans Mono', monospace";
 const LINE_H  = 20;
 const FONT_SZ = 13;
 
 // Same origin the rest of the UI talks to (see ProviderSettingsTab).
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 const T = {
   bg:            "#F4F0E8",
@@ -1373,12 +1375,6 @@ function persist(tabs, activeId, showMetrics) {
   try { localStorage.setItem("prompt_editor_v1", JSON.stringify({ tabs, activeId, showMetrics })); } catch {}
 }
 
-function getCursorPos(ta) {
-  const before = ta.value.substring(0, ta.selectionStart);
-  const ls = before.split("\n");
-  return { line: ls.length, col: ls[ls.length - 1].length + 1 };
-}
-
 // ─────────────────────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────────────────────
@@ -1394,9 +1390,7 @@ export default function PromptEditorTab() {
   const [editingTitle,setEditingTitle]= useState("");
   const [cursor,      setCursor]      = useState({ line: 1, col: 1 });
 
-  const textareaRef    = useRef(null);
-  const lineNumRef     = useRef(null);
-  const pendingCursor  = useRef(null);
+  const editorRef      = useRef(null);
   const copyTimerRef   = useRef(null);
   const [copied, setCopied] = useState(false);
 
@@ -1406,24 +1400,11 @@ export default function PromptEditorTab() {
   const metrics   = useMemo(() => computeMetrics(content), [content]);
 
   useEffect(() => { persist(tabs, activeId, showMetrics); }, [tabs, activeId, showMetrics]);
-  useEffect(() => { textareaRef.current?.focus(); }, [activeId]);
+  useEffect(() => { editorRef.current?.focus(); }, [activeId]);
 
   const updateContent = useCallback((val) => {
     setTabs(prev => prev.map(t => t.id === activeId ? { ...t, content: val } : t));
   }, [activeId]);
-
-  const syncScroll = useCallback(() => {
-    if (lineNumRef.current && textareaRef.current)
-      lineNumRef.current.scrollTop = textareaRef.current.scrollTop;
-  }, []);
-
-  // Restore cursor position after Tab-key insertion (React resets it on state update)
-  useEffect(() => {
-    if (pendingCursor.current !== null && textareaRef.current) {
-      textareaRef.current.setSelectionRange(pendingCursor.current, pendingCursor.current);
-      pendingCursor.current = null;
-    }
-  }, [content]);
 
   function handleCopy() {
     if (!content.trim()) return;
@@ -1434,29 +1415,21 @@ export default function PromptEditorTab() {
     });
   }
 
-  function handleKeyDown(e) {
-    // Tab → insert 2 spaces (preserve cursor position via pendingCursor ref)
-    if (e.key === "Tab") {
-      e.preventDefault();
-      const ta = e.target;
-      const s  = ta.selectionStart;
-      const end = ta.selectionEnd;
-      updateContent(ta.value.substring(0, s) + "  " + ta.value.substring(end));
-      pendingCursor.current = s + 2;
-      return;
-    }
-    // Ctrl+Enter → copy to clipboard
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      handleCopy();
-      return;
-    }
-    // Ctrl+Shift+K → clear current tab
-    if (e.key.toLowerCase() === "k" && (e.ctrlKey || e.metaKey) && e.shiftKey) {
-      e.preventDefault();
-      updateContent("");
-    }
-  }
+  // Monaco commands need the latest handlers, but onMount runs once — route
+  // through refs so Ctrl+Enter / Ctrl+Shift+K never fire a stale closure.
+  const handleCopyRef     = useRef(handleCopy);    handleCopyRef.current     = handleCopy;
+  const updateContentRef  = useRef(updateContent); updateContentRef.current  = updateContent;
+
+  const handleEditorMount = useCallback((editor, monaco) => {
+    editorRef.current = editor;
+    editor.onDidChangeCursorPosition(e =>
+      setCursor({ line: e.position.lineNumber, col: e.position.column }));
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
+      () => handleCopyRef.current());
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyK,
+      () => updateContentRef.current(""));
+    editor.focus();
+  }, []);
 
   function addTab() {
     const id = nextRef.current++;
@@ -1492,8 +1465,6 @@ export default function PromptEditorTab() {
     if (title) setTabs(prev => prev.map(t => t.id === editingId ? { ...t, title } : t));
     setEditingId(null);
   }
-
-  function trackCursor(e) { setCursor(getCursorPos(e.target)); }
 
   const wordCount    = content.trim() ? content.trim().split(/\s+/).length : 0;
   const overallScore = metrics?.overall ?? null;
@@ -1554,14 +1525,32 @@ export default function PromptEditorTab() {
       {/* ── Editor + Panel ── */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-          <div ref={lineNumRef} style={{ width: 52, flexShrink: 0, background: T.bg, borderRight: `1px solid ${T.gutterBorder}`, overflow: "hidden", paddingTop: 12, paddingRight: 10, fontFamily: FONT, fontSize: FONT_SZ, lineHeight: `${LINE_H}px`, userSelect: "none", textAlign: "right" }}>
-            {lines.map((_, i) => (
-              <div key={i} style={{ color: i + 1 === cursor.line ? T.lineNumActive : T.muted, fontWeight: i + 1 === cursor.line ? 600 : 400 }}>{i + 1}</div>
-            ))}
-          </div>
-          <textarea ref={textareaRef} value={content} onChange={e => updateContent(e.target.value)} onScroll={syncScroll} onClick={trackCursor} onKeyUp={trackCursor} onSelect={trackCursor} onKeyDown={handleKeyDown}
-            spellCheck={false} autoComplete="off" autoCorrect="off" autoCapitalize="off" placeholder="Write your prompt here…"
-            style={{ flex: 1, background: T.bg, border: "none", outline: "none", color: T.text, fontFamily: FONT, fontSize: FONT_SZ, lineHeight: `${LINE_H}px`, padding: "12px 20px", resize: "none", overflowY: "auto", overflowX: "auto", whiteSpace: "pre", tabSize: 2, caretColor: "#1F1408" }}
+          <Editor
+            language="markdown"
+            theme={MONACO_THEME}
+            value={content}
+            onChange={val => updateContent(val ?? "")}
+            onMount={handleEditorMount}
+            options={{
+              fontFamily: FONT, fontSize: FONT_SZ, lineHeight: LINE_H,
+              minimap: { enabled: false },
+              wordWrap: "on",
+              scrollBeyondLastLine: false,
+              padding: { top: 12, bottom: 12 },
+              renderLineHighlight: "line",
+              smoothScrolling: true,
+              cursorBlinking: "smooth",
+              cursorSmoothCaretAnimation: "on",
+              overviewRulerLanes: 0,
+              hideCursorInOverviewRuler: true,
+              overviewRulerBorder: false,
+              tabSize: 2,
+              bracketPairColorization: { enabled: false },
+              guides: { indentation: false },
+              fontLigatures: false,
+              scrollbar: { verticalScrollbarSize: 9, horizontalScrollbarSize: 9, useShadows: false },
+              stickyScroll: { enabled: false },
+            }}
           />
         </div>
 

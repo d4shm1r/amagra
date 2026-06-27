@@ -20,7 +20,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AGENTS as BASE_AGENTS } from "./constants";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 // Layout positions for the hexagonal mind map (unique to this component).
 // icon/color come from constants.js; only x/y/size/center/shortLabel live here.

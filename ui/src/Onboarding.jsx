@@ -11,7 +11,7 @@ import { T, LUX, GOLD, FONT_DISPLAY, FONT_MONO } from "./theme";
 //   onDismiss  — mark onboarding complete and close the overlay
 //   onStart    — (promptText) => seed Chat with this prompt and navigate there
 
-const API_BASE = "http://localhost:8000";
+import { API as API_BASE } from "./api";
 
 const FIRST_PROMPTS = [
   "What can you help me with?",

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { T, FONT_MONO } from "./theme";
 import { ObsPanel, MetricCard, RefreshBtn, EmptyState, hScore, PageHeader } from "./ObsShared";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 const LEVEL_COLOR = { none: T.success, light: T.warn, full: T.error };
 const LEVEL_LABEL = { none: "None", light: "Light", full: "Full" };

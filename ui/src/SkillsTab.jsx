@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { T, FONT_MONO } from "./theme";
 import { PageHeader, RefreshBtn } from "./ObsShared";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 const COMPLEXITY_COLOR = {
   simple:   T.success,
@@ -149,7 +149,7 @@ export default function SkillsTab() {
   };
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+    <div>
       {/* Header */}
       <PageHeader
         title="Skills"

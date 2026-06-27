@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { T, FONT_UI, FONT_DISPLAY, FONT_MONO } from "./theme";
 import { PageHeader } from "./ObsShared";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 // ── "Explain this project" ─────────────────────────────────────
 // The payoff of the debugger→memory bridge: it reads accumulated, structured
@@ -36,7 +36,7 @@ export default function ExplainProjectTab() {
   const allowed = data?.synthesis_allowed;
 
   return (
-    <div style={{ maxWidth: 760, margin: "0 auto", fontFamily: FONT_UI, color: T.text }}>
+    <div style={{ fontFamily: FONT_UI, color: T.text }}>
       <PageHeader
         title="Explain this project"
         subtitle="A briefing built from the decisions you've recorded — what was chosen, and why."

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { API } from "./api";
 import { ROADMAP } from "./constants";
 import { T } from "./theme";
 import { PageHeader } from "./ObsShared";
@@ -163,10 +164,10 @@ export default function ProgressTab() {
   const [feedback,         setFeedback]         = useState([]);
 
   const refresh = useCallback(() => {
-    fetch("http://localhost:8000/metrics").then(r => r.json()).then(setMetrics).catch(() => {});
-    fetch("http://localhost:8000/memory/stats").then(r => r.json()).then(setMemStats).catch(() => {});
-    fetch("http://localhost:8000/memory/at-risk?n=20").then(r => r.json()).then(d => setAtRisk(d.at_risk || [])).catch(() => {});
-    fetch("http://localhost:8000/feedback?limit=500").then(r => r.json()).then(d => setFeedback(Array.isArray(d) ? d : [])).catch(() => {});
+    fetch(`${API}/metrics`).then(r => r.json()).then(setMetrics).catch(() => {});
+    fetch(`${API}/memory/stats`).then(r => r.json()).then(setMemStats).catch(() => {});
+    fetch(`${API}/memory/at-risk?n=20`).then(r => r.json()).then(d => setAtRisk(d.at_risk || [])).catch(() => {});
+    fetch(`${API}/feedback?limit=500`).then(r => r.json()).then(d => setFeedback(Array.isArray(d) ? d : [])).catch(() => {});
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -174,7 +175,7 @@ export default function ProgressTab() {
   const runPrune = async () => {
     setPruning(true); setPruneResult(null);
     try {
-      const d = await fetch("http://localhost:8000/memory/prune", { method: "POST" }).then(r => r.json());
+      const d = await fetch(`${API}/memory/prune`, { method: "POST" }).then(r => r.json());
       setPruneResult(d); refresh();
     } catch { setPruneResult({ error: "Request failed" }); }
     setPruning(false);
@@ -183,7 +184,7 @@ export default function ProgressTab() {
   const runConsolidate = async () => {
     setConsolidating(true); setConsolidateResult(null);
     try {
-      const d = await fetch("http://localhost:8000/memory/consolidate", { method: "POST" }).then(r => r.json());
+      const d = await fetch(`${API}/memory/consolidate`, { method: "POST" }).then(r => r.json());
       setConsolidateResult(d); refresh();
     } catch { setConsolidateResult({ error: "Request failed" }); }
     setConsolidating(false);
@@ -249,7 +250,7 @@ export default function ProgressTab() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <SectionHead title="Memory Health" />
             <div style={{ display: "flex", gap: 8 }}>
-              <a href="http://localhost:8000/memory/export.csv" download="memories.csv"
+              <a href={`${API}/memory/export.csv`} download="memories.csv"
                 style={{ padding: "4px 12px", borderRadius: 3, fontSize: 11, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", background: "#0F766E18", color: "#0F766E", border: "1px solid #0F766E40", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>
                 ⬇ CSV
               </a>

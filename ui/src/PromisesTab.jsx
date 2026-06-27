@@ -171,7 +171,7 @@ export default function PromisesTab() {
   });
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", paddingBottom: 40 }}>
+    <div style={{ paddingBottom: 40 }}>
 
       {/* Keyframes */}
       <style>{`@keyframes promisePulse { 0%,100%{opacity:1} 50%{opacity:.2} }`}</style>

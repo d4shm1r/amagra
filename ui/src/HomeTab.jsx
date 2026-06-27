@@ -62,12 +62,21 @@ const STACK = [
 ];
 
 // ── Quick nav ─────────────────────────────────────────────────────
-const NAV_SHORTCUTS = [
+const SIMPLE_NAV_SHORTCUTS = [
+  { sym: "↗", label: "Chat",       tab: "chat",      color: "#C48808" },
+  { sym: "⌘", label: "Prompt IDE", tab: "prompt",    color: "#1E5A8A" },
+  { sym: "◎", label: "Consensus",  tab: "consensus", color: "#7E3F8F" },
+  { sym: "◈", label: "Library",    tab: "library",   color: "#047857" },
+  { sym: "⚙", label: "Model",      tab: "model",     color: "#B45309" },
+  { sym: "?", label: "Guide",      tab: "guide",     color: "#9A6C00" },
+];
+
+const ADVANCED_NAV_SHORTCUTS = [
   { sym: "↗", label: "Chat",            tab: "chat",      color: "#C48808" },
-  { sym: "⬡", label: "Agents",          tab: "agents",    color: "#1E5A8A" },
+  { sym: "⬡", label: "Skills",          tab: "skills",    color: "#1E5A8A" },
   { sym: "Ψ", label: "Cognitive OS",    tab: "cognitive", color: "#6D28D9" },
   { sym: "⊙", label: "Inspector",       tab: "inspector", color: "#047857" },
-  { sym: "◷", label: "Version History", tab: "history",   color: "#BE185D" },
+  { sym: "◷", label: "Version History", tab: "releases",  color: "#BE185D" },
   { sym: "▲", label: "Progress",        tab: "progress",  color: "#B45309" },
 ];
 
@@ -81,12 +90,13 @@ const PIPELINE = [
   { label: "Response",        sub: "reflect + learn",       color: T.success  },
 ];
 
-export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
+export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mode = "advanced" }) {
   const online  = apiStatus === "online";
 
   const [showInternals, setShowInternals] = useState(false);
 
   const currentPhase = ROADMAP.find(p => p.status === "next");
+  const navShortcuts = mode === "simple" ? SIMPLE_NAV_SHORTCUTS : ADVANCED_NAV_SHORTCUTS;
 
   return (
     <div style={{ animation: "fadeIn .2s", fontFamily: "inherit" }}>
@@ -177,7 +187,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
           gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
           gap: 8,
         }}>
-          {NAV_SHORTCUTS.map(n => (
+          {navShortcuts.map(n => (
             <button
               key={n.tab}
               onClick={() => onNav(n.tab)}
@@ -337,7 +347,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
         </span>
         <span style={{ color: T.border }}>·</span>
         <span
-          onClick={() => onNav("history")}
+          onClick={() => onNav("releases")}
           style={{ fontSize: 10, color: T.accent, cursor: "pointer", textDecoration: "underline" }}
         >
           Full version history →

@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import { API } from "./api";
 import Onboarding         from "./Onboarding";
 import HomeTab            from "./HomeTab";
 import ChatTab            from "./ChatTab";
 import LogTab             from "./LogTab";
-import TracesTab          from "./TracesTab";
 import RunsTab            from "./RunsTab";
 import CognitionView      from "./CognitionView";
 import ProgressTab        from "./ProgressTab";
@@ -24,98 +24,27 @@ import EventLogTab          from "./EventLogTab";
 import RiskObservatoryTab   from "./RiskObservatoryTab";
 import PlanGraphTab         from "./PlanGraphTab";
 import MemoryBrowserTab     from "./MemoryBrowserTab";
-import DecisionReplayTab    from "./DecisionReplayTab";
 import ContextInspectorTab from "./ContextInspectorTab";
 import InspectOverviewTab  from "./InspectOverviewTab";
 import LibraryTab          from "./LibraryTab";
 import VersionHistoryTab   from "./VersionHistoryTab";
 import ResearchTab         from "./ResearchTab";
-import { BUILD_PHASES, AGENTS, VERSION } from "./constants";
-import PromptEditorTab    from "./PromptEditorTab";
+import { BUILD_PHASES, VERSION } from "./constants";
+// Lazy — pulls in Monaco (~3.7 MB) only when the Prompt IDE is first opened,
+// keeping the initial dashboard bundle lean.
+const PromptEditorTab = lazy(() => import("./PromptEditorTab"));
 import ConsensusTab       from "./ConsensusTab";
 import ExplainProjectTab  from "./ExplainProjectTab";
 import SkillsTab          from "./SkillsTab";
 import PromisesTab        from "./PromisesTab";
 import ProviderSettingsTab from "./ProviderSettingsTab";
+import { ApiOfflineBanner } from "./ObsShared";
+import { SettingsModal, ShortcutsModal } from "./Modals";
+import {
+  NAV, TABS_BY_SURFACE, SURFACE_BY_TAB, DEFAULT_TAB,
+  TAB_ALIASES, VALID_TABS, surfaceOf, firstVisibleTab,
+} from "./navConfig";
 import { T, LUX, GOLD, FONT_UI, FONT_DISPLAY } from "./theme";
-
-// ── 6-view navigation (v1.4 Unified Workspace UI) ─────────────
-// A single source of truth: each surface owns its sub-tabs. Everything else
-// (the sidebar NAV, the SubNav dropdown, surface lookup, last-tab memory) is
-// derived from this. `adv: true` hides a surface/sub-tab in Simple mode.
-//
-//   Workspace  = do work        Memory   = manage knowledge
-//   Runs       = inspect runs    Research = experiment
-//   Cognition  = monitor system  Settings = configure
-const SURFACES = [
-  { id: "workspace", label: "Workspace", sym: "▸", desc: "Work with your project", tabs: [
-    { id: "chat",          label: "Chat" },
-    { id: "prompt",        label: "Prompt IDE" },
-    { id: "consensus",     label: "Consensus" },
-    { id: "explain",       label: "Explain" },
-    { id: "goals",         label: "Goals" },
-    { id: "tasks",         label: "Tasks" },
-    { id: "project-state", label: "Project State" },
-  ]},
-  { id: "runs", label: "Runs", sym: "⊙", desc: "Inspect agent executions", adv: true, tabs: [
-    { id: "overview",  label: "Overview",  group: "Core" },
-    { id: "runs",      label: "Runs",      group: "Core" },
-    { id: "brain",     label: "Decisions", group: "Core" },
-    { id: "traces",    label: "Trace",     group: "Detail" },
-    { id: "inspector", label: "Inspector", group: "Detail" },
-    { id: "policy",    label: "Policy",    group: "Detail" },
-    { id: "replay",    label: "Replay",    group: "Detail" },
-  ]},
-  { id: "cognition", label: "Cognition", sym: "∴", desc: "Monitor system health and reasoning", adv: true, tabs: [
-    { id: "cog-dash",   label: "Dashboard", group: "Health" },
-    { id: "uci",        label: "UCI",       group: "Health" },
-    { id: "risk-obs",   label: "Risk",      group: "Health" },
-    { id: "event-log",  label: "Events",    group: "Health" },
-    { id: "plan-graph", label: "Plan",      group: "Health" },
-    { id: "cognitive",  label: "CogOS",     group: "Advanced" },
-    { id: "skills",     label: "Skills",    group: "Advanced" },
-    { id: "timeline",   label: "Timeline",  group: "Advanced" },
-  ]},
-  { id: "memory", label: "Memory", sym: "◈", desc: "Explore stored knowledge and context", adv: true, tabs: [
-    { id: "memory",    label: "Memory" },
-    { id: "library",   label: "Library" },
-    { id: "knowledge", label: "Knowledge" },
-    { id: "map",       label: "Memory Map" },
-    { id: "mindmap",   label: "Mind Map" },
-  ]},
-  { id: "research", label: "Research", sym: "⊹", desc: "Experiment, analyze, and compare", tabs: [
-    { id: "research", label: "Lab" },
-    { id: "data",     label: "Analysis" },
-  ]},
-  { id: "settings", label: "Settings", sym: "⚙", desc: "Configure Amagra", tabs: [
-    { id: "guide",    label: "Guide" },
-    { id: "model",    label: "Model" },
-    { id: "progress", label: "Progress", adv: true },
-    { id: "promises", label: "Promises", adv: true },
-    { id: "log",      label: "Log",      adv: true },
-    { id: "releases", label: "Releases" },
-  ]},
-];
-
-// Derived lookups
-const NAV = SURFACES.map(({ id, label, sym, desc, adv }) => ({ id, label, sym, desc, adv }));
-const TABS_BY_SURFACE = Object.fromEntries(SURFACES.map(s => [s.id, s.tabs]));
-const SURFACE_BY_TAB  = Object.fromEntries(SURFACES.flatMap(s => s.tabs.map(t => [t.id, s.id])));
-const DEFAULT_TAB     = Object.fromEntries(SURFACES.map(s => [s.id, s.tabs[0].id]));
-
-// Map a raw activeTab to which top-level surface it belongs to.
-function surfaceOf(tab) {
-  if (tab === "home") return "home";   // pre-nav landing, not one of the 6 views
-  return SURFACE_BY_TAB[tab] || "workspace";
-}
-
-// First sub-tab of a surface that's visible in the current mode (avoids landing
-// a Simple-mode user on a hidden Advanced tab).
-function firstVisibleTab(surfaceId, mode) {
-  const tabs = TABS_BY_SURFACE[surfaceId] || [];
-  const pick = mode === "simple" ? tabs.find(t => !t.adv) : tabs[0];
-  return (pick || tabs[0])?.id;
-}
 
 // ── App-wide settings ─────────────────────────────────────────
 const DEFAULT_SETTINGS = {
@@ -128,179 +57,6 @@ const DEFAULT_SETTINGS = {
 function loadSettings() {
   try { return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem("app_settings_v1") || "{}") }; }
   catch { return { ...DEFAULT_SETTINGS }; }
-}
-
-// ── Settings modal ────────────────────────────────────────────
-function SettingsModal({ settings, onUpdate, coherence, apiStatus, mode, onSetMode }) {
-  const [status,   setStatus]   = useState(null);
-  const [memStats, setMemStats] = useState(null);
-  const [saved,    setSaved]    = useState(false);
-  const saveTimer = useRef(null);
-
-  useEffect(() => {
-    fetch("http://localhost:8000/status")
-      .then(r => r.ok ? r.json() : null).then(setStatus).catch(() => {});
-    fetch("http://localhost:8000/memory/stats")
-      .then(r => r.ok ? r.json() : null).then(setMemStats).catch(() => {});
-  }, []);
-
-  function set(key, val) {
-    onUpdate(key, val);
-    setSaved(true);
-    clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => setSaved(false), 1800);
-  }
-
-  const SectionHead = ({ title }) => (
-    <div style={{ fontSize: 9, fontWeight: 700, color: T.muted, letterSpacing: "0.1em",
-                  textTransform: "uppercase", margin: "20px 0 10px", paddingBottom: 5,
-                  borderBottom: `1px solid ${T.border}` }}>
-      {title}
-    </div>
-  );
-
-  const Field = ({ label, hint, children }) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 12, color: T.text }}>{label}</div>
-        {hint && <div style={{ fontSize: 10, color: T.muted, marginTop: 1 }}>{hint}</div>}
-      </div>
-      <div style={{ flexShrink: 0 }}>{children}</div>
-    </div>
-  );
-
-  const ButtonGroup = ({ options, value, onChange }) => (
-    <div style={{ display: "flex", borderRadius: 8, overflow: "hidden", border: `1px solid ${T.border}` }}>
-      {options.map(({ val, label }) => (
-        <button key={val} onClick={() => onChange(val)}
-          style={{
-            padding: "4px 10px", fontSize: 11, fontFamily: "inherit", fontWeight: value === val ? 700 : 400,
-            background: value === val ? `${T.accent}33` : "transparent",
-            color: value === val ? T.accent : T.muted,
-            border: "none", borderLeft: val !== options[0].val ? `1px solid ${T.border}` : "none",
-            cursor: "pointer", transition: "background 0.1s, color 0.1s",
-          }}>{label}</button>
-      ))}
-    </div>
-  );
-
-  const online = apiStatus === "online";
-
-  return (
-    <div style={{ minWidth: 400, maxHeight: "70vh", overflowY: "auto", paddingRight: 4 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
-        <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.text, flex: 1 }}>Settings</h2>
-        {saved && <span style={{ fontSize: 10, color: T.success, fontWeight: 600 }}>✓ Saved</span>}
-      </div>
-
-      <SectionHead title="Interface" />
-
-      <Field label="Mode" hint="Simple keeps the essentials; Advanced reveals every tool and diagnostic">
-        <ButtonGroup
-          value={mode}
-          onChange={onSetMode}
-          options={[
-            { val: "simple",   label: "Simple"   },
-            { val: "advanced", label: "Advanced" },
-          ]}
-        />
-      </Field>
-
-      <SectionHead title="Agent & Inference" />
-
-      <Field label="Default agent" hint="Pre-selects the agent for every new conversation">
-        <select value={settings.defaultAgent} onChange={e => set("defaultAgent", e.target.value)}
-          style={{
-            background: T.surface2, border: `1px solid ${T.border}`, color: T.text,
-            borderRadius: 8, padding: "4px 8px", fontSize: 11, fontFamily: "inherit", cursor: "pointer",
-            minWidth: 160,
-          }}>
-          <option value="auto">Auto (Coordinator routes)</option>
-          {AGENTS.filter(a => a.id !== "coordinator").map(a => (
-            <option key={a.id} value={a.id}>{a.label}</option>
-          ))}
-        </select>
-      </Field>
-
-      <Field label="Default reflect mode" hint="Depth of self-critique applied after each response">
-        <ButtonGroup
-          value={settings.reflectMode}
-          onChange={v => set("reflectMode", v)}
-          options={[
-            { val: "",      label: "Auto"  },
-            { val: "none",  label: "Fast"  },
-            { val: "light", label: "Check" },
-            { val: "full",  label: "Deep"  },
-          ]}
-        />
-      </Field>
-
-      <Field
-        label={`Temperature — ${settings.temperature.toFixed(1)}`}
-        hint="Higher = more creative, lower = more deterministic"
-      >
-        <input type="range" min="0.1" max="1.0" step="0.1"
-          value={settings.temperature}
-          onChange={e => set("temperature", parseFloat(e.target.value))}
-          style={{ width: 130, accentColor: T.accent, cursor: "pointer" }}
-        />
-      </Field>
-
-      <SectionHead title="Memory" />
-
-      <Field
-        label={`Max memories per query — ${settings.maxMemories}`}
-        hint="How many relevant memories are retrieved and injected into each request"
-      >
-        <input type="range" min="1" max="15" step="1"
-          value={settings.maxMemories}
-          onChange={e => set("maxMemories", parseInt(e.target.value))}
-          style={{ width: 130, accentColor: T.accent, cursor: "pointer" }}
-        />
-      </Field>
-
-      {memStats && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 4, marginBottom: 12 }}>
-          {[
-            ["Total",         memStats.total            ?? "—"],
-            ["Prune ready",   memStats.prune_candidates ?? "—"],
-            ["Never recalled",memStats.never_used       ?? "—"],
-          ].map(([k, v]) => (
-            <div key={k} style={{ background: T.surface2, borderRadius: 8, padding: "8px 10px", textAlign: "center" }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: T.text, fontVariantNumeric: "tabular-nums" }}>{v}</div>
-              <div style={{ fontSize: 9, color: T.muted, marginTop: 2 }}>{k}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <SectionHead title="System" />
-
-      {[
-        ["API",     "http://localhost:8000",                      true ],
-        ["Status",  online ? "● Online" : "○ Offline",           false],
-        ["Model",   status?.model  ?? "phi4-mini",               false],
-        ["GPU",     status?.gpu    ?? "RTX 2050",                false],
-        ["Backend", memStats?.backend?.type ?? "FAISSBackend",   false],
-        ...(coherence ? [
-          ["C(t)",  coherence.C?.toFixed(4)                    , true],
-          ["Routing",  coherence.c_routing?.toFixed(3)         , true],
-        ] : []),
-      ].map(([k, v, mono]) => (
-        <div key={k} style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
-                              padding: "5px 0", borderBottom: `1px solid ${T.border}22`, fontSize: 11 }}>
-          <span style={{ color: T.muted }}>{k}</span>
-          <span style={{ color: T.text, fontFamily: mono ? "monospace" : "inherit", fontSize: mono ? 10 : 11 }}>{v}</span>
-        </div>
-      ))}
-
-      <div style={{ marginTop: 14, padding: "8px 10px", background: T.surface2,
-                    borderRadius: 8, fontSize: 10, color: T.muted }}>
-        Settings persist in <code style={{ color: T.accent2 }}>localStorage</code>.
-        Reflect mode and default agent apply on next message.
-      </div>
-    </div>
-  );
 }
 
 // ── Sidebar ───────────────────────────────────────────────────
@@ -779,105 +535,6 @@ function SubNav({ surface, desc, tabs, activeTab, onNav }) {
 
 
 
-// ── Keyboard shortcuts modal ──────────────────────────────────
-const SHORTCUT_GROUPS = [
-  { title: "Primary Navigation", rows: [
-    ["Introduction",      "Ctrl+1"],
-    ["Workspace",         "Ctrl+2"],
-    ["Runs",              "Ctrl+3"],
-    ["Cognition",         "Ctrl+4"],
-    ["Memory",            "Ctrl+5"],
-    ["Research",          "Ctrl+6"],
-    ["Settings",          "Ctrl+7"],
-    ["Focus Chat input",  "Ctrl+K"],
-  ]},
-  { title: "Debug", rows: [
-    ["Routing Decisions", "Ctrl+Shift+D"],
-    ["Learning Timeline", "Ctrl+Shift+L"],
-    ["Policy Gate",       "Ctrl+Shift+Y"],
-    ["Decision Replay",   "Ctrl+Shift+R"],
-  ]},
-  { title: "Observe & Explore", rows: [
-    ["Cognitive OS",      "Ctrl+Shift+X"],
-    ["Memory Browser",    "Ctrl+Shift+M"],
-    ["Knowledge Graph",   "Ctrl+Shift+K"],
-    ["Data Analysis",     "Ctrl+Shift+A"],
-  ]},
-  { title: "Tools", rows: [
-    ["Prompt Editor",     "Ctrl+Shift+E"],
-    ["Task Queue",        "Ctrl+Shift+Q"],
-    ["Goals",             "Ctrl+Shift+G"],
-    ["Progress",          "Ctrl+Shift+P"],
-    ["Version History",   "Ctrl+Shift+H"],
-  ]},
-  { title: "Interface", rows: [
-    ["Toggle Sidebar",    "Ctrl+B"],
-    ["Open Settings",     "Ctrl+,"],
-    ["Keyboard Shortcuts","Ctrl+/"],
-    ["Close modal",       "Escape"],
-  ]},
-  { title: "Chat", rows: [
-    ["Send message",      "Enter"],
-    ["New line",          "Shift+Enter"],
-    ["Threads panel",     "Ctrl+Shift+T"],
-    ["Context panel",     "Ctrl+Shift+C"],
-    ["Advanced panel",    "Ctrl+Shift+O"],
-  ]},
-];
-
-function ShortcutsModal() {
-  // Pair groups into 2 columns: [0,1], [2,3], [4]
-  const pairs = [];
-  for (let i = 0; i < SHORTCUT_GROUPS.length; i += 2)
-    pairs.push([SHORTCUT_GROUPS[i], SHORTCUT_GROUPS[i + 1]]);
-
-  const KeyBadge = ({ k }) => (
-    <span style={{
-      display: "inline-block", fontFamily: "monospace", fontSize: 9, fontWeight: 700,
-      background: T.surface2, color: T.accent2,
-      border: `1px solid ${T.border}`,
-      borderRadius: 3, padding: "2px 6px", whiteSpace: "nowrap",
-    }}>{k}</span>
-  );
-
-  const GroupCol = ({ group }) => group ? (
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontSize: 8, fontWeight: 700, color: T.muted, letterSpacing: "0.12em",
-                    textTransform: "uppercase", marginBottom: 6 }}>
-        {group.title}
-      </div>
-      {group.rows.map(([action, key]) => (
-        <div key={action} style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "4px 0", gap: 8, borderBottom: `1px solid ${T.border}22`,
-        }}>
-          <span style={{ fontSize: 11, color: T.mutedLt, minWidth: 0, overflow: "hidden",
-                         textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{action}</span>
-          <KeyBadge k={key} />
-        </div>
-      ))}
-    </div>
-  ) : <div style={{ flex: 1 }} />;
-
-  return (
-    <div style={{ minWidth: 560, maxWidth: 640 }}>
-      <h2 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700, color: T.text }}>
-        Keyboard Shortcuts
-      </h2>
-      <div style={{ maxHeight: 440, overflowY: "auto", paddingRight: 4, display: "flex",
-                    flexDirection: "column", gap: 18 }}>
-        {pairs.map((pair, i) => (
-          <div key={i} style={{ display: "flex", gap: 28 }}>
-            <GroupCol group={pair[0]} />
-            <div style={{ width: 1, background: T.border, flexShrink: 0 }} />
-            <GroupCol group={pair[1]} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ── Root ──────────────────────────────────────────────────────
 export default function App() {
   const [activeTab,    setActiveTab]    = useState("chat");
@@ -901,8 +558,9 @@ export default function App() {
   }, []);
 
   // ── Simple / Advanced UI mode ──────────────────────────────────
-  // "simple" trims the chrome to the essentials a newcomer needs (Chat,
-  // Library, Guide); "advanced" reveals every surface, menu, and diagnostic.
+  // "simple" trims the chrome to the first-run trust workflow (Chat,
+  // Prompt IDE, Consensus, Library, Guide, Model); "advanced" reveals every
+  // surface, menu, and diagnostic.
   // New users start simple; people who already finished onboarding keep the
   // full UI so we never hide tools out from under an existing workflow.
   const [mode, setMode] = useState(() => {
@@ -939,9 +597,11 @@ export default function App() {
 
   // Navigate to a tab, remembering it as the last-visited sub-tab of its surface.
   const navTo = useCallback((id) => {
-    const s = SURFACE_BY_TAB[id];
-    if (s) setLastTabBySurface(prev => (prev[s] === id ? prev : { ...prev, [s]: id }));
-    setActiveTab(id);
+    const tab = TAB_ALIASES[id] || id;
+    const next = VALID_TABS.has(tab) ? tab : "chat";
+    const s = SURFACE_BY_TAB[next];
+    if (s) setLastTabBySurface(prev => (prev[s] === next ? prev : { ...prev, [s]: next }));
+    setActiveTab(next);
   }, []);
 
   const handleInspect = useCallback((ctxId) => {
@@ -966,31 +626,33 @@ export default function App() {
     try { localStorage.setItem("session_log_v1", JSON.stringify(sessionLog.slice(-50))); } catch (_) {}
   }, [sessionLog]);
 
-  useEffect(() => {
-    const check = async () => {
-      try {
-        const r = await fetch("http://localhost:8000/health", { signal: AbortSignal.timeout(5000) });
-        setApiStatus(r.ok ? "online" : "offline");
-        if (r.ok) {
-          try {
-            const h = await fetch("http://localhost:8000/history");
-            if (h.ok) {
-              const hd = await h.json();
-              setTotalQueries((hd.history || hd || []).length);
-            }
-          } catch (_) {}
-        }
-      } catch { setApiStatus("offline"); }
-    };
-    check();
-    const id = setInterval(check, 30000);
-    return () => clearInterval(id);
+  const checkHealth = useCallback(async () => {
+    setApiStatus(prev => (prev === "online" ? prev : "checking"));
+    try {
+      const r = await fetch(`${API}/health`, { signal: AbortSignal.timeout(5000) });
+      setApiStatus(r.ok ? "online" : "offline");
+      if (r.ok) {
+        try {
+          const h = await fetch(`${API}/history`);
+          if (h.ok) {
+            const hd = await h.json();
+            setTotalQueries((hd.history || hd || []).length);
+          }
+        } catch (_) {}
+      }
+    } catch { setApiStatus("offline"); }
   }, []);
+
+  useEffect(() => {
+    checkHealth();
+    const id = setInterval(checkHealth, 30000);
+    return () => clearInterval(id);
+  }, [checkHealth]);
 
   useEffect(() => {
     if (apiStatus !== "online") return;
     const fn = () => {
-      fetch("http://localhost:8000/agents/status")
+      fetch(`${API}/agents/status`)
         .then(r => r.ok ? r.json() : null)
         .then(d => { if (d?.agents) setAgentMesh(d.agents); })
         .catch(() => {});
@@ -1002,7 +664,7 @@ export default function App() {
 
   const fetchCoherence = useCallback(() => {
     if (apiStatus !== "online") return;
-    fetch("http://localhost:8000/coherence")
+    fetch(`${API}/coherence`)
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setCoherence(d); })
       .catch(() => {});
@@ -1031,7 +693,7 @@ export default function App() {
     if (action === "clearLog") setSessionLog([]);
     else if (action === "toggleSidebar") toggleCollapsed();
     else if (action === "toggleMode") toggleMode();
-    else if (action === "exportCsv") window.open("http://localhost:8000/memory/export.csv", "_blank");
+    else if (action === "exportCsv") window.open(`${API}/memory/export.csv`, "_blank");
     else if (action.startsWith("doc:")) { setResearchDoc(action.slice(4)); navTo("research"); }
   };
 
@@ -1055,12 +717,13 @@ export default function App() {
       if (inInput) return;
       if (e.ctrlKey || e.metaKey) {
         if (e.shiftKey) {
+          if (mode === "simple") return;
           switch (e.key.toLowerCase()) {
             case "e": e.preventDefault(); navTo("prompt");    break;
             case "d": e.preventDefault(); navTo("brain");     break;
             case "l": e.preventDefault(); navTo("timeline");  break;
             case "y": e.preventDefault(); navTo("policy");    break;
-            case "r": e.preventDefault(); navTo("replay");    break;
+            case "r": e.preventDefault(); navTo("brain");     break;
             case "x": e.preventDefault(); navTo("cognitive"); break;
             case "a": e.preventDefault(); navTo("data");      break;
             case "m": e.preventDefault(); navTo("memory");    break;
@@ -1073,13 +736,13 @@ export default function App() {
           }
         } else {
           switch (e.key) {
-            case "1": e.preventDefault(); navTo("home");     break; // Introduction
-            case "2": e.preventDefault(); navTo("chat");     break; // Workspace
-            case "3": e.preventDefault(); navTo("overview"); break; // Runs
-            case "4": e.preventDefault(); navTo("cog-dash"); break; // Cognition
-            case "5": e.preventDefault(); navTo("memory");   break; // Memory
-            case "6": e.preventDefault(); navTo("research"); break; // Research
-            case "7": e.preventDefault(); navTo("guide");    break; // Settings
+            case "1": e.preventDefault(); navTo("home"); break;
+            case "2": e.preventDefault(); navTo("chat"); break;
+            case "3": e.preventDefault(); navTo(mode === "simple" ? "prompt" : "overview"); break;
+            case "4": e.preventDefault(); navTo(mode === "simple" ? "consensus" : "cog-dash"); break;
+            case "5": e.preventDefault(); navTo(mode === "simple" ? "library" : "memory"); break;
+            case "6": e.preventDefault(); navTo(mode === "simple" ? "model" : "research"); break;
+            case "7": e.preventDefault(); navTo("guide"); break;
             case ",": e.preventDefault(); setActiveModal("settings");  break;
             case "/": e.preventDefault(); setActiveModal("shortcuts"); break;
             case "b": case "B": e.preventDefault(); toggleCollapsed(); break;
@@ -1095,11 +758,11 @@ export default function App() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [toggleCollapsed]);
+  }, [mode, navTo, toggleCollapsed]);
 
   const MODAL_CONTENT = {
     settings: <SettingsModal settings={settings} onUpdate={updateSetting} coherence={coherence} apiStatus={apiStatus} mode={mode} onSetMode={setModePersisted} />,
-    shortcuts: <ShortcutsModal />,
+    shortcuts: <ShortcutsModal mode={mode} />,
     about: (
       <div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 16 }}>
@@ -1260,6 +923,12 @@ export default function App() {
             return <SubNav surface={surf.label} desc={surf.desc} tabs={tabs} activeTab={activeTab} onNav={navTo} />;
           })()}
 
+          {apiStatus !== "online" && (
+            <div style={{ padding: "16px 28px 0", flexShrink: 0 }}>
+              <ApiOfflineBanner onRetry={checkHealth} checking={apiStatus === "checking"} />
+            </div>
+          )}
+
           <div style={{
             flex: 1,
             overflow: activeTab === "chat" || activeTab === "prompt" ? "hidden" : "auto",
@@ -1268,12 +937,21 @@ export default function App() {
             flexDirection: activeTab === "chat" || activeTab === "prompt" ? "column" : undefined,
           }}>
             {activeTab === "chat"      && <ChatTab apiStatus={apiStatus} onLogAdd={addLog} onQueryComplete={() => setTotalQueries(q => q + 1)} onLitNode={setLitNode} onActivityChange={setActivityPct} onCoherenceUpdate={setCoherence} forcedAgent={forcedAgent} onForcedAgentChange={setForcedAgent} onInspect={handleInspect} defaultReflectMode={settings.reflectMode} seedPrompt={seedPrompt} onSeedConsumed={() => setSeedPrompt(null)} />}
-            {activeTab === "prompt"    && <PromptEditorTab />}
+            {activeTab === "prompt"    && (
+              <Suspense fallback={
+                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                              color: T.muted, fontSize: 13, fontFamily: FONT_DISPLAY, letterSpacing: "0.04em" }}>
+                  Loading the Prompt IDE…
+                </div>
+              }>
+                <PromptEditorTab />
+              </Suspense>
+            )}
 
             {/* All other tabs share one centered content column */}
             {activeTab !== "chat" && activeTab !== "prompt" && (
             <div style={{ maxWidth: 1020, margin: "0 auto", width: "100%" }}>
-              {activeTab === "home"          && <HomeTab apiStatus={apiStatus} coherence={coherence} totalQueries={totalQueries} onNav={navTo} />}
+              {activeTab === "home"          && <HomeTab apiStatus={apiStatus} coherence={coherence} totalQueries={totalQueries} onNav={navTo} mode={mode} />}
               {activeTab === "research"      && <ResearchTab activeDoc={researchDoc} />}
               {activeTab === "knowledge"     && <KnowledgeGraph />}
               {activeTab === "mindmap"       && <MindMapInteractive litNode={litNode} onForceAgent={(id) => { setForcedAgent(id); navTo("chat"); }} />}
@@ -1282,11 +960,9 @@ export default function App() {
               {activeTab === "memory"        && <MemoryBrowserTab />}
               {activeTab === "overview"      && <InspectOverviewTab onNav={navTo} />}
               {activeTab === "brain"         && <DecisionTimeline />}
-              {activeTab === "replay"        && <DecisionReplayTab />}
               {activeTab === "runs"          && <RunsTab />}
               {activeTab === "timeline"      && <TimelineTab />}
               {activeTab === "event-log"     && <EventLogTab />}
-              {activeTab === "traces"        && <TracesTab />}
               {activeTab === "data"          && <DataTab />}
               {activeTab === "cog-dash"      && <CognitionView />}
               {activeTab === "uci"           && <UCIDashboard />}

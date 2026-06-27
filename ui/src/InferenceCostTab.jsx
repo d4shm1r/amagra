@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { T, FONT_MONO } from "./theme";
 import { PageHeader, RefreshBtn, EmptyState } from "./ObsShared";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 // ── Inference Cost (v1.5 Hybrid Inference) ───────────────────────────────────
 // The Productivity cost axis: how much recent reasoning cost in cloud spend, and

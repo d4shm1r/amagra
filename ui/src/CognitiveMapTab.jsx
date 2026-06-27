@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { API } from "./api";
 import { T } from "./theme";
 import { PageHeader, RefreshBtn } from "./ObsShared";
 
@@ -151,8 +152,8 @@ export default function CognitiveMapTab() {
   const load = useCallback(async () => {
     try {
       const [mem, st] = await Promise.all([
-        fetch("http://localhost:8000/memory/records?limit=400").then(r => r.json()),
-        fetch("http://localhost:8000/memory/stats").then(r => r.json()),
+        fetch(`${API}/memory/records?limit=400`).then(r => r.json()),
+        fetch(`${API}/memory/stats`).then(r => r.json()),
       ]);
       const list = Array.isArray(mem) ? mem : [];
       setRawMem(list);

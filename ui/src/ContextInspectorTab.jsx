@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { AGENTS } from "./constants";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 const AGENT_META = Object.fromEntries(
   AGENTS.map(a => [a.id, { icon: a.icon, color: a.color, label: a.label.replace(" Dev", "").replace(" & ", "/") }])

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { API } from "./api";
 import { T } from "./theme";
 import { AGENTS } from "./constants";
 import { PageHeader } from "./ObsShared";
@@ -179,7 +180,7 @@ function SimilarFailures({ rootCause, excludeRunId }) {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    fetch(`http://localhost:8000/runs/similar/${encodeURIComponent(rootCause)}?exclude=${encodeURIComponent(excludeRunId)}&limit=8`)
+    fetch(`${API}/runs/similar/${encodeURIComponent(rootCause)}?exclude=${encodeURIComponent(excludeRunId)}&limit=8`)
       .then(r => r.ok ? r.json() : null)
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
@@ -226,7 +227,7 @@ function ExpandedRun({ runId, summary }) {
   const [showSimilar, setShowSimilar] = useState(false);
 
   useEffect(() => {
-    fetch(`http://localhost:8000/runs/${runId}`)
+    fetch(`${API}/runs/${runId}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setDetail(d); })
       .catch(() => {});
@@ -239,7 +240,7 @@ function ExpandedRun({ runId, summary }) {
 
   const handleReplay = () => {
     setReplaying(true); setReplayTrace(null); setReplayError(null);
-    fetch(`http://localhost:8000/runs/${runId}/replay`, { method: "POST" })
+    fetch(`${API}/runs/${runId}/replay`, { method: "POST" })
       .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e.detail)))
       .then(d => { setReplayTrace(d.trace); setReplaying(false); })
       .catch(e => { setReplayError(String(e)); setReplaying(false); });
@@ -480,7 +481,7 @@ export default function RunsTab() {
 
   const load = useCallback(() => {
     setLoading(true);
-    fetch("http://localhost:8000/runs?limit=200")
+    fetch(`${API}/runs?limit=200`)
       .then(r => r.ok ? r.json() : { runs: [] })
       .then(d => { setRuns(d.runs || []); setLoading(false); })
       .catch(() => setLoading(false));

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { AGENTS } from "./constants";
 import { PageHeader } from "./ObsShared";
+import TracesTab from "./TracesTab";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 // Compact labels for chip display, derived from shared constants
 const SHORT_LABEL = {
@@ -493,6 +494,7 @@ export default function DecisionTimeline() {
   const [drift,          setDrift]          = useState(null);
   const [contradictions, setContradictions] = useState(null);
   const [selected,       setSelected]       = useState(null);
+  const [view,           setView]           = useState("history");   // "history" | "live"
   const [filter,         setFilter]         = useState("all");
   const [search,         setSearch]         = useState("");
   const [loading,        setLoading]        = useState(false);
@@ -542,9 +544,31 @@ export default function DecisionTimeline() {
     <div style={{ animation: "fadeIn .2s" }}>
 
       {/* Page header */}
-      <PageHeader title="Decisions" subtitle="Every routing decision — what the brain chose, what the router wanted, where they diverged.">
+      <PageHeader
+        title="Decisions"
+        subtitle={view === "live"
+          ? "Live routing signal log — agent selected, signal domain, confidence, and reason."
+          : "Every routing decision — what the brain chose, what the router wanted, where they diverged."}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {[
+          {/* History / Live view toggle */}
+          <div style={{ display: "flex", border: "1px solid #E0D6C4", borderRadius: 8, overflow: "hidden" }}>
+            {[
+              { id: "history", label: "History" },
+              { id: "live",    label: "Live"    },
+            ].map((v, i) => (
+              <button key={v.id} onClick={() => setView(v.id)} className="nav-btn" style={{
+                padding: "6px 14px", fontSize: 12, fontFamily: "inherit",
+                fontWeight: view === v.id ? 700 : 500,
+                background: view === v.id ? "#C4880822" : "transparent",
+                color: view === v.id ? "#9A6C00" : "#9A7A60",
+                border: "none", borderLeft: i ? "1px solid #E0D6C4" : "none",
+                cursor: "pointer",
+              }}>{v.label}</button>
+            ))}
+          </div>
+
+          {view === "history" && [
             { label: "Total",     value: stats.total     || 0, color: "#9A7A60" },
             { label: "Conflicts", value: stats.conflicts  || 0, color: stats.conflicts > 0 ? "#B42318" : "#9A7A60" },
             { label: "Reflect",   value: `${Math.round((stats.reflect_rate || 0) * 100)}%`, color: "#BE185D" },
@@ -555,15 +579,23 @@ export default function DecisionTimeline() {
               <div style={{ fontSize: 10, color: "#9A7A60", marginTop: 1 }}>{label}</div>
             </div>
           ))}
-          <button onClick={load} disabled={loading} className="nav-btn" style={{
-            background: "transparent", border: "1px solid #E0D6C4", color: "#5C4030",
-            padding: "7px 16px", borderRadius: 16, fontSize: 12, fontWeight: 600,
-            cursor: "pointer", fontFamily: "inherit",
-          }}>
-            {loading ? "…" : "↻ Refresh"}
-          </button>
+          {view === "history" && (
+            <button onClick={load} disabled={loading} className="nav-btn" style={{
+              background: "transparent", border: "1px solid #E0D6C4", color: "#5C4030",
+              padding: "7px 16px", borderRadius: 16, fontSize: 12, fontWeight: 600,
+              cursor: "pointer", fontFamily: "inherit",
+            }}>
+              {loading ? "…" : "↻ Refresh"}
+            </button>
+          )}
         </div>
       </PageHeader>
+
+      {/* Live view: folded-in routing signal log (formerly the Trace tab) */}
+      {view === "live" && <TracesTab embedded />}
+
+      {/* History view: full decision feed + inspector */}
+      {view === "history" && <>
 
       {/* Drift monitor */}
       <DriftMonitorPanel drift={drift} />
@@ -701,6 +733,7 @@ export default function DecisionTimeline() {
         </div>
 
       </div>
+      </>}
     </div>
   );
 }

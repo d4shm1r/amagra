@@ -3,7 +3,7 @@ import { AGENTS } from "./constants";
 import { T } from "./theme";
 import { PageHeader } from "./ObsShared";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 function hc(v, good, warn) {
   return v == null ? T.muted : v >= good ? T.success : v >= warn ? T.warn : T.error;

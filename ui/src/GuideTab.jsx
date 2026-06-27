@@ -38,7 +38,7 @@ const METRICS = [
   {
     id: "entropy", name: "H(q) — Routing Entropy", color: "#0F766E",
     formula: "H(q) = −Σ p(a|q) · log₂ p(a|q)",
-    desc: "Shannon entropy over the agent probability distribution for a given query. Low entropy = the brain is sure which agent to pick. High entropy = the query is ambiguous and could go to multiple agents. Visible in the Brain tab per-decision.",
+    desc: "Shannon entropy over the agent probability distribution for a given query. Low entropy = the brain is sure which agent to pick. High entropy = the query is ambiguous and could go to multiple agents. Visible in Runs → Decisions per decision.",
     thresholds: [],
   },
   {
@@ -148,7 +148,7 @@ const HOW_TO = [
     ],
   },
   {
-    title: "Progress Tab", color: "#1E5A8A",
+    title: "Settings → Progress", color: "#1E5A8A",
     items: [
       "System metrics, memory health, and build history in one place.",
       "⊕ Consolidate: removes near-duplicate memories (cosine > 0.93) — run periodically.",
@@ -158,7 +158,7 @@ const HOW_TO = [
     ],
   },
   {
-    title: "Brain Tab", color: "#7E3F8F",
+    title: "Runs → Decisions", color: "#7E3F8F",
     items: [
       "Shows every routing decision the brain made, with confidence and reflect level.",
       "Color-coded by conflict (brain vs router disagreement) — yellow = conflicted.",

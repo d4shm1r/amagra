@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { T, FONT_MONO } from "./theme";
 import { ObsPanel, MetricCard, EventRow, RefreshBtn, EmptyState, hScore, PageHeader } from "./ObsShared";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 // ── Entity badges ─────────────────────────────────────────────
 function EntityBadge({ label }) {
@@ -238,7 +238,7 @@ export default function ProjectStateTab() {
   const plan = cos?.plan;
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto" }}>
+    <div>
 
       {/* Header */}
       <PageHeader title="Project State" subtitle="Live world model — what the system knows about your project.">

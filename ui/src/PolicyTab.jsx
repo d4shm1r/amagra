@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { PageHeader, MetricCard, ObsPanel, RefreshBtn } from "./ObsShared";
 
-const API = "http://localhost:8000";
+import { API } from "./api";
 
 // ── Colour helpers ────────────────────────────────────────────
 function rateColor(rate, lo, hi) {
