@@ -1,10 +1,27 @@
 # Amagra — Roadmap
 
-> **North star:** the only AI runtime where the system remembers everything, verifies itself, and can prove why it did what it did — on hardware you control. Memory, verification, and provenance are the product; everything else is an adapter.
+> **North star:** an AI workspace that remembers everything, checks its own work, and can
+> prove why it did what it did — on hardware you control. Memory, verification, and provenance
+> are the product; models and agents are adapters.
+
+## At a glance
+
+| Status | What |
+|--------|------|
+| ✅ **Shipped** | Tool-using agents · multi-provider models · cross-model debugger & consensus · unified workspace UI · hybrid inference · UI consolidation + Monaco Prompt IDE *(v1.5.5)* |
+| 🔜 **Now** | **Public launch** *(#9)* — the one thing everything else waits on |
+| ▶ **Next** | **v1.6 Workspaces & RBAC** — isolated projects, roles, a custom agent builder, and prompts as first-class versioned artifacts |
+| ○ **Later** | v1.7 team memory & governance · v2.0 agent registry & SDK |
+
+> **The one rule:** nothing after launch starts until launch ships. Distribution is the
+> bottleneck, not features.
+
+The rest of this document is the detailed working record — dated steps, tracking issues, and
+design notes. Skim the table above; dive below only when you need the specifics.
 
 ---
 
-## Near-Term Execution Plan *(as of 2026-06-26)*
+## Near-Term Execution Plan *(as of 2026-06-28)*
 
 The milestone sections below are capability-ordered; this is the **dated** view — what to do next, soonest first. The single highest-ROI item still pending is the public launch (#9).
 

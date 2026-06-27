@@ -3,109 +3,64 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.5.2" src="https://img.shields.io/badge/release-v1.5.2-C48808?style=flat-square&labelColor=2E2010" /></a>
+  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.5.5" src="https://img.shields.io/badge/release-v1.5.5-C48808?style=flat-square&labelColor=2E2010" /></a>
   <a href="https://github.com/d4shm1r/amagra/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-C48808?style=flat-square&labelColor=2E2010" /></a>
   <a href="https://github.com/d4shm1r/amagra/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/d4shm1r/amagra?style=flat-square&logo=github&logoColor=white&color=C48808&labelColor=2E2010" /></a>
-  <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-C48808?style=flat-square&logo=python&logoColor=white&labelColor=2E2010" />
   <img alt="Self-hosted" src="https://img.shields.io/badge/self--hosted-✓-C48808?style=flat-square&labelColor=2E2010" />
-  <img alt="Tests: 889 passing" src="https://img.shields.io/badge/tests-889%20passing-C48808?style=flat-square&labelColor=2E2010" />
+  <img alt="Tests: 914 passing" src="https://img.shields.io/badge/tests-914%20passing-C48808?style=flat-square&labelColor=2E2010" />
 </p>
 
 <p align="center">
-  <b>The local cross-model prompt debugger.</b><br />
-  Run one prompt across Claude, GPT, and your local models — and see exactly where they disagree.
+  <b>The private AI workspace that shows its work.</b><br />
+  Run one prompt across Claude, GPT, and your local models — see exactly where they
+  disagree, on hardware you control.
 </p>
 
 <p align="center">
-  Amagra is a self-hosted AI workspace built around a <b>cross-model prompt debugger</b>: send the
-  same prompt to several models at once, read every answer side by side, and get a divergence score
-  showing how much they actually agree. It runs entirely on your own hardware via
-  <a href="https://ollama.com">Ollama</a> (or your own cloud key), remembers the context of your work
-  across sessions, and <b>logs every decision so you can replay exactly why it answered the way it did</b>.
-  <br />
-  No black box. Nothing leaves your machine.
+  Amagra runs entirely on your own machine. It remembers your work across sessions,
+  routes each question to the right specialist, and logs every decision so you can
+  always replay <i>why</i> it answered the way it did. No black box. Nothing leaves your machine.
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/chat.png" width="90%" alt="Chat — talk to specialist agents with persistent memory" />
+  <img src="docs/screenshots/chat.png" width="90%" alt="Chat — specialist agents with persistent memory" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/library.png" width="49%" alt="Library — persistent documents Amagra has read" />
-  <img src="docs/screenshots/inspect.png" width="49%" alt="Inspect — decisions, runs, and context at a glance" />
+  <img src="docs/screenshots/library.png" width="49%" alt="Library — documents Amagra has read" />
+  <img src="docs/screenshots/inspect.png" width="49%" alt="Inspect — decisions and runs at a glance" />
 </p>
 
 ---
 
-## What you get
+## What it does
 
-- **Compare models on one prompt** — send the same prompt to Claude, GPT, and local models at once; read every answer side by side with latency and length.
-- **See where models disagree** — a divergence score quantifies how much the outputs actually agree (Aligned / Mixed / Divergent), so you catch silent prompt failures before your users do.
-- **Runs on your hardware, private by default** — self-hosted via Ollama or your own cloud key; nothing leaves your machine. MIT licensed.
-- **Nothing is hidden** — every answer can be inspected, replayed, and understood. No black box.
-- **It remembers your work** — context carries across sessions, so you stop re-explaining yourself.
-- **Specialists handle the work they understand best** — the right expert answers each question, automatically.
-
----
-
-## How it compares to other prompt tooling
-
-If you've used **LangSmith**, **Promptfoo**, **Helicone**, or **PromptLayer**, Amagra overlaps
-and diverges in specific ways:
-
-- **It's local-first and private.** Amagra is self-hosted and runs offline against your own
-  Ollama models — no account, no proxy, no prompts leaving your machine. Most cloud eval
-  platforms route your prompts through their infrastructure; Promptfoo is local but
-  CLI/config-file driven.
-- **It compares models in a GUI, not a config file.** Paste one prompt, tick the models, read
-  every answer side by side — latency, length, and a **divergence score** that quantifies how
-  much the outputs actually agree (Aligned / Mixed / Divergent). That agreement metric is the
-  thing most prompt tools don't surface out of the box.
-- **It remembers.** Amagra is a workspace, not a one-shot CLI run — project context, prior
-  prompts, and every routing decision persist across sessions and are replayable.
-
-Use a hosted eval platform if you need cloud dashboards and team analytics. Use Amagra if you
-want to debug prompts across models **privately, on your own hardware, with the comparison and
-the reasoning both in front of you.**
+- **Compare models on one prompt** — send the same prompt to Claude, GPT, and local
+  models at once, read every answer side by side, and get an agreement score that tells
+  you how much they actually agree. Catch silent prompt failures before your users do.
+- **Stays private** — self-hosted via [Ollama](https://ollama.com) or your own cloud key.
+  Nothing leaves your machine. MIT licensed.
+- **Remembers your work** — context carries across sessions, so you stop re-explaining yourself.
+- **Shows its reasoning** — every answer can be inspected and replayed. No black box.
 
 ---
 
-## Why not just use Ollama, OpenWebUI, or ChatGPT?
+## Why Amagra
 
-You can — and for one-off questions you probably should. Amagra is for the times you
-come back to the *same* work for weeks and need the tool to remember it and show its
-reasoning. The honest trade-offs:
+For one-off questions, plain Ollama or ChatGPT is fine. Amagra is for the work you come
+back to for weeks — where you need the tool to remember it and show how it got there.
 
-| | **Amagra** | Plain Ollama / OpenWebUI | Cloud ChatGPT / Claude |
+| | **Amagra** | Ollama / OpenWebUI | Cloud ChatGPT / Claude |
 |---|:---:|:---:|:---:|
 | Runs fully local & offline | ✅ | ✅ | ❌ |
-| Persistent memory across sessions | ✅ built-in | ⚠️ manual / limited | ⚠️ cloud-stored |
+| Memory across sessions | ✅ built-in | ⚠️ limited | ⚠️ cloud-stored |
 | Every answer inspectable & replayable | ✅ | ❌ | ❌ |
-| Routes each question to a specialist | ✅ | ❌ | ❌ |
+| Compare models on one prompt | ✅ | ❌ | ❌ |
 | Your data never leaves your machine | ✅ | ✅ | ❌ |
-| Frontier-grade model quality | ❌ your local model | ❌ | ✅ |
-| Zero setup | ❌ | ⚠️ | ✅ |
 
-If you want the strongest possible single answer right now, use a frontier cloud model.
-If you want a private workspace that *accumulates* context and never asks you to trust a
-black box, that's the gap Amagra fills.
-
----
-
-## Under the hood
-
-The experience is the point. The numbers are here if you want them.
-
-| Metric | Value | Notes |
-|---|---|---|
-| Routing | keyword-first, then LLM | Every decision is logged and replayable — see accuracy & method in [docs/FINDINGS.md](docs/FINDINGS.md) |
-| Memory retrieval (FAISS, warm) | **< 1 ms** | LRU cache hit |
-| Memory retrieval (cold embed) | ~60–80 ms | nomic-embed-text via Ollama |
-| Skill graph coverage | **21 nodes** | Phrase-weighted disambiguation across all 10 agents |
-| Test suite | **889 passing** | ruff + pytest + Docker build on every push and PR |
-| Free tier | **100 req / day** | No card required — `POST /register/free` |
-
-> Routing quality is measured honestly, not marketed: there's a wide gap between a self-authored curated set and a held-out adversarial one, and live telemetry (`GET /telemetry/routing`) tracks the real thing. The numbers, the method, the confidence intervals, and the known failure modes all live in [docs/FINDINGS.md](docs/FINDINGS.md) — including why we don't quote a single headline accuracy figure.
+> Coming from **LangSmith**, **Promptfoo**, or **Helicone**? Amagra covers the same
+> prompt-comparison ground, but local-first, in a GUI, with persistent memory — not a
+> cloud dashboard or a config file. More in the [FAQ](#faq).
 
 ---
 
@@ -114,379 +69,107 @@ The experience is the point. The numbers are here if you want them.
 **Prebuilt image (quickest):**
 
 ```bash
-docker pull d4shm1r/amagra:latest        # multi-arch: amd64 + arm64
-docker run --rm -p 8000:8000 d4shm1r/amagra:latest
-# open http://localhost:8000
+docker pull d4shm1r/amagra:latest
+docker run --rm -p 8000:8000 d4shm1r/amagra:latest   # open http://localhost:8000
 ```
 
-Runs the app immediately. For **local** model answers it needs Ollama reachable — add
-`--add-host=host.docker.internal:host-gateway -e OLLAMA_BASE_URL=http://host.docker.internal:11434`,
-or use the full stack below which bundles Ollama. **Cloud** models work with your own key
-(`-e BRAIN_PROVIDER=anthropic -e ANTHROPIC_API_KEY=...`).
+For **local** model answers, point it at Ollama with
+`--add-host=host.docker.internal:host-gateway -e OLLAMA_BASE_URL=http://host.docker.internal:11434`.
+For **cloud** models, add your key (`-e BRAIN_PROVIDER=anthropic -e ANTHROPIC_API_KEY=...`).
 
 **Full stack with Docker Compose (bundles Ollama, recommended):**
 
 ```bash
-git clone https://github.com/d4shm1r/amagra
-cd amagra
+git clone https://github.com/d4shm1r/amagra && cd amagra
 docker compose up
-```
-
-Pull the models on first run:
-
-```bash
 docker exec agentic-ollama ollama pull nomic-embed-text
 docker exec agentic-ollama ollama pull phi4-mini
 ```
 
-- UI: http://localhost:3000
-- API docs: http://localhost:8000/docs
+- UI: http://localhost:3000 · API docs: http://localhost:8000/docs
+- No GPU? Remove the `deploy` block from `docker-compose.yml` — embeddings run on CPU.
 
-> **No GPU?** Remove the `deploy` section from `docker-compose.yml`. Embedding runs on CPU (~2–3s cold, < 1ms warm via LRU).
-
-**Without Docker:**
-
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-ollama pull nomic-embed-text && ollama pull phi4-mini
-uvicorn api:app --host 0.0.0.0 --port 8000 &
-cd ui && npm install && npm start
-```
-
-Reproduce the routing benchmark (no Ollama required):
-
-```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-make benchmark
-```
+Running without Docker, reproducing the routing benchmark, and the full API are covered in
+**[CONTRIBUTING.md](CONTRIBUTING.md)** and the live docs at `/docs`.
 
 ---
 
-## Architecture
+## How it works
 
-> **Evaluating the engineering?** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) maps every claim below to the file that implements it — the LangGraph `StateGraph`, the signal-first router, the verify/reflect/retry loop, and the observability stack.
+A fast signal classifier routes most questions instantly; only ambiguous ones go to the
+LLM coordinator. Every step emits an event you can watch live.
 
 ```
-User query
+Your question
     │
     ▼
-QuerySignal  (~1 ms — domain, shape, verbosity heuristics — high-confidence direct route)
-    │
-    ├─► Direct route  (high-confidence domain match)
-    │
-    └─► CoreBrain     (LLM reasoning — ambiguous queries only)
+Signal classifier  (~1 ms — domain & shape heuristics)
+    ├─► Direct route   → the obvious specialist
+    └─► Coordinator    → reasons it out for ambiguous cases
             │
-            └─► Coordinator (LangGraph)
-                    │
-                    ├─► Risk gate  (reflect_level: none / light / full)
-                    │
-                    └─► Specialist agent
-                            │
-                            ├─► Skill graph disambiguation (21 nodes)
-                            ├─► FAISS memory retrieval (< 1 ms warm)
-                            ├─► Ollama LLM inference
-                            ├─► Critic gate  (score ≥ 0.70 or regenerate)
-                            └─► Step verifier  (pass / fail → event_bus)
+            └─► Specialist agent
+                    ├─ retrieves relevant memory
+                    ├─ generates the answer
+                    └─ a critic scores it (regenerate if weak)
 ```
 
-**Memory pipeline:** SQLite → auto-promote to FAISS at 800 entries → cosine similarity → outcome-weighted quality scoring → LRU cache
+Memory lives in a local vector store with sub-millisecond warm retrieval, and a quiet
+learning loop nudges routing toward the paths that score well — no model weights are touched.
 
-**Learning loop:** critic gate scores (0.0–1.0) feed `apply_learning_update()` after each response. Scores are stored in SQLite alongside the query, agent, and routing path. The coordinator uses these to adjust per-agent selection confidence on similar future queries — high-scoring paths are preferred, low-scoring paths trigger retry or escalation. Model parameters are not modified; only coordinator-level routing and retry weights change.
-
----
-
-## Routing in practice
-
-QuerySignal classifies by domain signal — keyword patterns, code syntax, question shape — not intent inference. Below are representative examples from the 138-query evaluation set:
-
-| Query | Routed to | Primary signal |
-|---|---|---|
-| "Write a pandas groupby with multi-level index" | Data | `pandas`, dataframe vocabulary |
-| "Configure OSPF on a Cisco switch" | Networking | protocol name + network device |
-| "Fix this LINQ query throwing NullReferenceException" | .NET | `LINQ`, C# exception |
-| "Make this explanation shorter" | Terse | brevity instruction |
-| "Debug my Dockerfile — build fails at RUN pip install" | DevOps | `Dockerfile`, build toolchain |
-| "Explain gradient descent intuitively" | AI/ML | ML terminology |
-| "My SSH tunnel keeps dropping after 60s" | Networking | SSH, connectivity timeout |
-| "Summarise this RFC for a non-technical audience" | Writer | audience framing |
-| "Plot a confusion matrix from sklearn predictions" | Data | visualization + ML library |
-| "Write a Python async context manager" | Python | language + stdlib pattern |
-
-Curated eval result: **137 correct, 1 incorrect** (138 queries).
-
-The one miss: *"Write a script to analyse server logs"* routed to Data instead of DevOps — scripting-for-analysis vs scripting-for-operations is a known ambiguity at the boundary between those two agents.
-
-### Known routing overlaps
-
-Three domain pairs produce the most misroutes in practice:
-
-- **Python ↔ Data** — data manipulation queries without an explicit library reference can land on either
-- **DevOps ↔ Networking** — infrastructure questions that span server config and network topology
-- **Writer ↔ Knowledge** — documentation requests sometimes select Writer when the user wants a factual lookup
-
-These are visible in live telemetry (`GET /telemetry/routing`). The curated eval deliberately includes overlap cases.
-
----
-
-## API
-
-```bash
-# Ask a question (auto-routed)
-curl http://localhost:8000/ask \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Write a Python async context manager"}'
-
-# Continue a conversation thread
-curl http://localhost:8000/ask \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Add error handling to that", "thread_id": "your-thread-id"}'
-
-# Force a specific agent
-curl http://localhost:8000/ask \
-  -H "Content-Type: application/json" \
-  -d '{"message": "...", "force_agent": "python_dev"}'
-
-# List conversation threads
-curl http://localhost:8000/threads
-
-# Memory health
-curl http://localhost:8000/memory/stats
-
-# Live routing telemetry
-curl http://localhost:8000/telemetry/routing
-
-# Active execution plan (DAG)
-curl http://localhost:8000/plan/graph
-
-# Recent events
-curl http://localhost:8000/cos/events?n=20
-```
-
-Full API docs at `http://localhost:8000/docs`.
-
----
-
-## Observability — see and replay everything
-
-The reason to choose Amagra over a plain local chat UI: agent behaviour is observable and replayable at every step, not a black box. These are concrete components, not a framework — each emits to a UI panel you can browse live.
-
-| Component | What it does |
-|---|---|
-| `event_bus` | Typed pub/sub — every routing decision, plan step, verification, and memory retrieval emits an event |
-| `world_model` | Session-scoped working context — tracks current goal, known issues, named entities, and completed tasks for the active request; reset between sessions |
-| `cognitive_state` | Request lifecycle — begin → route → execute → reflect → end, tracked as structured data |
-| `metrics_engine` | Computes four live counters from session events: Reliability (error rate), Intelligence (routing precision), Adaptation (learning updates applied), Productivity (tasks completed per session) |
-| `skill_graph` | 21-node skill disambiguation layer, phrase-weighted scoring, resolves edge-case routing ambiguity |
-| `step_verifier` | Scores each agent response after execution — pass/retry/abort recommendation to the coordinator |
-| `suggestion_engine` | Reads world model issues and failed events, generates proactive action suggestions in the UI |
-
-All of this is browsable in real time from the UI: Event Log, Plan Graph, Metrics Dashboard, Risk Observatory, Memory Browser, Decision Replay.
-
----
-
-## Auth
-
-Auth is **disabled by default** for local development. Enable it:
-
-```bash
-REQUIRE_AUTH=1 ADMIN_TOKEN=your-secret uvicorn api:app ...
-```
-
-**Self-service free tier** (100 req/day, no card):
-
-```bash
-curl -X POST http://localhost:8000/register/free \
-  -H "Content-Type: application/json" \
-  -d '{"email": "you@example.com", "name": "Your Name"}'
-```
-
-**Create a managed API key** (admin):
-
-```bash
-curl -X POST http://localhost:8000/admin/keys \
-  -H "Authorization: Bearer your-secret" \
-  -H "Content-Type: application/json" \
-  -d '{"owner": "alice@example.com", "tier": "developer"}'
-```
-
-Rate limits are returned on every authenticated response as `X-RateLimit-Limit`, `X-RateLimit-Used`, `X-RateLimit-Remaining`.
-
-### Before you expose it beyond localhost
-
-Amagra is local-first; the defaults assume a trusted single user on `localhost`. Read this before binding to a public interface:
-
-- **Set `REQUIRE_AUTH=1`.** It's off by default. The server *refuses to boot* with `ENV=production` and `REQUIRE_AUTH=0` — but that guard only fires when `ENV=production` is actually set, so set both. Without auth, all routes are open.
-- **`AMAGRA_SANDBOX=1` is a resource jail, not a security boundary.** The Python sandbox (`POST /sandbox/run`) limits CPU/memory/processes/time, but **does not isolate the network or the filesystem** — sandboxed code can open sockets and read any file the server process can. Never enable it on a network-exposed instance without OS-level isolation: run the whole server in a container with `--network none` (or `seccomp`/`nsjail`/`bubblewrap`). On localhost-only, it's fine.
-- **`AMAGRA_AGENT_TOOLS=1` + web search is a prompt-injection exfiltration path.** When the in-agent tool loop is on, untrusted content (a file the agent reads, a web-search snippet) can steer the model into leaking data through a `web_search` query. Keep it off when handling sensitive data, or run without a configured web-search provider.
-- **Set `ADMIN_TOKEN`** to a strong random value; admin routes are disabled until you do.
-
----
-
-## Known limitations
-
-- **Streaming available** — use `POST /ask/stream` for SSE streaming responses. When `ANTHROPIC_API_KEY` is set, tokens stream directly from Claude; without it, the response arrives as a single chunk. The default `POST /ask` remains non-streaming.
-- **Tool use** — file access, sandboxed code execution, and web search ship driven by the in-agent tool loop at `POST /tools/run`. As of `v1.1.1` that loop is also wired into the default specialist-agent chat flow (`tools/agent_runtime.py`), **config-gated behind `AMAGRA_AGENT_TOOLS=1`** (off by default until phi4-mini's tool-JSON reliability is validated; falls back to a plain invoke).
-- **Default inference** — Ollama (local). Cloud provider support (Anthropic, OpenAI, Gemini) via the multi-provider `/ask` path is available; full provider-abstraction UI is committed for `v1.2`.
-- **SQLite sprawl** — internal data is split across multiple SQLite files; cross-DB atomicity is not guaranteed. Every path resolves through one registry (`infrastructure/db.py`), and setting `AMAGRA_DB=/path/to/amagra.db` collapses all logical databases into a single file. The default is still separate files (no migration required). To switch to one file, consolidate existing data once and flip the env var:
-
-  ```bash
-  # Preview (writes nothing):
-  python scripts/migrate_to_single_db.py --target amagra.db --dry-run
-  # Consolidate, then archive the old files so they can't diverge:
-  python scripts/migrate_to_single_db.py --target amagra.db --apply --archive
-  export AMAGRA_DB=$(pwd)/amagra.db   # or set it in docker-compose.yml
-  ```
-
-  Migration preserves every table's `rowid` (the FAISS index is keyed on `memories.id`) and copies the FAISS sidecar; on first start in single-file mode the index rebuilds itself if the sidecar isn't found. Single-file mode simplifies backups and container volumes at the cost of one shared writer lock. Making it the default is planned for a later release.
-- **Benchmark independence** — routing accuracy is measured on a curated eval set, not production data. See [Routing in practice](#routing-in-practice) for the raw numbers and known failure modes. Independent production telemetry is tracked via `GET /telemetry/routing`.
+The engineering detail — the LangGraph state machine, the routing accuracy and its honest
+failure modes, the observability stack — lives in **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
+and **[docs/FINDINGS.md](docs/FINDINGS.md)**.
 
 ---
 
 ## Roadmap
 
-**v1.0.0 is the first public release.** From here, Amagra evolves toward a provider-agnostic runtime where models, embeddings, and agents can be added without changing the core memory, routing, or observability systems. Commitments are published in the app under **Promises** — explicit delivery targets, not a wishlist. The full plan lives in [docs/ROADMAP.md](docs/ROADMAP.md).
+| | Milestone | |
+|---|---|---|
+| ✅ | **Tool-using agents · multi-provider models** | files, sandboxed code, web search; Ollama + Claude + GPT + Gemini |
+| ✅ | **Cross-model prompt debugger & consensus** | run a prompt across N models, score their agreement |
+| ✅ | **Unified workspace UI · hybrid inference** | one coherent dashboard; local-by-default, cloud when it counts |
+| 🔜 | **Workspaces & RBAC** *(v1.6)* | isolated projects per user, roles, a custom agent builder — and prompts as first-class, versioned artifacts |
+| ○ | **Team memory & governance** *(v1.7)* | shared memory, audit trails, SSO, air-gapped installer |
+| ○ | **Agent registry & SDK** *(v2.0)* | build and share custom agents as portable packages |
 
-### v1.0.1 — Launch polish · Q3 2026
-
-Post-debut hardening: tests to ~60% coverage, in-product onboarding (Ollama detection, model-pull progress, guided first prompt), Vite migration to retire CRA, single consolidated `amagra.db`, and public launch (Show HN, r/LocalLLaMA, Docker Hub, Homebrew).
-
-### v1.1 — Tool-using agents *(✅ shipped v1.1.1)*
-
-Agents gain real capabilities, not just text. **Shipped:** thread management (rename, fork, archive); memory import/export (JSON/Markdown); the jailed file/folder tool (`GET /workspace/read|list|search`, confined via `Path.resolve().is_relative_to(root)`); sandboxed code execution (`POST /sandbox/run`, `setrlimit` + isolated `python3 -I`, opt-in via `AMAGRA_SANDBOX=1`); chat stop/regenerate/edit affordances; live web search (`GET /search/web`, default self-hosted SearXNG, opt-in Brave/Tavily); and a structured tool loop (`POST /tools/run`) that lets the model call the file/sandbox/web tools mid-reasoning. **Remaining polish:** auto-invoking the tool loop inside the default specialist-agent chat flow.
-
-### v1.2 — Multi-provider models *(✅ shipped v1.2.0)*
-
-**Shipped:** in-app model/provider settings and single-process desktop mode — pick a local or cloud backend without editing config. Additional inference backends supported:
-
-| Provider | Type |
-|---|---|
-| Ollama | Local inference (default) |
-| Anthropic | Cloud inference |
-| OpenAI | Cloud inference |
-| Gemini | Cloud inference |
-| OpenAI-compatible endpoints | Self-hosted models (vLLM, LM Studio, etc.) |
-
-Users select the inference model in-app. Routing, memory, and telemetry are unaffected — the provider swap happens below the coordinator. *Still planned:* workspaces (isolated projects per user), RBAC, and a custom agent builder (name, system prompt, keywords via admin UI — no code deploy).
-
-### v1.3 — Cross-model prompt debugger *(✅ shipped v1.3.0–1.3.1)*
-
-**Shipped:** run one prompt across N models concurrently (`POST /debug/prompt` + the Run Across Models panel), each output with latency and length side by side, plus a cross-model divergence highlight (v1.3.1). Static, client-side prompt analysis (health score, missing-context detection, one-click auto-repair) ships alongside it.
-
-### v1.4 — Unified workspace UI *(✅ shipped v1.4.0–1.4.6)*
-
-The dashboard's surfaces consolidated into 6 coherent views with observability as the hero screen — a reorganization, not a deletion. Followed by a brand/UI refinement pass (v1.4.1–1.4.6): serif PageHeaders, the lux-card sweep, gold titles, the AMAGRA favicon set, and live component-transparency + stability metrics.
-
-### v1.5 — Hybrid inference *(✅ shipped v1.5.0–1.5.2)*
-
-Local by default, cloud when it counts. Hard or low-confidence queries escalate to a cloud model **automatically** — without you choosing — and the spend is accounted for (`GET /runs/cost`; reads `$0.00 fully local` until you opt in via `AMAGRA_HYBRID`). Local-only stays the default. Followed by the brand/social polish and the v1.6 workspace runway.
-
-### Cross-model consensus *(✅ shipped)*
-
-When an answer matters, ask several models at once and see how much they actually **agree** — an agreement score, the most representative answer, and named dissenters, with the full comparison shown (`POST /consensus`, or **Workspace → Consensus**). The cross-model debugger turned from a *debug* feature into a *trust* feature: verify before you trust, on hardware you control.
-
-### v1.6 — Workspaces & RBAC *(next)*
-
-Multiple isolated projects per user, role-based access (owner / admin / member), and a custom agent builder — name, system prompt, and keyword triggers via the admin UI, no code deploy.
-
-### v1.7 — Team memory & governance
-
-Shared team memory (per-workspace FAISS index), admin console, encrypted cross-machine sync, SSO/SAML, audit-log export + Chain-of-Authorization trail, configurable retention, and an air-gapped installer.
-
-### v2.0 — Agent registry & SDK
-
-A supported interface for building custom agents. Agents declare a manifest:
-
-```yaml
-id: security_auditor
-name: Security Auditor
-skills: [security, pentesting, compliance]
-keywords: [cve, owasp, threat model, audit]
-routing_examples:
-  - "Review this code for injection vulnerabilities"
-  - "Write a threat model for this API"
-confidence_threshold: 0.75
-capabilities: [memory, coding]
-```
-
-The runtime automatically incorporates registered agents into routing, telemetry, and observability — custom agents get memory, critic gate, and step verification for free. Agents become portable artifacts (export/import as YAML or ZIP), served from a curated registry tiered by trust:
-
-| Tier | Description |
-|---|---|
-| Official | Maintained by Amagra, benchmarked, supported |
-| Verified community | Third-party, reviewed, clearly labelled |
-| Local | User-created, no quality guarantees |
-
-Amagra remains responsible for runtime infrastructure. Agent capabilities become extensible without compromising runtime quality.
-
----
-
-> The goal is for every new model and every new agent to increase the value of Amagra's runtime — not compete with it. The memory, routing, and observability layers are the product. Models and agents are adapters.
+The full plan — with dates, tracking issues, and design notes — is in
+**[docs/ROADMAP.md](docs/ROADMAP.md)**. Delivery commitments are published in-app under **Promises**.
 
 ---
 
 ## FAQ
 
 **What is a prompt debugger?**
-A prompt debugger lets you see how a single prompt behaves across different language models —
-side by side — so you can find where it silently breaks, drifts, or produces inconsistent
-answers. Amagra is a local, self-hosted prompt debugger: it runs one prompt across Claude, GPT,
-and local Ollama models at once and scores how much they agree.
+A way to see how one prompt behaves across different models, side by side, so you can find
+where it silently breaks or drifts. Amagra runs your prompt across Claude, GPT, and local
+Ollama models at once and scores how much they agree.
 
-**How do I test one prompt across multiple models?**
-In Amagra, paste your prompt into the editor, select the models to compare, and run. Each
-model's output appears in its own card with latency and length, plus a divergence score
-(Aligned / Mixed / Divergent) summarizing how much the answers agree. Programmatically, send a
-`POST /debug/prompt` request with your prompt and the list of models.
+**Can I run it fully offline?**
+Yes — self-hosted on your own hardware via Ollama, no account or internet needed for local
+models. Cloud models work too if you add your own key, but nothing is required to leave your machine.
 
-**Can I run it locally and offline?**
-Yes. Amagra is self-hosted and runs entirely on your own hardware via Ollama — no account and
-no internet required for local models. Cloud models (Claude, GPT, Gemini) work too if you add
-your own API key, but nothing is required to leave your machine.
-
-**How is Amagra different from LangSmith or Promptfoo?**
-LangSmith is a hosted, cloud-based tracing and eval platform. Promptfoo is an open-source but
-CLI/config-driven evaluator. Amagra is a self-hosted GUI workspace that compares models on one
-prompt, scores their divergence, keeps persistent project memory, and runs fully private on
-your own hardware.
+**How is it different from LangSmith or Promptfoo?**
+Those are cloud-hosted or CLI-driven eval tools. Amagra is a self-hosted GUI workspace that
+compares models, scores their divergence, and keeps persistent project memory — fully private.
 
 **Is it free?**
-Yes — self-hosting is free and MIT licensed, always. There's also a managed free tier (100
-requests/day, no card), with paid tiers for managed hosting and enterprise features.
-
-**Which models does it support?**
-Local models via Ollama (default), plus Anthropic (Claude), OpenAI (GPT), Google Gemini, and
-any OpenAI-compatible endpoint such as vLLM or LM Studio.
+Yes — self-hosting is free and MIT licensed, always. A managed free tier (100 requests/day,
+no card) and paid hosting/enterprise tiers are also available.
 
 ---
 
-## Contributing
+## Contributing & security
 
-Issues and PRs welcome — see **[CONTRIBUTING.md](CONTRIBUTING.md)** for setup, conventions, and how to add a new agent (it takes changes to exactly two files). Please review the [Code of Conduct](CODE_OF_CONDUCT.md), and report security issues via [SECURITY.md](SECURITY.md) rather than a public issue.
-
-```bash
-ruff check .                                  # lint
-PYTHONPATH=. python3 -m pytest tests/ -q      # 889 tests
-PYTHONPATH=. python3 evaluation/ablation_eval.py   # routing benchmark
-```
-
----
-
-## Star History
-
-<a href="https://star-history.com/#d4shm1r/amagra&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=d4shm1r/amagra&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=d4shm1r/amagra&type=Date" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=d4shm1r/amagra&type=Date" />
-  </picture>
-</a>
+Issues and PRs welcome — **[CONTRIBUTING.md](CONTRIBUTING.md)** covers setup, conventions, and
+how to add a new agent (two files). Please review the [Code of Conduct](CODE_OF_CONDUCT.md), and
+report vulnerabilities via **[SECURITY.md](SECURITY.md)** rather than a public issue. Before
+exposing Amagra beyond `localhost`, read the security notes in SECURITY.md — the defaults assume
+a trusted single user.
 
 ---
 
 ## License
 
 MIT © 2026 — self-hosting is free and always will be.
-
-Managed hosting, enterprise CoA audit trail, and domain agent packs are paid tiers: [amagra.dev](https://amagra.dev)
+Managed hosting, enterprise audit trails, and domain agent packs are paid tiers: [amagra.dev](https://amagra.dev)
