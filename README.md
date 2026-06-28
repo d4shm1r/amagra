@@ -62,6 +62,11 @@ back to for weeks — where you need the tool to remember it and show how it got
 > prompt-comparison ground, but local-first, in a GUI, with persistent memory — not a
 > cloud dashboard or a config file. More in the [FAQ](#faq).
 
+Weighing it against other self-hosted workspaces — **Open WebUI**, **LibreChat**,
+**AnythingLLM**? They're great chat front-ends; Amagra adds the two things they don't:
+a cross-model **agreement score** and **replay of why it answered**. Full honest
+head-to-head in **[COMPARISON.md](docs/COMPARISON.md)**.
+
 ---
 
 ## Quick start
