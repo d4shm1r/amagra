@@ -6,6 +6,8 @@ import json
 import asyncio
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request
+
+from infrastructure.version import __version__
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -164,6 +166,7 @@ def health():
     _enhance_model = os.environ.get("ENHANCE_MODEL", "claude-sonnet-4-6")
     result: dict = {
         "status":    "online",
+        "version":   __version__,
         "timestamp": datetime.now().isoformat(),
         "model":     "phi4-mini",
         "agents":    10,

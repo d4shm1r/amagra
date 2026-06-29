@@ -20,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 import core.api_keys as _ak
+from infrastructure.version import __version__
 
 # Bundled UI: when ui/build exists, FastAPI serves it so the whole app runs as a
 # single process on one port (no Node/Vite at runtime). Desktop builds rely on this.
@@ -165,7 +166,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Amagra", version="1.5.6", lifespan=lifespan)
+app = FastAPI(title="Amagra", version=__version__, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
