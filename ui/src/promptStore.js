@@ -133,6 +133,25 @@ export async function saveVersion(slug, { title, content }) {
   return { version: n, variables: vars, descriptor };
 }
 
+// List committed version numbers for a prompt, ascending. [] if none / backend down.
+export async function listVersions(slug) {
+  try {
+    const entries = await wsList(`${PROMPTS_DIR}/${slug}/versions`);
+    const nums = [];
+    for (const e of entries) {
+      const m = /^v(\d+)\.prompt$/.exec(e.name);
+      if (m) nums.push(Number(m[1]));
+    }
+    return nums.sort((a, b) => a - b);
+  } catch { return []; }
+}
+
+// Read the text of one committed version (null if missing / backend down).
+export async function readVersion(slug, n) {
+  try { return await wsRead(`${PROMPTS_DIR}/${slug}/versions/v${n}.prompt`); }
+  catch { return null; }
+}
+
 async function readDescriptor(slug) {
   try {
     const raw = await wsRead(descriptorPath(slug));

@@ -876,7 +876,7 @@ export const ROADMAP = [
       "Single data-driven nav model (SURFACES) — sidebar + SubNav + last-tab memory derived from one source; per-surface descriptions ✅",
       "Cognition: UCI · Risk · Events · Plan in one dashboard grid (CognitionView) ✅",
       "Runs: facet sub-tabs — Overview · Runs · Decisions · Trace · Inspector · Policy · Replay ✅ (run-scoped master-detail deferred to v1.4.1)",
-      "Monaco code pane: read + DiffEditor + Apply via POST /workspace/apply — deferred (security-sensitive write endpoint)",
+      "Monaco code pane: read + edit + DiffEditor version compare ✅ (#71); workspace write API behind owner gate ✅ (#68)",
       "Extract inline style tokens to theme.js — deferred to a polish pass",
     ],
   },
