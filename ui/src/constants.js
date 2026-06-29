@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.5.5";
+export const VERSION = "1.5.6";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -725,6 +725,16 @@ export const BUILD_PHASES = [
       "Monaco-powered Prompt IDE (v1.6 #71 foundation) — bundled locally (no CDN), slim core, lazy-loaded; initial bundle stays ~1.24MB gzip 358KB",
     ],
   },
+  {
+    id: 93, version: "v1.5.6", date: "Jun 29, 2026",
+    label: "Launch Prep & Calibration", title: "Honest comparison, the routing seam on the hot path, calibrated confidence", color: "#1E5A8A", status: "done",
+    summary: "A launch-runway release: the messaging source of truth and an honest head-to-head land as durable assets, the Router seam shipped in v1.5.4 is finally on the live path, and confidence scores gain a calibration record so reliability can be measured, not asserted.",
+    steps: [
+      "POSITIONING.md — single source of messaging truth; honest head-to-head COMPARISON.md vs Open WebUI/LibreChat/AnythingLLM (#82)",
+      "Coordinator now routes through get_router().decide() — the Router seam is on the hot path and swappable; stale memory_context.py duplicate removed (#64, #65)",
+      "Calibration logging — raw confidence/performance pairs captured with a reliability report (#84)",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -885,6 +895,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.5.6", label: "Launch Prep & Calibration", color: "#1E5A8A", phases: [93] },
   { version: "v1.5.5", label: "UI Consolidation & Prompt IDE", color: "#7E3F8F", phases: [92] },
   { version: "v1.5.4", label: "Routing Seam & Recall Robustness", color: "#1E5A8A", phases: [91] },
   { version: "v1.5.2", label: "Release Hygiene & Runway", color: "#1E5A8A", phases: [90] },
