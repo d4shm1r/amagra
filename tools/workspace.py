@@ -13,12 +13,19 @@ Because ``.resolve()`` collapses ``..`` and follows symlinks before the check,
 this defeats directory traversal (``../../etc/passwd``), absolute-path injection
 (``/etc/passwd``), and symlink escapes (a link inside the root pointing out).
 
-The root is ``$AMAGRA_WORKSPACE`` (default ``<project>/workspace``). This module
-is intentionally read-only — writing and code execution are separate, higher-
-trust capabilities (sandbox) tracked elsewhere in v1.1.
+The root is ``$AMAGRA_WORKSPACE`` (default ``<project>/workspace``).
+
+Reads (``read_file``/``list_dir``/``search``) and writes (``write_file``/``make_dir``/
+``move``/``delete``) both go through the same ``_safe_resolve`` chokepoint, so the jail
+holds for every operation. Writes are a higher-trust capability: the HTTP surface
+(``routes/workspace.py``) is an *owner action* — never in ``api.py``'s ``_PUBLIC_PATHS``,
+so it requires the owner key when ``REQUIRE_AUTH=1``. Code execution remains a separate
+capability (the sandbox), not part of this module.
 """
 
 import os
+import shutil
+import tempfile
 from pathlib import Path
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -164,3 +171,108 @@ def search(query: str, glob: str = "**/*", max_results: int = DEFAULT_MAX_RESULT
             continue  # binary or unreadable — skip
     return {"query": query, "count": len(matches), "truncated": truncated,
             "matches": matches}
+
+
+# ── write operations (owner-gated at the HTTP layer) ─────────────────────────
+# Every write resolves through _safe_resolve first, so the jail (traversal /
+# absolute-path / symlink escape → PathEscape) holds identically to reads.
+
+def write_file(rel_path: str, content: str, max_bytes: int = DEFAULT_MAX_READ_BYTES,
+               overwrite: bool = True, root: Path | None = None) -> dict:
+    """Write a UTF-8 text file inside the workspace, creating parent dirs as needed.
+
+    Text-only and bounded, mirroring read_file: NUL bytes are rejected (NotText)
+    and content over max_bytes is rejected (TooLarge). The write is atomic — staged
+    to a temp file in the same directory, then os.replace()'d into place — so a
+    reader never sees a half-written file. Returns {path, size, created}.
+    """
+    root = (root or workspace_root()).resolve()
+    target = _safe_resolve(rel_path, root)
+    if target == root or target.is_dir():
+        raise WorkspaceError(f"is a directory, not a file: {rel_path!r}")
+    if "\x00" in content:
+        raise NotText(f"refusing to write binary (NUL) content: {rel_path!r}")
+    data = content.encode("utf-8")
+    if len(data) > max_bytes:
+        raise TooLarge(f"content is {len(data)} bytes (limit {max_bytes})")
+    existed = target.exists()
+    if existed and not overwrite:
+        raise WorkspaceError(f"file exists and overwrite=False: {rel_path!r}")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    # Atomic replace: temp file in the same dir (same filesystem) → os.replace.
+    fd, tmp = tempfile.mkstemp(dir=target.parent, prefix=".tmp-", suffix=".part")
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(data)
+        os.replace(tmp, target)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+    return {"path": _rel(target, root), "size": len(data), "created": not existed}
+
+
+def make_dir(rel_path: str, root: Path | None = None) -> dict:
+    """Create a directory (and parents) inside the workspace. Idempotent.
+
+    Returns {path, created}. A pre-existing file at the path is a conflict.
+    """
+    root = (root or workspace_root()).resolve()
+    target = _safe_resolve(rel_path, root)
+    if target == root:
+        return {"path": "", "created": False}
+    if target.exists() and not target.is_dir():
+        raise WorkspaceError(f"a file already exists at: {rel_path!r}")
+    existed = target.is_dir()
+    target.mkdir(parents=True, exist_ok=True)
+    return {"path": _rel(target, root), "created": not existed}
+
+
+def move(src_path: str, dst_path: str, overwrite: bool = False,
+         root: Path | None = None) -> dict:
+    """Move/rename a file or directory within the workspace. Returns {src, dst}.
+
+    Both endpoints are resolved through the jail, so neither side can escape the
+    root. Parent dirs of the destination are created. Refuses to clobber an
+    existing destination unless overwrite=True.
+    """
+    root = (root or workspace_root()).resolve()
+    src = _safe_resolve(src_path, root)
+    dst = _safe_resolve(dst_path, root)
+    if src == root or dst == root:
+        raise WorkspaceError("cannot move the workspace root itself")
+    if not src.exists():
+        raise NotFound(f"no such path: {src_path!r}")
+    if dst.exists():
+        if not overwrite:
+            raise WorkspaceError(f"destination exists and overwrite=False: {dst_path!r}")
+        if dst.is_dir():
+            shutil.rmtree(dst)
+        else:
+            dst.unlink()
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(src), str(dst))
+    return {"src": src_path.lstrip("/\\"), "dst": _rel(dst, root)}
+
+
+def delete(rel_path: str, recursive: bool = False, root: Path | None = None) -> dict:
+    """Delete a file or directory inside the workspace. Returns {path, deleted}.
+
+    A non-empty directory requires recursive=True. The workspace root itself can
+    never be deleted.
+    """
+    root = (root or workspace_root()).resolve()
+    target = _safe_resolve(rel_path, root)
+    if target == root:
+        raise WorkspaceError("refusing to delete the workspace root")
+    if not target.exists():
+        raise NotFound(f"no such path: {rel_path!r}")
+    if target.is_dir():
+        if any(target.iterdir()) and not recursive:
+            raise WorkspaceError(f"directory not empty (pass recursive=True): {rel_path!r}")
+        shutil.rmtree(target)
+    else:
+        target.unlink()
+    return {"path": _rel(target, root), "deleted": True}

@@ -2,10 +2,14 @@
 routes/workspace.py — HTTP surface for the jailed file tool (tools/workspace.py).
 
 All paths are confined to the workspace root; escape attempts return 403.
-Read-only: read, list, search.
+Reads (GET): read, list, search. Writes (POST): write, mkdir, move, delete.
+
+Writes are an owner action: none of these paths are in api.py `_PUBLIC_PATHS`, so
+when REQUIRE_AUTH=1 they require the owner key — same trust gate as /debug/prompt.
 """
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 import tools.workspace as ws
 
@@ -43,3 +47,46 @@ def list_dir(path: str = ""):
 @router.get("/search")
 def search(q: str, glob: str = "**/*", max_results: int = ws.DEFAULT_MAX_RESULTS):
     return _handle(ws.search, q, glob=glob, max_results=max_results)
+
+
+# ── write surface (owner action — not in _PUBLIC_PATHS) ──────────────────────
+
+class WriteBody(BaseModel):
+    path: str
+    content: str
+    overwrite: bool = True
+
+
+class MkdirBody(BaseModel):
+    path: str
+
+
+class MoveBody(BaseModel):
+    src: str
+    dst: str
+    overwrite: bool = False
+
+
+class DeleteBody(BaseModel):
+    path: str
+    recursive: bool = False
+
+
+@router.post("/write")
+def write(body: WriteBody):
+    return _handle(ws.write_file, body.path, body.content, overwrite=body.overwrite)
+
+
+@router.post("/mkdir")
+def mkdir(body: MkdirBody):
+    return _handle(ws.make_dir, body.path)
+
+
+@router.post("/move")
+def move(body: MoveBody):
+    return _handle(ws.move, body.src, body.dst, overwrite=body.overwrite)
+
+
+@router.post("/delete")
+def delete(body: DeleteBody):
+    return _handle(ws.delete, body.path, recursive=body.recursive)
