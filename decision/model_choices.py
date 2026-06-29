@@ -48,24 +48,31 @@ def init():
     c = _conn()
     c.execute("""
         CREATE TABLE IF NOT EXISTS model_decisions (
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp       TEXT    NOT NULL,
-            project         TEXT    DEFAULT '',
-            prompt          TEXT    NOT NULL,
-            system          TEXT    DEFAULT '',
-            temperature     REAL    DEFAULT 0.2,
-            candidates      TEXT    DEFAULT '[]',
-            chosen_provider TEXT    NOT NULL,
-            chosen_model    TEXT    DEFAULT '',
-            rationale       TEXT    DEFAULT '',
-            rationale_tags  TEXT    DEFAULT '[]',
-            provenance      TEXT    DEFAULT 'derived',
-            superseded_by   INTEGER DEFAULT NULL,
-            memory_mirrored INTEGER DEFAULT 0
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp         TEXT    NOT NULL,
+            project           TEXT    DEFAULT '',
+            prompt            TEXT    NOT NULL,
+            system            TEXT    DEFAULT '',
+            temperature       REAL    DEFAULT 0.2,
+            candidates        TEXT    DEFAULT '[]',
+            chosen_provider   TEXT    NOT NULL,
+            chosen_model      TEXT    DEFAULT '',
+            rationale         TEXT    DEFAULT '',
+            rationale_tags    TEXT    DEFAULT '[]',
+            provenance        TEXT    DEFAULT 'derived',
+            superseded_by     INTEGER DEFAULT NULL,
+            memory_mirrored   INTEGER DEFAULT 0,
+            prompt_version_id TEXT    DEFAULT NULL
         )
     """)
+    # Back-compat (#70): tables created before prompt_version_id existed keep working —
+    # add the column in place; existing rows stay keyed by their raw `prompt` string.
+    cols = {row[1] for row in c.execute("PRAGMA table_info(model_decisions)").fetchall()}
+    if "prompt_version_id" not in cols:
+        c.execute("ALTER TABLE model_decisions ADD COLUMN prompt_version_id TEXT DEFAULT NULL")
     c.execute("CREATE INDEX IF NOT EXISTS idx_md_project ON model_decisions(project);")
     c.execute("CREATE INDEX IF NOT EXISTS idx_md_active  ON model_decisions(superseded_by);")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_md_pvid    ON model_decisions(prompt_version_id);")
     c.commit()
     c.close()
 
@@ -75,11 +82,16 @@ def record(prompt: str, chosen_provider: str, *,
            candidates: list[dict] | None = None,
            chosen_model: str = "", rationale: str = "",
            rationale_tags: list[str] | None = None,
-           project: str = "") -> int:
+           project: str = "", prompt_version_id: str | None = None) -> int:
     """
     Persist one model-selection decision. Provenance is derived from whether a
     rationale was supplied: a typed/picked reason is 'explicit', a bare
     selection is 'derived'. Returns the new row id, or -1 on failure.
+
+    `prompt_version_id` (#70) links the decision to the durable PromptVersion that
+    produced it (prompts/<slug>/versions/vN) instead of relying on the raw prompt
+    string as the identity. Optional and back-compatible: omit it and the record
+    behaves exactly as before, keyed by `prompt`.
     """
     provenance = "explicit" if (rationale.strip() or rationale_tags) else "derived"
     try:
@@ -87,8 +99,9 @@ def record(prompt: str, chosen_provider: str, *,
         cur = c.execute("""
             INSERT INTO model_decisions
             (timestamp, project, prompt, system, temperature, candidates,
-             chosen_provider, chosen_model, rationale, rationale_tags, provenance)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             chosen_provider, chosen_model, rationale, rationale_tags, provenance,
+             prompt_version_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             datetime.now(timezone.utc).isoformat(),
             project or "",
@@ -101,6 +114,7 @@ def record(prompt: str, chosen_provider: str, *,
             rationale.strip(),
             json.dumps(rationale_tags or []),
             provenance,
+            prompt_version_id,
         ))
         row_id = cur.lastrowid
         c.commit()
@@ -155,13 +169,14 @@ def _row_to_dict(r) -> dict:
         "provenance":      r[11],
         "superseded_by":   r[12],
         "memory_mirrored": bool(r[13]),
+        "prompt_version_id": r[14],
         "active":          r[12] is None,
     }
 
 
 _COLS = ("id, timestamp, project, prompt, system, temperature, candidates, "
          "chosen_provider, chosen_model, rationale, rationale_tags, "
-         "provenance, superseded_by, memory_mirrored")
+         "provenance, superseded_by, memory_mirrored, prompt_version_id")
 
 
 def recent(limit: int = 50, project: str = "", active_only: bool = False) -> list[dict]:

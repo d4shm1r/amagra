@@ -152,6 +152,35 @@ export async function readVersion(slug, n) {
   catch { return null; }
 }
 
+// The committed version number this prompt currently points at (0 = none yet).
+export async function currentVersion(slug) {
+  const d = await readDescriptor(slug);
+  return d?.current_version ?? 0;
+}
+
+// Stable id linking a run/decision to the PromptVersion that produced it (#70).
+// "<slug>@vN", or "<slug>@head" when nothing has been committed yet.
+export function promptVersionId(slug, n) {
+  return `${slug}@${n ? `v${n}` : "head"}`;
+}
+
+// Persist a model run's chosen output next to its prompt (#70):
+//   prompts/<slug>/runs/R<ts>.response.json = { prompt_version_id, output, model, metrics, trace_ref }
+// Best-effort; returns the file path or null if the backend is unreachable.
+export async function saveRun(slug, { prompt_version_id, output, model, metrics, trace_ref }) {
+  try {
+    const id = `R${Date.now()}`;
+    const path = `${PROMPTS_DIR}/${slug}/runs/${id}.response.json`;
+    await wsWrite(path, JSON.stringify(
+      { id, prompt_version_id: prompt_version_id ?? null, output: output ?? "",
+        model: model ?? "", metrics: metrics ?? null, trace_ref: trace_ref ?? null,
+        created: stamp() },
+      null, 2,
+    ));
+    return path;
+  } catch { return null; }
+}
+
 async function readDescriptor(slug) {
   try {
     const raw = await wsRead(descriptorPath(slug));
