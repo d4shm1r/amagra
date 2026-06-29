@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Editor from "@monaco-editor/react";
 import { MONACO_THEME } from "./monacoSetup";
 import { computeDiagnostics } from "./promptDiagnostics";
+import { slugify, saveHead, saveVersion, importFromLocalStorage } from "./promptStore";
 
 const MARKER_OWNER = "amagra";
 let _codeActionsRegistered = false;   // module-level: register the quick-fix provider once
@@ -1363,7 +1364,7 @@ function MetricsPanel({ metrics, content, onApply }) {
 // Editor helpers
 // ─────────────────────────────────────────────────────────────
 
-function makeTab(id) { return { id, title: `Prompt ${id}`, content: "" }; }
+function makeTab(id) { return { id, title: `Prompt ${id}`, content: "", slug: `prompt-${id}` }; }
 
 function loadSaved() {
   try {
@@ -1401,6 +1402,7 @@ export default function PromptEditorTab() {
   const [copied, setCopied] = useState(false);
 
   const activeTab = tabs.find(t => t.id === activeId) ?? tabs[0];
+  const activeTabRef = useRef(activeTab); activeTabRef.current = activeTab;   // latest for Ctrl+S closure
   const content   = activeTab?.content ?? "";
   const lines     = content.split("\n");
   const metrics   = useMemo(() => computeMetrics(content), [content]);
@@ -1408,6 +1410,63 @@ export default function PromptEditorTab() {
 
   useEffect(() => { persist(tabs, activeId, showMetrics); }, [tabs, activeId, showMetrics]);
   useEffect(() => { editorRef.current?.focus(); }, [activeId]);
+
+  // ── #69: file-backed persistence over /workspace/* ──────────────────────────
+  // localStorage stays the offline-first loader; the workspace is the durable,
+  // versioned mirror. All backend calls are best-effort — a down API never blocks
+  // editing. `head` autosaves (debounced); Ctrl+S commits an immutable version.
+  const [savedTag, setSavedTag] = useState("");   // brief "saved v3" confirmation
+  const savedTimerRef = useRef(null);
+  const headTimerRef  = useRef(null);
+
+  // One-time import of any pre-existing localStorage tabs into prompt files.
+  useEffect(() => { importFromLocalStorage(); }, []);
+
+  // Ensure migrated/legacy tabs (saved before slugs existed) carry a stable slug.
+  useEffect(() => {
+    if (tabs.some(t => !t.slug)) {
+      setTabs(prev => prev.map(t => t.slug ? t : { ...t, slug: slugify(t.title) || `prompt-${t.id}` }));
+    }
+  }, [tabs]);
+
+  // Debounced autosave of the active tab's working head to its prompt file.
+  useEffect(() => {
+    if (!activeTab?.slug || !activeTab.content?.trim()) return;
+    clearTimeout(headTimerRef.current);
+    headTimerRef.current = setTimeout(() => {
+      saveHead(activeTab.slug, { title: activeTab.title, content: activeTab.content }).catch(() => {});
+    }, 1000);
+    return () => clearTimeout(headTimerRef.current);
+  }, [activeTab?.slug, activeTab?.title, activeTab?.content]);
+
+  const saveCurrentVersion = useCallback(() => {
+    const t = activeTabRef.current;
+    if (!t?.slug || !t.content?.trim()) return;
+    saveVersion(t.slug, { title: t.title, content: t.content })
+      .then(({ version }) => {
+        setSavedTag(`saved v${version}`);
+        clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = setTimeout(() => setSavedTag(""), 1800);
+      })
+      .catch(() => {
+        setSavedTag("save failed");
+        clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = setTimeout(() => setSavedTag(""), 1800);
+      });
+  }, []);
+
+  // Ctrl/Cmd+S commits a version. Window-level so it works regardless of focus,
+  // and so it overrides the browser's "save page" dialog.
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
+        e.preventDefault();
+        saveCurrentVersion();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [saveCurrentVersion]);
 
   const updateContent = useCallback((val) => {
     setTabs(prev => prev.map(t => t.id === activeId ? { ...t, content: val } : t));
@@ -1618,6 +1677,9 @@ export default function PromptEditorTab() {
       {/* ── Status bar ── */}
       <div style={{ height: 24, background: T.statusBg, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 14px", fontSize: 11, color: T.muted, borderTop: `1px solid ${T.border}`, userSelect: "none" }}>
         <span style={{ color: T.mutedLt, marginRight: 12, fontFamily: FONT }}>Ln {cursor.line}, Col {cursor.col}</span>
+        {savedTag && (
+          <span title="Ctrl+S saves a version" style={{ color: savedTag === "save failed" ? T.danger ?? "#c0392b" : T.success, marginRight: 12, fontFamily: FONT }}>● {savedTag}</span>
+        )}
         <span style={{ color: T.border, marginRight: 12 }}>│</span>
         {statusPips.map(({ k, v, c }) => (
           <span key={k} style={{ display: "flex", alignItems: "center", gap: 3, marginRight: 9 }}>
