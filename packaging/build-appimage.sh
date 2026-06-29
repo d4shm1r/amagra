@@ -35,10 +35,15 @@ WORK="$DIST/appimage-build"
 APPDIR="$WORK/Amagra.AppDir"
 ARCH="$(uname -m)"
 
-# Pinned relocatable Python (manylinux2014, cp${ver}) from python-appimage releases.
+# Relocatable Python (manylinux2014, cp${ver}) from python-appimage releases. The exact
+# patch version in the asset name changes over time, so resolve it from the release API
+# rather than pinning a patch (which silently 404s on the next upstream bump).
 PY_TAG="python${PYVER}"
-PY_APPIMAGE_URL="https://github.com/niess/python-appimage/releases/download/${PY_TAG}/python${PYVER}.9-cp${PYVER//./}-cp${PYVER//./}-manylinux2014_${ARCH}.AppImage"
 APPIMAGETOOL_URL="https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-${ARCH}.AppImage"
+
+# Optional GitHub auth to dodge the 60-req/hr unauthenticated API limit on shared CI IPs.
+GH_API_AUTH=()
+[ -n "${GITHUB_TOKEN:-}" ] && GH_API_AUTH=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
 
 say() { printf "\n\033[1;34m▶ %s\033[0m\n" "$*"; }
 
@@ -49,7 +54,18 @@ say "Build the UI (vite)"
 ( cd "$ROOT/ui" && (npm ci || npm install) && npx vite build )
 [ -f "$ROOT/ui/build/index.html" ] || { echo "UI build failed — no ui/build/index.html"; exit 1; }
 
-say "Fetch relocatable Python base ($PY_TAG)"
+say "Resolve relocatable Python base ($PY_TAG, manylinux2014/$ARCH)"
+# Pick the manylinux2014 build (oldest glibc → widest reach) for this tag + arch.
+PY_APPIMAGE_URL="$(
+  curl -fsSL "${GH_API_AUTH[@]}" \
+    "https://api.github.com/repos/niess/python-appimage/releases/tags/${PY_TAG}" \
+  | grep -oE "https://[^\"]+manylinux2014_${ARCH}\.AppImage" | head -n1
+)"
+[ -n "$PY_APPIMAGE_URL" ] || {
+  echo "Could not resolve a python-appimage base for ${PY_TAG}/${ARCH} (API rate-limited? set GITHUB_TOKEN)"; exit 1; }
+echo "  → $PY_APPIMAGE_URL"
+
+say "Fetch relocatable Python base"
 PYBASE="$WORK/python-base.AppImage"
 curl -fL "$PY_APPIMAGE_URL" -o "$PYBASE"
 chmod +x "$PYBASE"
@@ -72,10 +88,13 @@ APP="$APPDIR/opt/amagra"
 mkdir -p "$APP"
 # Ship runtime code and the built UI; exclude dev/test/scratch and the payments
 # feature is included only if it has been committed (kept generic via rsync excludes).
+# NOTE: do not exclude 'evaluation' — it's a RUNTIME dependency (math_metrics is imported
+# by training/, cognition/, memory_core/, decision/, infrastructure/, routes/). Only 'tests'
+# is genuinely dev-only. The benchmark scripts under evaluation/ are small and harmless to ship.
 rsync -a \
   --exclude '.git' --exclude '.github' --exclude 'node_modules' --exclude 'dist' \
   --exclude '__pycache__' --exclude '*.pyc' --exclude '.pytest_cache' \
-  --exclude 'tests' --exclude 'evaluation' --exclude 'logs' \
+  --exclude 'tests' --exclude 'logs' \
   --exclude 'ui/node_modules' --exclude 'ui/src' --exclude 'ui/public' \
   --exclude '*.db' --exclude '*.db-*' --exclude 'provider_config.json' \
   "$ROOT/"  "$APP/"

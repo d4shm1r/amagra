@@ -1,0 +1,62 @@
+name: Release AppImage
+
+# Builds the single-file Linux desktop download (dist/Amagra-x86_64.AppImage) and
+# attaches it to the GitHub Release for a version tag — the "download → double-click →
+# running in 5 minutes" path, no Docker/Node/Python on the user's machine.
+#
+# Triggers:
+#   - push a version tag (v*)   → build AND attach to the matching GitHub Release
+#   - manual (workflow_dispatch) → build only, upload as a CI artifact (for testing)
+#
+# Built on ubuntu-22.04 on purpose: an AppImage runs on its build glibc and NEWER,
+# so the oldest supported runner gives the widest reach. All Python deps are
+# manylinux/pure-Python wheels, so nothing is compiled against the host.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to attach the asset to the Release
+
+jobs:
+  build:
+    name: Build AppImage
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # rsync + file are used by the build script; curl/FUSE handling below.
+      - name: Install build prerequisites
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends rsync file
+
+      # GitHub runners have no FUSE; this makes both the python-appimage base and
+      # appimagetool self-extract instead of mounting, so the script needs no FUSE.
+      - name: Build the AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: packaging/build-appimage.sh
+
+      - name: Show artifact
+        run: ls -lh dist/*.AppImage
+
+      # Always keep the build as a downloadable CI artifact (covers workflow_dispatch).
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: amagra-appimage
+          path: dist/*.AppImage
+          if-no-files-found: error
+
+      # On a version tag, also attach it to the GitHub Release for that tag.
+      - name: Attach to Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.AppImage
+          fail_on_unmatched_files: true

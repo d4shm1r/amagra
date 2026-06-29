@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.5.5" src="https://img.shields.io/badge/release-v1.5.5-C48808?style=flat-square&labelColor=2E2010" /></a>
+  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.5.6" src="https://img.shields.io/badge/release-v1.5.6-C48808?style=flat-square&labelColor=2E2010" /></a>
   <a href="https://github.com/d4shm1r/amagra/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-C48808?style=flat-square&labelColor=2E2010" /></a>
   <a href="https://github.com/d4shm1r/amagra/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/d4shm1r/amagra?style=flat-square&logo=github&logoColor=white&color=C48808&labelColor=2E2010" /></a>
   <img alt="Self-hosted" src="https://img.shields.io/badge/self--hosted-✓-C48808?style=flat-square&labelColor=2E2010" />
@@ -71,7 +71,27 @@ head-to-head in **[COMPARISON.md](docs/COMPARISON.md)**.
 
 ## Quick start
 
-**Prebuilt image (quickest):**
+**Download & run (recommended — no Docker, Node, or Python):**
+
+```bash
+# Linux x86_64 — one file, double-click or run from a terminal:
+curl -L -o Amagra.AppImage \
+  https://github.com/d4shm1r/amagra/releases/latest/download/Amagra-x86_64.AppImage
+chmod +x Amagra.AppImage
+./Amagra.AppImage        # serves http://127.0.0.1:8000 and opens your browser
+```
+
+That's the whole install. Everything (interpreter, dependencies, UI) ships inside the file;
+your data lives in `~/.local/share/amagra`. For **local** models, install
+[Ollama](https://ollama.com) and Amagra's onboarding pulls what it needs. Prefer **cloud**
+models? Skip Ollama entirely — add a key under **Settings → Model**.
+
+<sub>Built on Ubuntu 22.04 (runs on 22.04+). macOS/Windows desktop builds are on the [roadmap](docs/ROADMAP.md).</sub>
+
+<details>
+<summary><b>Prefer Docker?</b></summary>
+
+**Prebuilt image:**
 
 ```bash
 docker pull d4shm1r/amagra:latest
@@ -82,7 +102,7 @@ For **local** model answers, point it at Ollama with
 `--add-host=host.docker.internal:host-gateway -e OLLAMA_BASE_URL=http://host.docker.internal:11434`.
 For **cloud** models, add your key (`-e BRAIN_PROVIDER=anthropic -e ANTHROPIC_API_KEY=...`).
 
-**Full stack with Docker Compose (bundles Ollama, recommended):**
+**Full stack with Docker Compose (bundles Ollama):**
 
 ```bash
 git clone https://github.com/d4shm1r/amagra && cd amagra
@@ -94,8 +114,11 @@ docker exec agentic-ollama ollama pull phi4-mini
 - UI: http://localhost:3000 · API docs: http://localhost:8000/docs
 - No GPU? Remove the `deploy` block from `docker-compose.yml` — embeddings run on CPU.
 
-Running without Docker, reproducing the routing benchmark, and the full API are covered in
-**[CONTRIBUTING.md](CONTRIBUTING.md)** and the live docs at `/docs`.
+</details>
+
+Building the AppImage yourself, running from source, reproducing the routing benchmark, and
+the full API are covered in **[packaging/README.md](packaging/README.md)**,
+**[CONTRIBUTING.md](CONTRIBUTING.md)**, and the live docs at `/docs`.
 
 ---
 
