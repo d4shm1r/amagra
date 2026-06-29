@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.5.6" src="https://img.shields.io/badge/release-v1.5.6-C48808?style=flat-square&labelColor=2E2010" /></a>
+  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.6.0" src="https://img.shields.io/badge/release-v1.6.0-C48808?style=flat-square&labelColor=2E2010" /></a>
   <a href="https://github.com/d4shm1r/amagra/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-C48808?style=flat-square&labelColor=2E2010" /></a>
   <a href="https://github.com/d4shm1r/amagra/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/d4shm1r/amagra?style=flat-square&logo=github&logoColor=white&color=C48808&labelColor=2E2010" /></a>
   <img alt="Self-hosted" src="https://img.shields.io/badge/self--hosted-✓-C48808?style=flat-square&labelColor=2E2010" />
@@ -157,7 +157,8 @@ and **[docs/FINDINGS.md](docs/FINDINGS.md)**.
 | ✅ | **Tool-using agents · multi-provider models** | files, sandboxed code, web search; Ollama + Claude + GPT + Gemini |
 | ✅ | **Cross-model prompt debugger & consensus** | run a prompt across N models, score their agreement |
 | ✅ | **Unified workspace UI · hybrid inference** | one coherent dashboard; local-by-default, cloud when it counts |
-| 🔜 | **Workspaces & RBAC** *(v1.6)* | isolated projects per user, roles, a custom agent builder — and prompts as first-class, versioned artifacts |
+| ✅ | **Prompts as first-class, versioned artifacts** *(v1.6.0)* | prompts persist as files, every save is a version, decisions link to the version that produced them, side-by-side version diff |
+| 🔜 | **Workspaces & RBAC** *(v1.6)* | isolated projects per user, roles, a custom agent builder |
 | ○ | **Team memory & governance** *(v1.7)* | shared memory, audit trails, SSO, air-gapped installer |
 | ○ | **Agent registry & SDK** *(v2.0)* | build and share custom agents as portable packages |
 
