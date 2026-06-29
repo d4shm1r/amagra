@@ -8,7 +8,7 @@ from langgraph.graph import StateGraph, START, END
 import cognition.run_tracer as run_tracer
 
 from models.state import AgentState
-from orchestration.core_brain import think
+from orchestration.router_interface import get_router
 from decision.log import log as log_decision
 from training.learning import apply_learning_update
 
@@ -575,7 +575,7 @@ def coordinator_node(state: AgentState):
     # ── Core brain: primary intent engine ─────────────────────
     t0 = time.time()
     try:
-        decision = think(task, state)
+        decision = get_router().decide(task, state)
     except Exception as e:
         print(f"[coordinator] brain failure: {e} — defaulting to knowledge_learning")
         fallback = "knowledge_learning"
