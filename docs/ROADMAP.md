@@ -272,6 +272,22 @@ A premium UI hardening pass ahead of v1.6 — leaner navigation, one API seam, a
 
 ---
 
+### v1.5.6 — Launch Prep & Calibration *(✅ shipped 2026-06-29)*
+
+A launch-runway release. The messaging foundation and an honest competitive head-to-head land as durable, reusable assets; the Router seam that shipped dormant in v1.5.4 is finally on the live path; and confidence scores gain a calibration record so reliability can be measured rather than asserted.
+
+| Item | Status |
+|------|--------|
+| **POSITIONING.md** — single source of messaging truth (README, landing, posts, release notes all derive from it) | ✅ shipped |
+| **COMPARISON.md** — honest head-to-head vs Open WebUI / LibreChat / AnythingLLM; leads with the two differentiators (cross-model agreement score + decision replay), cedes where peers lead (#82) | ✅ shipped |
+| **Router seam on the hot path** — coordinator routes through `get_router().decide()`; the v1.5.4 seam is now live and swappable via `set_router()` (#64) | ✅ shipped |
+| **Stale duplicate removed** — `scripts/memory_context.py` deleted; agents import from `memory_core.context` (#65) | ✅ shipped |
+| **Calibration logging** — raw confidence/performance pairs captured with a reliability report (#84) | ✅ shipped |
+
+**The launch blocker that remains:** the three demo GIFs (divergence run, decision replay, offline proof) — evidence work, not feature work (#9).
+
+---
+
 ### v1.6 — Workspaces & RBAC
 
 Multiple isolated projects per user, role-based access, and a custom agent builder. (Deferred past the launch-wedge pivot — the original v1.2/v1.3 slots shipped as Model Choice and the Cross-Model Debugger instead.)
