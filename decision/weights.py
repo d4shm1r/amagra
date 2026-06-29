@@ -69,6 +69,24 @@ def _init_table():
         )
     """)
 
+    # Raw (confidence, performance) pairs — one row per learning update.
+    # The agent_calibration table above collapses these into a per-agent EMA;
+    # this table keeps the raw points so the confidence→P(correct) reliability
+    # curve can be measured (see evaluation/calibration_report.py). Append-only.
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS calibration_samples (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent       TEXT NOT NULL,
+            confidence  REAL NOT NULL,
+            performance REAL NOT NULL,
+            ts          TEXT NOT NULL
+        )
+    """)
+    c.execute(
+        "CREATE INDEX IF NOT EXISTS idx_calsamples_conf "
+        "ON calibration_samples (confidence)"
+    )
+
     from datetime import datetime, timezone
     ts = datetime.now(timezone.utc).isoformat()
     for a in KNOWN_AGENTS:
@@ -249,6 +267,14 @@ def update_calibration(agent: str, confidence: float, reflection_score: float) -
                    VALUES (?, ?, ?, ?, ?)""",
                 (agent, new_avg_conf, new_avg_refl, new_count, ts)
             )
+            # Persist the raw pair (the EMA above throws it away). Same
+            # transaction so the sample log can never diverge from the EMA.
+            c.execute(
+                "INSERT INTO calibration_samples "
+                "(agent, confidence, performance, ts) VALUES (?, ?, ?, ?)",
+                (agent, round(float(confidence), 4),
+                 round(float(reflection_score), 4), ts)
+            )
             c.commit()
             c.close()
         except Exception as e:
@@ -275,6 +301,36 @@ def get_calibration(agent: str) -> dict:
     except Exception:
         pass
     return {"avg_confidence": 0.67, "avg_reflection": 0.75, "count": 0, "error": -0.08}
+
+
+def get_calibration_samples(agent: str | None = None,
+                            limit: int | None = None) -> list[dict]:
+    """Return raw (confidence, performance) calibration pairs, newest first.
+
+    These are the points the per-agent EMA is computed from — the dataset for
+    the reliability diagram (evaluation/calibration_report.py). Optionally
+    filter by agent and/or cap the number of rows.
+    """
+    rows: list[dict] = []
+    try:
+        c = _conn()
+        sql = ("SELECT agent, confidence, performance, ts "
+               "FROM calibration_samples")
+        params: list = []
+        if agent:
+            sql += " WHERE agent=?"
+            params.append(agent)
+        sql += " ORDER BY id DESC"
+        if limit:
+            sql += " LIMIT ?"
+            params.append(limit)
+        for a, conf, perf, ts in c.execute(sql, params).fetchall():
+            rows.append({"agent": a, "confidence": conf,
+                         "performance": perf, "ts": ts})
+        c.close()
+    except Exception as e:
+        print(f"[weights] sample read error: {e}")
+    return rows
 
 
 def get_all_calibration() -> dict:
