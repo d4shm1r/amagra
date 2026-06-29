@@ -3,6 +3,7 @@ import Editor from "@monaco-editor/react";
 import { MONACO_THEME } from "./monacoSetup";
 import { computeDiagnostics } from "./promptDiagnostics";
 import { slugify, saveHead, saveVersion, importFromLocalStorage } from "./promptStore";
+import PromptVersionDiff from "./PromptVersionDiff";
 
 const MARKER_OWNER = "amagra";
 let _codeActionsRegistered = false;   // module-level: register the quick-fix provider once
@@ -1416,6 +1417,7 @@ export default function PromptEditorTab() {
   // versioned mirror. All backend calls are best-effort — a down API never blocks
   // editing. `head` autosaves (debounced); Ctrl+S commits an immutable version.
   const [savedTag, setSavedTag] = useState("");   // brief "saved v3" confirmation
+  const [diffOpen, setDiffOpen] = useState(false);
   const savedTimerRef = useRef(null);
   const headTimerRef  = useRef(null);
 
@@ -1597,7 +1599,7 @@ export default function PromptEditorTab() {
   ] : [];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: T.bg, overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: T.bg, overflow: "hidden", position: "relative" }}>
 
       {/* ── Tab strip ── */}
       <div style={{ display: "flex", alignItems: "stretch", flexShrink: 0, background: T.surface2, borderBottom: `1px solid ${T.border}` }}>
@@ -1627,6 +1629,12 @@ export default function PromptEditorTab() {
             onMouseEnter={e => e.currentTarget.style.color = T.text} onMouseLeave={e => e.currentTarget.style.color = T.muted}>+</button>
         </div>
 
+        <button onClick={() => setDiffOpen(true)} title="Compare saved versions"
+          style={{ display: "flex", alignItems: "center", gap: 5, padding: "0 13px", flexShrink: 0, background: "transparent", border: "none", borderLeft: `1px solid ${T.border}`, color: T.mutedLt, cursor: "pointer", fontSize: 11, fontFamily: "inherit", transition: "color 0.15s" }}
+          onMouseEnter={e => e.currentTarget.style.color = T.text} onMouseLeave={e => e.currentTarget.style.color = T.mutedLt}>
+          <span style={{ fontSize: 12 }}>⇄</span>
+          <span>Compare</span>
+        </button>
         <button onClick={handleCopy} disabled={!content.trim()} title="Copy prompt (Ctrl+Enter)"
           style={{ display: "flex", alignItems: "center", gap: 5, padding: "0 13px", flexShrink: 0, background: copied ? `${T.success}18` : "transparent", border: "none", borderLeft: `1px solid ${T.border}`, color: copied ? T.success : content.trim() ? T.mutedLt : T.muted, cursor: content.trim() ? "pointer" : "default", fontSize: 11, fontFamily: "inherit", transition: "color 0.15s, background 0.15s" }}>
           <span style={{ fontSize: 12 }}>{copied ? "✓" : "⎘"}</span>
@@ -1720,6 +1728,10 @@ export default function PromptEditorTab() {
         <span style={{ color: T.muted, marginRight: 10 }}>{wordCount}w</span>
         <span style={{ color: T.muted }}>{content.length}ch</span>
       </div>
+
+      {diffOpen && activeTab?.slug && (
+        <PromptVersionDiff T={T} slug={activeTab.slug} headContent={content} onClose={() => setDiffOpen(false)} />
+      )}
     </div>
   );
 }
