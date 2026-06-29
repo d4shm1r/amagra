@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.5.6";
+export const VERSION = "1.6.0";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -735,6 +735,18 @@ export const BUILD_PHASES = [
       "Calibration logging — raw confidence/performance pairs captured with a reliability report (#84)",
     ],
   },
+  {
+    id: 94, version: "v1.6.0", date: "Jun 29, 2026",
+    label: "Prompt-as-Artifact & One-File Install", title: "Prompts become first-class versioned artifacts; Amagra ships as a single download", color: "#7E3F8F", status: "done",
+    summary: "Prompts stop being throwaway text in a browser tab. They persist as files, every save is a version, runs and decisions link to the version that produced them, and you can diff versions side by side. Plus the install collapses to a one-file AppImage — no Docker, Node, or Python.",
+    steps: [
+      "One-file AppImage download — bundled Python + UI, no Docker/Node/Python (v1.5.6 #86)",
+      "Jailed /workspace write API (write/mkdir/move/delete) behind the owner-action gate (#68)",
+      "Prompts persist as workspace files; Ctrl+S commits an immutable version; one-time localStorage import (#69)",
+      "Runs persist beside their prompt; decisions key on prompt_version_id with in-place migration (#70)",
+      "Monaco inline diagnostics + click-to-fix + side-by-side version-compare DiffEditor (#71)",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -834,8 +846,18 @@ export const ROADMAP = [
     ],
   },
   {
-    id: 42, version: "v1.6.0", title: "Workspaces & RBAC", color: "#C2410C", status: "next", priority: "high",
-    summary: "Multiple isolated projects per user, role-based access, and a custom agent builder. (Deferred past the launch-wedge pivot — the v1.2/v1.3 slots shipped as Model Choice and the Cross-Model Debugger instead.)",
+    id: 94, version: "v1.6.0", title: "Prompt-as-Artifact Foundation", color: "#7E3F8F", status: "done", priority: "high",
+    summary: "The keystone of the Prompt-IDE pivot (epic #67): prompts become first-class, versioned files instead of throwaway browser text — runs and decisions link to the version that produced them, and versions diff side by side.",
+    items: [
+      "Jailed /workspace write API (write/mkdir/move/delete) behind the owner-action gate (#68) ✅",
+      "Prompts persist as files; Ctrl+S commits a version; one-time localStorage import (#69) ✅",
+      "Runs persist beside their prompt; decisions key on prompt_version_id + migration (#70) ✅",
+      "Monaco inline diagnostics + click-to-fix + version-compare DiffEditor (#71) ✅",
+    ],
+  },
+  {
+    id: 42, version: "v1.6", title: "Workspaces & RBAC", color: "#C2410C", status: "next", priority: "high",
+    summary: "The remaining v1.6 work after the Prompt-as-Artifact foundation shipped (v1.6.0): multiple isolated projects per user, role-based access, and a custom agent builder.",
     items: [
       "workspaces table — multiple isolated projects per user, per-workspace memory namespace (8h)",
       "RBAC — owner / admin / member roles, enforced at the route layer (6h)",
@@ -895,6 +917,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.6.0", label: "Prompt-as-Artifact & One-File Install", color: "#7E3F8F", phases: [94] },
   { version: "v1.5.6", label: "Launch Prep & Calibration", color: "#1E5A8A", phases: [93] },
   { version: "v1.5.5", label: "UI Consolidation & Prompt IDE", color: "#7E3F8F", phases: [92] },
   { version: "v1.5.4", label: "Routing Seam & Recall Robustness", color: "#1E5A8A", phases: [91] },
@@ -1118,6 +1141,16 @@ export const PROMISES = [
     category: "AI",
     status: "delivered",
     delivered_on: "2026-06-25",
+    priority: "high",
+  },
+  {
+    id: 17,
+    icon: "⌘",
+    title: "Versioned Prompts",
+    description: "Your prompts are first-class artifacts, not throwaway text. They persist as files on your machine, every save is an immutable version, the model run and the decision you made link to the exact version that produced them, and you can diff any two versions side by side.",
+    category: "Platform",
+    status: "delivered",
+    delivered_on: "2026-06-29",
     priority: "high",
   },
 ];
