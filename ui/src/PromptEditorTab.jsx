@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Editor from "@monaco-editor/react";
 import { MONACO_THEME } from "./monacoSetup";
 import { computeDiagnostics } from "./promptDiagnostics";
-import { slugify, saveHead, saveVersion, importFromLocalStorage } from "./promptStore";
+import { slugify, saveHead, saveVersion, importFromLocalStorage,
+         currentVersion, promptVersionId, saveRun } from "./promptStore";
 import PromptVersionDiff from "./PromptVersionDiff";
 
 const MARKER_OWNER = "amagra";
@@ -1041,7 +1042,7 @@ function computeDivergence(results) {
 // and what mattered, turning a throwaway run into a durable decision record.
 const WHY_TAGS = ["Accuracy", "Formatting", "Reasoning", "Speed", "Concise", "Tone"];
 
-function RunAcrossModelsSection({ content }) {
+function RunAcrossModelsSection({ content, slug }) {
   const [current, setCurrent] = useState(null);   // { provider, model, base_url }
   const [sel,     setSel]     = useState(() => new Set(["current"]));
   const [running, setRunning] = useState(false);
@@ -1072,6 +1073,13 @@ function RunAcrossModelsSection({ content }) {
     if (chosen == null || !results) return;
     setSaving(true);
     const win = results[chosen];
+    // #70: link the decision to the durable PromptVersion that produced it, and
+    // persist the chosen output beside the prompt. Both degrade if the slug/backend
+    // is unavailable — the decision still records keyed by prompt text.
+    let pvid = null;
+    if (slug) {
+      try { pvid = promptVersionId(slug, await currentVersion(slug)); } catch { /* offline */ }
+    }
     try {
       const r = await fetch(`${API}/debug/decision`, {
         method: "POST",
@@ -1088,11 +1096,21 @@ function RunAcrossModelsSection({ content }) {
           rationale: why.trim(),
           rationale_tags: Array.from(whyTags),
           project: project.trim(),
+          prompt_version_id: pvid,
         }),
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const d = await r.json();
       setSavedId(d.decision_id ?? true);
+      if (slug) {
+        saveRun(slug, {
+          prompt_version_id: pvid,
+          output: win.output ?? "",
+          model: win.model ? `${win.provider}/${win.model}` : win.provider,
+          metrics: { latency_ms: win.latency_ms, chars: win.chars, words: win.words },
+          trace_ref: d.decision_id ?? null,
+        }).catch(() => {});
+      }
     } catch (e) {
       setError(String(e.message || e));
     } finally {
@@ -1330,7 +1348,7 @@ function RunAcrossModelsSection({ content }) {
 // Metrics panel — assembles all sections
 // ─────────────────────────────────────────────────────────────
 
-function MetricsPanel({ metrics, content, onApply }) {
+function MetricsPanel({ metrics, content, slug, onApply }) {
   const domain     = useMemo(() => detectDomain(content), [content]);
   const forecast   = useMemo(() => metrics ? computeForecast(metrics) : null, [metrics]);
   const missingCtx = useMemo(() => {
@@ -1356,7 +1374,7 @@ function MetricsPanel({ metrics, content, onApply }) {
       <SuggestedAgentsSection domain={domain} />
       <TemplatesSection       domain={domain} currentContent={content} onApply={onApply} />
       <PromptUpgradeSection   m={metrics} domain={domain} content={content} onApply={onApply} />
-      <RunAcrossModelsSection content={content} />
+      <RunAcrossModelsSection content={content} slug={slug} />
     </div>
   );
 }
@@ -1679,7 +1697,7 @@ export default function PromptEditorTab() {
           />
         </div>
 
-        {showMetrics && <MetricsPanel metrics={metrics} content={content} onApply={updateContent} />}
+        {showMetrics && <MetricsPanel metrics={metrics} content={content} slug={activeTab?.slug} onApply={updateContent} />}
       </div>
 
       {/* ── Status bar ── */}

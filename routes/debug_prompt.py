@@ -130,6 +130,9 @@ class DecisionRequest(BaseModel):
     project: str = ""
     # If this choice revisits an earlier one, the old id it supersedes (currency).
     supersedes: int | None = None
+    # Link to the durable PromptVersion that produced this run (#70), e.g.
+    # "<slug>@v3". Optional — when absent the record stays keyed by the prompt text.
+    prompt_version_id: str | None = None
 
 
 def _decision_sentence(d: DecisionRequest) -> str:
@@ -172,6 +175,7 @@ def debug_decision(req: DecisionRequest):
         rationale=req.rationale,
         rationale_tags=req.rationale_tags,
         project=req.project,
+        prompt_version_id=req.prompt_version_id,
     )
     if decision_id < 0:
         return {"ok": False, "error": "could not persist decision"}
@@ -198,6 +202,7 @@ def debug_decision(req: DecisionRequest):
                 "chosen_provider": req.chosen_provider,
                 "chosen_model":    req.chosen_model or "",
                 "project":         req.project,
+                "prompt_version_id": req.prompt_version_id or "",
             },
             quality=model_choices.quality_for(provenance),
         )
