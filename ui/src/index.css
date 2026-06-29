@@ -64,18 +64,19 @@ code, pre, .mono {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  padding: 1.5px;
-  background: linear-gradient(145deg, #FFE880 0%, #C48808 45%, #6C4C00 100%);
+  padding: 1px;
+  /* Stays luminous edge-to-edge — no dark-brown corner. */
+  background: linear-gradient(145deg, #FFE880 0%, #DEB838 55%, #C48808 100%);
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
           mask-composite: exclude;
   opacity: 0;
-  transition: opacity 280ms ease;
+  transition: opacity 240ms ease-out;
   pointer-events: none;
 }
-.lux-card:hover::after { opacity: 1; }
+.lux-card:hover::after { opacity: 0.85; }
 /* Gold glow on hover — pairs with the border so the whole card lights up like
    the landing .feature-card (which adds a 0 0 36px gold glow on hover). */
 .lux-card:hover {
@@ -105,7 +106,7 @@ code, pre, .mono {
    Containers stay still; gold glow stays a whisper, per the grayscale rule. */
 .lux-card-i {
   transition:
-    transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 280ms ease-out;
 }
 .lux-card-i:hover {

@@ -812,6 +812,7 @@ export default function App() {
     }}>
       <style>{`
         @keyframes fadeIn    { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+        @keyframes spin      { to{transform:rotate(360deg)} }
         @keyframes dotPulse  { 0%,100%{box-shadow:0 0 0 1.5px rgba(138,99,36,0.18),0 0 8px rgba(196,136,8,0.28)} 50%{box-shadow:0 0 0 2px rgba(138,99,36,0.28),0 0 18px rgba(154,108,0,0.44),0 0 32px rgba(196,136,8,0.13)} }
         @keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes dotBounce { 0%,80%,100%{transform:translateY(0);opacity:.4} 40%{transform:translateY(-5px);opacity:1} }
@@ -847,7 +848,7 @@ export default function App() {
           text-shadow: 0 1px 2px rgba(70,44,8,0.22);
           will-change: transform;
           transition:
-            transform 200ms cubic-bezier(0.34,1.56,0.64,1),
+            transform 200ms cubic-bezier(0.22,1,0.36,1),
             box-shadow 200ms ease-out,
             background 160ms ease-in-out;
         }
@@ -865,6 +866,43 @@ export default function App() {
             inset 0 -1px 2px rgba(138,99,36,0.24),
             0 0 44px rgba(196,136,8,0.28);
           transform: translateY(-2px);
+        }
+        /* Ghost button — cream fill + luminous gold gradient border (mirrors
+           landing .btn-ghost / the GitHub button). For secondary CTAs. */
+        .btn-ghost {
+          position: relative; overflow: hidden;
+          display: inline-flex; align-items: center; justify-content: center;
+          color: #9A6C00; font-weight: 700; font-family: inherit; cursor: pointer;
+          letter-spacing: -0.01em; border-radius: 40px;
+          background:
+            linear-gradient(#FBF8F3, #FBF8F3) padding-box,
+            linear-gradient(145deg, #FFE880, #DEB838, #C48808) border-box;
+          border: 2px solid transparent;
+          box-shadow:
+            4px 4px 10px rgba(72,52,28,0.10),
+            -2px -2px 7px rgba(255,255,255,0.80),
+            inset 0 1px 1px rgba(255,255,255,0.92),
+            inset 0 -1px 2px rgba(138,99,36,0.06);
+          will-change: transform;
+          transition:
+            transform 200ms cubic-bezier(0.22,1,0.36,1),
+            box-shadow 200ms ease-out,
+            color 140ms ease;
+        }
+        .btn-ghost::before {
+          content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 50%;
+          background: linear-gradient(180deg, rgba(255,255,255,0.46) 0%, rgba(255,255,255,0) 100%);
+          border-radius: 40px 40px 0 0; pointer-events: none;
+        }
+        .btn-ghost:hover {
+          color: #6C4C00;
+          box-shadow:
+            6px 6px 16px rgba(72,52,28,0.14),
+            -2px -2px 8px rgba(255,255,255,0.92),
+            inset 0 1px 1px rgba(255,255,255,0.92),
+            inset 0 -1px 2px rgba(138,99,36,0.10),
+            0 0 24px rgba(196,136,8,0.13);
+          transform: translateY(-1px);
         }
         .nav-btn:hover { background: rgba(72,52,28,0.05) !important; color: #2E2010 !important; }
         .copy-btn { opacity: 0; transition: opacity .15s; }

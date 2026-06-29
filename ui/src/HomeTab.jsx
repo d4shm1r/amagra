@@ -3,91 +3,79 @@ import { T, LUX, GOLD, FONT_DISPLAY } from "./theme";
 import { BUILD_PHASES, ROADMAP, VERSION } from "./constants";
 
 // ── Feature pillars ─────────────────────────────────────────────
+// Gold is the signature, never the hierarchy system: every mark is the same
+// gold tint. Differentiation comes from the glyph + copy, not from colour.
 const FEATURES = [
   {
     sym: "⊕",
-    color: "#C48808",
     title: "Fast when it's obvious, careful when it isn't",
     body: "Simple questions are answered at once. Harder ones get more thought — the system decides how much effort each query deserves, on its own.",
     pills: ["Instant on the simple", "Deeper on the hard", "Always private"],
   },
   {
     sym: "⬡",
-    color: "#1E5A8A",
     title: "Specialists, not a generalist",
     body: "The right expert handles each question — code, infrastructure, data, writing, and more — each carrying its own memory of your work.",
     pills: ["The right expert, every time", "Knows your context", "Automatic"],
   },
   {
     sym: "⊞",
-    color: "#047857",
     title: "It remembers your work",
     body: "Context carries across sessions, so you stop re-explaining yourself. The more you use it, the better it recalls what matters.",
     pills: ["Across sessions", "Instant recall", "Gets sharper over time"],
   },
   {
     sym: "◷",
-    color: "#BE185D",
     title: "Reviews its work before answering",
     body: "Before it responds, it checks its own reasoning — and learns from what worked. Quietly, in the background, with no tuning from you.",
     pills: ["Self-checks", "Learns from outcomes", "No tuning needed"],
   },
   {
     sym: "Ψ",
-    color: "#6D28D9",
     title: "Nothing is hidden",
     body: "Every answer can be inspected, replayed, and understood. See exactly why the system did what it did — never a black box.",
     pills: ["Inspect any answer", "Replay decisions", "Full transparency"],
   },
   {
     sym: "◎",
-    color: "#B45309",
     title: "Yours to run",
     body: "Full source, MIT-licensed, self-hosted in one command. Runs entirely on your hardware — privacy you can verify, not just trust.",
     pills: ["MIT licensed", "Self-hosted", "100% local"],
   },
 ];
 
-// ── Stack badges ─────────────────────────────────────────────────
+// ── Stack badges (uniform gold tint — calm, not a rainbow) ───────
 const STACK = [
-  { label: "LangGraph",          color: "#C48808" },
-  { label: "FastAPI",            color: "#00695C" },
-  { label: "phi4-mini 3.8B",     color: "#047857" },
-  { label: "Ollama",             color: "#15803D" },
-  { label: "React + Vite",       color: "#0E7490" },
-  { label: "FAISS",              color: "#6D28D9" },
-  { label: "nomic-embed-text",   color: "#BE185D" },
-  { label: "SQLite",             color: "#B45309" },
-  { label: "Docker",             color: "#0F766E" },
+  "LangGraph", "FastAPI", "phi4-mini 3.8B", "Ollama", "React + Vite",
+  "FAISS", "nomic-embed-text", "SQLite", "Docker",
 ];
 
-// ── Quick nav ─────────────────────────────────────────────────────
+// ── Quick nav — first actions, not a second launcher ──────────────
+// The sidebar already navigates everywhere; this is a calm "start here"
+// for a first-run user. Kept short and gold-unified.
 const SIMPLE_NAV_SHORTCUTS = [
-  { sym: "↗", label: "Chat",       tab: "chat",      color: "#C48808" },
-  { sym: "⌘", label: "Prompt IDE", tab: "prompt",    color: "#1E5A8A" },
-  { sym: "◎", label: "Consensus",  tab: "consensus", color: "#7E3F8F" },
-  { sym: "◈", label: "Library",    tab: "library",   color: "#047857" },
-  { sym: "⚙", label: "Model",      tab: "model",     color: "#B45309" },
-  { sym: "?", label: "Guide",      tab: "guide",     color: "#9A6C00" },
+  { sym: "↗", label: "Chat",       tab: "chat" },
+  { sym: "⌘", label: "Prompt IDE", tab: "prompt" },
+  { sym: "◎", label: "Consensus",  tab: "consensus" },
+  { sym: "?", label: "Guide",      tab: "guide" },
 ];
 
 const ADVANCED_NAV_SHORTCUTS = [
-  { sym: "↗", label: "Chat",            tab: "chat",      color: "#C48808" },
-  { sym: "⬡", label: "Skills",          tab: "skills",    color: "#1E5A8A" },
-  { sym: "Ψ", label: "Cognitive OS",    tab: "cognitive", color: "#6D28D9" },
-  { sym: "⊙", label: "Inspector",       tab: "inspector", color: "#047857" },
-  { sym: "◷", label: "Version History", tab: "releases",  color: "#BE185D" },
-  { sym: "▲", label: "Progress",        tab: "progress",  color: "#B45309" },
+  { sym: "↗", label: "Chat",         tab: "chat" },
+  { sym: "⌘", label: "Prompt IDE",   tab: "prompt" },
+  { sym: "Ψ", label: "Cognitive OS", tab: "cognitive" },
+  { sym: "⊙", label: "Inspector",    tab: "inspector" },
 ];
 
 // ── Architecture pipeline nodes ───────────────────────────────────
+// Neutral by default; the routing brain (the differentiator) gets the gold.
 const PIPELINE = [
-  { label: "User Query",      sub: "natural language",      color: T.muted    },
-  { label: "QuerySignal",     sub: "domain · shape · verbosity", color: T.accent  },
-  { label: "Core Brain",      sub: "routing + planning",    color: "#6D28D9"  },
-  { label: "LangGraph Agent", sub: "10 specialists",        color: "#1E5A8A"  },
-  { label: "FAISS Memory",    sub: "retrieve + write",      color: "#047857"  },
-  { label: "Response",        sub: "reflect + learn",       color: T.success  },
+  { label: "User Query",      sub: "natural language" },
+  { label: "QuerySignal",     sub: "domain · shape · verbosity", key: true },
+  { label: "Core Brain",      sub: "routing + planning",         key: true },
+  { label: "LangGraph Agent", sub: "10 specialists" },
+  { label: "FAISS Memory",    sub: "retrieve + write" },
+  { label: "Response",        sub: "reflect + learn" },
 ];
 
 export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mode = "advanced" }) {
@@ -105,44 +93,39 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
       <div style={{ marginBottom: 44 }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 20, marginBottom: 20 }}>
           <div style={{ flex: 1 }}>
-            {/* Title row */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
-              <h1 style={{
-                margin: 0, fontSize: 38, fontWeight: 600,
-                fontFamily: FONT_DISPLAY, letterSpacing: "0.07em", lineHeight: 1.05,
-                ...LUX.goldText,
-              }}>AMAGRA</h1>
-            </div>
+            {/* Wordmark — the brand is the word AMAGRA, never a glyph */}
+            <h1 style={{
+              margin: "0 0 12px", fontSize: 42, fontWeight: 600,
+              fontFamily: FONT_DISPLAY, letterSpacing: "0.10em", lineHeight: 1.02,
+              ...LUX.goldText,
+            }}>AMAGRA</h1>
 
-            {/* Version + phase badges */}
-            <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 14 }}>
-              <Badge label={`v${VERSION}`}                color={T.accent}   />
-              <Badge label={`${BUILD_PHASES.length} phases`} color="#047857" />
-              <Badge label="Open Core · MIT"              color="#6D28D9"    />
-              <Badge label="100% local"                   color="#0F766E"    />
+            {/* Badges — only what the hero needs; machinery lives below the fold */}
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 16 }}>
+              <Badge label={`v${VERSION}`}   />
+              <Badge label="Open Core · MIT" />
               {currentPhase && (
-                <Badge label={`Now: ${currentPhase.title}`} color={currentPhase.color} pulse />
+                <Badge label={`Now: ${currentPhase.title}`} pulse />
               )}
             </div>
 
             {/* Tagline — brand anchor (lead with trust, not machinery) */}
             <p style={{
-              margin: "0 0 8px", fontSize: 19, color: T.text,
+              margin: "0 0 8px", fontSize: 20, color: T.text,
               fontFamily: FONT_DISPLAY, fontWeight: 500,
               lineHeight: 1.3, maxWidth: 640, letterSpacing: "0.005em",
             }}>
               The AI you can trust with long-term work.
             </p>
             <p style={{
-              margin: "0 0 16px", fontSize: 13.5, color: T.mutedLt,
+              margin: "0 0 18px", fontSize: 13.5, color: T.mutedLt,
               lineHeight: 1.65, maxWidth: 640,
             }}>
               It remembers what you've done, explains every decision, and runs entirely on your
               hardware.
             </p>
 
-            {/* Live status — one calm reassurance, not a metrics pile.
-                The real numbers live in Cognition; keep the hero serene. */}
+            {/* Live status — one calm reassurance, not a metrics pile. */}
             <div style={{ display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
               <StatusPill
                 label="Status"
@@ -153,7 +136,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
               {!online && (
                 <span style={{ fontSize: 11, color: T.error, alignSelf: "center", marginLeft: 4 }}>
                   Start with{" "}
-                  <code style={{ fontFamily: "monospace", background: "#B4231818", padding: "1px 5px", borderRadius: 3 }}>
+                  <code style={{ fontFamily: "monospace", background: `${T.error}18`, padding: "1px 5px", borderRadius: 3 }}>
                     ai-start
                   </code>
                 </span>
@@ -180,11 +163,11 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
         </div>
       </Section>
 
-      {/* ── Quick nav ── */}
-      <Section title="Open a view">
+      {/* ── Quick nav — calm first actions ── */}
+      <Section title="Start here">
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
           gap: 8,
         }}>
           {navShortcuts.map(n => (
@@ -193,13 +176,18 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
               onClick={() => onNav(n.tab)}
               className="lux-card lux-card-i"
               style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "12px 15px",
+                display: "flex", alignItems: "center", gap: 11,
+                padding: "13px 16px",
                 cursor: "pointer", fontFamily: "inherit", textAlign: "left",
               }}
             >
-              <span style={{ fontSize: 15, color: T.accent, fontFamily: "monospace", flexShrink: 0, lineHeight: 1 }}>{n.sym}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{n.label}</span>
+              <span style={{
+                width: 26, height: 26, flexShrink: 0, borderRadius: 7,
+                background: LUX.goldTint, border: `1px solid ${GOLD.g2}44`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 13, color: T.accent, fontFamily: "monospace", lineHeight: 1,
+              }}>{n.sym}</span>
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: T.text }}>{n.label}</span>
             </button>
           ))}
         </div>
@@ -293,23 +281,28 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
             <Section title="Architecture">
               <div className="lux-card" style={{ padding: "20px 26px", overflowX: "auto" }}>
                 <div style={{ display: "flex", alignItems: "center", minWidth: 640 }}>
-                  {PIPELINE.map((node, i, arr) => (
-                    <div key={node.label} style={{ display: "flex", alignItems: "center", flex: i < arr.length - 1 ? 1 : 0 }}>
-                      <div style={{
-                        background: T.surface2, border: `1px solid ${node.color}44`,
-                        borderRadius: 6, padding: "10px 14px",
-                        textAlign: "center", flexShrink: 0, minWidth: 95,
-                      }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: node.color, lineHeight: 1.2 }}>{node.label}</div>
-                        <div style={{ fontSize: 9.5, color: T.muted, marginTop: 3 }}>{node.sub}</div>
-                      </div>
-                      {i < arr.length - 1 && (
-                        <div style={{ flex: 1, height: 1, background: T.border, position: "relative", minWidth: 18 }}>
-                          <span style={{ position: "absolute", right: -4, top: "50%", transform: "translateY(-50%)", color: T.border, fontSize: 10, lineHeight: 1 }}>▶</span>
+                  {PIPELINE.map((node, i, arr) => {
+                    const labelColor = node.key ? T.accent : T.text;
+                    const brd        = node.key ? `${GOLD.g2}66` : T.border;
+                    return (
+                      <div key={node.label} style={{ display: "flex", alignItems: "center", flex: i < arr.length - 1 ? 1 : 0 }}>
+                        <div style={{
+                          background: node.key ? LUX.goldTint : T.surface2,
+                          border: `1px solid ${brd}`,
+                          borderRadius: 8, padding: "10px 14px",
+                          textAlign: "center", flexShrink: 0, minWidth: 95,
+                        }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: labelColor, lineHeight: 1.2 }}>{node.label}</div>
+                          <div style={{ fontSize: 9.5, color: T.muted, marginTop: 3 }}>{node.sub}</div>
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        {i < arr.length - 1 && (
+                          <div style={{ flex: 1, height: 1, background: T.border, position: "relative", minWidth: 18 }}>
+                            <span style={{ position: "absolute", right: -4, top: "50%", transform: "translateY(-50%)", color: T.border, fontSize: 10, lineHeight: 1 }}>▶</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
                 <div style={{ marginTop: 14, fontSize: 11, color: T.muted, lineHeight: 1.6 }}>
                   All stages emit events to the Cognitive OS event bus. Coherence C(t) is tracked continuously.
@@ -318,17 +311,17 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
               </div>
             </Section>
 
-            {/* Tech stack */}
+            {/* Tech stack — uniform gold tint */}
             <Section title="Stack">
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {STACK.map(s => (
-                  <span key={s.label} style={{
+                  <span key={s} style={{
                     fontSize: 11, fontWeight: 600,
-                    color: s.color, background: `${s.color}14`,
-                    border: `1px solid ${s.color}30`,
+                    color: T.accent2, background: LUX.goldTint,
+                    border: `1px solid ${GOLD.g2}40`,
                     borderRadius: 99, padding: "5px 13px",
                     fontFamily: "'Consolas', 'Cascadia Code', monospace",
-                  }}>{s.label}</span>
+                  }}>{s}</span>
                 ))}
               </div>
             </Section>
@@ -365,14 +358,15 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
 
 // ── Sub-components ──────────────────────────────────────────────
 
-function Badge({ label, color, pulse }) {
+function Badge({ label, pulse }) {
+  // Uniform gold treatment — the badge row is signature, not a colour code.
   return (
     <span style={{
       fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
-      color, background: `${color}18`,
-      border: `1px solid ${color}44`,
+      color: T.accent2, background: LUX.goldTint,
+      border: `1px solid ${GOLD.g2}55`,
       borderRadius: 99, padding: "3px 11px",
-      boxShadow: pulse ? `0 0 8px ${color}44` : "none",
+      boxShadow: pulse ? `0 0 8px ${GOLD.g2}55` : "none",
     }}>{label}</span>
   );
 }
