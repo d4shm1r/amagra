@@ -25,9 +25,9 @@ jobs:
     name: Build AppImage
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "20"
 
@@ -47,7 +47,7 @@ jobs:
 
       # Always keep the build as a downloadable CI artifact (covers workflow_dispatch).
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: amagra-appimage
           path: dist/*.AppImage
@@ -56,7 +56,7 @@ jobs:
       # On a version tag, also attach it to the GitHub Release for that tag.
       - name: Attach to Release
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: dist/*.AppImage
           fail_on_unmatched_files: true
