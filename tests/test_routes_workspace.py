@@ -78,3 +78,67 @@ def test_traversal_returns_403():
 def test_missing_returns_404():
     r = client.get("/workspace/read", params={"path": "ghost.txt"}, headers=HEADERS)
     assert r.status_code == 404
+
+
+# ── write surface ────────────────────────────────────────────────────────────
+
+def test_write_then_read_roundtrip():
+    r = client.post("/workspace/write",
+                    json={"path": "out/new.txt", "content": "fresh content\n"},
+                    headers=HEADERS)
+    assert r.status_code == 200
+    assert r.json()["created"] is True
+    back = client.get("/workspace/read", params={"path": "out/new.txt"}, headers=HEADERS)
+    assert back.status_code == 200
+    assert back.json()["content"] == "fresh content\n"
+
+
+def test_mkdir_then_list():
+    r = client.post("/workspace/mkdir", json={"path": "fresh_dir"}, headers=HEADERS)
+    assert r.status_code == 200
+    listing = client.get("/workspace/list", headers=HEADERS)
+    assert "fresh_dir" in {e["name"] for e in listing.json()["entries"]}
+
+
+def test_move_route():
+    client.post("/workspace/write", json={"path": "m1.txt", "content": "x"}, headers=HEADERS)
+    r = client.post("/workspace/move", json={"src": "m1.txt", "dst": "m2.txt"}, headers=HEADERS)
+    assert r.status_code == 200
+    assert client.get("/workspace/read", params={"path": "m1.txt"}, headers=HEADERS).status_code == 404
+    assert client.get("/workspace/read", params={"path": "m2.txt"}, headers=HEADERS).status_code == 200
+
+
+def test_delete_route():
+    client.post("/workspace/write", json={"path": "del.txt", "content": "x"}, headers=HEADERS)
+    r = client.post("/workspace/delete", json={"path": "del.txt"}, headers=HEADERS)
+    assert r.status_code == 200
+    assert client.get("/workspace/read", params={"path": "del.txt"}, headers=HEADERS).status_code == 404
+
+
+def test_write_traversal_returns_403():
+    r = client.post("/workspace/write",
+                    json={"path": "../../tmp/evil.txt", "content": "pwn"}, headers=HEADERS)
+    assert r.status_code == 403
+
+
+def test_write_binary_returns_400():
+    r = client.post("/workspace/write",
+                    json={"path": "b.txt", "content": "a\x00b"}, headers=HEADERS)
+    assert r.status_code == 400
+
+
+def test_delete_missing_returns_404():
+    r = client.post("/workspace/delete", json={"path": "nope.txt"}, headers=HEADERS)
+    assert r.status_code == 404
+
+
+def test_write_paths_are_owner_gated_not_public():
+    """Writes must require the owner key when REQUIRE_AUTH=1 — i.e. never public.
+
+    The gate is api.py's allowlist; assert the write paths are neither in
+    _PUBLIC_PATHS nor matched by a public prefix.
+    """
+    from api import _PUBLIC_PATHS, _PUBLIC_PREFIXES
+    for p in ("/workspace/write", "/workspace/mkdir", "/workspace/move", "/workspace/delete"):
+        assert p not in _PUBLIC_PATHS
+        assert not any(p.startswith(prefix) for prefix in _PUBLIC_PREFIXES)
