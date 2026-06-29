@@ -8,9 +8,9 @@
 
 | Status | What |
 |--------|------|
-| ✅ **Shipped** | Tool-using agents · multi-provider models · cross-model debugger & consensus · unified workspace UI · hybrid inference · UI consolidation + Monaco Prompt IDE *(v1.5.5)* |
+| ✅ **Shipped** | Tool-using agents · multi-provider models · cross-model debugger & consensus · unified workspace UI · hybrid inference · UI consolidation + Monaco Prompt IDE *(v1.5.5)* · one-file AppImage install *(v1.5.6)* · **Prompt-as-Artifact foundation — prompts as versioned files, runs/decisions keyed on `prompt_version_id`, version diff (epic #67)** *(v1.6.0)* |
 | 🔜 **Now** | **Public launch** *(#9)* — the one thing everything else waits on |
-| ▶ **Next** | **v1.6 Workspaces & RBAC** — isolated projects, roles, a custom agent builder, and prompts as first-class versioned artifacts |
+| ▶ **Next** | **v1.6 Workspaces & RBAC** — isolated projects, roles, a custom agent builder (the Prompt-as-Artifact foundation is now shipped) |
 | ○ **Later** | v1.7 team memory & governance · v2.0 agent registry & SDK |
 
 > **The one rule:** nothing after launch starts until launch ships. Distribution is the
@@ -268,7 +268,7 @@ A premium UI hardening pass ahead of v1.6 — leaner navigation, one API seam, a
 | **App.jsx de-monolithed** 1,395 → 1,037 lines — extracted `navConfig.js` + `Modals.jsx` | ✅ shipped |
 | **Monaco-powered Prompt IDE** (**v1.6 #71** foundation) — bundled locally (no CDN, honors privacy), slim core, lazy-loaded; initial bundle stays ~1.24 MB (358 KB gzip) | ✅ shipped |
 
-**Open follow-up:** project `computeMetrics`/`structChecks` onto Monaco markers for true inline diagnostics (completes #71).
+**Follow-up — ✅ done (v1.6.0, #71):** `computeMetrics`/`structChecks` projected onto Monaco markers for inline diagnostics, plus a DiffEditor version-compare overlay.
 
 ---
 
@@ -310,14 +310,14 @@ The keystone of the "Prompt-IDE" pivot, and the spine several v1.6 items were in
 
 **The amendment:** add `Prompt` + `PromptVersion` as a design-plane resource and a `Run.prompt_version_id` link, making P and R symmetric. Inherits versioning, reference-not-own, templates/marketplace for free.
 
-Tracked under epic **#67**.
+Tracked under epic **#67** — **✅ shipped in v1.6.0** (all four children below).
 
-| Item (dependency order) | Impact | Difficulty | ROI | Issue |
-|------|--------|-----------|-----|-------|
-| FS jail: add write ops (write/mkdir/move/delete) behind owner-action gate — the one foundation task | 8 | 3 | ★★★★★ | #68 |
-| Repoint Prompt editor off `localStorage` → `/workspace/*` (prompts become files) | 7 | 3 | ★★★★ | #69 |
-| Persist responses as artifacts with `prompt_version_id`; decisions key on it (**absorbs** "persist Consensus runs as durable decisions") | 8 | 4 | ★★★★ | #70 |
-| Monaco + AST projection over existing analysis → inline diagnostics (**replaces** the loose "Monaco code pane" line above) | 6 | 4 | ★★★★ | #71 |
+| Item (dependency order) | Impact | Difficulty | ROI | Issue | Status |
+|------|--------|-----------|-----|-------|--------|
+| FS jail: add write ops (write/mkdir/move/delete) behind owner-action gate — the one foundation task | 8 | 3 | ★★★★★ | #68 | ✅ |
+| Repoint Prompt editor off `localStorage` → `/workspace/*` (prompts become files) | 7 | 3 | ★★★★ | #69 | ✅ |
+| Persist responses as artifacts with `prompt_version_id`; decisions key on it (**absorbs** "persist Consensus runs as durable decisions") | 8 | 4 | ★★★★ | #70 | ✅ |
+| Monaco + AST projection over existing analysis → inline diagnostics + version diff (**replaces** the loose "Monaco code pane" line above) | 6 | 4 | ★★★★ | #71 | ✅ |
 
 **Decisions locked:** substrate = real files on disk (git-diff for free), not localStorage/DB; chat is **demoted to an input shim, not deleted** (retire only after `R*.response` reaches parity — it's the current activation path); AST = index layer over existing `computeMetrics`/`structChecks`, not a rewrite. **Gated behind launch (#9).**
 
