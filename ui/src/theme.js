@@ -28,6 +28,22 @@ export const GOLD = {
   g1: "#FFE880", g2: "#DEB838", g3: "#C48808", g4: "#9A6C00", g5: "#6C4C00",
 };
 
+// Semantic data-viz accents — categorical encodings (node/edge/agent types,
+// causal-path stages) used by the analysis tabs. NOT decoration: each carries
+// meaning, like the status colors. Centralized so the four legacy tabs
+// (Data, DecisionTimeline, ContextInspector, KnowledgeGraph) share one
+// vocabulary instead of re-hardcoding the same hex. Deepened for the cream
+// canvas to match T.success/T.error.
+export const SEM = {
+  teal:    "#0F766E",
+  blue:    "#1E5A8A",
+  cyan:    "#0E7490",
+  violet:  "#7C3AED",
+  purple:  "#7E3F8F",
+  magenta: "#BE185D",
+  clay:    "#C06040",
+};
+
 // Reusable luxury accents
 export const LUX = {
   goldText: {
@@ -57,8 +73,39 @@ export const FONT_UI      = "'DM Sans', 'Manrope', system-ui, -apple-system, 'Se
 export const FONT_DISPLAY = "'Cormorant Garamond', 'Iowan Old Style', Palatino, Georgia, serif";
 export const FONT_MONO    = "'JetBrains Mono', 'Cascadia Code', 'Consolas', 'Droid Sans Mono', 'Courier New', monospace";
 
+// ── Type scale — "type is architecture" ──────────────────────────
+// Eight role-based steps (30/22/18/15/14/13/12/10.5) replacing the 36
+// ad-hoc sizes that had accreted. Each role is a ready-to-spread style
+// object: it carries its own line-height, weight, and tracking so the
+// vertical rhythm lives in the token, not in per-component guesswork.
+//
+//   style={{ ...TYPE.body, color: T.text }}
+//
+// Override weight inline for one-off emphasis (e.g. ...TYPE.small, fontWeight: 700).
+export const TYPE = {
+  display:  { fontSize: 30,   lineHeight: 1.12, fontWeight: 600, letterSpacing: "0.01em",   fontFamily: FONT_DISPLAY }, // page hero (serif)
+  title:    { fontSize: 22,   lineHeight: 1.25, fontWeight: 600, letterSpacing: "-0.01em" },                            // section / panel heading
+  subtitle: { fontSize: 18,   lineHeight: 1.4,  fontWeight: 600, letterSpacing: "-0.005em" },                          // sub-section heading
+  lead:     { fontSize: 15,   lineHeight: 1.66, fontWeight: 400 },                                                     // emphasized / readable body
+  body:     { fontSize: 14,   lineHeight: 1.6,  fontWeight: 400 },                                                     // default body
+  small:    { fontSize: 13,   lineHeight: 1.55, fontWeight: 400 },                                                     // dense / secondary body
+  caption:  { fontSize: 12,   lineHeight: 1.45, fontWeight: 400 },                                                     // captions, metadata, hints
+  metric:   { fontSize: 22,   lineHeight: 1.1,  fontWeight: 700, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }, // stat-card numerals
+  micro:    { fontSize: 10.5, lineHeight: 1.4,  fontWeight: 400 },                                                     // dense meta / numerics (badges add their own weight)
+  eyebrow:  { fontSize: 10.5, lineHeight: 1.4,  fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase" }, // overline labels / dividers
+};
+
+// ── Motion tokens — one easing language, four durations ──────────
+// The decel curve already used everywhere, named once. Durations match
+// the existing lux-card / button timings so adoption is a no-op visually.
+export const EASE = {
+  out:   "cubic-bezier(0.22, 1, 0.36, 1)",  // standard decelerate — enters, lifts
+  inOut: "cubic-bezier(0.65, 0, 0.35, 1)",  // symmetric — loops, toggles
+};
+export const DUR = { fast: "140ms", base: "200ms", slow: "280ms", slower: "600ms" };
+
 // Spacing scale (px) — use multiples of 4
-export const SPACE = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24 };
+export const SPACE = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 7: 32, 8: 40, 10: 48 };
 
 // Border radius scale — rounder than the old VS Code look
 export const RADIUS = { sm: 6, md: 9, lg: 14, xl: 20 };

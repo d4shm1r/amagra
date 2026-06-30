@@ -23,15 +23,13 @@ export const SURFACES = [
     { id: "inspector", label: "Inspector" },
   ]},
   { id: "cognition", label: "Cognition", sym: "∴", desc: "Monitor system health and reasoning", adv: true, tabs: [
-    { id: "cog-dash",   label: "Dashboard", group: "Health" },
-    { id: "uci",        label: "UCI",       group: "Health" },
-    { id: "risk-obs",   label: "Risk",      group: "Health" },
-    { id: "event-log",  label: "Events",    group: "Health" },
-    { id: "plan-graph", label: "Plan",      group: "Health" },
-    { id: "policy",     label: "Policy",    group: "Health" },
-    { id: "cognitive",  label: "CogOS",     group: "Advanced" },
-    { id: "skills",     label: "Skills",    group: "Advanced" },
-    { id: "timeline",   label: "Timeline",  group: "Advanced" },
+    // Dashboard = the at-a-glance health grid; Diagnostics folds the five focus
+    // views (UCI/Risk/Events/Plan/Policy) into one tab with internal sections.
+    { id: "cog-dash",    label: "Dashboard",   group: "Health" },
+    { id: "diagnostics", label: "Diagnostics", group: "Health" },
+    { id: "cognitive",   label: "CogOS",       group: "Advanced" },
+    { id: "skills",      label: "Skills",      group: "Advanced" },
+    { id: "timeline",    label: "Timeline",    group: "Advanced" },
   ]},
   { id: "memory", label: "Memory", sym: "◈", desc: "Explore stored knowledge and context", tabs: [
     { id: "library",   label: "Library" },
@@ -59,7 +57,13 @@ export const NAV = SURFACES.map(({ id, label, sym, desc, adv }) => ({ id, label,
 export const TABS_BY_SURFACE = Object.fromEntries(SURFACES.map(s => [s.id, s.tabs]));
 export const SURFACE_BY_TAB  = Object.fromEntries(SURFACES.flatMap(s => s.tabs.map(t => [t.id, s.id])));
 export const DEFAULT_TAB     = Object.fromEntries(SURFACES.map(s => [s.id, s.tabs[0].id]));
-export const TAB_ALIASES     = { agents: "skills", history: "releases", traces: "brain", replay: "brain" };
+export const TAB_ALIASES     = {
+  agents: "skills", history: "releases", traces: "brain", replay: "brain",
+  // Cognition consolidation (v1.6.2): the five focus tabs now live as sections
+  // inside Diagnostics — redirect old ids so deep links / shortcuts still land.
+  uci: "diagnostics", "risk-obs": "diagnostics", "event-log": "diagnostics",
+  "plan-graph": "diagnostics", policy: "diagnostics",
+};
 export const VALID_TABS      = new Set(["home", ...Object.keys(SURFACE_BY_TAB)]);
 
 // Map a raw activeTab to which top-level surface it belongs to.

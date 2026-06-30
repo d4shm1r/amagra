@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { AGENTS } from "./constants";
 import { PageHeader } from "./ObsShared";
+import { T, SEM, TYPE } from "./theme";
 import TracesTab from "./TracesTab";
 
 import { API } from "./api";
@@ -21,18 +22,18 @@ const AGENT_META = Object.fromEntries(
 );
 
 const ACTION_COLORS = {
-  build:    "#C48808",
-  debug:    "#B42318",
-  explain:  "#1E5A8A",
-  compare:  "#0F766E",
-  research: "#BE185D",
-  lookup:   "#9A6C00",
+  build:    T.accent,
+  debug:    T.error,
+  explain:  SEM.blue,
+  compare:  SEM.teal,
+  research: SEM.magenta,
+  lookup:   T.accent2,
   plan:     "#047857",
-  unknown:  "#9A7A60",
+  unknown:  T.muted,
 };
 
 function AgentChip({ id, size = 12 }) {
-  const m = AGENT_META[id] || { icon: "?", color: "#9A7A60", label: id };
+  const m = AGENT_META[id] || { icon: "?", color: T.muted, label: id };
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 4,
@@ -46,10 +47,10 @@ function AgentChip({ id, size = 12 }) {
 }
 
 function ActionChip({ action }) {
-  const c = ACTION_COLORS[action] || "#9A7A60";
+  const c = ACTION_COLORS[action] || T.muted;
   return (
     <span style={{
-      padding: "1px 7px", borderRadius: 3, fontSize: 11,
+      padding: "1px 7px", borderRadius: 3, ...TYPE.caption,
       background: c + "22", color: c, border: `1px solid ${c}44`, fontWeight: 600,
     }}>
       {action}
@@ -59,16 +60,16 @@ function ActionChip({ action }) {
 
 function ConfidenceBar({ value, width = 80 }) {
   const pct = Math.round((value || 0) * 100);
-  const c = pct >= 70 ? "#15803D" : pct >= 45 ? "#9A6C00" : "#B42318";
+  const c = pct >= 70 ? T.success : pct >= 45 ? T.accent2 : T.error;
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
       <span style={{
-        width, height: 5, background: "#E0D6C4", borderRadius: 3, overflow: "hidden",
+        width, height: 5, background: T.border, borderRadius: 3, overflow: "hidden",
         display: "inline-block",
       }}>
         <span style={{ display: "block", width: `${pct}%`, height: "100%", background: c, borderRadius: 3 }} />
       </span>
-      <span style={{ fontSize: 11, color: c, fontWeight: 700 }}>{pct}%</span>
+      <span style={{ ...TYPE.caption, color: c, fontWeight: 700 }}>{pct}%</span>
     </span>
   );
 }
@@ -76,13 +77,13 @@ function ConfidenceBar({ value, width = 80 }) {
 function RegretBar({ value, width = 60 }) {
   const v = value || 0;
   const pct = Math.min(100, Math.round(v * 100 / 0.5));   // 0.5 = full red
-  const c = v < 0.1 ? "#15803D" : v < 0.25 ? "#9A6C00" : "#B42318";
+  const c = v < 0.1 ? T.success : v < 0.25 ? T.accent2 : T.error;
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-      <span style={{ width, height: 4, background: "#E0D6C4", borderRadius: 2, overflow: "hidden", display: "inline-block" }}>
+      <span style={{ width, height: 4, background: T.border, borderRadius: 2, overflow: "hidden", display: "inline-block" }}>
         <span style={{ display: "block", width: `${pct}%`, height: "100%", background: c, borderRadius: 2 }} />
       </span>
-      <span style={{ fontSize: 11, color: c, fontWeight: 700 }}>{v.toFixed(3)}</span>
+      <span style={{ ...TYPE.caption, color: c, fontWeight: 700 }}>{v.toFixed(3)}</span>
     </span>
   );
 }
@@ -99,33 +100,33 @@ function DriftMonitorPanel({ drift }) {
   // Instability composite (mirrors learning.py)
   const instability = Math.min(1, 0.4*regret + 0.4*maxCalErr + 0.2*variance);
   const instPct     = Math.round(instability * 100);
-  const instColor   = instability < 0.4 ? "#15803D" : instability < 0.7 ? "#9A6C00" : "#B42318";
+  const instColor   = instability < 0.4 ? T.success : instability < 0.7 ? T.accent2 : T.error;
   const label       = healthy ? "STABLE" : instability >= 0.8 ? "UNSTABLE — learning frozen" : "DEGRADING";
-  const labelColor  = healthy ? "#15803D" : instability >= 0.8 ? "#B42318" : "#9A6C00";
+  const labelColor  = healthy ? T.success : instability >= 0.8 ? T.error : T.accent2;
 
   return (
     <div style={{
-      background: "#FAF7F2",
+      background: T.surface,
       border: `1.5px solid ${labelColor}44`,
       borderRadius: 3, padding: "12px 18px", marginBottom: 16,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#9A7A60", textTransform: "uppercase", letterSpacing: 1 }}>
+        <div style={{ ...TYPE.caption, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: 1 }}>
           System Drift
         </div>
         <span style={{
-          padding: "2px 10px", borderRadius: 3, fontSize: 11, fontWeight: 700,
+          padding: "2px 10px", borderRadius: 3, ...TYPE.caption, fontWeight: 700,
           background: labelColor + "22", color: labelColor, border: `1px solid ${labelColor}55`,
         }}>
           {label}
         </span>
-        <span style={{ marginLeft: "auto", fontSize: 11, color: "#9A7A60" }}>
+        <span style={{ marginLeft: "auto", ...TYPE.caption, color: T.muted }}>
           instability {instPct}%
         </span>
       </div>
 
       {/* Instability bar */}
-      <div style={{ height: 5, background: "#E0D6C4", borderRadius: 3, overflow: "hidden", marginBottom: 12 }}>
+      <div style={{ height: 5, background: T.border, borderRadius: 3, overflow: "hidden", marginBottom: 12 }}>
         <div style={{ width: `${instPct}%`, height: "100%", background: instColor, borderRadius: 3, transition: "width 0.4s" }} />
       </div>
 
@@ -136,11 +137,11 @@ function DriftMonitorPanel({ drift }) {
           { label: "max cal error", value: maxCalErr > 0 ? maxCalErr.toFixed(3) : "—", threshold: 0.25, v: maxCalErr },
           { label: "weight var", value: variance.toFixed(5), threshold: 0.05, v: variance },
         ].map(({ label, value, threshold, v }) => {
-          const c = v < threshold * 0.5 ? "#9A7A60" : v < threshold ? "#9A6C00" : "#B42318";
+          const c = v < threshold * 0.5 ? T.muted : v < threshold ? T.accent2 : T.error;
           return (
-            <div key={label} style={{ background: "#F4F0E8", border: "1px solid #E0D6C4", borderRadius: 4, padding: "6px 12px", flex: "1 1 120px" }}>
-              <div style={{ fontSize: 10, color: "#9A7A60", marginBottom: 2 }}>{label}</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: c }}>{value}</div>
+            <div key={label} style={{ background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 4, padding: "6px 12px", flex: "1 1 120px" }}>
+              <div style={{ ...TYPE.micro, color: T.muted, marginBottom: 2 }}>{label}</div>
+              <div style={{ ...TYPE.body, fontWeight: 800, color: c }}>{value}</div>
             </div>
           );
         })}
@@ -149,8 +150,8 @@ function DriftMonitorPanel({ drift }) {
       {/* Flags */}
       {flags.map((f, i) => (
         <div key={i} style={{
-          background: "#B4231811", border: "1px solid #B4231844", borderRadius: 7,
-          padding: "6px 12px", fontSize: 11, color: "#B42318", marginTop: 4, lineHeight: 1.5,
+          background: `${T.error}11`, border: `1px solid ${T.error}44`, borderRadius: 7,
+          padding: "6px 12px", ...TYPE.caption, color: T.error, marginTop: 4, lineHeight: 1.5,
         }}>
           ⚠ <strong>{f.type}</strong>{f.agent ? ` [${f.agent}]` : ""} — {f.detail}
         </div>
@@ -182,14 +183,14 @@ function BrainInspector({ decision, onReplay }) {
   if (!decision) return (
     <div className="lux-card" style={{
       flex: 1, padding: 24, display: "flex", flexDirection: "column",
-      alignItems: "center", justifyContent: "center", color: "#9A7A60", fontSize: 13,
+      alignItems: "center", justifyContent: "center", color: T.muted, ...TYPE.small,
     }}>
       <div style={{ fontSize: 28, marginBottom: 10 }}>🧠</div>
       Select a decision to inspect
     </div>
   );
 
-  const m = AGENT_META[decision.brain_agent] || { color: "#9A7A60" };
+  const m = AGENT_META[decision.brain_agent] || { color: T.muted };
   const rm = AGENT_META[decision.router_agent];
   const agree = !decision.conflict;
 
@@ -198,12 +199,12 @@ function BrainInspector({ decision, onReplay }) {
       flex: 1, padding: "18px 20px", overflowY: "auto",
     }}>
       {/* Header */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#9A7A60", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
+      <div style={{ ...TYPE.caption, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
         Brain Inspector · #{decision.id}
       </div>
 
       {/* Task */}
-      <div style={{ fontSize: 13, color: "#2E2010", marginBottom: 14, lineHeight: 1.5, background: "#F4F0E8", borderRadius: 4, padding: "10px 12px", border: "1px solid #E0D6C4" }}>
+      <div style={{ ...TYPE.small, color: T.text, marginBottom: 14, lineHeight: 1.5, background: T.surface2, borderRadius: 4, padding: "10px 12px", border: `1px solid ${T.border}` }}>
         "{decision.task}"
       </div>
 
@@ -211,7 +212,7 @@ function BrainInspector({ decision, onReplay }) {
       <Section label="Intent">
         <Row label="Action"><ActionChip action={decision.action} /></Row>
         <Row label="Complexity">
-          <span style={{ fontSize: 12, color: decision.complexity === "compound" ? "#BE185D" : decision.complexity === "ambiguous" ? "#9A6C00" : "#15803D", fontWeight: 700 }}>
+          <span style={{ ...TYPE.caption, color: decision.complexity === "compound" ? SEM.magenta : decision.complexity === "ambiguous" ? T.accent2 : T.success, fontWeight: 700 }}>
             {decision.complexity}
           </span>
         </Row>
@@ -220,7 +221,7 @@ function BrainInspector({ decision, onReplay }) {
           <Row label="Regret">
             <RegretBar value={decision.regret} />
             {decision.regret > 0.25 && (
-              <span style={{ fontSize: 10, color: "#B42318", marginLeft: 4 }}>suboptimal route</span>
+              <span style={{ ...TYPE.micro, color: T.error, marginLeft: 4 }}>suboptimal route</span>
             )}
           </Row>
         )}
@@ -236,10 +237,10 @@ function BrainInspector({ decision, onReplay }) {
             ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                 <AgentChip id={decision.router_agent} />
                 {agree
-                  ? <span style={{ fontSize: 11, color: "#15803D", fontWeight: 700 }}>✓ agree</span>
-                  : <span style={{ fontSize: 11, color: "#B42318", fontWeight: 700 }}>⚡ conflict</span>}
+                  ? <span style={{ ...TYPE.caption, color: T.success, fontWeight: 700 }}>✓ agree</span>
+                  : <span style={{ ...TYPE.caption, color: T.error, fontWeight: 700 }}>⚡ conflict</span>}
               </span>
-            : <span style={{ fontSize: 12, color: "#9A7A60" }}>no match (brain decides)</span>}
+            : <span style={{ ...TYPE.caption, color: T.muted }}>no match (brain decides)</span>}
         </Row>
         <Row label="Final"><AgentChip id={decision.final_agent} /></Row>
       </Section>
@@ -250,16 +251,16 @@ function BrainInspector({ decision, onReplay }) {
       <Section label="Reflection Gate">
         <Row label="Triggered">
           {decision.reflect
-            ? <span style={{ fontSize: 12, color: "#BE185D", fontWeight: 700 }}>YES · {decision.reflect_type}</span>
-            : <span style={{ fontSize: 12, color: "#9A7A60" }}>No</span>}
+            ? <span style={{ ...TYPE.caption, color: SEM.magenta, fontWeight: 700 }}>YES · {decision.reflect_type}</span>
+            : <span style={{ ...TYPE.caption, color: T.muted }}>No</span>}
         </Row>
         {decision.reflect_level && decision.reflect_level !== "none" && (
           <Row label="Level">
             <span style={{
-              padding: "1px 8px", borderRadius: 3, fontSize: 11, fontWeight: 700,
-              background: decision.reflect_level === "full" ? "#C0604022" : "#9A6C0022",
-              color:      decision.reflect_level === "full" ? "#C06040"   : "#9A6C00",
-              border: `1px solid ${decision.reflect_level === "full" ? "#C0604055" : "#9A6C0055"}`,
+              padding: "1px 8px", borderRadius: 3, ...TYPE.caption, fontWeight: 700,
+              background: decision.reflect_level === "full" ? `${SEM.clay}22` : `${T.accent2}22`,
+              color:      decision.reflect_level === "full" ? SEM.clay   : T.accent2,
+              border: `1px solid ${decision.reflect_level === "full" ? `${SEM.clay}55` : `${T.accent2}55`}`,
             }}>
               {decision.reflect_level}
             </span>
@@ -267,7 +268,7 @@ function BrainInspector({ decision, onReplay }) {
         )}
         {decision.reflect && (
           <Row label="Why">
-            <span style={{ fontSize: 11, color: "#9A7A60" }}>
+            <span style={{ ...TYPE.caption, color: T.muted }}>
               {decision.reflect_type === "code" ? "build/debug + code agent → execute check"
                 : decision.reflect_type === "research" ? "research task → completeness critique"
                 : "general quality pass"}
@@ -280,8 +281,8 @@ function BrainInspector({ decision, onReplay }) {
 
       {/* Timing */}
       <Section label="Timing">
-        <Row label="Duration"><span style={{ fontSize: 12, color: "#0F766E", fontWeight: 700 }}>{decision.duration_ms}ms</span></Row>
-        <Row label="Time"><span style={{ fontSize: 12, color: "#9A7A60" }}>{decision.timestamp?.slice(0, 19).replace("T", " ")}</span></Row>
+        <Row label="Duration"><span style={{ ...TYPE.caption, color: SEM.teal, fontWeight: 700 }}>{decision.duration_ms}ms</span></Row>
+        <Row label="Time"><span style={{ ...TYPE.caption, color: T.muted }}>{decision.timestamp?.slice(0, 19).replace("T", " ")}</span></Row>
       </Section>
 
       <Divider />
@@ -292,9 +293,9 @@ function BrainInspector({ decision, onReplay }) {
           onClick={handleReplay}
           disabled={loading}
           style={{
-            width: "100%", padding: "9px 0", background: loading ? "#F4F0E8" : "#E7F2E6",
-            border: `1.5px solid ${loading ? "#E0D6C4" : "#15803D66"}`, borderRadius: 4,
-            color: loading ? "#9A7A60" : "#15803D", fontSize: 13, fontWeight: 700,
+            width: "100%", padding: "9px 0", background: loading ? T.surface2 : "#E7F2E6",
+            border: `1.5px solid ${loading ? T.border : `${T.success}66`}`, borderRadius: 4,
+            color: loading ? T.muted : T.success, ...TYPE.small, fontWeight: 700,
             cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit",
           }}
         >
@@ -302,8 +303,8 @@ function BrainInspector({ decision, onReplay }) {
         </button>
 
         {replayData && !replayData.error && (
-          <div style={{ marginTop: 12, background: "#F4F0E8", border: "1.5px solid #15803D33", borderRadius: 4, padding: "12px 14px" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#15803D", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Replay Result</div>
+          <div style={{ marginTop: 12, background: T.surface2, border: `1.5px solid ${T.success}33`, borderRadius: 4, padding: "12px 14px" }}>
+            <div style={{ ...TYPE.caption, fontWeight: 700, color: T.success, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Replay Result</div>
             {[
               ["Agent",          decision.brain_agent,               replayData.now?.agent,                replayData.diff?.agent],
               ["Action",         decision.action,                    replayData.now?.action,               replayData.diff?.action],
@@ -312,12 +313,12 @@ function BrainInspector({ decision, onReplay }) {
               ["Reflect Level",  decision.reflect_level || "none",   replayData.now?.reflect_level || "none", replayData.diff?.reflect_level],
             ].map(([label, then, now, status]) => (
               <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-                <span style={{ fontSize: 11, color: "#9A7A60", minWidth: 70 }}>{label}</span>
-                <span style={{ fontSize: 12, color: "#9A7A60" }}>{then}</span>
-                <span style={{ fontSize: 11, color: "#9A7A60" }}>→</span>
-                <span style={{ fontSize: 12, color: "#2E2010", fontWeight: 600 }}>{now}</span>
-                <span style={{ fontSize: 11, marginLeft: "auto", fontWeight: 700,
-                  color: status === "same" ? "#15803D" : status === "improved" ? "#0F766E" : "#B42318" }}>
+                <span style={{ ...TYPE.caption, color: T.muted, minWidth: 70 }}>{label}</span>
+                <span style={{ ...TYPE.caption, color: T.muted }}>{then}</span>
+                <span style={{ ...TYPE.caption, color: T.muted }}>→</span>
+                <span style={{ ...TYPE.caption, color: T.text, fontWeight: 600 }}>{now}</span>
+                <span style={{ ...TYPE.caption, marginLeft: "auto", fontWeight: 700,
+                  color: status === "same" ? T.success : status === "improved" ? SEM.teal : T.error }}>
                   {status === "same" ? "✓ same" : status === "improved" ? "↑ better" : status === "declined" ? "↓ worse" : status === "changed" ? "⚡ changed" : status}
                 </span>
               </div>
@@ -326,7 +327,7 @@ function BrainInspector({ decision, onReplay }) {
         )}
 
         {replayData?.error && (
-          <div style={{ marginTop: 10, padding: "8px 12px", background: "#F9E7E1", border: "1.5px solid #B4231844", borderRadius: 4, fontSize: 12, color: "#B42318" }}>
+          <div style={{ marginTop: 10, padding: "8px 12px", background: "#F9E7E1", border: `1.5px solid ${T.error}44`, borderRadius: 4, ...TYPE.caption, color: T.error }}>
             {replayData.error}
           </div>
         )}
@@ -338,7 +339,7 @@ function BrainInspector({ decision, onReplay }) {
 function Section({ label, children }) {
   return (
     <div style={{ marginBottom: 12 }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: "#9A7A60", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>{label}</div>
+      <div style={{ ...TYPE.micro, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>{label}</div>
       {children}
     </div>
   );
@@ -347,61 +348,61 @@ function Section({ label, children }) {
 function Row({ label, children }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-      <span style={{ fontSize: 11, color: "#9A7A60", minWidth: 80 }}>{label}</span>
+      <span style={{ ...TYPE.caption, color: T.muted, minWidth: 80 }}>{label}</span>
       {children}
     </div>
   );
 }
 
 function Divider() {
-  return <div style={{ height: 1, background: "#E0D6C4", marginBottom: 12 }} />;
+  return <div style={{ height: 1, background: T.border, marginBottom: 12 }} />;
 }
 
 function ContradictionHistoryPanel({ items }) {
   const [open, setOpen] = useState(false);
   if (!items) return null;
   const count = items.length;
-  const labelColor = count === 0 ? "#9A7A60" : "#9A6C00";
+  const labelColor = count === 0 ? T.muted : T.accent2;
   return (
     <div className="lux-card" style={{ padding: "12px 18px", marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => setOpen(o => !o)}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: "#9A7A60", textTransform: "uppercase", letterSpacing: 1 }}>
+        <span style={{ ...TYPE.caption, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: 1 }}>
           ⚠ Contradiction History
         </span>
-        <span style={{ padding: "2px 10px", borderRadius: 3, fontSize: 11, fontWeight: 700, background: labelColor + "22", color: labelColor, border: `1px solid ${labelColor}55` }}>
+        <span style={{ padding: "2px 10px", borderRadius: 3, ...TYPE.caption, fontWeight: 700, background: labelColor + "22", color: labelColor, border: `1px solid ${labelColor}55` }}>
           {count} events
         </span>
-        <span style={{ marginLeft: "auto", fontSize: 11, color: "#9A7A60" }}>{open ? "▲" : "▼"}</span>
+        <span style={{ marginLeft: "auto", ...TYPE.caption, color: T.muted }}>{open ? "▲" : "▼"}</span>
       </div>
       {open && (
         <div style={{ marginTop: 12 }}>
           {count === 0 ? (
-            <div style={{ fontSize: 12, color: "#9A7A60", textAlign: "center", padding: "12px 0" }}>
+            <div style={{ ...TYPE.caption, color: T.muted, textAlign: "center", padding: "12px 0" }}>
               No contradictions detected yet — the system self-corrects before they accumulate.
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {items.map(c => {
-                const m = AGENT_META[c.agent] || { color: "#9A7A60", icon: "?", label: c.agent };
-                const lvlColor = c.reflect_level === "full" ? "#C06040" : c.reflect_level === "light" ? "#9A6C00" : "#9A7A60";
+                const m = AGENT_META[c.agent] || { color: T.muted, icon: "?", label: c.agent };
+                const lvlColor = c.reflect_level === "full" ? SEM.clay : c.reflect_level === "light" ? T.accent2 : T.muted;
                 return (
-                  <div key={c.id} style={{ background: "#F4F0E8", border: "1px solid #9A6C0033", borderRadius: 4, padding: "9px 13px" }}>
+                  <div key={c.id} style={{ background: T.surface2, border: `1px solid ${T.accent2}33`, borderRadius: 4, padding: "9px 13px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-                      <span style={{ fontSize: 11, color: "#9A7A60", fontFamily: "monospace" }}>
+                      <span style={{ ...TYPE.caption, color: T.muted, fontFamily: "monospace" }}>
                         {c.timestamp?.slice(0, 19).replace("T", " ")}
                       </span>
-                      <span style={{ background: m.color + "22", color: m.color, border: `1px solid ${m.color}55`, borderRadius: 3, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>
+                      <span style={{ background: m.color + "22", color: m.color, border: `1px solid ${m.color}55`, borderRadius: 3, padding: "1px 7px", ...TYPE.caption, fontWeight: 700 }}>
                         {m.icon} {m.label}
                       </span>
-                      <span style={{ background: lvlColor + "22", color: lvlColor, border: `1px solid ${lvlColor}55`, borderRadius: 3, padding: "1px 7px", fontSize: 10 }}>
+                      <span style={{ background: lvlColor + "22", color: lvlColor, border: `1px solid ${lvlColor}55`, borderRadius: 3, padding: "1px 7px", ...TYPE.micro }}>
                         → {c.reflect_level} reflect
                       </span>
                     </div>
-                    <div style={{ fontSize: 12, color: "#2E2010", marginBottom: 4, lineHeight: 1.4 }}>
-                      <span style={{ color: "#9A7A60" }}>Q: </span>{(c.query || "").slice(0, 120)}{(c.query || "").length > 120 ? "…" : ""}
+                    <div style={{ ...TYPE.caption, color: T.text, marginBottom: 4, lineHeight: 1.4 }}>
+                      <span style={{ color: T.muted }}>Q: </span>{(c.query || "").slice(0, 120)}{(c.query || "").length > 120 ? "…" : ""}
                     </div>
                     {c.response_snip && (
-                      <div style={{ fontSize: 11, color: "#9A7A60", fontStyle: "italic", lineHeight: 1.4 }}>
+                      <div style={{ ...TYPE.caption, color: T.muted, fontStyle: "italic", lineHeight: 1.4 }}>
                         "{(c.response_snip || "").slice(0, 100)}…"
                       </div>
                     )}
@@ -427,20 +428,20 @@ function AgentStatsPanel({ agents }) {
         style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
         onClick={() => setOpen(o => !o)}
       >
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#9A7A60", textTransform: "uppercase", letterSpacing: 1 }}>
+        <div style={{ ...TYPE.caption, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: 1 }}>
           Agent Breakdown
         </div>
-        <span style={{ fontSize: 11, color: "#9A7A60" }}>{entries.length} agents</span>
-        <span style={{ marginLeft: "auto", fontSize: 11, color: "#9A7A60" }}>{open ? "▲" : "▼"}</span>
+        <span style={{ ...TYPE.caption, color: T.muted }}>{entries.length} agents</span>
+        <span style={{ marginLeft: "auto", ...TYPE.caption, color: T.muted }}>{open ? "▲" : "▼"}</span>
       </div>
 
       {open && (
         <div style={{ marginTop: 12, overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", ...TYPE.caption }}>
             <thead>
               <tr>
                 {["Agent", "Decisions", "Stability", "Weight", "Confidence", "Cal Error", "Avg Regret"].map(h => (
-                  <th key={h} style={{ textAlign: "left", padding: "4px 10px", color: "#9A7A60", fontWeight: 700, borderBottom: "1px solid #E0D6C4", whiteSpace: "nowrap" }}>{h}</th>
+                  <th key={h} style={{ textAlign: "left", padding: "4px 10px", color: T.muted, fontWeight: 700, borderBottom: `1px solid ${T.border}`, whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -448,12 +449,12 @@ function AgentStatsPanel({ agents }) {
               {entries
                 .sort(([, a], [, b]) => b.count - a.count)
                 .map(([id, s]) => {
-                  const m = AGENT_META[id] || { color: "#9A7A60", icon: "?", label: id };
-                  const stabilityColor = s.stability >= 0.85 ? "#15803D" : s.stability >= 0.65 ? "#9A6C00" : "#B42318";
-                  const regretColor    = s.avg_regret < 0.1  ? "#15803D" : s.avg_regret < 0.25  ? "#9A6C00" : "#B42318";
-                  const calColor       = s.cal_error < 0.1   ? "#15803D" : s.cal_error < 0.25   ? "#9A6C00" : "#B42318";
+                  const m = AGENT_META[id] || { color: T.muted, icon: "?", label: id };
+                  const stabilityColor = s.stability >= 0.85 ? T.success : s.stability >= 0.65 ? T.accent2 : T.error;
+                  const regretColor    = s.avg_regret < 0.1  ? T.success : s.avg_regret < 0.25  ? T.accent2 : T.error;
+                  const calColor       = s.cal_error < 0.1   ? T.success : s.cal_error < 0.25   ? T.accent2 : T.error;
                   return (
-                    <tr key={id} style={{ borderBottom: "1px solid #E0D6C411" }}>
+                    <tr key={id} style={{ borderBottom: `1px solid ${T.border}11` }}>
                       <td style={{ padding: "6px 10px" }}>
                         <span style={{
                           display: "inline-flex", alignItems: "center", gap: 4,
@@ -464,12 +465,12 @@ function AgentStatsPanel({ agents }) {
                           {m.icon} {m.label}
                         </span>
                       </td>
-                      <td style={{ padding: "6px 10px", color: "#2E2010", fontWeight: 700 }}>{s.count}</td>
+                      <td style={{ padding: "6px 10px", color: T.text, fontWeight: 700 }}>{s.count}</td>
                       <td style={{ padding: "6px 10px" }}>
                         <span style={{ color: stabilityColor, fontWeight: 700 }}>{Math.round(s.stability * 100)}%</span>
                       </td>
-                      <td style={{ padding: "6px 10px", color: "#9A7A60" }}>{s.weight?.toFixed(3)}</td>
-                      <td style={{ padding: "6px 10px", color: "#9A7A60" }}>{s.confidence?.toFixed(3)}</td>
+                      <td style={{ padding: "6px 10px", color: T.muted }}>{s.weight?.toFixed(3)}</td>
+                      <td style={{ padding: "6px 10px", color: T.muted }}>{s.confidence?.toFixed(3)}</td>
                       <td style={{ padding: "6px 10px" }}>
                         <span style={{ color: calColor }}>{s.cal_error > 0 ? s.cal_error.toFixed(3) : "—"}</span>
                       </td>
@@ -552,37 +553,37 @@ export default function DecisionTimeline() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {/* History / Live view toggle */}
-          <div style={{ display: "flex", border: "1px solid #E0D6C4", borderRadius: 8, overflow: "hidden" }}>
+          <div style={{ display: "flex", border: `1px solid ${T.border}`, borderRadius: 8, overflow: "hidden" }}>
             {[
               { id: "history", label: "History" },
               { id: "live",    label: "Live"    },
             ].map((v, i) => (
               <button key={v.id} onClick={() => setView(v.id)} className="nav-btn" style={{
-                padding: "6px 14px", fontSize: 12, fontFamily: "inherit",
+                padding: "6px 14px", ...TYPE.caption, fontFamily: "inherit",
                 fontWeight: view === v.id ? 700 : 500,
-                background: view === v.id ? "#C4880822" : "transparent",
-                color: view === v.id ? "#9A6C00" : "#9A7A60",
-                border: "none", borderLeft: i ? "1px solid #E0D6C4" : "none",
+                background: view === v.id ? `${T.accent}22` : "transparent",
+                color: view === v.id ? T.accent2 : T.muted,
+                border: "none", borderLeft: i ? `1px solid ${T.border}` : "none",
                 cursor: "pointer",
               }}>{v.label}</button>
             ))}
           </div>
 
           {view === "history" && [
-            { label: "Total",     value: stats.total     || 0, color: "#9A7A60" },
-            { label: "Conflicts", value: stats.conflicts  || 0, color: stats.conflicts > 0 ? "#B42318" : "#9A7A60" },
-            { label: "Reflect",   value: `${Math.round((stats.reflect_rate || 0) * 100)}%`, color: "#BE185D" },
-            { label: "Conflict %",value: `${Math.round((stats.conflict_rate || 0) * 100)}%`, color: stats.conflict_rate > 0.1 ? "#9A6C00" : "#15803D" },
+            { label: "Total",     value: stats.total     || 0, color: T.muted },
+            { label: "Conflicts", value: stats.conflicts  || 0, color: stats.conflicts > 0 ? T.error : T.muted },
+            { label: "Reflect",   value: `${Math.round((stats.reflect_rate || 0) * 100)}%`, color: SEM.magenta },
+            { label: "Conflict %",value: `${Math.round((stats.conflict_rate || 0) * 100)}%`, color: stats.conflict_rate > 0.1 ? T.accent2 : T.success },
           ].map(({ label, value, color }) => (
-            <div key={label} style={{ background: "#FAF7F2", border: "1.5px solid #E0D6C4", borderRadius: 4, padding: "6px 12px", textAlign: "center" }}>
+            <div key={label} style={{ background: T.surface, border: `1.5px solid ${T.border}`, borderRadius: 4, padding: "6px 12px", textAlign: "center" }}>
               <div style={{ fontSize: 16, fontWeight: 800, color }}>{value}</div>
-              <div style={{ fontSize: 10, color: "#9A7A60", marginTop: 1 }}>{label}</div>
+              <div style={{ ...TYPE.micro, color: T.muted, marginTop: 1 }}>{label}</div>
             </div>
           ))}
           {view === "history" && (
             <button onClick={load} disabled={loading} className="nav-btn" style={{
-              background: "transparent", border: "1px solid #E0D6C4", color: "#5C4030",
-              padding: "7px 16px", borderRadius: 16, fontSize: 12, fontWeight: 600,
+              background: "transparent", border: `1px solid ${T.border}`, color: T.mutedLt,
+              padding: "7px 16px", borderRadius: 16, ...TYPE.caption, fontWeight: 600,
               cursor: "pointer", fontFamily: "inherit",
             }}>
               {loading ? "…" : "↻ Refresh"}
@@ -605,19 +606,19 @@ export default function DecisionTimeline() {
 
       {/* Filter bar */}
       <div style={{
-        background: "#FAF7F2", border: "1.5px solid #E0D6C4", borderRadius: 4,
+        background: T.surface, border: `1.5px solid ${T.border}`, borderRadius: 4,
         padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
       }}>
         {[
-          { id: "all",       label: `All (${decisions.length})`,                           color: "#9A7A60" },
-          { id: "conflicts", label: `⚡ Conflicts (${decisions.filter(d => d.conflict).length})`, color: "#B42318" },
-          { id: "reflect",   label: `🔥 Reflect (${decisions.filter(d => d.reflect).length})`,   color: "#BE185D" },
+          { id: "all",       label: `All (${decisions.length})`,                           color: T.muted },
+          { id: "conflicts", label: `⚡ Conflicts (${decisions.filter(d => d.conflict).length})`, color: T.error },
+          { id: "reflect",   label: `🔥 Reflect (${decisions.filter(d => d.reflect).length})`,   color: SEM.magenta },
         ].map(f => (
           <button key={f.id} onClick={() => { setFilter(f.id); setVisibleCount(PAGE_SIZE); }} style={{
-            padding: "5px 14px", borderRadius: 7, fontSize: 12, fontWeight: 700,
+            padding: "5px 14px", borderRadius: 7, ...TYPE.caption, fontWeight: 700,
             background: filter === f.id ? f.color + "22" : "transparent",
-            border:     filter === f.id ? `1.5px solid ${f.color}88` : "1.5px solid #E0D6C4",
-            color:      filter === f.id ? f.color : "#9A7A60",
+            border:     filter === f.id ? `1.5px solid ${f.color}88` : `1.5px solid ${T.border}`,
+            color:      filter === f.id ? f.color : T.muted,
             cursor: "pointer", fontFamily: "inherit",
           }}>
             {f.label}
@@ -628,8 +629,8 @@ export default function DecisionTimeline() {
           onChange={e => { setSearch(e.target.value); setVisibleCount(PAGE_SIZE); }}
           placeholder="Search tasks, agents, actions…"
           style={{
-            marginLeft: "auto", background: "#F4F0E8", border: "1.5px solid #E0D6C4",
-            borderRadius: 4, color: "#2E2010", padding: "5px 12px", fontSize: 12,
+            marginLeft: "auto", background: T.surface2, border: `1.5px solid ${T.border}`,
+            borderRadius: 4, color: T.text, padding: "5px 12px", ...TYPE.caption,
             fontFamily: "inherit", outline: "none", width: 220,
           }}
         />
@@ -644,7 +645,7 @@ export default function DecisionTimeline() {
         {/* Decision feed */}
         <div style={{ flex: "0 0 58%", display: "flex", flexDirection: "column", gap: 6 }}>
           {filtered.length === 0 ? (
-            <div style={{ textAlign: "center", color: "#9A7A60", fontSize: 14, padding: "50px 0" }}>
+            <div style={{ textAlign: "center", color: T.muted, ...TYPE.body, padding: "50px 0" }}>
               <div style={{ fontSize: 28, marginBottom: 10 }}>🧠</div>
               {decisions.length === 0
                 ? "No decisions logged yet — send a chat message to start."
@@ -652,55 +653,55 @@ export default function DecisionTimeline() {
             </div>
           ) : visible.map(d => {
             const isSelected = selected?.id === d.id;
-            const m = AGENT_META[d.brain_agent] || { color: "#9A7A60" };
+            const m = AGENT_META[d.brain_agent] || { color: T.muted };
             return (
               <div
                 key={d.id}
                 onClick={() => setSelected(isSelected ? null : d)}
                 style={{
-                  background: isSelected ? "#F4F0E8" : "#FAF7F2",
-                  border: isSelected ? `1.5px solid ${m.color}66` : d.conflict ? "1.5px solid #B4231844" : "1.5px solid #E0D6C4",
-                  borderLeft: d.conflict ? "4px solid #B42318" : isSelected ? `4px solid ${m.color}` : "4px solid #E0D6C4",
+                  background: isSelected ? T.surface2 : T.surface,
+                  border: isSelected ? `1.5px solid ${m.color}66` : d.conflict ? `1.5px solid ${T.error}44` : `1.5px solid ${T.border}`,
+                  borderLeft: d.conflict ? `4px solid ${T.error}` : isSelected ? `4px solid ${m.color}` : `4px solid ${T.border}`,
                   borderRadius: 4, padding: "12px 15px",
                   cursor: "pointer", transition: "all .15s",
                 }}
               >
                 {/* Top row */}
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                  <span style={{ fontSize: 11, color: "#9A7A60", fontFamily: "monospace" }}>
+                  <span style={{ ...TYPE.caption, color: T.muted, fontFamily: "monospace" }}>
                     {d.timestamp?.slice(11, 19) || ""}
                   </span>
                   <AgentChip id={d.brain_agent} />
                   <ActionChip action={d.action} />
                   {d.conflict && (
-                    <span style={{ fontSize: 11, color: "#B42318", fontWeight: 700, padding: "1px 7px", background: "#B4231822", border: "1px solid #B4231844", borderRadius: 3 }}>
+                    <span style={{ ...TYPE.caption, color: T.error, fontWeight: 700, padding: "1px 7px", background: `${T.error}22`, border: `1px solid ${T.error}44`, borderRadius: 3 }}>
                       ⚡ CONFLICT
                     </span>
                   )}
                   {d.reflect && (
-                    <span style={{ fontSize: 11, color: "#BE185D", fontWeight: 700 }}>🔥</span>
+                    <span style={{ ...TYPE.caption, color: SEM.magenta, fontWeight: 700 }}>🔥</span>
                   )}
-                  <span style={{ marginLeft: "auto", fontSize: 11, color: "#9A7A60" }}>
+                  <span style={{ marginLeft: "auto", ...TYPE.caption, color: T.muted }}>
                     #{d.id} · {d.duration_ms}ms
                   </span>
                 </div>
 
                 {/* Task text */}
-                <div style={{ fontSize: 12, color: "#2E2010", marginBottom: 6, lineHeight: 1.4 }}>
+                <div style={{ ...TYPE.caption, color: T.text, marginBottom: 6, lineHeight: 1.4 }}>
                   {(d.task || "").slice(0, 100)}{(d.task || "").length > 100 ? "…" : ""}
                 </div>
 
                 {/* Bottom row */}
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 11, color: "#9A7A60" }}>Brain→</span>
+                  <span style={{ ...TYPE.caption, color: T.muted }}>Brain→</span>
                   <AgentChip id={d.brain_agent} size={11} />
                   {d.router_agent && d.router_agent !== "none" && (
                     <>
-                      <span style={{ fontSize: 11, color: "#9A7A60" }}>Router→</span>
+                      <span style={{ ...TYPE.caption, color: T.muted }}>Router→</span>
                       <AgentChip id={d.router_agent} size={11} />
                       {!d.conflict
-                        ? <span style={{ fontSize: 11, color: "#15803D", fontWeight: 700 }}>✓</span>
-                        : <span style={{ fontSize: 11, color: "#B42318", fontWeight: 700 }}>✗</span>}
+                        ? <span style={{ ...TYPE.caption, color: T.success, fontWeight: 700 }}>✓</span>
+                        : <span style={{ ...TYPE.caption, color: T.error, fontWeight: 700 }}>✗</span>}
                     </>
                   )}
                   <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -716,8 +717,8 @@ export default function DecisionTimeline() {
               onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
               style={{
                 marginTop: 8, padding: "8px 0", width: "100%",
-                background: "#FAF7F2", border: "1px solid #E0D6C4",
-                borderRadius: 3, color: "#9A7A60", fontSize: 12,
+                background: T.surface, border: `1px solid ${T.border}`,
+                borderRadius: 3, color: T.muted, ...TYPE.caption,
                 cursor: "pointer", fontFamily: "inherit",
               }}
             >
