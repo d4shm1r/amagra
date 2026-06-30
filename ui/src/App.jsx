@@ -129,15 +129,6 @@ function Sidebar({ activeTab, onNav, collapsed, onToggle, apiStatus, coherence, 
   const surface = surfaceOf(activeTab);
   const navItems = mode === "simple" ? NAV.filter(item => !item.adv) : NAV;
 
-  // One-time "Advanced is one click away" nudge (see render below).
-  const [showAdvHint, setShowAdvHint] = useState(() => {
-    try { return localStorage.getItem("adv_hint_seen_v1") !== "1"; } catch { return true; }
-  });
-  const dismissAdvHint = () => {
-    setShowAdvHint(false);
-    try { localStorage.setItem("adv_hint_seen_v1", "1"); } catch {}
-  };
-
   // Clicking a surface reopens the sub-tab you last used there (falling back to
   // its first visible sub-tab), so each view remembers where you left off.
   const handleNav = (surfaceId) => {
@@ -322,6 +313,15 @@ function SidebarActions({ collapsed, mode, onModal, onAction, onToggleMode }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const [pos, setPos] = useState({ left: 0, bottom: 0 });
   const moreRef = useRef(null);
+
+  // One-time "Advanced is one click away" nudge (rendered under the toggle).
+  const [showAdvHint, setShowAdvHint] = useState(() => {
+    try { return localStorage.getItem("adv_hint_seen_v1") !== "1"; } catch { return true; }
+  });
+  const dismissAdvHint = () => {
+    setShowAdvHint(false);
+    try { localStorage.setItem("adv_hint_seen_v1", "1"); } catch {}
+  };
 
   useEffect(() => {
     if (!moreOpen) return;
