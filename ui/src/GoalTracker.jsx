@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AGENTS as AGENTS_LIST } from "./constants";
-import { T, GOLD, LUX, FONT_DISPLAY, FONT_MONO } from "./theme";
+import { T, GOLD, LUX, TYPE, EASE, DUR, FONT_DISPLAY, FONT_MONO } from "./theme";
 import { PageHeader, MetricCard, RefreshBtn } from "./ObsShared";
 
 import { API } from "./api";
@@ -25,9 +25,8 @@ function StatusBadge({ status, small = false }) {
   const s = STATUS[status] || STATUS.pending;
   return (
     <span style={{
-      padding: small ? "2px 8px" : "3px 11px",
-      borderRadius: 99, fontSize: small ? 10 : 10.5, fontWeight: 700,
-      letterSpacing: "0.02em",
+      ...TYPE.micro, fontWeight: 700, letterSpacing: "0.02em",
+      padding: small ? "2px 8px" : "3px 11px", borderRadius: 99,
       background: s.color + "16", color: s.color,
       border: `1px solid ${s.color}44`,
     }}>
@@ -40,8 +39,8 @@ function AgentChip({ id }) {
   const a = AGENTS[id] || { icon: "?", color: T.muted, label: id };
   return (
     <span style={{
-      display: "inline-flex", alignItems: "center", gap: 4,
-      padding: "2px 9px", borderRadius: 99, fontSize: 10.5, fontWeight: 700,
+      ...TYPE.micro, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4,
+      padding: "2px 9px", borderRadius: 99,
       background: a.color + "16", color: a.color, border: `1px solid ${a.color}3a`,
     }}>
       {a.icon} {a.label}
@@ -59,10 +58,10 @@ function ProgressBar({ steps }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
       <div style={{ flex: 1, height: 6, background: T.surface2, borderRadius: 99, overflow: "hidden", display: "flex" }}>
-        <div style={{ width: `${donePct}%`,   height: "100%", background: T.success, transition: "width .4s ease-out" }} />
-        <div style={{ width: `${failedPct}%`, height: "100%", background: T.error,   transition: "width .4s ease-out" }} />
+        <div style={{ width: `${donePct}%`,   height: "100%", background: T.success, transition: `width ${DUR.slow} ${EASE.out}` }} />
+        <div style={{ width: `${failedPct}%`, height: "100%", background: T.error,   transition: `width ${DUR.slow} ${EASE.out}` }} />
       </div>
-      <span style={{ fontSize: 10, color: T.muted, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+      <span style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
         {done}/{total}
       </span>
     </div>
@@ -73,7 +72,7 @@ function ProgressBar({ steps }) {
 function PillBtn({ onClick, color = T.muted, children }) {
   return (
     <button onClick={onClick} style={{
-      padding: "3px 12px", borderRadius: 99, fontSize: 11, fontWeight: 700,
+      ...TYPE.caption, fontWeight: 700, padding: "3px 12px", borderRadius: 99,
       background: color + "14", color, border: `1px solid ${color}44`,
       cursor: "pointer", fontFamily: "inherit",
     }}>{children}</button>
@@ -97,17 +96,17 @@ function StepCard({ step, onRetry, graphStatus }) {
         onClick={() => setExpanded(e => !e)}
       >
         <span style={{ fontSize: 13, color: s.color, fontWeight: 800, minWidth: 16 }}>{s.dot}</span>
-        <span style={{ fontSize: 12, color: T.text, fontWeight: 700, flex: 1 }}>
+        <span style={{ ...TYPE.caption, color: T.text, fontWeight: 700, flex: 1 }}>
           {step.step_id}
         </span>
         <AgentChip id={step.agent} />
         {step.output_data?.duration_ms && (
-          <span style={{ fontSize: 10, color: T.muted, fontVariantNumeric: "tabular-nums" }}>{step.output_data.duration_ms}ms</span>
+          <span style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, fontVariantNumeric: "tabular-nums" }}>{step.output_data.duration_ms}ms</span>
         )}
         {step.status === "failed" && onRetry && graphStatus !== "running" && (
           <PillBtn onClick={e => { e.stopPropagation(); onRetry(step.step_id); }} color={T.error}>↺ retry</PillBtn>
         )}
-        <span style={{ fontSize: 10, color: T.muted }}>{expanded ? "▲" : "▼"}</span>
+        <span style={{ ...TYPE.micro, fontWeight: 400, color: T.muted }}>{expanded ? "▲" : "▼"}</span>
       </div>
 
       {expanded && (
@@ -115,7 +114,7 @@ function StepCard({ step, onRetry, graphStatus }) {
           {/* Prompt */}
           <div style={{ marginBottom: 10 }}>
             <Label>Task</Label>
-            <div style={{ fontSize: 12, color: T.text, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: "7px 11px", lineHeight: 1.55 }}>
+            <div style={{ ...TYPE.caption, color: T.text, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: "7px 11px", lineHeight: 1.55 }}>
               {step.prompt}
             </div>
           </div>
@@ -123,9 +122,9 @@ function StepCard({ step, onRetry, graphStatus }) {
           {/* Dependencies */}
           {step.depends_on && step.depends_on.length > 0 && (
             <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 10, color: T.muted }}>depends on:</span>
+              <span style={{ ...TYPE.micro, fontWeight: 400, color: T.muted }}>depends on:</span>
               {step.depends_on.map(d => (
-                <span key={d} style={{ fontSize: 10, color: TEAL, background: TEAL + "16", padding: "1px 8px", borderRadius: 99, border: `1px solid ${TEAL}33` }}>{d}</span>
+                <span key={d} style={{ ...TYPE.micro, fontWeight: 400, color: TEAL, background: TEAL + "16", padding: "1px 8px", borderRadius: 99, border: `1px solid ${TEAL}33` }}>{d}</span>
               ))}
             </div>
           )}
@@ -135,7 +134,7 @@ function StepCard({ step, onRetry, graphStatus }) {
             <div style={{ marginBottom: 10 }}>
               <Label color={T.success}>Output</Label>
               <div style={{
-                fontSize: 11, color: T.text, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8,
+                ...TYPE.caption, color: T.text, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8,
                 padding: "8px 11px", maxHeight: 200, overflowY: "auto",
                 lineHeight: 1.6, fontFamily: FONT_MONO, whiteSpace: "pre-wrap",
               }}>
@@ -147,14 +146,14 @@ function StepCard({ step, onRetry, graphStatus }) {
 
           {/* Error */}
           {step.error && (
-            <div style={{ padding: "7px 11px", background: `${T.error}12`, border: `1px solid ${T.error}44`, borderRadius: 8, fontSize: 11, color: T.error }}>
+            <div style={{ ...TYPE.caption, padding: "7px 11px", background: `${T.error}12`, border: `1px solid ${T.error}44`, borderRadius: 8, color: T.error }}>
               {step.error}
             </div>
           )}
 
           {/* Attempt count */}
           {step.attempt > 1 && (
-            <div style={{ marginTop: 7, fontSize: 10, color: T.muted }}>attempt #{step.attempt}</div>
+            <div style={{ ...TYPE.micro, fontWeight: 400, marginTop: 7, color: T.muted }}>attempt #{step.attempt}</div>
           )}
         </div>
       )}
@@ -214,11 +213,11 @@ function GoalCard({ goal, onRefresh }) {
       {/* Header */}
       <div style={{ padding: "14px 17px", cursor: "pointer" }} onClick={() => setExpanded(e => !e)}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 9 }}>
-          <span style={{ fontSize: 14.5, fontWeight: 700, color: T.text, flex: 1, lineHeight: 1.35 }}>
+          <span style={{ ...TYPE.body, fontWeight: 700, color: T.text, flex: 1, lineHeight: 1.35 }}>
             {goal.goal.slice(0, 90)}{goal.goal.length > 90 ? "…" : ""}
           </span>
           <StatusBadge status={goal.status} />
-          <span style={{ fontSize: 11, color: T.muted, fontVariantNumeric: "tabular-nums" }}>#{goal.id}</span>
+          <span style={{ ...TYPE.caption, color: T.muted, fontVariantNumeric: "tabular-nums" }}>#{goal.id}</span>
         </div>
 
         {/* Progress */}
@@ -232,11 +231,11 @@ function GoalCard({ goal, onRefresh }) {
 
         {/* Footer row */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 9 }}>
-          <span style={{ fontSize: 10.5, color: T.muted }}>
+          <span style={{ ...TYPE.micro, fontWeight: 400, color: T.muted }}>
             {totalSteps} step{totalSteps !== 1 ? "s" : ""}
           </span>
           {goal.created_at && (
-            <span style={{ fontSize: 10.5, color: T.muted }}>
+            <span style={{ ...TYPE.micro, fontWeight: 400, color: T.muted }}>
               created {goal.created_at?.slice(0, 10)}
             </span>
           )}
@@ -256,7 +255,7 @@ function GoalCard({ goal, onRefresh }) {
       {expanded && (
         <div style={{ borderTop: `1px solid ${T.border}`, padding: "13px 15px", background: LUX.hover }}>
           {stepsData.length === 0 ? (
-            <div style={{ color: T.muted, fontSize: 12, textAlign: "center", padding: "10px 0" }}>
+            <div style={{ ...TYPE.caption, color: T.muted, textAlign: "center", padding: "10px 0" }}>
               Loading steps…
             </div>
           ) : (
@@ -321,8 +320,9 @@ function CreateGoalForm({ onCreated }) {
   };
 
   const inputBase = {
+    ...TYPE.caption,
     background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 8,
-    color: T.text, padding: "6px 10px", fontSize: 12, fontFamily: "inherit", outline: "none",
+    color: T.text, padding: "6px 10px", fontFamily: "inherit", outline: "none",
   };
 
   return (
@@ -336,10 +336,10 @@ function CreateGoalForm({ onCreated }) {
         placeholder="Describe the overall goal…"
         rows={2}
         style={{
-          width: "100%", boxSizing: "border-box", marginBottom: 12,
+          ...TYPE.small, width: "100%", boxSizing: "border-box", marginBottom: 12,
           background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 10,
-          color: T.text, padding: "10px 13px", fontSize: 13.5,
-          fontFamily: "inherit", resize: "vertical", outline: "none", lineHeight: 1.55,
+          color: T.text, padding: "10px 13px",
+          fontFamily: "inherit", resize: "vertical", outline: "none",
         }}
       />
 
@@ -371,8 +371,8 @@ function CreateGoalForm({ onCreated }) {
             />
             {steps.length > 1 && (
               <button onClick={() => removeStep(i)} style={{
-                background: "transparent", border: `1px solid ${T.border}`, borderRadius: 99,
-                color: T.muted, padding: "5px 11px", cursor: "pointer", fontSize: 12,
+                ...TYPE.caption, background: "transparent", border: `1px solid ${T.border}`, borderRadius: 99,
+                color: T.muted, padding: "5px 11px", cursor: "pointer",
               }}>✕</button>
             )}
           </div>
@@ -388,21 +388,21 @@ function CreateGoalForm({ onCreated }) {
 
       <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center" }}>
         <button onClick={addStep} style={{
-          padding: "7px 15px", borderRadius: 99, fontSize: 12, fontWeight: 700,
+          ...TYPE.caption, fontWeight: 700, padding: "7px 15px", borderRadius: 99,
           background: LUX.goldTint, color: T.accent2, border: `1px solid ${GOLD.g2}44`,
           cursor: "pointer", fontFamily: "inherit",
         }}>
           + Add step
         </button>
         <button onClick={handleSubmit} disabled={saving} className="btn-ghost" style={{
-          padding: "8px 22px", fontSize: 12.5, marginLeft: "auto",
+          ...TYPE.small, fontWeight: 700, padding: "8px 22px", marginLeft: "auto",
         }}>
           {saving ? "Creating…" : "Create goal"}
         </button>
       </div>
 
       {error && (
-        <div style={{ marginTop: 10, padding: "8px 12px", background: `${T.error}12`, border: `1px solid ${T.error}44`, borderRadius: 8, fontSize: 12, color: T.error }}>
+        <div style={{ ...TYPE.caption, marginTop: 10, padding: "8px 12px", background: `${T.error}12`, border: `1px solid ${T.error}44`, borderRadius: 8, color: T.error }}>
           {error}
         </div>
       )}
@@ -445,7 +445,7 @@ export default function GoalTracker() {
       <PageHeader title="Goals" subtitle="Multi-step goals — each step runs a specialist agent in sequence.">
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => setShow(s => !s)} className={show ? undefined : "btn-ghost"} style={{
-            padding: "9px 18px", borderRadius: 99, fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+            ...TYPE.small, fontWeight: 700, padding: "9px 18px", borderRadius: 99, cursor: "pointer", fontFamily: "inherit",
             ...(show ? { background: "transparent", color: T.muted, border: `1px solid ${T.border}` } : {}),
           }}>
             {show ? "✕ Cancel" : "+ New goal"}
@@ -473,7 +473,7 @@ export default function GoalTracker() {
             border: `1px solid ${GOLD.g2}44`, display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 28, color: T.accent, fontFamily: FONT_DISPLAY,
           }}>◎</div>
-          <div style={{ fontSize: 14, color: T.mutedLt, marginTop: 18, maxWidth: 400, lineHeight: 1.6 }}>
+          <div style={{ ...TYPE.body, color: T.mutedLt, marginTop: 18, maxWidth: 400 }}>
             No goals yet. Create one to run a multi-step task, where each step hands off
             to the right specialist agent.
           </div>
@@ -488,7 +488,7 @@ export default function GoalTracker() {
 // ── Small uppercase label ────────────────────────────────────────
 function Label({ children, color = T.muted }) {
   return (
-    <div style={{ fontSize: 10, fontWeight: 700, color, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+    <div style={{ ...TYPE.eyebrow, fontWeight: 700, letterSpacing: "0.1em", color, marginBottom: 4 }}>
       {children}
     </div>
   );

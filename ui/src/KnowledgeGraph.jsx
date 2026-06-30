@@ -1,29 +1,30 @@
 import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "./ObsShared";
+import { T, SEM, TYPE } from "./theme";
 
 import { API } from "./api";
 
 const AGENT_META = {
-  coordinator:        { label: "Coordinator",  icon: "👑", color: "#9A6C00" },
-  it_networking:      { label: "Networking",   icon: "🌐", color: "#15803D" },
-  python_dev:         { label: "Python Dev",   icon: "🐍", color: "#C48808" },
-  dotnet_dev:         { label: ".NET / Blazor", icon: "⚡", color: "#7C3AED" },
-  ai_ml:              { label: "AI & ML",      icon: "🤖", color: "#BE185D" },
-  knowledge_learning: { label: "Knowledge",    icon: "📚", color: "#1E5A8A" },
-  terse:              { label: "Terse",        icon: "🎯", color: "#9A6C00" },
+  coordinator:        { label: "Coordinator",  icon: "👑", color: T.accent2 },
+  it_networking:      { label: "Networking",   icon: "🌐", color: T.success },
+  python_dev:         { label: "Python Dev",   icon: "🐍", color: T.accent },
+  dotnet_dev:         { label: ".NET / Blazor", icon: "⚡", color: SEM.violet },
+  ai_ml:              { label: "AI & ML",      icon: "🤖", color: SEM.magenta },
+  knowledge_learning: { label: "Knowledge",    icon: "📚", color: SEM.blue },
+  terse:              { label: "Terse",        icon: "🎯", color: T.accent2 },
 };
 
 const TYPE_COLORS = {
-  reflection: "#7E3F8F",
-  code:       "#0F766E",
-  lesson:     "#15803D",
-  procedural: "#9A6C00",
-  episodic:   "#1E5A8A",
-  chat:       "#9A7A60",
-  seed:       "#9A7A60",
-  failure:    "#B42318",
+  reflection: SEM.purple,
+  code:       SEM.teal,
+  lesson:     T.success,
+  procedural: T.accent2,
+  episodic:   SEM.blue,
+  chat:       T.muted,
+  seed:       T.muted,
+  failure:    T.error,
   research:   "#C2410C",
-  project:    "#15803D",
+  project:    T.success,
 };
 
 const SORT_OPTIONS = [
@@ -35,9 +36,9 @@ const SORT_OPTIONS = [
 
 function QualityBar({ quality }) {
   const pct   = Math.round((quality || 0) * 100);
-  const color = pct >= 80 ? "#15803D" : pct >= 60 ? "#9A6C00" : "#B42318";
+  const color = pct >= 80 ? T.success : pct >= 60 ? T.accent2 : T.error;
   return (
-    <div style={{ height: 3, background: "#E0D6C4", borderRadius: 2, overflow: "hidden" }}>
+    <div style={{ height: 3, background: T.border, borderRadius: 2, overflow: "hidden" }}>
       <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 2, transition: "width 0.3s" }} />
     </div>
   );
@@ -46,7 +47,7 @@ function QualityBar({ quality }) {
 function Pill({ label, color, active, onClick }) {
   return (
     <span onClick={onClick} style={{
-      fontSize: 10, fontWeight: 700, fontFamily: "monospace",
+      ...TYPE.micro, fontWeight: 700, fontFamily: "monospace",
       background: active ? `${color}28` : `${color}12`,
       border: `1px solid ${active ? color + "88" : color + "33"}`,
       color: active ? color : color + "99",
@@ -133,13 +134,13 @@ function MemoryGraph({ records }) {
 
   return (
     <div>
-      <div style={{ position: "relative", background: "#F4F0E8", borderRadius: 6, overflow: "hidden" }}>
+      <div style={{ position: "relative", background: T.surface2, borderRadius: 6, overflow: "hidden" }}>
         <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
           {/* Soft radial glow at center */}
           <defs>
             <radialGradient id="centerGlow" cx="50%" cy="50%" r="25%">
-              <stop offset="0%" stopColor="#C48808" stopOpacity="0.10" />
-              <stop offset="100%" stopColor="#C48808" stopOpacity="0" />
+              <stop offset="0%" stopColor={T.accent} stopOpacity="0.10" />
+              <stop offset="100%" stopColor={T.accent} stopOpacity="0" />
             </radialGradient>
           </defs>
           <ellipse cx={CX} cy={CY} rx={220} ry={140} fill="url(#centerGlow)" />
@@ -147,7 +148,7 @@ function MemoryGraph({ records }) {
           {/* Spoke lines: center → agent hub */}
           {agentIds.map(agent => {
             const hub  = hubs[agent];
-            const meta = AGENT_META[agent] || { color: "#9A7A60" };
+            const meta = AGENT_META[agent] || { color: T.muted };
             return (
               <line key={`spoke-${agent}`}
                 x1={CX} y1={CY} x2={hub.x} y2={hub.y}
@@ -161,13 +162,13 @@ function MemoryGraph({ records }) {
             if (!a || !b) return null;
             return (
               <line key={`edge-${i}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-                stroke="#1E5A8A" strokeWidth={0.7} opacity={0.22} />
+                stroke={SEM.blue} strokeWidth={0.7} opacity={0.22} />
             );
           })}
 
           {/* Memory nodes */}
           {Object.values(nodes).map(({ x, y, record }) => {
-            const col  = TYPE_COLORS[record.type] || "#9A7A60";
+            const col  = TYPE_COLORS[record.type] || T.muted;
             const r    = 4 + (record.quality || 0) * 5;
             const isH  = hovered === record.id;
             return (
@@ -185,7 +186,7 @@ function MemoryGraph({ records }) {
           {/* Agent hubs */}
           {agentIds.map(agent => {
             const hub  = hubs[agent];
-            const meta = AGENT_META[agent] || { label: agent, icon: "🤖", color: "#9A7A60" };
+            const meta = AGENT_META[agent] || { label: agent, icon: "🤖", color: T.muted };
             const cnt  = byAgent[agent].length;
             return (
               <g key={`hub-${agent}`}>
@@ -195,7 +196,7 @@ function MemoryGraph({ records }) {
                 <text x={hub.x} y={hub.y + 33} textAnchor="middle" fontSize={9} fill={meta.color} fontFamily="monospace">
                   {meta.label}
                 </text>
-                <text x={hub.x} y={hub.y + 44} textAnchor="middle" fontSize={8} fill="#9A7A60" fontFamily="monospace">
+                <text x={hub.x} y={hub.y + 44} textAnchor="middle" fontSize={8} fill={T.muted} fontFamily="monospace">
                   {cnt} mem
                 </text>
               </g>
@@ -203,22 +204,22 @@ function MemoryGraph({ records }) {
           })}
 
           {/* Center hub */}
-          <circle cx={CX} cy={CY} r={30} fill="#FAF7F2" stroke="#E0D6C4" strokeWidth={1.2} />
-          <text x={CX} y={CY - 7} textAnchor="middle" fontSize={8} fill="#9A7A60" fontFamily="monospace">KNOWLEDGE</text>
-          <text x={CX} y={CY + 5} textAnchor="middle" fontSize={8} fill="#9A7A60" fontFamily="monospace">GRAPH</text>
-          <text x={CX} y={CY + 17} textAnchor="middle" fontSize={9} fill="#0F766E" fontFamily="monospace">
+          <circle cx={CX} cy={CY} r={30} fill={T.surface} stroke={T.border} strokeWidth={1.2} />
+          <text x={CX} y={CY - 7} textAnchor="middle" fontSize={8} fill={T.muted} fontFamily="monospace">KNOWLEDGE</text>
+          <text x={CX} y={CY + 5} textAnchor="middle" fontSize={8} fill={T.muted} fontFamily="monospace">GRAPH</text>
+          <text x={CX} y={CY + 17} textAnchor="middle" fontSize={9} fill={SEM.teal} fontFamily="monospace">
             {Object.keys(nodes).length}
           </text>
         </svg>
 
         {/* Edge loading indicator */}
         {edgeLoad && (
-          <div style={{ position: "absolute", top: 8, right: 10, fontSize: 10, color: "#9A7A60" }}>
+          <div style={{ position: "absolute", top: 8, right: 10, ...TYPE.micro, color: T.muted }}>
             loading edges…
           </div>
         )}
         {!edgeLoad && edges.length > 0 && (
-          <div style={{ position: "absolute", top: 8, right: 10, fontSize: 10, color: "#1E5A8A55" }}>
+          <div style={{ position: "absolute", top: 8, right: 10, ...TYPE.micro, color: `${SEM.blue}55` }}>
             {edges.length} similarity edges
           </div>
         )}
@@ -226,30 +227,30 @@ function MemoryGraph({ records }) {
 
       {/* Hover detail panel */}
       <div style={{
-        marginTop: 8, minHeight: 64, background: "#FAF7F2",
-        border: `1px solid ${hovNode ? (TYPE_COLORS[hovNode.record.type] || "#E0D6C4") + "55" : "#E0D6C4"}`,
+        marginTop: 8, minHeight: 64, background: T.surface,
+        border: `1px solid ${hovNode ? (TYPE_COLORS[hovNode.record.type] || T.border) + "55" : T.border}`,
         borderRadius: 4, padding: "10px 14px", transition: "border-color 0.2s",
       }}>
         {hovNode ? (
           <>
             <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
-              <Pill label={hovNode.record.type} color={TYPE_COLORS[hovNode.record.type] || "#9A7A60"} />
+              <Pill label={hovNode.record.type} color={TYPE_COLORS[hovNode.record.type] || T.muted} />
               <Pill label={(AGENT_META[hovNode.agent] || {}).label || hovNode.agent}
-                color={(AGENT_META[hovNode.agent] || { color: "#9A7A60" }).color} />
-              <span style={{ marginLeft: "auto", display: "flex", gap: 8, fontSize: 10, color: "#9A7A60", alignItems: "center" }}>
+                color={(AGENT_META[hovNode.agent] || { color: T.muted }).color} />
+              <span style={{ marginLeft: "auto", display: "flex", gap: 8, ...TYPE.micro, color: T.muted, alignItems: "center" }}>
                 <span>q={hovNode.record.quality?.toFixed(3)}</span>
                 <span>{hovNode.record.use_count}× used</span>
-                <span style={{ color: "#E0D6C4" }}>id {hovNode.record.id}</span>
+                <span style={{ color: T.border }}>id {hovNode.record.id}</span>
               </span>
             </div>
-            <div style={{ fontSize: 12.5, color: "#2E2010", lineHeight: 1.55,
+            <div style={{ ...TYPE.small, color: T.text, lineHeight: 1.55,
               fontFamily: "Charter, 'Source Serif Pro', Georgia, serif" }}>
               {(hovNode.record.content || "").slice(0, 260)}
               {hovNode.record.content?.length > 260 ? "…" : ""}
             </div>
           </>
         ) : (
-          <div style={{ fontSize: 12, color: "#9A7A60", paddingTop: 6 }}>
+          <div style={{ ...TYPE.caption, color: T.muted, paddingTop: 6 }}>
             Hover a node to inspect · Node size = quality · Color = memory type
           </div>
         )}
@@ -258,7 +259,7 @@ function MemoryGraph({ records }) {
       {/* Type legend */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
         {Object.entries(TYPE_COLORS).filter(([t]) => t !== "seed" && t !== "chat").map(([type, col]) => (
-          <span key={type} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#9A7A60" }}>
+          <span key={type} style={{ display: "flex", alignItems: "center", gap: 4, ...TYPE.micro, color: T.muted }}>
             <svg width={8} height={8}><circle cx={4} cy={4} r={4} fill={col} /></svg>
             {type}
           </span>
@@ -281,12 +282,12 @@ function AuditPanel() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div style={{ color: "#9A7A60", padding: 30, textAlign: "center", fontSize: 12 }}>Loading audit log…</div>;
-  if (!audits.length) return <div style={{ color: "#9A7A60", padding: 30, textAlign: "center", fontSize: 12 }}>No retrieval events recorded yet.</div>;
+  if (loading) return <div style={{ color: T.muted, padding: 30, textAlign: "center", ...TYPE.caption }}>Loading audit log…</div>;
+  if (!audits.length) return <div style={{ color: T.muted, padding: 30, textAlign: "center", ...TYPE.caption }}>No retrieval events recorded yet.</div>;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <div style={{ fontSize: 11, color: "#9A7A60", marginBottom: 4 }}>
+      <div style={{ ...TYPE.caption, color: T.muted, marginBottom: 4 }}>
         Most recent {audits.length} retrieval events — what queries triggered what memories.
       </div>
       {audits.map(ev => {
@@ -294,38 +295,38 @@ function AuditPanel() {
         return (
           <div key={ev.id}
             onClick={() => setExp(isOpen ? null : ev.id)}
-            style={{ background: "#FAF7F2", border: "1px solid #E0D6C4", borderRadius: 4,
+            style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 4,
               padding: "9px 13px", cursor: "pointer", transition: "border-color 0.15s",
-              ...(isOpen ? { borderColor: "#C4880844" } : {}),
+              ...(isOpen ? { borderColor: `${T.accent}44` } : {}),
             }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: isOpen ? 8 : 0 }}>
-              <span style={{ fontSize: 10, color: "#9A7A60", fontFamily: "monospace", whiteSpace: "nowrap" }}>
+              <span style={{ ...TYPE.micro, color: T.muted, fontFamily: "monospace", whiteSpace: "nowrap" }}>
                 {ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString() : "–"}
               </span>
-              <span style={{ fontSize: 12.5, color: "#2E2010", flex: 1, overflow: "hidden",
+              <span style={{ ...TYPE.small, color: T.text, flex: 1, overflow: "hidden",
                 textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {ev.query || "(no query)"}
               </span>
-              <span style={{ fontSize: 10, color: "#C48808", whiteSpace: "nowrap" }}>
+              <span style={{ ...TYPE.micro, color: T.accent, whiteSpace: "nowrap" }}>
                 {ev.count} hit{ev.count !== 1 ? "s" : ""}
               </span>
               {ev.caller && (
-                <span style={{ fontSize: 9, color: "#9A7A60", fontFamily: "monospace" }}>{ev.caller}</span>
+                <span style={{ ...TYPE.micro, color: T.muted, fontFamily: "monospace" }}>{ev.caller}</span>
               )}
             </div>
             {isOpen && (ev.retrieved || []).length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingTop: 4,
-                borderTop: "1px solid #E0D6C4" }}>
+                borderTop: `1px solid ${T.border}` }}>
                 {ev.retrieved.map((r, i) => {
-                  const col = TYPE_COLORS[r.type] || "#9A7A60";
+                  const col = TYPE_COLORS[r.type] || T.muted;
                   return (
-                    <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 11 }}>
+                    <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", ...TYPE.caption }}>
                       <span style={{ width: 6, height: 6, borderRadius: "50%", background: col, flexShrink: 0 }} />
-                      <span style={{ color: "#9A7A60", fontFamily: "monospace", width: 28 }}>#{r.id}</span>
+                      <span style={{ color: T.muted, fontFamily: "monospace", width: 28 }}>#{r.id}</span>
                       <Pill label={r.type || "?"} color={col} />
-                      <Pill label={(AGENT_META[r.agent] || { label: r.agent || "?", color: "#9A7A60" }).label}
-                        color={(AGENT_META[r.agent] || { color: "#9A7A60" }).color} />
-                      <span style={{ marginLeft: "auto", fontFamily: "monospace", color: "#15803D", fontSize: 10 }}>
+                      <Pill label={(AGENT_META[r.agent] || { label: r.agent || "?", color: T.muted }).label}
+                        color={(AGENT_META[r.agent] || { color: T.muted }).color} />
+                      <span style={{ marginLeft: "auto", fontFamily: "monospace", color: T.success, ...TYPE.micro }}>
                         {typeof r.weighted === "number" ? r.weighted.toFixed(4) : typeof r.score === "number" ? r.score.toFixed(4) : "–"}
                       </span>
                     </div>
@@ -355,42 +356,42 @@ function AtRiskStrip({ onDismiss }) {
   if (!risks) return null;
 
   return (
-    <div style={{ background: "#F5EDD6", border: "1px solid #9A6C0044",
+    <div style={{ background: "#F5EDD6", border: `1px solid ${T.accent2}44`,
       borderRadius: 4, padding: "10px 14px", marginBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 13 }}>⚠</span>
-        <span style={{ fontSize: 12, color: "#9A6C00", fontWeight: 600 }}>
+        <span style={{ ...TYPE.small }}>⚠</span>
+        <span style={{ ...TYPE.caption, color: T.accent2, fontWeight: 600 }}>
           {risks.length} memories near prune threshold
         </span>
-        <span style={{ fontSize: 11, color: "#9A7A60" }}>quality 0.55–0.70, low recall</span>
+        <span style={{ ...TYPE.caption, color: T.muted }}>quality 0.55–0.70, low recall</span>
         <button onClick={() => setOpen(o => !o)}
-          style={{ marginLeft: "auto", background: "transparent", border: "1px solid #9A6C0033",
-            color: "#9A6C00", borderRadius: 3, padding: "3px 10px", fontSize: 10,
+          style={{ marginLeft: "auto", background: "transparent", border: `1px solid ${T.accent2}33`,
+            color: T.accent2, borderRadius: 3, padding: "3px 10px", ...TYPE.micro,
             cursor: "pointer", fontFamily: "inherit" }}>
           {open ? "Hide" : "Inspect"}
         </button>
         <button onClick={onDismiss}
-          style={{ background: "transparent", border: "none", color: "#9A7A60", cursor: "pointer",
-            fontSize: 14, padding: "0 4px", lineHeight: 1 }}>×</button>
+          style={{ background: "transparent", border: "none", color: T.muted, cursor: "pointer",
+            ...TYPE.body, padding: "0 4px", lineHeight: 1 }}>×</button>
       </div>
       {open && (
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
           {risks.map(r => {
-            const col = r.quality >= 0.65 ? "#9A6C00" : "#B42318";
+            const col = r.quality >= 0.65 ? T.accent2 : T.error;
             return (
               <div key={r.id} style={{ display: "flex", gap: 8, alignItems: "center",
-                fontSize: 11, background: "#F4F0E8", borderRadius: 3, padding: "5px 9px" }}>
-                <span style={{ fontFamily: "monospace", color: "#9A7A60", width: 28 }}>#{r.id}</span>
-                <Pill label={r.type} color={TYPE_COLORS[r.type] || "#9A7A60"} />
-                <Pill label={(AGENT_META[r.agent] || { label: r.agent, color: "#9A7A60" }).label}
-                  color={(AGENT_META[r.agent] || { color: "#9A7A60" }).color} />
-                <span style={{ color: "#2E2010", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                ...TYPE.caption, background: T.surface2, borderRadius: 3, padding: "5px 9px" }}>
+                <span style={{ fontFamily: "monospace", color: T.muted, width: 28 }}>#{r.id}</span>
+                <Pill label={r.type} color={TYPE_COLORS[r.type] || T.muted} />
+                <Pill label={(AGENT_META[r.agent] || { label: r.agent, color: T.muted }).label}
+                  color={(AGENT_META[r.agent] || { color: T.muted }).color} />
+                <span style={{ color: T.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {(r.preview || "").slice(0, 80)}
                 </span>
                 <span style={{ fontFamily: "monospace", color: col, fontWeight: 700, flexShrink: 0 }}>
                   {r.quality.toFixed(3)}
                 </span>
-                <span style={{ fontSize: 10, color: "#9A7A60", flexShrink: 0 }}>{r.use_count}× used</span>
+                <span style={{ ...TYPE.micro, color: T.muted, flexShrink: 0 }}>{r.use_count}× used</span>
               </div>
             );
           })}
@@ -470,21 +471,21 @@ export default function KnowledgeGraph() {
     });
 
   if (loading) return (
-    <div style={{ textAlign: "center", padding: "60px 0", color: "#9A7A60" }}>
+    <div style={{ textAlign: "center", padding: "60px 0", color: T.muted }}>
       <div style={{ fontSize: 32, marginBottom: 12 }}>📚</div>
       Loading memory records…
     </div>
   );
 
   if (error) return (
-    <div style={{ padding: 20, background: "#F9E7E1", border: "1.5px solid #B4231855",
-      borderRadius: 4, color: "#B42318", fontSize: 14 }}>
+    <div style={{ padding: 20, background: "#F9E7E1", border: `1.5px solid ${T.error}55`,
+      borderRadius: 4, color: T.error, ...TYPE.body }}>
       ⚠ {error}
     </div>
   );
 
   const beType  = backend?.type || "–";
-  const beColor = beType === "PgvectorBackend" ? "#15803D" : beType === "FAISSBackend" ? "#1E5A8A" : "#9A7A60";
+  const beColor = beType === "PgvectorBackend" ? T.success : beType === "FAISSBackend" ? SEM.blue : T.muted;
 
   return (
     <div style={{ animation: "fadeIn .2s" }}>
@@ -494,18 +495,18 @@ export default function KnowledgeGraph() {
       {/* ── Stats header ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10, marginBottom: 14 }}>
         {[
-          { label: "Total Memories",  value: total,                        color: "#1E5A8A" },
-          { label: "Avg Quality",     value: avgQuality.toFixed(2),        color: "#15803D" },
-          { label: "Memory Types",    value: Object.keys(byType).length,   color: "#0F766E" },
-          { label: "Active Agents",   value: Object.keys(byAgent).length,  color: "#9A6C00" },
+          { label: "Total Memories",  value: total,                        color: SEM.blue },
+          { label: "Avg Quality",     value: avgQuality.toFixed(2),        color: T.success },
+          { label: "Memory Types",    value: Object.keys(byType).length,   color: SEM.teal },
+          { label: "Active Agents",   value: Object.keys(byAgent).length,  color: T.accent2 },
           { label: "Backend",         value: beType.replace("Backend",""), color: beColor,
             sub: backend?.engine?.split(" ").slice(0,3).join(" ") || "" },
         ].map(stat => (
           <div key={stat.label} className="lux-card lux-card-i" style={{ padding: "14px 16px" }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: stat.color, lineHeight: 1.1,
+            <div style={{ ...TYPE.metric, fontWeight: 700, color: stat.color, lineHeight: 1.1,
               fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>{stat.value}</div>
-            <div style={{ fontSize: 10, fontWeight: 600, color: "#9A7A60", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 5 }}>{stat.label}</div>
-            {stat.sub && <div style={{ fontSize: 9, color: "#9A7A60", marginTop: 3, opacity: 0.7 }}>{stat.sub}</div>}
+            <div style={{ ...TYPE.micro, fontWeight: 600, color: T.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 5 }}>{stat.label}</div>
+            {stat.sub && <div style={{ ...TYPE.micro, color: T.muted, marginTop: 3, opacity: 0.7 }}>{stat.sub}</div>}
           </div>
         ))}
       </div>
@@ -518,10 +519,10 @@ export default function KnowledgeGraph() {
           { id: "audit", label: "Retrieval Audit" },
         ].map(tab => (
           <button key={tab.id} onClick={() => setView(tab.id)}
-            style={{ background: view === tab.id ? "#C4880822" : "transparent",
-              border: `1px solid ${view === tab.id ? "#C4880888" : "#E0D6C4"}`,
-              color: view === tab.id ? "#1E5A8A" : "#9A7A60",
-              borderRadius: 3, padding: "6px 14px", fontSize: 12,
+            style={{ background: view === tab.id ? `${T.accent}22` : "transparent",
+              border: `1px solid ${view === tab.id ? `${T.accent}88` : T.border}`,
+              color: view === tab.id ? SEM.blue : T.muted,
+              borderRadius: 3, padding: "6px 14px", ...TYPE.caption,
               cursor: "pointer", fontFamily: "inherit", fontWeight: view === tab.id ? 700 : 400,
               transition: "all 0.15s" }}>
             {tab.label}
@@ -529,14 +530,14 @@ export default function KnowledgeGraph() {
         ))}
         <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
           <a href={`${API}/memory/export.csv`} download
-            style={{ background: "#FAF7F2", border: "1px solid #E0D6C4", color: "#9A7A60",
-              borderRadius: 3, padding: "6px 12px", fontSize: 11, textDecoration: "none",
+            style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted,
+              borderRadius: 3, padding: "6px 12px", ...TYPE.caption, textDecoration: "none",
               cursor: "pointer", whiteSpace: "nowrap" }}>
             ↓ Export CSV
           </a>
           <button onClick={load}
-            style={{ background: "transparent", border: "1px solid #E0D6C4", borderRadius: 3,
-              color: "#9A7A60", padding: "6px 12px", fontSize: 11, cursor: "pointer",
+            style={{ background: "transparent", border: `1px solid ${T.border}`, borderRadius: 3,
+              color: T.muted, padding: "6px 12px", ...TYPE.caption, cursor: "pointer",
               fontFamily: "inherit", whiteSpace: "nowrap" }}>
             ↻ {lastUpdated ? `Updated ${lastUpdated}` : "Refresh"}
           </button>
@@ -557,14 +558,14 @@ export default function KnowledgeGraph() {
         <>
           {/* Type distribution bar */}
           <div className="lux-card" style={{ padding: "12px 16px", marginBottom: 14 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "#9A7A60", marginBottom: 8, letterSpacing: "0.1em" }}>
+            <div style={{ ...TYPE.micro, fontWeight: 700, color: T.muted, marginBottom: 8, letterSpacing: "0.1em" }}>
               TYPE DISTRIBUTION — click to filter
             </div>
             <div style={{ display: "flex", height: 14, borderRadius: 4, overflow: "hidden", gap: 2, marginBottom: 8 }}>
               {Object.entries(byType).sort((a, b) => b[1] - a[1]).map(([type, count]) => (
                 <div key={type} title={`${type}: ${count}`}
                   onClick={() => setTypeFilter(typeFilter === type ? "all" : type)}
-                  style={{ flex: count, background: TYPE_COLORS[type] || "#9A7A60",
+                  style={{ flex: count, background: TYPE_COLORS[type] || T.muted,
                     cursor: "pointer", minWidth: 4,
                     opacity: typeFilter === "all" || typeFilter === type ? 1 : 0.22,
                     transition: "opacity 0.18s" }} />
@@ -573,7 +574,7 @@ export default function KnowledgeGraph() {
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {Object.entries(byType).sort((a, b) => b[1] - a[1]).map(([type, count]) => (
                 <Pill key={type} label={`${type} (${count})`}
-                  color={TYPE_COLORS[type] || "#9A7A60"}
+                  color={TYPE_COLORS[type] || T.muted}
                   active={typeFilter === type}
                   onClick={() => setTypeFilter(typeFilter === type ? "all" : type)} />
               ))}
@@ -588,15 +589,15 @@ export default function KnowledgeGraph() {
                 <button key={agentId}
                   onClick={() => setAgentFilter(agentFilter === agentId ? "all" : agentId)}
                   style={{ display: "flex", alignItems: "center", gap: 5,
-                    background: agentFilter === agentId ? `${meta.color}22` : "#FAF7F2",
+                    background: agentFilter === agentId ? `${meta.color}22` : T.surface,
                     border: `1px solid ${agentFilter === agentId ? meta.color + "66" : meta.color + "22"}`,
-                    color: agentFilter === agentId ? meta.color : "#9A7A60",
-                    borderRadius: 3, padding: "5px 10px", fontSize: 11,
+                    color: agentFilter === agentId ? meta.color : T.muted,
+                    borderRadius: 3, padding: "5px 10px", ...TYPE.caption,
                     cursor: "pointer", fontFamily: "inherit",
                     fontWeight: agentFilter === agentId ? 700 : 400, transition: "all 0.15s" }}>
                   <span>{meta.icon}</span>
                   <span>{meta.label}</span>
-                  <span style={{ background: "#E0D6C4", borderRadius: 3, padding: "1px 5px", fontSize: 10 }}>
+                  <span style={{ background: T.border, borderRadius: 3, padding: "1px 5px", ...TYPE.micro }}>
                     {byAgent[agentId] || 0}
                   </span>
                 </button>
@@ -608,48 +609,48 @@ export default function KnowledgeGraph() {
           <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center", flexWrap: "wrap" }}>
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search memory content…"
-              style={{ flex: 1, minWidth: 200, background: "#FAF7F2", border: "1px solid #E0D6C4",
-                borderRadius: 4, color: "#2E2010", padding: "8px 12px", fontSize: 13,
+              style={{ flex: 1, minWidth: 200, background: T.surface, border: `1px solid ${T.border}`,
+                borderRadius: 4, color: T.text, padding: "8px 12px", ...TYPE.small,
                 fontFamily: "inherit", outline: "none" }}
-              onFocus={e => e.target.style.borderColor = "#15803D55"}
-              onBlur={e => e.target.style.borderColor = "#E0D6C4"} />
+              onFocus={e => e.target.style.borderColor = `${T.success}55`}
+              onBlur={e => e.target.style.borderColor = T.border} />
             <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-              style={{ background: "#FAF7F2", border: "1px solid #E0D6C4", borderRadius: 4,
-                color: "#2E2010", padding: "8px 10px", fontSize: 12,
+              style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 4,
+                color: T.text, padding: "8px 10px", ...TYPE.caption,
                 fontFamily: "inherit", outline: "none", cursor: "pointer" }}>
               {SORT_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
             {(search || agentFilter !== "all" || typeFilter !== "all") && (
               <button onClick={() => { setSearch(""); setAgentFilter("all"); setTypeFilter("all"); }}
-                style={{ background: "#B4231818", border: "1px solid #B4231844", color: "#B42318",
-                  borderRadius: 3, padding: "8px 11px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>
+                style={{ background: `${T.error}18`, border: `1px solid ${T.error}44`, color: T.error,
+                  borderRadius: 3, padding: "8px 11px", ...TYPE.caption, cursor: "pointer", fontFamily: "inherit" }}>
                 ✕ Clear
               </button>
             )}
-            <span style={{ fontSize: 11, color: "#9A7A60", whiteSpace: "nowrap" }}>
+            <span style={{ ...TYPE.caption, color: T.muted, whiteSpace: "nowrap" }}>
               {filtered.length} / {total}
             </span>
           </div>
 
           {/* Card grid */}
           {filtered.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px 0", color: "#9A7A60", fontSize: 13 }}>
+            <div style={{ textAlign: "center", padding: "40px 0", color: T.muted, ...TYPE.small }}>
               No memories match the current filters.
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8 }}>
               {filtered.slice(0, 120).map(record => {
-                const meta      = AGENT_META[record.agent] || { label: record.agent, icon: "🤖", color: "#9A7A60" };
-                const typeColor = TYPE_COLORS[record.type] || "#9A7A60";
+                const meta      = AGENT_META[record.agent] || { label: record.agent, icon: "🤖", color: T.muted };
+                const typeColor = TYPE_COLORS[record.type] || T.muted;
                 const isOpen    = expanded === record.id;
                 const qualPct   = Math.round((record.quality || 0) * 100);
-                const qualColor = qualPct >= 80 ? "#15803D" : qualPct >= 60 ? "#9A6C00" : "#B42318";
+                const qualColor = qualPct >= 80 ? T.success : qualPct >= 60 ? T.accent2 : T.error;
 
                 return (
                   <div key={record.id}
                     onClick={() => setExpanded(isOpen ? null : record.id)}
-                    style={{ background: isOpen ? `${meta.color}07` : "#FAF7F2",
-                      border: `1px solid ${isOpen ? meta.color + "55" : "#E0D6C4"}`,
+                    style={{ background: isOpen ? `${meta.color}07` : T.surface,
+                      border: `1px solid ${isOpen ? meta.color + "55" : T.border}`,
                       borderRadius: 4, padding: "10px 13px", cursor: "pointer",
                       transition: "border-color 0.18s, background 0.18s" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 7, flexWrap: "wrap" }}>
@@ -657,24 +658,24 @@ export default function KnowledgeGraph() {
                       <Pill label={`${meta.icon} ${meta.label}`} color={meta.color} />
                       <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
                         {record.use_count > 0 && (
-                          <span style={{ fontSize: 10, color: "#9A7A60" }}>{record.use_count}× used</span>
+                          <span style={{ ...TYPE.micro, color: T.muted }}>{record.use_count}× used</span>
                         )}
-                        <span style={{ fontSize: 10, color: qualColor, fontFamily: "monospace", fontWeight: 700 }}>
+                        <span style={{ ...TYPE.micro, color: qualColor, fontFamily: "monospace", fontWeight: 700 }}>
                           {(record.quality || 0).toFixed(2)}
                         </span>
-                        <span style={{ fontSize: 10, color: meta.color + "77" }}>{isOpen ? "▲" : "▼"}</span>
+                        <span style={{ ...TYPE.micro, color: meta.color + "77" }}>{isOpen ? "▲" : "▼"}</span>
                       </span>
                     </div>
                     <QualityBar quality={record.quality} />
-                    <div style={{ marginTop: 7, fontSize: 12.5, color: "#2E2010", lineHeight: 1.55,
+                    <div style={{ marginTop: 7, ...TYPE.small, color: T.text, lineHeight: 1.55,
                       wordBreak: "break-word", fontFamily: "Charter, 'Source Serif Pro', Georgia, serif" }}>
                       {isOpen
                         ? record.content
                         : `${(record.content || "").slice(0, 130)}${record.content?.length > 130 ? "…" : ""}`}
                     </div>
                     {isOpen && (
-                      <div style={{ marginTop: 9, paddingTop: 7, borderTop: "1px solid #E0D6C4",
-                        display: "flex", gap: 12, fontSize: 10, color: "#9A7A60", flexWrap: "wrap" }}>
+                      <div style={{ marginTop: 9, paddingTop: 7, borderTop: `1px solid ${T.border}`,
+                        display: "flex", gap: 12, ...TYPE.micro, color: T.muted, flexWrap: "wrap" }}>
                         <span>id {record.id}</span>
                         <span>quality <span style={{ color: qualColor, fontFamily: "monospace", fontWeight: 700 }}>
                           {(record.quality || 0).toFixed(3)}
@@ -689,7 +690,7 @@ export default function KnowledgeGraph() {
           )}
 
           {filtered.length > 120 && (
-            <div style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: "#9A7A60" }}>
+            <div style={{ textAlign: "center", marginTop: 12, ...TYPE.caption, color: T.muted }}>
               Showing 120 of {filtered.length} — use filters or search to narrow down
             </div>
           )}

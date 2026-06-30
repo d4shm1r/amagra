@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { T, LUX, GOLD, FONT_DISPLAY } from "./theme";
+import { T, LUX, GOLD, TYPE, EASE, DUR, FONT_DISPLAY } from "./theme";
 
 import { API } from "./api";
 
@@ -55,7 +55,7 @@ export default function ConsensusTab() {
       {/* ── Header ── */}
       <div style={{ marginBottom: 20 }}>
         <h1 style={{
-          margin: 0, fontSize: 30, fontWeight: 600, fontFamily: FONT_DISPLAY, letterSpacing: "0.01em",
+          ...TYPE.display, margin: 0,
           // Brighter gold than LUX.goldText — ends at deep gold g4, never the
           // dark-brown g5, so a short word reads luminous, not muddy.
           background: `linear-gradient(135deg, ${GOLD.g4} 0%, ${GOLD.g3} 28%, ${GOLD.g2} 50%, ${GOLD.g3} 72%, ${GOLD.g4} 100%)`,
@@ -64,7 +64,7 @@ export default function ConsensusTab() {
         }}>
           Consensus
         </h1>
-        <p style={{ margin: "7px 0 0", fontSize: 13.5, color: T.mutedLt, lineHeight: 1.6, maxWidth: 660 }}>
+        <p style={{ ...TYPE.small, margin: "7px 0 0", color: T.mutedLt, maxWidth: 660 }}>
           Ask several models the same question and see how much they agree — the full
           agreement shown, not hidden. When it matters, verify before you trust.
         </p>
@@ -79,9 +79,9 @@ export default function ConsensusTab() {
           placeholder="Ask something worth verifying…"
           rows={3}
           style={{
-            width: "100%", background: T.surface2, border: `1px solid ${T.border}`,
-            borderRadius: 11, padding: "12px 14px", fontSize: 14.5, color: T.text,
-            fontFamily: "inherit", resize: "vertical", outline: "none", lineHeight: 1.6,
+            ...TYPE.body, width: "100%", background: T.surface2, border: `1px solid ${T.border}`,
+            borderRadius: 11, padding: "12px 14px", color: T.text,
+            fontFamily: "inherit", resize: "vertical", outline: "none",
           }}
         />
         <input
@@ -89,8 +89,8 @@ export default function ConsensusTab() {
           onChange={e => setSystem(e.target.value)}
           placeholder="System prompt (optional)"
           style={{
-            width: "100%", marginTop: 9, background: T.surface2, border: `1px solid ${T.border}`,
-            borderRadius: 10, padding: "9px 14px", fontSize: 12, color: T.text,
+            ...TYPE.caption, width: "100%", marginTop: 9, background: T.surface2, border: `1px solid ${T.border}`,
+            borderRadius: 10, padding: "9px 14px", color: T.text,
             fontFamily: "inherit", outline: "none",
           }}
         />
@@ -98,15 +98,15 @@ export default function ConsensusTab() {
           {/* No disabled dimming — the button stays visually constant; it simply
               does nothing until there's a prompt to run. */}
           <button className="btn-ghost" onClick={run} disabled={!prompt.trim() || loading}
-            style={{ padding: "10px 24px", fontSize: 13 }}>
+            style={{ ...TYPE.small, fontWeight: 700, padding: "10px 24px" }}>
             {loading ? "Consulting models…" : "Find consensus"}
           </button>
-          <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, color: T.mutedLt, cursor: "pointer" }}>
+          <label style={{ ...TYPE.caption, display: "flex", alignItems: "center", gap: 7, color: T.mutedLt, cursor: "pointer" }}>
             <input type="checkbox" checked={synthesize} onChange={e => setSynth(e.target.checked)}
               style={{ accentColor: T.accent, cursor: "pointer" }} />
             Synthesize a merged answer
           </label>
-          <span style={{ marginLeft: "auto", fontSize: 11, color: T.muted }}>
+          <span style={{ ...TYPE.caption, marginLeft: "auto", color: T.muted }}>
             ⌘↵ to run · models from Settings → Model
           </span>
         </div>
@@ -116,14 +116,14 @@ export default function ConsensusTab() {
       {!res && !loading && !err && (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "32px 20px 8px" }}>
           <GaugeRing pct={null} color={T.border} idle />
-          <div style={{ fontSize: 14, color: T.mutedLt, marginTop: 18, maxWidth: 420, lineHeight: 1.6 }}>
+          <div style={{ ...TYPE.body, color: T.mutedLt, marginTop: 18, maxWidth: 420 }}>
             Run a prompt across your models. You'll get one agreement score and every
             answer side by side — with the dissenters flagged.
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 18 }}>
             {SEEDS.map(s => (
               <button key={s} onClick={() => setPrompt(s)} className="lux-card lux-card-i"
-                style={{ padding: "8px 14px", fontSize: 12, color: T.mutedLt, cursor: "pointer", fontFamily: "inherit" }}>
+                style={{ ...TYPE.caption, padding: "8px 14px", color: T.mutedLt, cursor: "pointer", fontFamily: "inherit" }}>
                 {s}
               </button>
             ))}
@@ -135,13 +135,13 @@ export default function ConsensusTab() {
       {loading && (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 20px" }}>
           <GaugeRing pct={null} color={GOLD.g3} spinning />
-          <div style={{ fontSize: 13, color: T.muted, marginTop: 16 }}>Consulting models…</div>
+          <div style={{ ...TYPE.small, color: T.muted, marginTop: 16 }}>Consulting models…</div>
         </div>
       )}
 
       {err && (
-        <div style={{ padding: "12px 16px", background: `${T.error}12`, border: `1.5px solid ${T.error}44`,
-                      borderRadius: 10, color: T.error, fontSize: 13, marginBottom: 18 }}>
+        <div style={{ ...TYPE.small, padding: "12px 16px", background: `${T.error}12`, border: `1.5px solid ${T.error}44`,
+                      borderRadius: 10, color: T.error, marginBottom: 18 }}>
           {err}
         </div>
       )}
@@ -156,28 +156,28 @@ export default function ConsensusTab() {
             {pct != null && <GaugeRing pct={pct} color={v.color} />}
             <div style={{ flex: 1, minWidth: 240 }}>
               <span style={{
-                display: "inline-block", fontSize: 12, fontWeight: 700, color: v.color,
+                ...TYPE.caption, display: "inline-block", fontWeight: 700, color: v.color,
                 background: `${v.color}18`, border: `1px solid ${v.color}44`,
                 borderRadius: 99, padding: "4px 14px", marginBottom: 9,
               }}>{v.label}</span>
-              <div style={{ fontSize: 14.5, color: T.text, lineHeight: 1.55 }}>
+              <div style={{ ...TYPE.lead, color: T.text }}>
                 {res.summary || v.blurb}
               </div>
-              {res.note && <div style={{ fontSize: 11.5, color: T.muted, marginTop: 6, fontStyle: "italic" }}>{res.note}</div>}
+              {res.note && <div style={{ ...TYPE.caption, color: T.muted, marginTop: 6, fontStyle: "italic" }}>{res.note}</div>}
             </div>
           </div>
 
           {/* ── Synthesized consensus answer ── */}
           {res.consensus_answer && (
             <div className="lux-card" style={{ padding: 20, marginBottom: 22, borderLeft: `3px solid ${T.accent}` }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: T.accent, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>
+              <div style={{ ...TYPE.eyebrow, color: T.accent, marginBottom: 10 }}>
                 Consensus answer{res.synthesized_by ? ` · judged by ${res.synthesized_by}` : ""}
               </div>
-              <div style={{ fontSize: 14.5, color: T.text, lineHeight: 1.68, whiteSpace: "pre-wrap" }}>
+              <div style={{ ...TYPE.lead, color: T.text, whiteSpace: "pre-wrap" }}>
                 {res.consensus_answer}
               </div>
               {res.contradiction_note && (
-                <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${T.border}`, fontSize: 12.5, color: T.warn, lineHeight: 1.55 }}>
+                <div style={{ ...TYPE.small, marginTop: 14, paddingTop: 12, borderTop: `1px solid ${T.border}`, color: T.warn }}>
                   <strong style={{ color: T.warn }}>Where they differ:</strong> {res.contradiction_note}
                 </div>
               )}
@@ -186,8 +186,8 @@ export default function ConsensusTab() {
 
           {/* ── Candidates — side by side ── */}
           <div style={{
-            fontSize: 10, fontWeight: 800, color: T.accent, letterSpacing: "0.14em",
-            textTransform: "uppercase", marginBottom: 14, display: "flex", alignItems: "center", gap: 12,
+            ...TYPE.eyebrow, color: T.accent,
+            marginBottom: 14, display: "flex", alignItems: "center", gap: 12,
           }}>
             <span>{res.candidates.length} model{res.candidates.length !== 1 ? "s" : ""} consulted</span>
             <span style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${GOLD.g2}55 0%, ${T.border} 60%, transparent 100%)` }} />
@@ -205,33 +205,33 @@ export default function ConsensusTab() {
               return (
                 <div key={i} className="lux-card" style={{ padding: 16, borderTop: `3px solid ${accent}`, display: "flex", flexDirection: "column" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{c.provider}</span>
+                    <span style={{ ...TYPE.small, fontWeight: 700, color: T.text }}>{c.provider}</span>
                     {isRep && <Tag color={T.success}>★ representative</Tag>}
                     {isDis && <Tag color={T.warn}>⚠ dissenter</Tag>}
                     {c.error && <Tag color={T.error}>error</Tag>}
                   </div>
-                  {c.model && <div style={{ fontSize: 11, color: T.muted, marginBottom: 10 }}>{c.model}</div>}
+                  {c.model && <div style={{ ...TYPE.caption, color: T.muted, marginBottom: 10 }}>{c.model}</div>}
 
                   {/* per-model agreement bar */}
                   {agr != null && (
                     <div style={{ marginBottom: 12 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, marginBottom: 4 }}>
-                        <span style={{ color: T.muted, letterSpacing: "0.04em" }}>AGREEMENT</span>
-                        <span style={{ color: accent, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{agr}%</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ ...TYPE.eyebrow, color: T.muted, letterSpacing: "0.04em" }}>Agreement</span>
+                        <span style={{ ...TYPE.micro, color: accent, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{agr}%</span>
                       </div>
                       <div style={{ height: 5, borderRadius: 99, background: T.surface2, overflow: "hidden" }}>
-                        <div style={{ width: `${agr}%`, height: "100%", borderRadius: 99, background: accent, transition: "width .4s ease-out" }} />
+                        <div style={{ width: `${agr}%`, height: "100%", borderRadius: 99, background: accent, transition: `width ${DUR.slower} ${EASE.out}` }} />
                       </div>
                     </div>
                   )}
 
-                  <div style={{ fontSize: 13, color: c.error ? T.error : T.mutedLt, lineHeight: 1.6, whiteSpace: "pre-wrap", flex: 1 }}>
+                  <div style={{ ...TYPE.small, color: c.error ? T.error : T.mutedLt, whiteSpace: "pre-wrap", flex: 1 }}>
                     {c.error || c.output}
                   </div>
 
                   {(c.latency_ms != null || c.words != null) && (
-                    <div style={{ display: "flex", gap: 14, marginTop: 12, paddingTop: 10, borderTop: `1px solid ${T.border}`,
-                                  fontSize: 10.5, color: T.muted, fontVariantNumeric: "tabular-nums" }}>
+                    <div style={{ ...TYPE.micro, display: "flex", gap: 14, marginTop: 12, paddingTop: 10, borderTop: `1px solid ${T.border}`,
+                                  color: T.muted, fontVariantNumeric: "tabular-nums" }}>
                       {c.latency_ms != null && <span>{c.latency_ms}ms</span>}
                       {c.words != null && <span>{c.words} words</span>}
                     </div>
@@ -258,7 +258,7 @@ function GaugeRing({ pct, color, idle, spinning }) {
           cx="48" cy="48" r={R} fill="none" stroke={color} strokeWidth={SW} strokeLinecap="round"
           strokeDasharray={C} strokeDashoffset={filled}
           transform="rotate(-90 48 48)"
-          style={{ transition: "stroke-dashoffset .6s cubic-bezier(0.22,1,0.36,1)" }}
+          style={{ transition: `stroke-dashoffset ${DUR.slower} ${EASE.out}` }}
         />
       </svg>
       {!spinning && (
@@ -268,7 +268,7 @@ function GaugeRing({ pct, color, idle, spinning }) {
           ) : (
             <>
               <span style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{pct}</span>
-              <span style={{ fontSize: 9, color: T.muted, textTransform: "uppercase", letterSpacing: "0.1em", marginTop: 3 }}>agree</span>
+              <span style={{ ...TYPE.eyebrow, fontWeight: 600, fontSize: 9, color: T.muted, letterSpacing: "0.1em", marginTop: 3 }}>agree</span>
             </>
           )}
         </div>
@@ -280,7 +280,7 @@ function GaugeRing({ pct, color, idle, spinning }) {
 function Tag({ color, children }) {
   return (
     <span style={{
-      fontSize: 10, fontWeight: 700, color, background: `${color}18`,
+      ...TYPE.micro, fontWeight: 700, color, background: `${color}18`,
       border: `1px solid ${color}44`, borderRadius: 99, padding: "2px 9px",
     }}>{children}</span>
   );

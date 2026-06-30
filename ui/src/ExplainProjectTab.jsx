@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { T, GOLD, LUX, FONT_UI, FONT_DISPLAY, FONT_MONO } from "./theme";
+import { T, GOLD, LUX, TYPE, FONT_UI, FONT_DISPLAY, FONT_MONO } from "./theme";
 import { PageHeader, MetricCard } from "./ObsShared";
 
 import { API } from "./api";
@@ -50,18 +50,18 @@ export default function ExplainProjectTab() {
           onChange={e => setProject(e.target.value)}
           onKeyDown={e => e.key === "Enter" && explain()}
           placeholder="Project name (blank = all decisions)"
-          style={{ flex: 1, minWidth: 220, padding: "10px 13px", borderRadius: 10, fontFamily: FONT_UI, fontSize: 13,
+          style={{ ...TYPE.small, flex: 1, minWidth: 220, padding: "10px 13px", borderRadius: 10, fontFamily: FONT_UI,
                    border: `1px solid ${T.border}`, background: T.surface2, color: T.text, outline: "none" }}
         />
         {/* Ghost button, no disabled dimming — stays visually constant. */}
         <button onClick={explain} disabled={loading} className="btn-ghost"
-          style={{ padding: "10px 24px", fontSize: 13, whiteSpace: "nowrap" }}>
+          style={{ ...TYPE.small, fontWeight: 700, padding: "10px 24px", whiteSpace: "nowrap" }}>
           {loading ? "Reading…" : "Explain"}
         </button>
       </div>
 
       {error && (
-        <div style={{ padding: "12px 15px", borderRadius: 10, fontSize: 12.5, color: T.error,
+        <div style={{ ...TYPE.small, padding: "12px 15px", borderRadius: 10, color: T.error,
                       background: `${T.error}12`, border: `1.5px solid ${T.error}44`, marginBottom: 18 }}>
           {error} — is the API running on :8000?
         </div>
@@ -75,11 +75,11 @@ export default function ExplainProjectTab() {
             border: `1px solid ${GOLD.g2}44`, display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 28, color: T.accent, fontFamily: FONT_DISPLAY,
           }}>❡</div>
-          <div style={{ fontSize: 14.5, color: T.text, marginTop: 18, maxWidth: 440, lineHeight: 1.6 }}>
+          <div style={{ ...TYPE.body, color: T.text, marginTop: 18, maxWidth: 440 }}>
             Amagra reads the decisions you've recorded and briefs you back on the
             project — what was chosen, and why.
           </div>
-          <div style={{ fontSize: 12, color: T.muted, marginTop: 10, maxWidth: 440, lineHeight: 1.6 }}>
+          <div style={{ ...TYPE.caption, color: T.muted, marginTop: 10, maxWidth: 440, lineHeight: 1.6 }}>
             Record choices in the Prompt IDE's <em>Run Across Models</em> → <em>Remember this decision</em>.
             Then hit <strong style={{ color: T.accent2 }}>Explain</strong> above.
           </div>
@@ -101,7 +101,7 @@ export default function ExplainProjectTab() {
                         borderLeft: `3px solid ${allowed ? T.accent : T.warn}` }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <span style={{
-                fontSize: 10.5, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase",
+                ...TYPE.eyebrow, letterSpacing: "0.1em",
                 color: allowed ? T.success : T.warn,
                 background: (allowed ? T.success : T.warn) + "16",
                 border: `1px solid ${(allowed ? T.success : T.warn)}44`,
@@ -110,15 +110,15 @@ export default function ExplainProjectTab() {
                 {allowed ? "✓ Synthesis" : "◔ Synthesis gated"}
               </span>
               {!allowed && (
-                <span style={{ fontSize: 11, color: T.muted, fontStyle: "italic" }}>
+                <span style={{ ...TYPE.caption, color: T.muted, fontStyle: "italic" }}>
                   narrative unlocks once memory-recall passes its benchmark
                 </span>
               )}
             </div>
             {data.summary ? (
-              <p style={{ fontSize: 14.5, lineHeight: 1.72, color: T.text, margin: 0 }}>{data.summary}</p>
+              <p style={{ ...TYPE.lead, color: T.text, margin: 0 }}>{data.summary}</p>
             ) : (
-              <p style={{ fontSize: 12.5, lineHeight: 1.6, color: T.muted, margin: 0, fontStyle: "italic" }}>
+              <p style={{ ...TYPE.small, color: T.muted, margin: 0, fontStyle: "italic" }}>
                 {data.summary_note || "No summary — the records below are shown without synthesis."}
               </p>
             )}
@@ -129,7 +129,7 @@ export default function ExplainProjectTab() {
             Recorded decisions{data.decisions.length ? ` · ${data.decisions.length}` : ""}
           </SectionLabel>
           {data.decisions.length === 0 ? (
-            <p style={{ fontSize: 12.5, color: T.muted, lineHeight: 1.6 }}>
+            <p style={{ ...TYPE.small, color: T.muted }}>
               None yet — make choices in the Prompt IDE's “Run Across Models” and tap “Remember this decision”.
             </p>
           ) : (
@@ -142,16 +142,16 @@ export default function ExplainProjectTab() {
                 return (
                   <div key={d.id} className="lux-card" style={{ padding: "13px 15px", borderLeft: `3px solid ${accent}` }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-                      <span style={{ fontFamily: FONT_MONO, fontSize: 12.5, fontWeight: 600, color: T.text }}>{model}</span>
-                      <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase",
+                      <span style={{ ...TYPE.small, fontFamily: FONT_MONO, fontWeight: 600, color: T.text }}>{model}</span>
+                      <span style={{ ...TYPE.eyebrow, letterSpacing: "0.04em",
                                      padding: "2px 9px", borderRadius: 99,
                                      color: accent, border: `1px solid ${accent}44`, background: accent + "14" }}>
                         {confirmed ? "Confirmed" : "Tentative"}
                       </span>
                     </div>
-                    <div style={{ fontSize: 12.5, color: T.mutedLt, marginTop: 5, lineHeight: 1.55 }}>{why}</div>
+                    <div style={{ ...TYPE.small, color: T.mutedLt, marginTop: 5 }}>{why}</div>
                     {d.prompt && (
-                      <div style={{ fontSize: 11, color: T.muted, marginTop: 6, fontFamily: FONT_MONO,
+                      <div style={{ ...TYPE.caption, color: T.muted, marginTop: 6, fontFamily: FONT_MONO,
                                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {d.prompt}
                       </div>
@@ -171,8 +171,8 @@ export default function ExplainProjectTab() {
 function SectionLabel({ children }) {
   return (
     <div style={{
-      fontSize: 10, fontWeight: 800, color: T.accent, letterSpacing: "0.14em",
-      textTransform: "uppercase", marginBottom: 12, display: "flex", alignItems: "center", gap: 12,
+      ...TYPE.eyebrow, color: T.accent,
+      marginBottom: 12, display: "flex", alignItems: "center", gap: 12,
     }}>
       <span>{children}</span>
       <span style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${GOLD.g2}55 0%, ${T.border} 60%, transparent 100%)` }} />

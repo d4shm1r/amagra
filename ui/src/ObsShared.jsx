@@ -3,7 +3,7 @@
  *
  * Import: import { ObsPanel, MetricCard, ScoreBar, EventIcon, hScore } from "./ObsShared";
  */
-import { T, LUX, FONT_DISPLAY } from "./theme";
+import { T, LUX, TYPE, DUR, FONT_DISPLAY } from "./theme";
 
 // ── Page header ───────────────────────────────────────────────
 
@@ -18,14 +18,13 @@ export function PageHeader({ title, subtitle, children, gold = true }) {
       <h1 style={{
         // Elegant serif display (Cormorant Garamond), gold gradient — the
         // AMAGRA / Memory wordmark treatment.
-        margin: 0, fontFamily: FONT_DISPLAY, fontWeight: 600,
-        fontSize: 29, letterSpacing: "0.01em", lineHeight: 1.12,
+        ...TYPE.display, margin: 0,
         ...(gold ? { ...LUX.goldText, display: "inline-block" } : { color: T.text }),
       }}>
         {title}
       </h1>
       {subtitle && (
-        <div style={{ fontSize: 12.5, color: T.muted, marginTop: 6, maxWidth: 680, lineHeight: 1.5 }}>
+        <div style={{ ...TYPE.caption, color: T.muted, marginTop: 6, maxWidth: 680 }}>
           {subtitle}
         </div>
       )}
@@ -62,8 +61,7 @@ export function ObsPanel({ title, icon, children, action, style = {} }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           {title && (
             <div style={{
-              fontSize: 11, fontWeight: 700, color: T.mutedLt,
-              letterSpacing: "0.1em", textTransform: "uppercase",
+              ...TYPE.eyebrow, fontWeight: 700, color: T.mutedLt, letterSpacing: "0.1em",
             }}>
               {icon && <span style={{ marginRight: 6, opacity: 0.7 }}>{icon}</span>}
               {title}
@@ -86,19 +84,14 @@ export function MetricCard({ label, value, sub, color, mono = false }) {
   void mono;
   return (
     <div className="lux-card lux-card-i" style={{ padding: "14px 16px" }}>
-      <div style={{
-        fontSize: 22, fontWeight: 700, color: color ?? T.text,
-        fontFamily: "inherit",
-        fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em",
-        lineHeight: 1.1,
-      }}>
+      <div style={{ ...TYPE.metric, color: color ?? T.text, fontFamily: "inherit" }}>
         {value ?? "—"}
       </div>
-      <div style={{ fontSize: 10, fontWeight: 600, color: T.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 5 }}>
+      <div style={{ ...TYPE.eyebrow, fontWeight: 600, letterSpacing: "0.08em", color: T.muted, marginTop: 5 }}>
         {label}
       </div>
       {sub && (
-        <div style={{ fontSize: 10, color: T.muted, marginTop: 3 }}>{sub}</div>
+        <div style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, marginTop: 3 }}>{sub}</div>
       )}
     </div>
   );
@@ -113,18 +106,18 @@ export function ScoreBar({ label, value, sub, style = {} }) {
   return (
     <div style={{ marginBottom: 14, ...style }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: T.mutedLt }}>{label}</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color, fontVariantNumeric: "tabular-nums" }}>
+        <span style={{ ...TYPE.caption, fontWeight: 600, color: T.mutedLt }}>{label}</span>
+        <span style={{ ...TYPE.caption, fontWeight: 700, color, fontVariantNumeric: "tabular-nums" }}>
           {value == null ? "—" : value.toFixed(1)}
         </span>
       </div>
       <div style={{ background: "#EDE6DA", borderRadius: 3, height: 6, overflow: "hidden" }}>
         <div style={{
           width: `${pct}%`, height: "100%", background: color, borderRadius: 3,
-          transition: "width 0.5s ease",
+          transition: `width ${DUR.slower} ease`,
         }} />
       </div>
-      {sub && <div style={{ fontSize: 10, color: T.muted, marginTop: 3 }}>{sub}</div>}
+      {sub && <div style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, marginTop: 3 }}>{sub}</div>}
     </div>
   );
 }
@@ -170,8 +163,8 @@ export function EventRow({ event, compact = false }) {
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "3px 0",
         borderBottom: `1px solid ${T.border}20` }}>
         <span style={{ color: meta.color, fontSize: 12, minWidth: 16 }}>{meta.icon}</span>
-        <span style={{ fontSize: 11, color: T.muted, minWidth: 44 }}>{ts}</span>
-        <span style={{ fontSize: 11, color: T.text, flex: 1 }}>{label}</span>
+        <span style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, minWidth: 44 }}>{ts}</span>
+        <span style={{ ...TYPE.caption, color: T.text, flex: 1 }}>{label}</span>
       </div>
     );
   }
@@ -184,11 +177,11 @@ export function EventRow({ event, compact = false }) {
       <span style={{ color: meta.color, fontSize: 14, minWidth: 18, paddingTop: 1 }}>{meta.icon}</span>
       <div style={{ flex: 1 }}>
         <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-          <span style={{ fontSize: 12, color: T.text, fontWeight: 500 }}>{label}</span>
-          <span style={{ fontSize: 10, color: T.muted }}>{ts}</span>
+          <span style={{ ...TYPE.caption, color: T.text, fontWeight: 500 }}>{label}</span>
+          <span style={{ ...TYPE.micro, fontWeight: 400, color: T.muted }}>{ts}</span>
         </div>
         {event.payload && Object.keys(event.payload).length > 0 && (
-          <div style={{ fontSize: 10, color: T.muted, marginTop: 2 }}>
+          <div style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, marginTop: 2 }}>
             {Object.entries(event.payload)
               .filter(([k]) => !["session_id", "run_id"].includes(k))
               .slice(0, 4)
@@ -206,8 +199,8 @@ export function EventRow({ event, compact = false }) {
 export function RefreshBtn({ onClick }) {
   return (
     <button onClick={onClick} className="nav-btn" style={{
-      background: "transparent", color: T.muted, border: `1px solid ${T.border}`,
-      borderRadius: 7, padding: "4px 10px", cursor: "pointer", fontSize: 11,
+      ...TYPE.micro, fontWeight: 400, background: "transparent", color: T.muted, border: `1px solid ${T.border}`,
+      borderRadius: 7, padding: "4px 10px", cursor: "pointer",
       fontFamily: "inherit",
     }}>↻</button>
   );
@@ -217,7 +210,7 @@ export function RefreshBtn({ onClick }) {
 
 export function EmptyState({ msg = "No data yet — run a query to populate this view." }) {
   return (
-    <div style={{ padding: "24px 0", textAlign: "center", color: T.muted, fontSize: 12.5, fontStyle: "italic" }}>
+    <div style={{ ...TYPE.small, padding: "24px 0", textAlign: "center", color: T.muted, fontStyle: "italic" }}>
       {msg}
     </div>
   );
@@ -245,12 +238,12 @@ export function ApiOfflineBanner({ onRetry, checking = false }) {
       }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 18,
-          color: T.text, lineHeight: 1.2,
+          ...TYPE.subtitle, fontFamily: FONT_DISPLAY, lineHeight: 1.2,
+          color: T.text,
         }}>
           {checking ? "Connecting to the engine…" : "The engine is offline"}
         </div>
-        <div style={{ fontSize: 12, color: T.muted, marginTop: 4, lineHeight: 1.5 }}>
+        <div style={{ ...TYPE.caption, color: T.muted, marginTop: 4, lineHeight: 1.5 }}>
           Amagra runs entirely on your hardware. Start the local engine to bring the workspace online —{" "}
           <code style={{
             fontFamily: "monospace", fontSize: 11.5, color: T.accent2,
@@ -264,9 +257,9 @@ export function ApiOfflineBanner({ onRetry, checking = false }) {
         disabled={checking}
         className="nav-btn"
         style={{
-          flexShrink: 0, padding: "7px 18px", borderRadius: 20,
+          ...TYPE.caption, fontWeight: 600, flexShrink: 0, padding: "7px 18px", borderRadius: 20,
           background: "transparent", border: `1px solid ${T.border}`,
-          color: T.mutedLt, fontSize: 12, fontWeight: 600,
+          color: T.mutedLt,
           fontFamily: "inherit", cursor: checking ? "default" : "pointer",
         }}
       >

@@ -16,13 +16,9 @@ import DecisionTimeline   from "./DecisionTimeline";
 import TimelineTab        from "./TimelineTab";
 import CognitiveMapTab    from "./CognitiveMapTab";
 import DataTab            from "./DataTab";
-import PolicyTab          from "./PolicyTab";
 import CognitiveOSTab       from "./CognitiveOSTab";
-import UCIDashboard         from "./UCIDashboard";
+import DiagnosticsTab       from "./DiagnosticsTab";
 import ProjectStateTab      from "./ProjectStateTab";
-import EventLogTab          from "./EventLogTab";
-import RiskObservatoryTab   from "./RiskObservatoryTab";
-import PlanGraphTab         from "./PlanGraphTab";
 import MemoryBrowserTab     from "./MemoryBrowserTab";
 import ContextInspectorTab from "./ContextInspectorTab";
 import InspectOverviewTab  from "./InspectOverviewTab";
@@ -44,7 +40,7 @@ import {
   NAV, TABS_BY_SURFACE, SURFACE_BY_TAB, DEFAULT_TAB,
   TAB_ALIASES, VALID_TABS, surfaceOf, firstVisibleTab,
 } from "./navConfig";
-import { T, LUX, GOLD, FONT_UI, FONT_DISPLAY } from "./theme";
+import { T, LUX, GOLD, TYPE, FONT_UI, FONT_DISPLAY } from "./theme";
 
 // ── App-wide settings ─────────────────────────────────────────
 const DEFAULT_SETTINGS = {
@@ -318,6 +314,15 @@ function SidebarActions({ collapsed, mode, onModal, onAction, onToggleMode }) {
   const [pos, setPos] = useState({ left: 0, bottom: 0 });
   const moreRef = useRef(null);
 
+  // One-time "Advanced is one click away" nudge (rendered under the toggle).
+  const [showAdvHint, setShowAdvHint] = useState(() => {
+    try { return localStorage.getItem("adv_hint_seen_v1") !== "1"; } catch { return true; }
+  });
+  const dismissAdvHint = () => {
+    setShowAdvHint(false);
+    try { localStorage.setItem("adv_hint_seen_v1", "1"); } catch {}
+  };
+
   useEffect(() => {
     if (!moreOpen) return;
     const close = (e) => { if (moreRef.current && !moreRef.current.contains(e.target)) setMoreOpen(false); };
@@ -374,6 +379,23 @@ function SidebarActions({ collapsed, mode, onModal, onAction, onToggleMode }) {
         }} />
         {!collapsed && (mode === "simple" ? "Simple" : "Advanced")}
       </button>
+
+      {/* One-time nudge: the full toolset lives behind the toggle above. Shown
+          once in Simple mode so calm-by-default never reads as "tools missing". */}
+      {!collapsed && mode === "simple" && showAdvHint && (
+        <div style={{
+          marginTop: 6, padding: "7px 9px", display: "flex", alignItems: "flex-start", gap: 6,
+          background: LUX.goldTint, border: `1px solid ${GOLD.g2}33`, borderRadius: 8,
+        }}>
+          <span style={{ ...TYPE.micro, color: T.mutedLt, lineHeight: 1.4, flex: 1 }}>
+            Every tool is one click away — switch to <strong style={{ color: T.accent2 }}>Advanced</strong> above.
+          </span>
+          <button onClick={dismissAdvHint} title="Got it" className="nav-btn" style={{
+            ...TYPE.micro, background: "transparent", border: "none", color: T.muted,
+            cursor: "pointer", padding: 0, lineHeight: 1, fontFamily: "inherit",
+          }}>✕</button>
+        </div>
+      )}
 
       {moreOpen && (
         <div style={{
@@ -561,13 +583,13 @@ export default function App() {
   // "simple" trims the chrome to the first-run trust workflow (Chat,
   // Prompt IDE, Consensus, Library, Guide, Model); "advanced" reveals every
   // surface, menu, and diagnostic.
-  // New users start simple; people who already finished onboarding keep the
-  // full UI so we never hide tools out from under an existing workflow.
+  // Calm by default: everyone starts in Simple (the luxury "complexity on
+  // demand" posture) unless they've explicitly chosen Advanced before. The
+  // toggle is one click away and a one-time hint points to it, so no tool is
+  // ever truly hidden — it's just not in your face until you ask for it.
   const [mode, setMode] = useState(() => {
     try {
-      const saved = localStorage.getItem("ui_mode_v1");
-      if (saved) return saved;
-      return localStorage.getItem("onboarding_done_v1") === "1" ? "advanced" : "simple";
+      return localStorage.getItem("ui_mode_v1") || "simple";
     } catch { return "simple"; }
   });
   const setModePersisted = useCallback((next) => {
@@ -1000,18 +1022,14 @@ export default function App() {
               {activeTab === "brain"         && <DecisionTimeline />}
               {activeTab === "runs"          && <RunsTab />}
               {activeTab === "timeline"      && <TimelineTab />}
-              {activeTab === "event-log"     && <EventLogTab />}
               {activeTab === "data"          && <DataTab />}
               {activeTab === "cog-dash"      && <CognitionView />}
-              {activeTab === "uci"           && <UCIDashboard />}
-              {activeTab === "risk-obs"      && <RiskObservatoryTab />}
-              {activeTab === "policy"        && <PolicyTab />}
+              {activeTab === "diagnostics"   && <DiagnosticsTab />}
               {activeTab === "cognitive"     && <CognitiveOSTab coherence={coherence} />}
               {activeTab === "inspector"     && <ContextInspectorTab contextId={inspectContextId} />}
               {activeTab === "project-state" && <ProjectStateTab />}
               {activeTab === "consensus"     && <ConsensusTab />}
               {activeTab === "explain"       && <ExplainProjectTab />}
-              {activeTab === "plan-graph"    && <PlanGraphTab />}
               {activeTab === "skills"        && <SkillsTab />}
               {activeTab === "guide"         && <GuideTab />}
               {activeTab === "model"         && <ProviderSettingsTab />}

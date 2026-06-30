@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { T, LUX, GOLD, FONT_DISPLAY } from "./theme";
+import { T, LUX, GOLD, TYPE, FONT_DISPLAY } from "./theme";
 import { BUILD_PHASES, ROADMAP, VERSION } from "./constants";
 
 // ── Feature pillars ─────────────────────────────────────────────
@@ -118,7 +118,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
               The AI you can trust with long-term work.
             </p>
             <p style={{
-              margin: "0 0 18px", fontSize: 13.5, color: T.mutedLt,
+              ...TYPE.small, margin: "0 0 18px", color: T.mutedLt,
               lineHeight: 1.65, maxWidth: 640,
             }}>
               It remembers what you've done, explains every decision, and runs entirely on your
@@ -134,7 +134,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
                 dot
               />
               {!online && (
-                <span style={{ fontSize: 11, color: T.error, alignSelf: "center", marginLeft: 4 }}>
+                <span style={{ ...TYPE.caption, color: T.error, alignSelf: "center", marginLeft: 4 }}>
                   Start with{" "}
                   <code style={{ fontFamily: "monospace", background: `${T.error}18`, padding: "1px 5px", borderRadius: 3 }}>
                     ai-start
@@ -187,7 +187,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 13, color: T.accent, fontFamily: "monospace", lineHeight: 1,
               }}>{n.sym}</span>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: T.text }}>{n.label}</span>
+              <span style={{ ...TYPE.small, fontWeight: 600, color: T.text }}>{n.label}</span>
             </button>
           ))}
         </div>
@@ -203,8 +203,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
             display: "flex", alignItems: "center", gap: 12, width: "100%",
             background: "transparent", border: "none", cursor: "pointer",
             padding: "2px 0", marginBottom: 14, fontFamily: "inherit",
-            fontSize: 10, fontWeight: 800, color: T.muted,
-            letterSpacing: "0.16em", textTransform: "uppercase",
+            ...TYPE.eyebrow, letterSpacing: "0.16em", color: T.muted,
           }}
         >
           <span>Under the hood</span>
@@ -220,7 +219,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
 
         {showInternals && (
           <div style={{ animation: "fadeIn .2s" }}>
-            <p style={{ margin: "0 0 22px", fontSize: 12, color: T.muted, lineHeight: 1.6, fontStyle: "italic", maxWidth: 640 }}>
+            <p style={{ ...TYPE.caption, margin: "0 0 22px", color: T.muted, lineHeight: 1.6, fontStyle: "italic", maxWidth: 640 }}>
               The experience is the point — the mechanics below are here if you want them.
             </p>
 
@@ -260,16 +259,16 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
                         borderRadius: "50%", background: LUX.goldTint,
                         border: `1px solid ${GOLD.g2}55`,
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 10, fontWeight: 800, color: T.accent,
+                        ...TYPE.micro, fontWeight: 800, color: T.accent,
                         fontVariantNumeric: "tabular-nums", letterSpacing: "0.04em",
                         boxShadow: "inset 0 1px 1px rgba(255,255,255,0.7)",
                       }}>{s.step}</div>
                       <div>
                         <div style={{
-                          fontSize: 12.5, fontWeight: 700, color: T.accent,
+                          ...TYPE.caption, fontWeight: 700, color: T.accent,
                           marginBottom: 5, letterSpacing: "-0.01em",
                         }}>{s.title}</div>
-                        <div style={{ fontSize: 11.5, color: T.mutedLt, lineHeight: 1.6 }}>{s.body}</div>
+                        <div style={{ ...TYPE.caption, color: T.mutedLt, lineHeight: 1.6 }}>{s.body}</div>
                       </div>
                     </div>
                   ))}
@@ -292,8 +291,8 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
                           borderRadius: 8, padding: "10px 14px",
                           textAlign: "center", flexShrink: 0, minWidth: 95,
                         }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: labelColor, lineHeight: 1.2 }}>{node.label}</div>
-                          <div style={{ fontSize: 9.5, color: T.muted, marginTop: 3 }}>{node.sub}</div>
+                          <div style={{ ...TYPE.caption, fontWeight: 700, color: labelColor, lineHeight: 1.2 }}>{node.label}</div>
+                          <div style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, marginTop: 3 }}>{node.sub}</div>
                         </div>
                         {i < arr.length - 1 && (
                           <div style={{ flex: 1, height: 1, background: T.border, position: "relative", minWidth: 18 }}>
@@ -304,7 +303,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
                     );
                   })}
                 </div>
-                <div style={{ marginTop: 14, fontSize: 11, color: T.muted, lineHeight: 1.6 }}>
+                <div style={{ ...TYPE.caption, marginTop: 14, color: T.muted, lineHeight: 1.6 }}>
                   All stages emit events to the Cognitive OS event bus. Coherence C(t) is tracked continuously.
                   Reflection and memory updates happen after every run — the system improves from use.
                 </div>
@@ -316,7 +315,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {STACK.map(s => (
                   <span key={s} style={{
-                    fontSize: 11, fontWeight: 600,
+                    ...TYPE.caption, fontWeight: 600,
                     color: T.accent2, background: LUX.goldTint,
                     border: `1px solid ${GOLD.g2}40`,
                     borderRadius: 99, padding: "5px 13px",
@@ -335,19 +334,19 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
         borderTop: `1px solid ${T.border}`,
         display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
       }}>
-        <span style={{ fontSize: 10, color: T.muted }}>
+        <span style={{ ...TYPE.micro, fontWeight: 400, color: T.muted }}>
           Started Dec 15 2025 · {BUILD_PHASES.length} build phases · v{VERSION} · MIT
         </span>
         <span style={{ color: T.border }}>·</span>
         <span
           onClick={() => onNav("releases")}
-          style={{ fontSize: 10, color: T.accent, cursor: "pointer", textDecoration: "underline" }}
+          style={{ ...TYPE.micro, fontWeight: 400, color: T.accent, cursor: "pointer", textDecoration: "underline" }}
         >
           Full version history →
         </span>
         <span
           onClick={() => onNav("progress")}
-          style={{ fontSize: 10, color: T.warn, cursor: "pointer", textDecoration: "underline" }}
+          style={{ ...TYPE.micro, fontWeight: 400, color: T.warn, cursor: "pointer", textDecoration: "underline" }}
         >
           Open issues →
         </span>
@@ -362,7 +361,7 @@ function Badge({ label, pulse }) {
   // Uniform gold treatment — the badge row is signature, not a colour code.
   return (
     <span style={{
-      fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
+      ...TYPE.micro, fontWeight: 700, letterSpacing: "0.06em",
       color: T.accent2, background: LUX.goldTint,
       border: `1px solid ${GOLD.g2}55`,
       borderRadius: 99, padding: "3px 11px",
@@ -375,8 +374,7 @@ function Section({ title, children }) {
   return (
     <div style={{ marginBottom: 36 }}>
       <div style={{
-        fontSize: 10, fontWeight: 800, color: T.accent,
-        letterSpacing: "0.16em", textTransform: "uppercase",
+        ...TYPE.eyebrow, letterSpacing: "0.16em", color: T.accent,
         marginBottom: 14, display: "flex", alignItems: "center", gap: 12,
       }}>
         <span>{title}</span>
@@ -398,9 +396,9 @@ function StatusPill({ label, value, color, mono, dot }) {
       borderRadius: 99, padding: "5px 12px",
     }}>
       {dot && <span style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />}
-      <span style={{ fontSize: 11, color: T.muted }}>{label}</span>
+      <span style={{ ...TYPE.caption, color: T.muted }}>{label}</span>
       <span style={{
-        fontSize: 12, fontWeight: 700, color,
+        ...TYPE.caption, fontWeight: 700, color,
         fontFamily: mono ? "'Consolas', 'Cascadia Code', monospace" : "inherit",
       }}>{value}</span>
     </div>
@@ -423,15 +421,15 @@ function FeatureCard({ sym, title, body, pills }) {
           boxShadow: "inset 0 1px 1px rgba(255,255,255,0.7)",
         }}>{sym}</div>
         <div style={{
-          fontSize: 14, fontWeight: 700, color: T.accent,
+          ...TYPE.body, fontWeight: 700, color: T.accent,
           lineHeight: 1.2, letterSpacing: "-0.02em",
         }}>{title}</div>
       </div>
-      <div style={{ fontSize: 11.5, color: T.mutedLt, lineHeight: 1.65 }}>{body}</div>
+      <div style={{ ...TYPE.caption, color: T.mutedLt, lineHeight: 1.65 }}>{body}</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
         {pills.map(p => (
           <span key={p} style={{
-            fontSize: 9.5, fontWeight: 700, letterSpacing: "0.04em",
+            ...TYPE.micro, fontWeight: 700, letterSpacing: "0.04em",
             color: T.accent2, background: LUX.goldTint,
             border: `1px solid ${GOLD.g2}40`,
             borderRadius: 99, padding: "2px 9px",
