@@ -1,6 +1,6 @@
 # Metrics Improvement Roadmap — phased, execution-ready
 
-*Derived from [`../improvements.md`](../improvements.md) and the latest OCAC finding (signed
+*Derived from [`improvements.md`](improvements.md) and the latest OCAC finding (signed
 cubic / "put the sign back"). Each phase is self-contained, additive, and gated behind the
 existing test suite. Ship phases in order; each ends green before the next starts.*
 
