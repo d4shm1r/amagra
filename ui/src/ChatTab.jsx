@@ -261,6 +261,21 @@ export default function ChatTab({
     setExpandedMem({}); setExpandedCoa({});
   }, []);
 
+  // Driven by the ☰ AppLauncher (which rehomed the Threads/Context/Advanced rail).
+  useEffect(() => {
+    const onPanel  = (e) => setSideTab(e.detail || "");
+    const onNew    = () => newThread();
+    const onSwitch = (e) => { if (e.detail) switchThread(e.detail); };
+    window.addEventListener("amagra:chat-panel",   onPanel);
+    window.addEventListener("amagra:new-thread",   onNew);
+    window.addEventListener("amagra:switch-thread", onSwitch);
+    return () => {
+      window.removeEventListener("amagra:chat-panel",   onPanel);
+      window.removeEventListener("amagra:new-thread",   onNew);
+      window.removeEventListener("amagra:switch-thread", onSwitch);
+    };
+  }, [setSideTab, newThread, switchThread]);
+
   const handleFileSelect = useCallback(async (e) => {
     const files = Array.from(e.target.files || []);
     e.target.value = "";
@@ -868,8 +883,10 @@ export default function ChatTab({
             background: "#FCFAF7",
             border: `1px solid ${pillFocus ? "#C48808" : "rgba(196,136,8,0.30)"}`,
             borderRadius: 28, padding: "9px 9px 9px 22px",
+            // Single outline only — a soft gold glow on focus, never a second
+            // concentric ring (which read as "a form inside a form").
             boxShadow: pillFocus
-              ? "0 0 0 3px rgba(196,136,8,0.10), 0 6px 22px rgba(72,52,28,0.10)"
+              ? "0 8px 30px rgba(196,136,8,0.18), 0 2px 10px rgba(72,52,28,0.08)"
               : "0 2px 10px rgba(72,52,28,0.06)",
             transition: "border-color .18s ease, box-shadow .18s ease",
           }}>
@@ -924,9 +941,10 @@ export default function ChatTab({
 
 
       {/* ══════════════════════════════════════════════════════════
-          Side panel — collapsed to a quiet icon rail by default
+          Side panel — the quiet icon rail moved into the ☰ launcher
+          (v1.6.3); the expanded panel still opens on demand.
       ══════════════════════════════════════════════════════════ */}
-      {!sideTab && (
+      {false && (
         <div style={{
           width: 44, flexShrink: 0,
           display: "flex", flexDirection: "column", alignItems: "center",

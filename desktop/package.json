@@ -1,0 +1,42 @@
+{
+  "name": "amagra-desktop",
+  "version": "1.6.3",
+  "description": "AMAGRA desktop shell — native window around the local FastAPI server + built UI",
+  "main": "main.js",
+  "author": "Amagra",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "dist:linux": "electron-builder --linux",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "ai.amagra.desktop",
+    "productName": "AMAGRA",
+    "files": ["main.js", "preload.js"],
+    "extraResources": [
+      { "from": "../ui/build", "to": "ui/build" }
+    ],
+    "directories": { "output": "dist" },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Development",
+      "icon": "../ui/public/logo512.png"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.developer-tools",
+      "icon": "build/icon.icns"
+    },
+    "win": {
+      "target": ["nsis"],
+      "icon": "build/icon.ico"
+    }
+  }
+}

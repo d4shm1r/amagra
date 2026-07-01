@@ -36,6 +36,7 @@ import PromisesTab        from "./PromisesTab";
 import ProviderSettingsTab from "./ProviderSettingsTab";
 import { ApiOfflineBanner } from "./ObsShared";
 import { SettingsModal, ShortcutsModal } from "./Modals";
+import AppLauncher from "./AppLauncher";
 import {
   NAV, TABS_BY_SURFACE, SURFACE_BY_TAB, DEFAULT_TAB,
   TAB_ALIASES, VALID_TABS, surfaceOf, firstVisibleTab,
@@ -55,511 +56,13 @@ function loadSettings() {
   catch { return { ...DEFAULT_SETTINGS }; }
 }
 
-// ── Sidebar ───────────────────────────────────────────────────
-// ── Agent mesh status display ─────────────────────────────────
-const MESH_COLOR = { running: "#C48808", done: "#15803D", error: "#B42318", idle: "#D6C9B2" };
-
-// Calm agent presence: one dot summarizing the swarm; details on click.
-function AgentMesh({ mesh, collapsed }) {
-  const [expanded, setExpanded] = useState(false);
-  if (!mesh || !mesh.length) return null;
-
-  const running  = mesh.filter(a => a.status === "running").length;
-  const hasError = mesh.some(a => a.status === "error");
-  const aggColor = hasError ? MESH_COLOR.error : running ? MESH_COLOR.running : MESH_COLOR.idle;
-  const pulsing  = running > 0;
-
-  const Dot = ({ size = 7, color = aggColor, pulse = pulsing }) => (
-    <span style={{
-      width: size, height: size, borderRadius: "50%", flexShrink: 0, display: "inline-block",
-      background: color,
-      boxShadow: pulse ? `0 0 5px ${color}88` : "none",
-      animation: pulse ? "meshPulse 1.1s ease-in-out infinite" : "none",
-    }} />
-  );
-
-  if (collapsed) {
-    const title = hasError ? "Agent error" : running ? `${running} agent${running > 1 ? "s" : ""} working` : "Agents idle";
-    return (
-      <div title={title} style={{ display: "flex", justifyContent: "center", padding: "10px 0 6px", borderTop: `1px solid ${T.border}` }}>
-        <Dot />
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ borderTop: `1px solid ${T.border}`, padding: "7px 8px 5px" }}>
-      <button
-        onClick={() => setExpanded(e => !e)}
-        className="nav-btn"
-        style={{
-          display: "flex", alignItems: "center", gap: 8, width: "100%",
-          padding: "5px 6px", border: "none", borderRadius: 6,
-          background: "transparent", cursor: "pointer", fontFamily: "inherit",
-        }}
-      >
-        <Dot />
-        <span style={{ fontSize: 11, color: T.muted, flex: 1, textAlign: "left" }}>
-          {hasError ? "Attention needed" : running ? `${running} working` : "Agents idle"}
-        </span>
-        <span style={{ fontSize: 8, color: T.muted, transform: expanded ? "rotate(180deg)" : "none", transition: "transform .15s" }}>▾</span>
-      </button>
-
-      {expanded && mesh.slice(0, 5).map((a, i) => {
-        const col   = MESH_COLOR[a.status] || MESH_COLOR.idle;
-        const label = a.agent.replace(/_/g, " ");
-        const age   = a.age_s < 60 ? `${Math.round(a.age_s)}s` : `${Math.floor(a.age_s / 60)}m`;
-        return (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, padding: "3px 6px 2px 8px" }}>
-            <Dot size={6} color={col} pulse={a.status === "running"} />
-            <span style={{ fontSize: 10.5, color: T.muted, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textTransform: "capitalize" }}>
-              {label}
-            </span>
-            <span style={{ fontSize: 9, color: T.muted, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{age}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function Sidebar({ activeTab, onNav, collapsed, onToggle, apiStatus, coherence, totalQueries, agentMesh,
-                   lastTabBySurface, mode, onModal, onAction, onToggleMode }) {
-  const online  = apiStatus === "online";
-  const surface = surfaceOf(activeTab);
-  const navItems = mode === "simple" ? NAV.filter(item => !item.adv) : NAV;
-
-  // Clicking a surface reopens the sub-tab you last used there (falling back to
-  // its first visible sub-tab), so each view remembers where you left off.
-  const handleNav = (surfaceId) => {
-    const last = lastTabBySurface[surfaceId];
-    const tabs = TABS_BY_SURFACE[surfaceId] || [];
-    const lastHidden = mode === "simple" && tabs.find(t => t.id === last)?.adv;
-    onNav((last && !lastHidden) ? last : firstVisibleTab(surfaceId, mode));
-  };
-
-  return (
-    <aside style={{
-      width: collapsed ? 52 : 168,
-      minWidth: collapsed ? 52 : 168,
-      height: "100%",
-      background: T.surface,
-      borderRight: `1px solid ${T.border}`,
-      display: "flex",
-      flexDirection: "column",
-      transition: "width 0.2s ease, min-width 0.2s ease",
-      overflow: "hidden",
-      flexShrink: 0,
-      userSelect: "none",
-    }}>
-
-      {/* ── Brand (rehomed from the removed top bar; click → Introduction) ── */}
-      <button
-        onClick={() => onNav("home")}
-        title="Introduction"
-        className="nav-btn"
-        style={{
-          display: "flex", alignItems: "center", gap: 8, width: "100%",
-          padding: collapsed ? "13px 0" : "14px 14px",
-          justifyContent: collapsed ? "center" : "flex-start",
-          background: "transparent", border: "none",
-          borderBottom: `1px solid ${T.border}`,
-          cursor: "pointer", flexShrink: 0, outline: "none",
-          fontFamily: "inherit",
-        }}
-      >
-        {!collapsed && (
-          <span style={{
-            fontSize: 17, fontWeight: 600, letterSpacing: "0.12em",
-            fontFamily: FONT_DISPLAY, whiteSpace: "nowrap", ...LUX.goldText,
-          }}>
-            AMAGRA
-          </span>
-        )}
-      </button>
-
-      {/* ── 6 primary surfaces ── */}
-      <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "8px 6px" }}>
-        {navItems.map((item) => {
-          const isActive = surface === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleNav(item.id)}
-              title={item.desc}
-              style={{
-                display: "flex", alignItems: "center",
-                gap: 10, width: "100%",
-                padding: collapsed ? "11px 0" : "10px 10px",
-                justifyContent: collapsed ? "center" : "flex-start",
-                border: "none",
-                background: isActive ? LUX.goldTint : "transparent",
-                color: isActive ? T.text : T.muted,
-                cursor: "pointer", fontFamily: "inherit",
-                fontSize: 13, fontWeight: isActive ? 700 : 500,
-                marginBottom: 3,
-                transition: "background 0.1s, color 0.1s",
-                outline: "none",
-                borderRadius: 4,
-                position: "relative",
-              }}
-              className="nav-btn"
-            >
-              {isActive && (
-                <span style={{
-                  position: "absolute", left: 0, top: "20%", bottom: "20%",
-                  width: 2, background: T.accent, borderRadius: 1,
-                }} />
-              )}
-              <span style={{
-                fontSize: 14, flexShrink: 0, lineHeight: 1,
-                fontFamily: "monospace",
-                color: isActive ? T.accent : T.muted,
-              }}>{item.sym}</span>
-              {!collapsed && (
-                <span style={{
-                  whiteSpace: "nowrap", overflow: "hidden",
-                  textOverflow: "ellipsis", flex: 1, textAlign: "left",
-                }}>
-                  {item.label}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* ── Agent mesh ── */}
-      <AgentMesh mesh={agentMesh} collapsed={collapsed} />
-
-      {/* ── Footer ── */}
-      <div style={{
-        flexShrink: 0, borderTop: `1px solid ${T.border}`,
-        padding: collapsed ? "10px 0" : "10px 12px",
-      }}>
-        {!collapsed && (
-          <div style={{ marginBottom: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-              <span style={{
-                width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
-                background: online ? T.success : T.error,
-                boxShadow: online ? `0 0 6px ${T.success}88` : "none",
-              }} />
-              <span style={{ fontSize: 11, color: online ? T.success : T.error, fontWeight: 600 }}>
-                {online ? "Connected" : apiStatus === "checking" ? "Connecting…" : "Offline"}
-              </span>
-              {totalQueries > 0 && (
-                <span style={{ marginLeft: "auto", fontSize: 10, color: T.muted }}>
-                  {totalQueries}
-                </span>
-              )}
-            </div>
-            {coherence && online && (
-              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <span style={{ fontSize: 10, color: T.muted, letterSpacing: "0.02em" }}>C(t)</span>
-                <span style={{
-                  fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums",
-                  color: coherence.C >= 0.82 ? T.success : coherence.C >= 0.70 ? T.warn : T.error,
-                }}>
-                  {coherence.C?.toFixed(3)}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Global actions (rehomed from the removed top bar) ── */}
-        <SidebarActions
-          collapsed={collapsed}
-          mode={mode}
-          onModal={onModal}
-          onAction={onAction}
-          onToggleMode={onToggleMode}
-        />
-
-        <button
-          onClick={onToggle}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "center",
-            width: "100%", padding: "6px 0", marginTop: 8,
-            background: "transparent", border: `1px solid ${T.border}`,
-            borderRadius: 3, cursor: "pointer", color: T.muted,
-            fontSize: 11, fontFamily: "inherit",
-            transition: "background 0.1s, color 0.1s",
-          }}
-          className="nav-btn"
-        >
-          {collapsed ? "›" : "‹"}
-        </button>
-      </div>
-    </aside>
-  );
-}
-
-// ── Sidebar global actions ─────────────────────────────────────
-// The genuinely-unique items from the removed top MenuBar: quick Settings &
-// Shortcuts modals, the Simple/Advanced toggle, and a "More" popover for the
-// low-frequency long tail (About, Export, Clear Log, Docs viewers).
-const DOC_ITEMS = [
-  ["doc:querysignal", "QuerySignal"],
-  ["doc:methodology", "Methodology"],
-  ["doc:coherence",   "Coherence"],
-  ["doc:memory",      "Memory"],
-  ["doc:reflection",  "Reflection"],
-];
-
-function SidebarActions({ collapsed, mode, onModal, onAction, onToggleMode }) {
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [pos, setPos] = useState({ left: 0, bottom: 0 });
-  const moreRef = useRef(null);
-
-  // One-time "Advanced is one click away" nudge (rendered under the toggle).
-  const [showAdvHint, setShowAdvHint] = useState(() => {
-    try { return localStorage.getItem("adv_hint_seen_v1") !== "1"; } catch { return true; }
-  });
-  const dismissAdvHint = () => {
-    setShowAdvHint(false);
-    try { localStorage.setItem("adv_hint_seen_v1", "1"); } catch {}
-  };
-
-  useEffect(() => {
-    if (!moreOpen) return;
-    const close = (e) => { if (moreRef.current && !moreRef.current.contains(e.target)) setMoreOpen(false); };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [moreOpen]);
-
-  const openMore = () => {
-    const r = moreRef.current?.getBoundingClientRect();
-    if (r) setPos({ left: r.left, bottom: window.innerHeight - r.top + 6 });
-    setMoreOpen(o => !o);
-  };
-
-  const iconBtn = {
-    display: "flex", alignItems: "center", justifyContent: "center",
-    flex: 1, padding: "6px 0", background: "transparent",
-    border: `1px solid ${T.border}`, borderRadius: 6, cursor: "pointer",
-    color: T.muted, fontSize: 13, fontFamily: "inherit",
-    transition: "background 0.1s, color 0.1s",
-  };
-
-  return (
-    <div style={{ marginBottom: 8 }}>
-      <div style={{
-        display: "flex", flexDirection: collapsed ? "column" : "row", gap: 5,
-      }}>
-        <button className="nav-btn" style={iconBtn} title="Settings  (Ctrl+,)"
-          onClick={() => onModal("settings")}>⚙</button>
-        <button className="nav-btn" style={iconBtn} title="Keyboard shortcuts  (Ctrl+/)"
-          onClick={() => onModal("shortcuts")}>⌨</button>
-        <button ref={moreRef} className="nav-btn" style={iconBtn} title="More"
-          onClick={openMore}>⋯</button>
-      </div>
-
-      {/* Simple / Advanced toggle */}
-      <button
-        onClick={onToggleMode}
-        title={mode === "simple"
-          ? "Simple mode — showing the essentials. Click for all tools."
-          : "Advanced mode — all tools shown. Click to simplify."}
-        className="nav-btn"
-        style={{
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-          width: "100%", marginTop: 5, padding: "5px 0",
-          background: "transparent", border: `1px solid ${T.border}`,
-          borderRadius: 99, cursor: "pointer", fontFamily: "inherit",
-          fontSize: 10.5, fontWeight: 600, color: T.accent2,
-          transition: "background 0.1s",
-        }}
-      >
-        <span style={{
-          width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
-          background: mode === "simple" ? T.success : T.accent,
-        }} />
-        {!collapsed && (mode === "simple" ? "Simple" : "Advanced")}
-      </button>
-
-      {/* One-time nudge: the full toolset lives behind the toggle above. Shown
-          once in Simple mode so calm-by-default never reads as "tools missing". */}
-      {!collapsed && mode === "simple" && showAdvHint && (
-        <div style={{
-          marginTop: 6, padding: "7px 9px", display: "flex", alignItems: "flex-start", gap: 6,
-          background: LUX.goldTint, border: `1px solid ${GOLD.g2}33`, borderRadius: 8,
-        }}>
-          <span style={{ ...TYPE.micro, color: T.mutedLt, lineHeight: 1.4, flex: 1 }}>
-            Every tool is one click away — switch to <strong style={{ color: T.accent2 }}>Advanced</strong> above.
-          </span>
-          <button onClick={dismissAdvHint} title="Got it" className="nav-btn" style={{
-            ...TYPE.micro, background: "transparent", border: "none", color: T.muted,
-            cursor: "pointer", padding: 0, lineHeight: 1, fontFamily: "inherit",
-          }}>✕</button>
-        </div>
-      )}
-
-      {moreOpen && (
-        <div style={{
-          position: "fixed", left: pos.left, bottom: pos.bottom, zIndex: 9999,
-          minWidth: 188, background: "#FCFAF7", border: `1px solid ${T.border}`,
-          borderRadius: 10, boxShadow: LUX.shadowMd, padding: "5px 0",
-        }}>
-          {[
-            ["About AMAGRA",      () => onModal("about")],
-            ["Export Memory…",    () => onAction("exportCsv")],
-            ["Clear Session Log", () => onAction("clearLog")],
-          ].map(([label, fn]) => (
-            <button key={label} className="nav-btn"
-              onClick={() => { fn(); setMoreOpen(false); }}
-              style={moreItemStyle}>{label}</button>
-          ))}
-          <div style={{ height: 1, background: T.border, margin: "5px 10px" }} />
-          <div style={{
-            fontSize: 9, fontWeight: 700, color: T.muted, letterSpacing: "0.12em",
-            textTransform: "uppercase", padding: "2px 14px 4px", userSelect: "none",
-          }}>Docs</div>
-          {DOC_ITEMS.map(([action, label]) => (
-            <button key={action} className="nav-btn"
-              onClick={() => { onAction(action); setMoreOpen(false); }}
-              style={moreItemStyle}>{label}</button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-const moreItemStyle = {
-  display: "block", width: "100%", textAlign: "left",
-  padding: "6px 14px", border: "none", background: "transparent",
-  cursor: "pointer", fontFamily: "inherit", fontSize: 12, color: T.mutedLt,
-};
-
-// ── Sub-navigation (any multi-tab surface) ────────────────────
-// Calm selector: surface name + current view + one dropdown + the surface's
-// one-line description, instead of a strip of always-visible tabs.
-function SubNav({ surface, desc, tabs, activeTab, onNav }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, []);
-
-  const current = tabs.find(t => t.id === activeTab);
-
-  // Group tabs into depth levels (Core / Advanced / Developer); ungrouped
-  // tab sets (Settings) render as a single unlabeled column.
-  const groups = [];
-  tabs.forEach(t => {
-    const name = t.group || "";
-    let g = groups.find(x => x.name === name);
-    if (!g) { g = { name, items: [] }; groups.push(g); }
-    g.items.push(t);
-  });
-
-  return (
-    <div style={{
-      flexShrink: 0,
-      display: "flex", alignItems: "center", gap: 10,
-      padding: "9px 28px",
-      borderBottom: `1px solid ${T.border}`,
-      background: T.surface,
-    }}>
-      <span style={{
-        fontSize: 10, fontWeight: 700, letterSpacing: "0.14em",
-        textTransform: "uppercase", color: T.muted, userSelect: "none",
-      }}>
-        {surface}
-      </span>
-      <span style={{ color: T.border, userSelect: "none" }}>/</span>
-
-      <div ref={ref} style={{ position: "relative" }}>
-        <button
-          onClick={() => setOpen(o => !o)}
-          className="nav-btn"
-          style={{
-            display: "flex", alignItems: "center", gap: 7,
-            padding: "4px 10px", border: `1px solid transparent`,
-            borderRadius: 7, background: open ? LUX.hover : "transparent",
-            cursor: "pointer", fontFamily: "inherit",
-            fontSize: 12.5, fontWeight: 600, color: T.text,
-          }}
-        >
-          {current?.label || "—"}
-          <span style={{ fontSize: 9, color: T.muted, transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }}>▾</span>
-        </button>
-
-        {open && (
-          <div style={{
-            position: "absolute", top: "calc(100% + 6px)", left: 0,
-            background: "#FCFAF7", border: `1px solid ${T.border}`,
-            borderRadius: 10, boxShadow: LUX.shadowMd,
-            padding: "10px 8px", zIndex: 5000,
-            display: "flex", gap: 4,
-          }}>
-            {groups.map((g, gi) => (
-              <div key={g.name || gi} style={{
-                minWidth: 132,
-                borderLeft: gi ? `1px solid ${T.border}66` : "none",
-                paddingLeft: gi ? 10 : 2, paddingRight: 2,
-              }}>
-                {g.name && (
-                  <div style={{
-                    fontSize: 9, fontWeight: 700, color: T.muted,
-                    letterSpacing: "0.12em", textTransform: "uppercase",
-                    padding: "2px 12px 6px", userSelect: "none",
-                  }}>
-                    {g.name}
-                  </div>
-                )}
-                {g.items.map(tab => {
-                  const active = tab.id === activeTab;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => { onNav(tab.id); setOpen(false); }}
-                      className="nav-btn"
-                      style={{
-                        display: "block", width: "100%",
-                        textAlign: "left", padding: "5px 12px",
-                        border: "none", borderRadius: 6, cursor: "pointer",
-                        background: active ? T.surface2 : "transparent",
-                        color: active ? T.text : T.mutedLt,
-                        fontFamily: "inherit", fontSize: 12,
-                        fontWeight: active ? 700 : 500,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {desc && (
-        <span style={{
-          marginLeft: "auto", fontSize: 11, color: T.muted,
-          fontStyle: "italic", userSelect: "none", whiteSpace: "nowrap",
-          overflow: "hidden", textOverflow: "ellipsis",
-        }}>
-          {desc}
-        </span>
-      )}
-    </div>
-  );
-}
 
 
 
 // ── Root ──────────────────────────────────────────────────────
 export default function App() {
   const [activeTab,    setActiveTab]    = useState("chat");
+  const [launcherOpen, setLauncherOpen] = useState(false);   // the unified ☰ app-grid menu
   const [researchDoc,  setResearchDoc]  = useState(null);
   const [apiStatus,    setApiStatus]    = useState("checking");
   const [activityPct,  setActivityPct]  = useState(0);
@@ -624,6 +127,7 @@ export default function App() {
     const s = SURFACE_BY_TAB[next];
     if (s) setLastTabBySurface(prev => (prev[s] === next ? prev : { ...prev, [s]: next }));
     setActiveTab(next);
+    setLauncherOpen(false);   // navigating always dismisses the menu
   }, []);
 
   const handleInspect = useCallback((ctxId) => {
@@ -631,11 +135,7 @@ export default function App() {
     navTo("inspector");
   }, [navTo]);
   const [coherence,    setCoherence]    = useState(null);
-  const [collapsed,    setCollapsed]    = useState(() => {
-    try { return localStorage.getItem("sb_col") === "1"; } catch { return false; }
-  });
   const [activeModal,  setActiveModal]  = useState(null);
-  const [agentMesh,    setAgentMesh]    = useState([]);
 
   useEffect(() => {
     try {
@@ -671,18 +171,6 @@ export default function App() {
     return () => clearInterval(id);
   }, [checkHealth]);
 
-  useEffect(() => {
-    if (apiStatus !== "online") return;
-    const fn = () => {
-      fetch(`${API}/agents/status`)
-        .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d?.agents) setAgentMesh(d.agents); })
-        .catch(() => {});
-    };
-    fn();
-    const id = setInterval(fn, 4000);
-    return () => clearInterval(id);
-  }, [apiStatus]);
 
   const fetchCoherence = useCallback(() => {
     if (apiStatus !== "online") return;
@@ -703,17 +191,10 @@ export default function App() {
     setSessionLog(prev => [...prev.slice(-49), { ts, msg, color }]);
   };
 
-  const toggleCollapsed = useCallback(() => {
-    setCollapsed(c => {
-      const next = !c;
-      try { localStorage.setItem("sb_col", next ? "1" : "0"); } catch {}
-      return next;
-    });
-  }, []);
 
   const handleMenuAction = (action) => {
     if (action === "clearLog") setSessionLog([]);
-    else if (action === "toggleSidebar") toggleCollapsed();
+    else if (action === "toggleSidebar") setLauncherOpen(o => !o);
     else if (action === "toggleMode") toggleMode();
     else if (action === "exportCsv") window.open(`${API}/memory/export.csv`, "_blank");
     else if (action.startsWith("doc:")) { setResearchDoc(action.slice(4)); navTo("research"); }
@@ -767,7 +248,7 @@ export default function App() {
             case "7": e.preventDefault(); navTo("guide"); break;
             case ",": e.preventDefault(); setActiveModal("settings");  break;
             case "/": e.preventDefault(); setActiveModal("shortcuts"); break;
-            case "b": case "B": e.preventDefault(); toggleCollapsed(); break;
+            case "b": case "B": e.preventDefault(); setLauncherOpen(o => !o); break;
             case "k": case "K":
               e.preventDefault();
               navTo("chat");
@@ -780,7 +261,7 @@ export default function App() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [mode, navTo, toggleCollapsed]);
+  }, [mode, navTo]);
 
   const MODAL_CONTENT = {
     settings: <SettingsModal settings={settings} onUpdate={updateSetting} coherence={coherence} apiStatus={apiStatus} mode={mode} onSetMode={setModePersisted} />,
@@ -944,25 +425,21 @@ export default function App() {
         />
       )}
 
-      {/* ── Body row (top menu bar removed in v1.4.1; nav lives in the sidebar) ── */}
+      {/* ── Body (v1.6.3: sidebar + sub-nav + brand collapsed into one ☰ menu → AppLauncher) ── */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        <Sidebar
-          activeTab={activeTab}
-          onNav={navTo}
-          collapsed={collapsed}
-          onToggle={toggleCollapsed}
-          apiStatus={apiStatus}
-          coherence={coherence}
-          totalQueries={totalQueries}
-          agentMesh={agentMesh}
-          lastTabBySurface={lastTabBySurface}
-          mode={mode}
-          onModal={setActiveModal}
-          onAction={handleMenuAction}
-          onToggleMode={toggleMode}
-        />
+        <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
+          {/* The only chrome: a single floating luxurious gold ☰ (top-left, over the content).
+              No bar, no labels, no sub-nav — everything lives in the AppLauncher it opens. */}
+          <button onClick={() => setLauncherOpen(true)} aria-label="Open menu" title="Menu  (Ctrl+B)"
+            className="btn-gold menu-fab"
+            style={{ position: "absolute", top: 13, left: 15, zIndex: 50,
+              width: 44, height: 44, borderRadius: 14, padding: 0 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FBF6E8"
+              strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+              <line x1="3.5" y1="7" x2="20.5" y2="7" /><line x1="3.5" y1="12" x2="20.5" y2="12" /><line x1="3.5" y1="17" x2="20.5" y2="17" />
+            </svg>
+          </button>
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
           {/* Progress bar */}
           <div style={{ height: 2, flexShrink: 0, background: T.border, position: "relative" }}>
             <div style={{
@@ -972,16 +449,6 @@ export default function App() {
               transition: "width 0.3s ease",
             }} />
           </div>
-
-          {/* Calm sub-nav for any surface with more than one (visible) sub-tab */}
-          {(() => {
-            const s = surfaceOf(activeTab);
-            const surf = NAV.find(n => n.id === s);
-            if (!surf) return null;
-            const tabs = (TABS_BY_SURFACE[s] || []).filter(t => mode !== "simple" || !t.adv);
-            if (tabs.length <= 1) return null;
-            return <SubNav surface={surf.label} desc={surf.desc} tabs={tabs} activeTab={activeTab} onNav={navTo} />;
-          })()}
 
           {apiStatus !== "online" && (
             <div style={{ padding: "16px 28px 0", flexShrink: 0 }}>
@@ -1044,6 +511,19 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* ── Unified app-grid launcher (the ☰ menu) ── */}
+      <AppLauncher
+        open={launcherOpen}
+        onClose={() => setLauncherOpen(false)}
+        activeTab={activeTab}
+        onNav={navTo}
+        mode={mode}
+        onToggleMode={toggleMode}
+        apiStatus={apiStatus}
+        coherence={coherence}
+        onModal={setActiveModal}
+      />
 
       {/* ── Modal overlay ── */}
       {activeModal && MODAL_CONTENT[activeModal] && (

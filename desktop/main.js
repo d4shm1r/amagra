@@ -1,0 +1,132 @@
+// AMAGRA desktop shell (Electron).
+//
+// Mirrors the AppImage contract (packaging/AppRun): the FastAPI server serves BOTH
+// the API and the built UI on one port, so this shell only has to:
+//   1. Start the backend (a frozen sidecar in production, the dev venv otherwise) —
+//      unless a healthy server is already listening (e.g. `ai-start` is running).
+//   2. Wait for /health, then open a native window pointed at it.
+//   3. Tear down anything we started on quit.
+//
+// Env overrides: AMAGRA_PORT, AMAGRA_NO_OLLAMA=1.
+
+const { app, BrowserWindow, shell } = require("electron");
+const { spawn } = require("child_process");
+const http = require("http");
+const path = require("path");
+const fs = require("fs");
+
+const PORT = parseInt(process.env.AMAGRA_PORT || "8000", 10);
+// Use `localhost` (not 127.0.0.1) so the window origin matches the UI's default
+// API base (ui/src/api.js → http://localhost:8000) and stays same-origin: no CORS.
+const BASE = `http://localhost:${PORT}`;
+const REPO_ROOT = path.join(__dirname, "..");
+
+let backend = null; // child we spawned (null if we reused an existing server)
+let ollama = null;
+let win = null;
+
+// ── backend resolution ────────────────────────────────────────
+// Production: a PyInstaller binary bundled next to the app (extraResources).
+// Dev: the project venv running uvicorn against the repo checkout.
+function backendCommand() {
+  const frozen = path.join(process.resourcesPath || "", "backend", "amagra-server");
+  if (fs.existsSync(frozen)) {
+    return { cmd: frozen, args: ["--host", "127.0.0.1", "--port", String(PORT)], cwd: path.dirname(frozen) };
+  }
+  const venvPy = path.join(process.env.HOME || "", ".venvs", "langgraph-env", "bin", "python");
+  const py = fs.existsSync(venvPy) ? venvPy : "python3";
+  return {
+    cmd: py,
+    args: ["-m", "uvicorn", "api:app", "--host", "127.0.0.1", "--port", String(PORT)],
+    cwd: REPO_ROOT,
+  };
+}
+
+function healthy() {
+  return new Promise((resolve) => {
+    const req = http.get(`${BASE}/health`, (res) => {
+      res.resume();
+      resolve(res.statusCode === 200);
+    });
+    req.on("error", () => resolve(false));
+    req.setTimeout(1000, () => { req.destroy(); resolve(false); });
+  });
+}
+
+async function waitForHealth(timeoutMs = 60000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await healthy()) return true;
+    if (backend && backend.exitCode !== null) return false; // died on boot
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  return false;
+}
+
+function startOllama() {
+  if (process.env.AMAGRA_NO_OLLAMA === "1") return;
+  // Best-effort: if `ollama` is on PATH, make sure a server is up. Harmless if
+  // one is already running (it will just exit).
+  try {
+    ollama = spawn("ollama", ["serve"], { stdio: "ignore", detached: false });
+    ollama.on("error", () => { ollama = null; }); // not installed — fine
+  } catch { ollama = null; }
+}
+
+async function startBackend() {
+  if (await healthy()) return true; // reuse a server that's already up (e.g. ai-start)
+  const { cmd, args, cwd } = backendCommand();
+  backend = spawn(cmd, args, { cwd, stdio: "ignore", env: { ...process.env } });
+  backend.on("error", (e) => console.error("backend spawn failed:", e.message));
+  return waitForHealth();
+}
+
+function createWindow() {
+  win = new BrowserWindow({
+    width: 1280,
+    height: 860,
+    minWidth: 960,
+    minHeight: 640,
+    title: "AMAGRA",
+    backgroundColor: "#F0E9DF", // cream — no white flash on load (see DESIGN_PRINCIPLES.md)
+    icon: path.join(REPO_ROOT, "ui", "public", "logo512.png"),
+    autoHideMenuBar: true,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      preload: path.join(__dirname, "preload.js"),
+    },
+  });
+  // Keep the window titled AMAGRA — don't let the page's <title> override it.
+  win.on("page-title-updated", (e) => e.preventDefault());
+  // Open external links in the real browser, not inside the app shell.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: "deny" };
+  });
+  win.loadURL(BASE);
+  win.on("closed", () => { win = null; });
+}
+
+app.whenReady().then(async () => {
+  startOllama();
+  const ok = await startBackend();
+  if (!ok) {
+    const { dialog } = require("electron");
+    dialog.showErrorBox("AMAGRA", `Backend did not become healthy on ${BASE}.\nCheck logs / that the venv exists.`);
+    app.quit();
+    return;
+  }
+  createWindow();
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+function shutdown() {
+  if (backend && backend.exitCode === null) backend.kill();
+  if (ollama && ollama.exitCode === null) ollama.kill(); // leave pre-existing ollama alone (spawn no-ops if already up)
+}
+app.on("window-all-closed", () => { shutdown(); if (process.platform !== "darwin") app.quit(); });
+app.on("before-quit", shutdown);
+process.on("exit", shutdown);

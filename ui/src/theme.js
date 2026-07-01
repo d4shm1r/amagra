@@ -11,16 +11,21 @@ export const T = {
   surface2: "#F4F0E8",   // inset wells/chips (landing --l1)
   border:   "#E0D6C4",   // hairlines on cream
   // Brand
-  accent:   "#C48808",   // gold core   (landing --g3)
+  accent:   "#C48808",   // gold core   (landing --g3) — fills, dots, borders, icons
   accent2:  "#9A6C00",   // deep gold   (landing --g4) — hovers, links
+  accentText: "#8A5A00", // readable gold for TEXT on cream (~5:1 AA). The bright
+                         // accent is only 2.5:1 as text — use this when gold is
+                         // a label/title/link, not a fill.
   // Semantic (deepened for light canvas)
   success:  "#15803D",
   warn:     "#A16207",
   error:    "#B42318",
-  // Text (warm umber ramp)
-  text:     "#2E2010",   // landing --t1
-  muted:    "#9A7A60",   // landing --t3
-  mutedLt:  "#5C4030",   // landing --t2
+  // Text (warm umber ramp) — all three tiers now clear WCAG AA (4.5:1) on the
+  // cream surfaces. `muted` was #9A7A60 (3.3:1, below the floor); deepened to
+  // #806044 (~4.7:1) so secondary text stays recessive but is actually legible.
+  text:     "#2E2010",   // landing --t1   — primary  (AAA)
+  muted:    "#806044",   // tertiary / metadata        (AA)
+  mutedLt:  "#5C4030",   // landing --t2   — secondary (AAA)
 };
 
 // Gold ramp for gradients / wordmark

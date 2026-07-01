@@ -185,7 +185,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
                 width: 26, height: 26, flexShrink: 0, borderRadius: 7,
                 background: LUX.goldTint, border: `1px solid ${GOLD.g2}44`,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 13, color: T.accent, fontFamily: "monospace", lineHeight: 1,
+                fontSize: 13, color: T.accentText, fontFamily: "monospace", lineHeight: 1,
               }}>{n.sym}</span>
               <span style={{ ...TYPE.small, fontWeight: 600, color: T.text }}>{n.label}</span>
             </button>
@@ -259,13 +259,13 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
                         borderRadius: "50%", background: LUX.goldTint,
                         border: `1px solid ${GOLD.g2}55`,
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        ...TYPE.micro, fontWeight: 800, color: T.accent,
+                        ...TYPE.micro, fontWeight: 800, color: T.accentText,
                         fontVariantNumeric: "tabular-nums", letterSpacing: "0.04em",
                         boxShadow: "inset 0 1px 1px rgba(255,255,255,0.7)",
                       }}>{s.step}</div>
                       <div>
                         <div style={{
-                          ...TYPE.caption, fontWeight: 700, color: T.accent,
+                          ...TYPE.caption, fontWeight: 700, color: T.accentText,
                           marginBottom: 5, letterSpacing: "-0.01em",
                         }}>{s.title}</div>
                         <div style={{ ...TYPE.caption, color: T.mutedLt, lineHeight: 1.6 }}>{s.body}</div>
@@ -340,7 +340,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
         <span style={{ color: T.border }}>·</span>
         <span
           onClick={() => onNav("releases")}
-          style={{ ...TYPE.micro, fontWeight: 400, color: T.accent, cursor: "pointer", textDecoration: "underline" }}
+          style={{ ...TYPE.micro, fontWeight: 400, color: T.accentText, cursor: "pointer", textDecoration: "underline" }}
         >
           Full version history →
         </span>
@@ -374,7 +374,7 @@ function Section({ title, children }) {
   return (
     <div style={{ marginBottom: 36 }}>
       <div style={{
-        ...TYPE.eyebrow, letterSpacing: "0.16em", color: T.accent,
+        ...TYPE.eyebrow, letterSpacing: "0.16em", color: T.accentText,
         marginBottom: 14, display: "flex", alignItems: "center", gap: 12,
       }}>
         <span>{title}</span>
@@ -417,11 +417,11 @@ function FeatureCard({ sym, title, body, pills }) {
           width: 34, height: 34, flexShrink: 0, borderRadius: 8,
           background: LUX.goldTint, border: `1px solid ${GOLD.g2}55`,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 15, fontFamily: "monospace", color: T.accent, lineHeight: 1,
+          fontSize: 15, fontFamily: "monospace", color: T.accentText, lineHeight: 1,
           boxShadow: "inset 0 1px 1px rgba(255,255,255,0.7)",
         }}>{sym}</div>
         <div style={{
-          ...TYPE.body, fontWeight: 700, color: T.accent,
+          ...TYPE.body, fontWeight: 700, color: T.accentText,
           lineHeight: 1.2, letterSpacing: "-0.02em",
         }}>{title}</div>
       </div>
