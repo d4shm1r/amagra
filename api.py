@@ -54,7 +54,9 @@ _minute_window: dict[int, tuple[int, float]] = {}
 _ALLOWED_ORIGINS: list[str] = [
     o.strip()
     for o in os.environ.get(
-        "ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000"
+        "ALLOWED_ORIGINS",
+        "http://localhost:3000,http://localhost:8000,"
+        "http://127.0.0.1:3000,http://127.0.0.1:8000",
     ).split(",")
     if o.strip()
 ]

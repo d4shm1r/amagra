@@ -36,6 +36,36 @@ code, pre, .mono {
 ::-webkit-scrollbar-thumb  { background: #D6C9B2; border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: #C0B098; }
 
+/* ── Keyboard focus ring ─────────────────────────────────────
+   Many interactive elements set `outline: none` inline for the calm look,
+   which left keyboard users with no visible focus at all. Restore a single,
+   on-brand gold ring that appears ONLY for keyboard navigation (:focus-visible
+   never fires on mouse click), so the mouse experience stays untouched while
+   tabbing through the app is legible. !important is required to beat the inline
+   `outline: none` (same pattern as .nav-btn:hover below). */
+:focus-visible {
+  outline: 2px solid #C48808 !important;   /* T.accent — gold core */
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* Inputs carry their own border treatment; keep the ring snug against them. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible { outline-offset: 1px; }
+
+/* ── Reduced motion ──────────────────────────────────────────
+   The app leans on pulses, fades, and lifts. Honor the OS-level
+   "reduce motion" preference by collapsing animations/transitions for
+   users who ask for it (vestibular safety), without disabling state changes. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ── Luxe cards — landing.html card system applied to the dashboard ──
    Warm neumorphic depth (soft shadow bottom-right, paper highlight
    top-left), a top gloss baked into the background gradient so card
