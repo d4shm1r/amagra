@@ -227,4 +227,4 @@ After any eval run, weights drop below 1.0 for all agents — this is an artifac
 ---
 
 *Update this file when a new failure mode is confirmed or a new invariant is established.*  
-*See also: `docs/ISSUES.md` for active bugs and open problems.*
+*See also: `docs/records/ISSUES.md` for active bugs and open problems.*

@@ -21,6 +21,11 @@ cd ~/agentic-ai && uvicorn api:app --host 0.0.0.0 --port 8000
 cd ~/agentic-ai/ui && npm start
 ```
 
+Want AMAGRA in your app menu as a native window? One-time setup:
+```bash
+bash desktop/install-desktop-entry.sh   # installs the launcher entry + icon for this checkout
+```
+
 ---
 
 ## The Mental Model
@@ -195,7 +200,7 @@ Intelligence dataset and causal analysis.
 
 1. Check the Signal Card — what domain and confidence?
 2. If `conf < 0.30`: query has no domain keywords → add some
-3. If `conf > 0.30` but wrong domain: keyword set may have a gap → report in `docs/ISSUES.md`
+3. If `conf > 0.30` but wrong domain: keyword set may have a gap → report in `docs/records/ISSUES.md`
 
 ### "Responses are getting slower"
 

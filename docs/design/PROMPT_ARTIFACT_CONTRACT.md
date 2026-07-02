@@ -18,7 +18,7 @@ Evidence, in the code that ships today:
 | Side | Where it lives | Durability | Identity |
 |------|----------------|-----------|----------|
 | **Response (R1)** | server: `Artifact` / `model_choices` store | persisted, queryable | first-class id |
-| **Prompt (P1)** | browser `localStorage` (`prompt_editor_v1`) + a **raw string field** inside each decision record ([`debug_prompt.py:165`](../routes/debug_prompt.py#L165)) | ephemeral / non-canonical | **none** |
+| **Prompt (P1)** | browser `localStorage` (`prompt_editor_v1`) + a **raw string field** inside each decision record ([`debug_prompt.py:165`](../../routes/debug_prompt.py#L165)) | ephemeral / non-canonical | **none** |
 
 The prompt is the *source code*; the response is the *compiled output*. Today the build
 artifact outlives the source. That inversion is the structural bug. Everything else
@@ -95,7 +95,7 @@ produced it:
 
 This is single-tenant local-first today, so the design-plane `Prompt` resource is backed
 by **files on disk**, via the FS jail that already ships
-([`tools/workspace.py`](../tools/workspace.py), [`routes/workspace.py`](../routes/workspace.py)).
+([`tools/workspace.py`](../../tools/workspace.py), [`routes/workspace.py`](../../routes/workspace.py)).
 
 Root: `$AMAGRA_WORKSPACE` (default `<project>/workspace`), created on demand, with a
 path-escape jail (`_safe_resolve`). Layout convention:
@@ -138,14 +138,14 @@ chokepoint so the security boundary is unchanged:
 Writes reuse the existing typed errors (`PathEscape → 403`, `NotFound → 404`,
 `TooLarge/NotText/WorkspaceError → 400`) and bounds (`DEFAULT_MAX_READ_BYTES`). Writing is
 a higher-trust capability than reading — gate it behind the same owner-action check as
-`/debug/prompt` (see [`routes/consensus.py:14`](../routes/consensus.py#L14)).
+`/debug/prompt` (see [`routes/consensus.py:14`](../../routes/consensus.py#L14)).
 
 ---
 
 ## The AST is a projection, not a rewrite
 
 The prompt analysis already exists and is good: `computeMetrics`, `detectDomain`,
-`structChecks` ([`PromptEditorTab.jsx:478`](../ui/src/PromptEditorTab.jsx#L478)). What's
+`structChecks` ([`PromptEditorTab.jsx:478`](../../ui/src/PromptEditorTab.jsx#L478)). What's
 missing is **stable node identity** so a finding can point at a span and a fix can edit
 one node.
 

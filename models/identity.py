@@ -25,7 +25,7 @@ plus a stable `fingerprint()` so the invariants above become regression tests
 (see tests/test_identity.py) instead of slogans, and `changed_paths()` so any
 identity drift is attributable to a specific subtree.
 
-See docs/IDENTITY.md for the architectural contract.
+See docs/design/IDENTITY.md for the architectural contract.
 """
 from __future__ import annotations
 

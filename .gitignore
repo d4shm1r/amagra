@@ -36,7 +36,7 @@ decision/logs/
 # Developer-only files — completed checklists and personal research artifacts
 PUBLISH_CHECKLIST.md
 research/
-docs/revenueGPT.md
+docs/ideas/revenueGPT.md
 docs/ideas/
 
 # Environment and secrets

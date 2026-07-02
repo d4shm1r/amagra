@@ -44,11 +44,11 @@ The CI workflow runs **ruff**, **pytest**, and a **Docker build** on every push 
 
 ```bash
 ruff check .
-PYTHONPATH=. python3 -m pytest tests/ -q
+PYTHONPATH=. python3 -m pytest tests/ -q   # or: make test [PYTHON=path/to/your/venv/python]
 ```
 
 - **Lint:** `ruff` is the source of truth (`ruff.toml`). `ruff check . --fix` autofixes most issues.
-- **Tests:** the suite is currently **624 passing**. New behavior needs a test; bug fixes should add a regression test.
+- **Tests:** the suite is currently **974 passing**. New behavior needs a test; bug fixes should add a regression test.
 - **Match the surrounding code** — naming, comment density, and idiom. Don't reformat unrelated lines.
 
 ---

@@ -15,7 +15,7 @@ router = APIRouter()
 @router.get("/identity")
 def identity_snapshot():
     """One serializable view of who the system is for and what it has learned,
-    split by mutation discipline (intrinsic vs learned). See docs/IDENTITY.md."""
+    split by mutation discipline (intrinsic vs learned). See docs/design/IDENTITY.md."""
     try:
         from models.identity import snapshot
         return snapshot()

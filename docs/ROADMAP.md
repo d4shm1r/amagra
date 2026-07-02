@@ -64,7 +64,7 @@ correspond to working code and are the raw material for the wedge above:
 - **Self-hosted install** — Docker image (`d4shm1r/amagra`), compose, one-file AppImage.
 
 Full version-by-version history lives in git tags (v1.0 → v1.6) and
-[`HISTORY.md`](HISTORY.md). It is preserved, just no longer the headline.
+[`HISTORY.md`](records/HISTORY.md). It is preserved, just no longer the headline.
 
 ---
 
@@ -90,7 +90,7 @@ Apps that survive defend with proprietary data + domain workflow, not horizontal
 
 ## Frozen until a stranger uses it
 
-Moved to [`_someday.md`](_someday.md): pricing tiers, revenue projections,
+Moved to [`_someday.md`](product/_someday.md): pricing tiers, revenue projections,
 marketplace, Agent SDK, Workspaces/RBAC, v1.7/v2.0 milestones, and further UI
 redesign passes. None of it is wrong — it is just premature at user #0. The deck
 shows even hyperscaler AI revenue is a rounding error against GDP; designing

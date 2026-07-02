@@ -3,7 +3,7 @@
 // Prompts used to live only in browser localStorage (`prompt_editor_v1`), so they
 // were neither first-class, versioned, nor portable. This module persists them as
 // real files under the workspace via the jailed /workspace/* write API (#68),
-// giving the layout from docs/PROMPT_ARTIFACT_CONTRACT.md:
+// giving the layout from docs/design/PROMPT_ARTIFACT_CONTRACT.md:
 //
 //   prompts/<slug>/
 //     prompt.json            { slug, title, head, current_version, updated }

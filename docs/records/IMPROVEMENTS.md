@@ -3,10 +3,10 @@
 > **Role in the metrics trilogy:** this is the ***why*** — the OCAC finding, the
 > signed-stability thesis, and a code sketch per change. The **execution-ready phased
 > checklist** derived from it is [`METRICS_ROADMAP.md`](METRICS_ROADMAP.md); the underlying
-> proved math is [`OCAC_STABILITY_BRIDGE.md`](OCAC_STABILITY_BRIDGE.md). Don't duplicate the
+> proved math is [`OCAC_STABILITY_BRIDGE.md`](../design/OCAC_STABILITY_BRIDGE.md). Don't duplicate the
 > phase checklist here — link to it.
 
-*Continues [`OCAC_STABILITY_BRIDGE.md`](OCAC_STABILITY_BRIDGE.md) §4–5. Anchored
+*Continues [`OCAC_STABILITY_BRIDGE.md`](../design/OCAC_STABILITY_BRIDGE.md) §4–5. Anchored
 on the **latest OCAC finding** (Lean `STATUS_AND_ROADMAP`, 2026‑06‑25): the canonical cubic
 tensor `cubicFDeriv = iteratedFDeriv ℝ 3 (T s)` and its proved scalar reduction
 `cubicFDeriv_diag_eq_cubicCoeff`, with the honest conclusion that scalarizing it to a stability
@@ -19,7 +19,7 @@ number is **not** canonical — it needs a marginal **direction** `v` and **cove
 
 The bridge already imported OCAC's *affine* results (contraction, resolvent, Lyapunov decay,
 curvature, invariant health, chain bound — all shipped in
-[`evaluation/math_metrics.py`](../evaluation/math_metrics.py)). The newest finding is **sharper and
+[`evaluation/math_metrics.py`](../../evaluation/math_metrics.py)). The newest finding is **sharper and
 not yet reflected**:
 
 > Stability is a **signed** quantity. The sign of the cubic/curvature term is what separates
@@ -33,7 +33,7 @@ work — and it traces to a proved theorem, not a heuristic.
 
 ## P1 — `max_abs_curvature` discards the load‑bearing sign ★ ship first
 
-[`math_metrics.py:462`](../evaluation/math_metrics.py#L462) computes the OCAC second difference
+[`math_metrics.py:462`](../../evaluation/math_metrics.py#L462) computes the OCAC second difference
 `Δ²` (`series_curvature`, correctly signed) and then **throws the sign away**:
 
 ```python
@@ -68,7 +68,7 @@ Keep `max_abs_curvature` for backward compat; route the dashboard alarm through 
 
 ## P2 — `drift_status`: a Lens of Stability, not a variance threshold
 
-[`decision/weights.py:382`](../decision/weights.py#L382) flags instability when **weight
+[`decision/weights.py:382`](../../decision/weights.py#L382) flags instability when **weight
 variance > 0.05** — a magnitude cutoff the bridge §1 already called out as "a static cutoff with
 no recovery guarantee." Variance is sign‑blind: a cluster of weights *converging* to a new stable
 configuration and a cluster *diverging* can show the same variance.
@@ -110,7 +110,7 @@ The finding's real content: scalarizing a vector‑valued cubic to a *signed* nu
 **direction + covector** = the right/left eigenvectors of the *neutral mode* (eigenvalue ≈ 1 of
 the Jacobian). Amagra's per‑agent weights are exactly such a vector, and current metrics collapse
 them with `σ²_w` (a norm — see `instability_index` /
-[`math_metrics.py:37`](../evaluation/math_metrics.py#L37)).
+[`math_metrics.py:37`](../../evaluation/math_metrics.py#L37)).
 
 The principled metric: find the agent‑weight direction nearest the contraction boundary (the
 agent with the smallest effective `α`, i.e. `K = 1−α` closest to 1 — the slowest‑contracting,
@@ -135,7 +135,7 @@ obligation of `stability_core` (direction `v` + covector `ℓ`, `OCAC/Dynamics.l
 ## P4 — Apply the cubic basin to the **nonlinear** quality update
 
 The bridge treats the *affine* weight update (global basin, trivially stable). But
-`quality_update` ([`math_metrics.py:133`](../evaluation/math_metrics.py#L133)) is genuinely
+`quality_update` ([`math_metrics.py:133`](../../evaluation/math_metrics.py#L133)) is genuinely
 **nonlinear** — a logistic log‑odds map `q ← σ(σ⁻¹(q) + γδ)`. The affine theory does **not**
 cover it; the *cubic* theory does. Its sigmoid has a nonzero third derivative whose **sign flips
 at q = 0.5** — precisely the regime where the latest finding bites. A streaming‑feedback fixed
@@ -151,7 +151,7 @@ OCAC result is the correct tool. *Traces to:* `lyap_strictDecrease_radius` (boun
 
 ## P5 — Close the two items the bridge left open
 
-From [`OCAC_STABILITY_BRIDGE.md`](OCAC_STABILITY_BRIDGE.md) §5 "Still open":
+From [`OCAC_STABILITY_BRIDGE.md`](../design/OCAC_STABILITY_BRIDGE.md) §5 "Still open":
 
 - **Convolution chain bound.** `chain_error_bound` is a plain product of independent per‑step
   factors. Tighten it to the OCAC *convolution* form `convolution_dominated`
@@ -169,7 +169,7 @@ From [`OCAC_STABILITY_BRIDGE.md`](OCAC_STABILITY_BRIDGE.md) §5 "Still open":
 
 The bridge fixed two fabricated‑axiom cases (`routing_accuracy` source tag, `C_quality`
 decoupling). Make it systematic: every number in `hierarchical_metrics`
-([`infrastructure/metrics_engine.py`](../infrastructure/metrics_engine.py)) carries a
+([`infrastructure/metrics_engine.py`](../../infrastructure/metrics_engine.py)) carries a
 `*_source ∈ {measured, proxy, assumed_constant}` field, mirroring OCAC's
 PROVED / PROOF‑GAP / DEFINITION‑GAP tagging. Today only `routing_accuracy` has it. A dashboard
 that mixes measured and assumed numbers without labels is the exact thing the OCAC method exists

@@ -1,11 +1,11 @@
 # Metrics Improvement Roadmap — phased, execution-ready
 
-*Derived from [`improvements.md`](improvements.md) and the latest OCAC finding (signed
+*Derived from [`improvements.md`](IMPROVEMENTS.md) and the latest OCAC finding (signed
 cubic / "put the sign back"). Each phase is self-contained, additive, and gated behind the
 existing test suite. Ship phases in order; each ends green before the next starts.*
 
 **Working rule:** every new metric is a **pure function with a self-test** in
-[`evaluation/math_metrics.py`](../evaluation/math_metrics.py) first, then wired into its consumer.
+[`evaluation/math_metrics.py`](../../evaluation/math_metrics.py) first, then wired into its consumer.
 No consumer change ships without its pure function already merged and tested.
 
 ---

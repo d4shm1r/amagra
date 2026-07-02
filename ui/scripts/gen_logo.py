@@ -9,7 +9,7 @@ import os
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-OUT = "/home/dashmir/agentic-ai/docs/amagra-logo.png"
+OUT = "/home/dashmir/agentic-ai/docs/brand/amagra-logo.png"
 FONT = os.path.join(os.path.dirname(__file__), "fonts", "CormorantGaramond-SemiBold.ttf")
 SS = 3
 

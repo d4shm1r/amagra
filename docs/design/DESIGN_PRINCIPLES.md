@@ -1,6 +1,6 @@
 # Amagra — Experience Principles
 
-> The **experience** contract. Where [`VISION.md`](VISION.md) says *what Amagra is*
+> The **experience** contract. Where [`VISION.md`](../product/VISION.md) says *what Amagra is*
 > (the AI operating layer above models, agents, and devices) and `ROADMAP.md` says
 > *what we build next*, this document says *how it must feel*. It is a **filter**:
 > every new feature, screen, and interaction is checked against these rules before it
@@ -52,7 +52,7 @@ things, not adding them.
 
 - Almost no visual noise; consistent spacing; smooth, calm motion.
 - Instant responses; every interaction feels intentional; no unnecessary dialogs.
-- Brand rule (see [`theme.js`](../ui/src/theme.js)): **gold is the signature, never the
+- Brand rule (see [`theme.js`](../../ui/src/theme.js)): **gold is the signature, never the
   hierarchy system**; lead with the AMAGRA serif wordmark, never a glyph/monogram.
 
 ---
