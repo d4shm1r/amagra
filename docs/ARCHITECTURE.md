@@ -116,4 +116,4 @@ All of it is browsable live in the UI (Event Log, Plan Graph, UCI Dashboard, Mem
 
 ---
 
-*Deeper component-by-component detail: [`docs/REFERENCE.md`](REFERENCE.md). Build history: [`docs/HISTORY.md`](HISTORY.md).*
+*Deeper component-by-component detail: [`docs/REFERENCE.md`](REFERENCE.md). Build history: [`docs/records/HISTORY.md`](records/HISTORY.md).*

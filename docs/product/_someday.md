@@ -3,7 +3,7 @@
 > This file holds work that was promoted to the roadmap **before** the product
 > had a single external user. None of it is necessarily *wrong*. It is premature.
 >
-> **Unfreeze rule:** nothing here moves back into [`ROADMAP.md`](ROADMAP.md)
+> **Unfreeze rule:** nothing here moves back into [`ROADMAP.md`](../ROADMAP.md)
 > until the wedge has drawn a real external signal (strangers running tasks,
 > inbound issues, the first non-founder user). The *State of the AI Economy 2026*
 > analysis is the reason for the freeze: AI revenue is still ~0.4% of US GDP — a

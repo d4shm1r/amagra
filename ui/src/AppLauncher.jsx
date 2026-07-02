@@ -3,7 +3,7 @@
 // full-screen, phone-launcher-style grid — replacing the old left sidebar, the top
 // sub-nav, and the chat's Threads/Context/Advanced side rail.
 //
-// Design contract (docs/DESIGN_PRINCIPLES.md): chat is the clean home; navigation
+// Design contract (docs/design/DESIGN_PRINCIPLES.md): chat is the clean home; navigation
 // is summoned, not always-on. Gilded Calm — cream field, gold as the signature
 // (never the hierarchy system), serif AMAGRA wordmark, calm ease-out motion.
 import { Fragment, useEffect, useState, useCallback, useRef } from "react";

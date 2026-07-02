@@ -376,5 +376,5 @@ Identity                    (scoped per Organization; single instance per tenant
 - In multi-tenant mode Identity is per-Organization and read access is gated
   like any other resource.
 
-Reference implementation and invariants: `docs/IDENTITY.md`,
+Reference implementation and invariants: `docs/design/IDENTITY.md`,
 `models/identity.py`, `tests/test_identity.py`.

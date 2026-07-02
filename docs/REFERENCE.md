@@ -2,7 +2,7 @@
 
 A locally-running cognitive AI platform built on phi4-mini (3.8B) and LangGraph. Natural language queries are classified by a deterministic signal engine, routed to a specialist agent, executed with persistent semantic memory, and governed by a Cognitive OS that tracks world state, health scores, and execution plans. Everything runs on an RTX 2050 — no cloud dependency.
 
-**Version:** v1.5.0  
+**Version:** v1.6.3  
 **Stack:** phi4-mini · Ollama · LangGraph · FastAPI · React · FAISS · SQLite · nomic-embed-text · Stripe · SendGrid
 
 ---
@@ -101,7 +101,7 @@ c(hits) = 1 − exp(−0.40 × hits)
 > held-out number. Treat them as internal dev metrics. The honest counterweight is the
 > held-out adversarial set (`evaluation/adversarial_eval.py`, Wilson 95% CI); method,
 > failure modes, and why we don't quote a single headline figure live in
-> [FINDINGS.md](FINDINGS.md).
+> [FINDINGS.md](records/FINDINGS.md).
 
 | Mode | Accuracy |
 |------|----------|
@@ -305,14 +305,14 @@ Current: **h_UCI ≈ 80.8**
 | Metric | Value |
 |--------|-------|
 | Build phases completed | 37 |
-| Routing accuracy | 97% · 99% ablation (internal dev metrics — see [FINDINGS.md](FINDINGS.md)) |
+| Routing accuracy | 97% · 99% ablation (internal dev metrics — see [FINDINGS.md](records/FINDINGS.md)) |
 | Skill graph nodes | 21 |
 | FAISS vectors | 628+ |
 | FAISS search P50 | 0.38ms |
 | LRU cache speedup | 52× |
 | UCI score | ~80.8 |
 | API endpoints | 100+ (141 routes) |
-| Test suite | 865 passing |
+| Test suite | 974 passing |
 | Avg response latency | ~4–8s (phi4-mini on RTX 2050) |
 | Full reflection rate | ~15% (down from 58% pre-triage) |
 

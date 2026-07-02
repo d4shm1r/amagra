@@ -1,8 +1,7 @@
 """
 Runtime-spine tests — guard the load-bearing invariants of core/runtime.py.
 
-scripts/runtime_slice_demo.py proves these by hand, but a manual script does not
-run in CI. This pins them down in pytest so the onion can't silently regress:
+This pins them down in pytest so the onion can't silently regress:
 
   • onion composition order is outer→inner→outer, even with 3+ middlewares
     (the make()/closure fix in compose() — a naive loop captures the last next);

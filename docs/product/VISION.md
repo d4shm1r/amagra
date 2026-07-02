@@ -46,7 +46,7 @@ current state:
    macOS/Windows (Electron/dmg/nsis) is scaffolded, not yet published.
 2. **Chat is the home.** The sidebar, top-nav, and per-tab chrome collapsed into a single
    gold ☰ that opens a phone-style app-grid launcher. The experience contract is written
-   down in [`DESIGN_PRINCIPLES.md`](DESIGN_PRINCIPLES.md) and now filters every feature.
+   down in [`DESIGN_PRINCIPLES.md`](../design/DESIGN_PRINCIPLES.md) and now filters every feature.
 3. **The operating-layer parts are real, not slideware** — signal-first routing, FAISS
    memory, the critic/verifier gate, decision replay, a Consensus engine, and a live
    observability/UCI surface all run today.

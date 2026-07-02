@@ -12,7 +12,7 @@ live properties of the agent system, rather than hand-tuned hopes.
 
 ## 0. The core correspondence
 
-The one weight-update pathway ([`training/learning.py`](../training/learning.py)) is:
+The one weight-update pathway ([`training/learning.py`](../../training/learning.py)) is:
 
 ```
 w ← w + clip(α·(L − w), ±0.02)
@@ -44,7 +44,7 @@ are precisely what keep `K < 1`. OCAC explains *why* they are load-bearing.
 ## 1. Stability — Lyapunov, not a threshold
 
 Today `drift_status` flags instability when weight variance > 0.05
-([`decision/weights.py`](../decision/weights.py)) — a static cutoff with no
+([`decision/weights.py`](../../decision/weights.py)) — a static cutoff with no
 recovery guarantee.
 
 OCAC's `lyap_strictDecrease` (`OCAC/Dynamics.lean`) is the template: energy
@@ -58,7 +58,7 @@ V(w')        = (1−α)²·V(w)
 
 So the loop is a **global** contraction (basin = all of weight space) with
 per-step energy decay `(1−α)²`. Exposed as
-`affine_lyapunov_decay(alpha)` in [`evaluation/math_metrics.py`](../evaluation/math_metrics.py).
+`affine_lyapunov_decay(alpha)` in [`evaluation/math_metrics.py`](../../evaluation/math_metrics.py).
 When nonlinearity is later added to the update, OCAC's *cubic* basin
 `x² < −2/c` (and the `−4` critical anchor) is the next rung.
 
@@ -75,7 +75,7 @@ as soon as any single condition degrades.
 ## 2. Self-recursion (reflection)
 
 Reflection is functional iteration `s_{n+1} = R(s_n)`; we track
-`G_r = s_final − s_initial` ([`cognition/coherence.py`](../cognition/coherence.py)).
+`G_r = s_final − s_initial` ([`cognition/coherence.py`](../../cognition/coherence.py)).
 
 - **No-go theorems** (`OCAC/Hyper/Flow.lean`, `Abel.lean`): a fixed-point-free
   map has no global flow. An improvement operator that always claims it can
@@ -95,7 +95,7 @@ Reflection is functional iteration `s_{n+1} = R(s_n)`; we track
 ## 3. Alignment
 
 - **Calibration is a tracking contraction.** `calibrated = raw − 0.15·(avg_conf
-  − avg_perf)` ([`decision/weights.py`](../decision/weights.py)) drives stated
+  − avg_perf)` ([`decision/weights.py`](../../decision/weights.py)) drives stated
   confidence to a fixed point at measured performance. OCAC's parameter-
   dependence theory bounds the residual bias as a function of how fast true
   performance drifts — a provable "stated ≈ actual" guarantee.
@@ -103,7 +103,7 @@ Reflection is functional iteration `s_{n+1} = R(s_n)`; we track
   PROOF-GAP / DEFINITION-GAP / CONJECTURE and refusing fabricated axioms. Apply
   it to metrics: tag each MEASURED / PROXY / ASSUMED-CONSTANT. Open items found:
   - `routing_accuracy = 0.98` is hardcoded in
-    [`infrastructure/metrics_engine.py`](../infrastructure/metrics_engine.py) yet
+    [`infrastructure/metrics_engine.py`](../../infrastructure/metrics_engine.py) yet
     flows into UCI as if measured (an OCAC "fabricated axiom").
   - `C(t)` is effectively **2 degrees of freedom, not 3**: in proxy mode
     `C_quality = 0.75 − 0.2·conflict_rate` and `C_routing = 1 − conflict_rate`

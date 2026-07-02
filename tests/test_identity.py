@@ -1,7 +1,7 @@
 """
 Tests for models/identity.py — the Identity contract.
 
-These are the invariant family from docs/IDENTITY.md §4, as regression gates:
+These are the invariant family from docs/design/IDENTITY.md §4, as regression gates:
 
   1. Capability replacement must not modify identity.
   2. Runtime restart preserves identity.

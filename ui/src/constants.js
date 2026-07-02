@@ -697,7 +697,7 @@ export const BUILD_PHASES = [
     summary: "A non-breaking runway release that clears the path to the v1.6 workspaces milestone: the platform entity model RFC and the v1.5.2/v1.5.3 adoption-floor plan land as records, with version markers reconciled.",
     steps: [
       "docs/ROADMAP.md: v1.5.2/v1.5.3 runway sequenced into the v1.6 workspaces milestone (additive, no schema break)",
-      "docs/PLATFORM_ENTITY_MODEL.md: the Organization → Project → Workspace entity model RFC for v1.6",
+      "docs/design/PLATFORM_ENTITY_MODEL.md: the Organization → Project → Workspace entity model RFC for v1.6",
       "Version markers reconciled to v1.5.2 across api.py, package.json, constants.js",
     ],
   },

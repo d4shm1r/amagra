@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/amagra-logo.png" alt="Amagra" width="440" />
+  <img src="docs/brand/amagra-logo.png" alt="Amagra" width="440" />
 </p>
 
 <p align="center">
@@ -7,7 +7,7 @@
   <a href="https://github.com/d4shm1r/amagra/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-C48808?style=flat-square&labelColor=2E2010" /></a>
   <a href="https://github.com/d4shm1r/amagra/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/d4shm1r/amagra?style=flat-square&logo=github&logoColor=white&color=C48808&labelColor=2E2010" /></a>
   <img alt="Self-hosted" src="https://img.shields.io/badge/self--hosted-✓-C48808?style=flat-square&labelColor=2E2010" />
-  <img alt="Tests: 914 passing" src="https://img.shields.io/badge/tests-914%20passing-C48808?style=flat-square&labelColor=2E2010" />
+  <img alt="Tests: 974 passing" src="https://img.shields.io/badge/tests-974%20passing-C48808?style=flat-square&labelColor=2E2010" />
 </p>
 
 <p align="center">
@@ -71,7 +71,7 @@ traced back to what produced it. A chat tool's history scrolls away; a workspace
 Weighing it against other self-hosted workspaces — **Open WebUI**, **LibreChat**,
 **AnythingLLM**? They're great chat front-ends; Amagra adds the two things they don't:
 a cross-model **agreement score** and **replay of why it answered**. Full honest
-head-to-head in **[COMPARISON.md](docs/COMPARISON.md)**.
+head-to-head in **[COMPARISON.md](docs/product/COMPARISON.md)**.
 
 ---
 
@@ -152,7 +152,7 @@ learning loop nudges routing toward the paths that score well — no model weigh
 
 The engineering detail — the LangGraph state machine, the routing accuracy and its honest
 failure modes, the observability stack — lives in **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
-and **[docs/FINDINGS.md](docs/FINDINGS.md)**.
+and **[docs/records/FINDINGS.md](docs/records/FINDINGS.md)**.
 
 ---
 

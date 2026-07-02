@@ -1,43 +1,40 @@
 #!/usr/bin/env python3
-# ~/agentic-ai/ModelOverview.py
+# scripts/ModelOverview.py
 # ─────────────────────────────────────────────────────────────
-# Generates ModelOverview.md — a shareable snapshot of your
-# 9-agent system's current state, memory, and growth.
+# Generates ModelOverview.md — a shareable snapshot of the
+# agent system's current state, memory, and growth.
 #
-# Usage:
-#   cd ~/agentic-ai
-#   source ~/langgraph-env/bin/activate
-#   python3 ModelOverview.py
+# Usage (from the repo root):
+#   PYTHONPATH=. python3 scripts/ModelOverview.py
 #
-# Output: ~/agentic-ai/ModelOverview.md
+# Output: <repo root>/ModelOverview.md
 # Share:  Paste into any chatbot, upload to Claude, or open in
 #         any markdown viewer.
 # ─────────────────────────────────────────────────────────────
 
-import json
 import sqlite3
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).parent.parent
 OUTPUT_FILE = PROJECT_DIR / "ModelOverview.md"
 
-AGENTS = [
-    {"id": "coordinator",        "label": "Coordinator",         "icon": "👑"},
-    {"id": "it_networking",      "label": "IT & Networking",      "icon": "🌐"},
-    {"id": "python_dev",         "label": "Python Dev",           "icon": "🐍"},
-    {"id": "blazor_dev",         "label": "Blazor Dev",           "icon": "⚡"},
-    {"id": "ai_ml",              "label": "AI & ML",              "icon": "🤖"},
-    {"id": "documents",          "label": "Documents",            "icon": "📄"},
-    {"id": "personal_projects",  "label": "Personal Projects",    "icon": "🎯"},
-    {"id": "research",           "label": "Research",             "icon": "🔬"},
-    {"id": "knowledge_learning", "label": "Knowledge & Learning", "icon": "📚"},
-]
+# The agent list comes from the canonical registry so this report can never
+# drift from routing (agents/registry.py is the single source of truth).
+sys.path.insert(0, str(PROJECT_DIR))
+from agents.registry import AGENT_MAP  # noqa: E402
+
+AGENTS = (
+    [{"id": "coordinator", "label": "Coordinator", "icon": "👑"}]
+    + [{"id": aid, "label": meta["label"], "icon": meta["icon"]}
+       for aid, meta in AGENT_MAP.items()]
+)
 
 # ── Data collectors ──────────────────────────────────────────
 
 def get_memory_stats():
-    """Read memory_db.db and return per-agent stats."""
+    """Read agent_memory.db and return per-agent stats."""
     db_path = PROJECT_DIR / "memory" / "agent_memory.db"
     if not db_path.exists():
         return {}, 0
@@ -110,34 +107,13 @@ def get_lesson_files():
     return [f.name for f in sorted(path.glob("*.md"))]
 
 
-def get_research_files():
-    """List research markdown files."""
-    path = PROJECT_DIR / "memory" / "research"
-    if not path.exists():
-        return []
-    return [f.name for f in sorted(path.glob("*.md"))]
-
-
-def get_projects():
-    """Read projects.json."""
-    path = PROJECT_DIR / "memory" / "projects.json"
-    if not path.exists():
-        return []
-    try:
-        with open(path) as f:
-            data = json.load(f)
-        return data if isinstance(data, list) else [data]
-    except Exception:
-        return []
-
-
 def get_agent_file_stats():
     """Check which agent files exist and their sizes."""
     agents_dir = PROJECT_DIR / "agents"
     result = {}
     for agent in AGENTS:
         if agent["id"] == "coordinator":
-            p = PROJECT_DIR / "coordinator.py"
+            p = PROJECT_DIR / "orchestration" / "coordinator.py"
         else:
             p = agents_dir / f"{agent['id']}.py"
         result[agent["id"]] = {
@@ -156,11 +132,10 @@ def build_report():
     memory_stats, total_memories = get_memory_stats()
     tasks, task_counts           = get_task_stats()
     lessons                      = get_lesson_files()
-    research_files               = get_research_files()
-    projects                     = get_projects()
     file_stats                   = get_agent_file_stats()
 
     total_done_tasks = task_counts.get("done", 0)
+    n_agents         = len(AGENTS) - 1  # specialists (coordinator excluded)
 
     lines = []
 
@@ -169,8 +144,8 @@ def build_report():
         "# 🤖 Agentic AI — Model Overview",
         "",
         f"**Generated:** {now}",
-        "**System:** 9-agent local AI on Ubuntu Linux",
-        "**Stack:** LangGraph v1.0 · Llama3 8B via Ollama · FastAPI · SQLite + embeddings",
+        f"**System:** {n_agents}-agent local AI on Ubuntu Linux",
+        "**Stack:** LangGraph v1.0 · phi4-mini via Ollama · FastAPI · SQLite + embeddings",
         "**Location:** ~/agentic-ai",
         "",
         "---",
@@ -186,8 +161,7 @@ def build_report():
         f"| Total memories in SQLite | {total_memories} |",
         f"| Tasks completed | {total_done_tasks} |",
         f"| Lessons saved | {len(lessons)} |",
-        f"| Research files | {len(research_files)} |",
-        f"| Agents with memory wired | {sum(1 for v in file_stats.values() if v['memory_wired'])} / 9 |",
+        f"| Agents with memory wired | {sum(1 for v in file_stats.values() if v['memory_wired'])} / {n_agents} |",
         "",
     ]
 
@@ -246,34 +220,14 @@ def build_report():
         lines += ["> No tasks run yet.", ""]
 
     # ── KNOWLEDGE FILES ──
-    if lessons or research_files:
+    if lessons:
         lines += [
             "## 📚 Saved Knowledge Files",
             "",
+            f"**Lessons ({len(lessons)}):**",
         ]
-        if lessons:
-            lines.append(f"**Lessons ({len(lessons)}):**")
-            for f in lessons:
-                lines.append(f"- {f}")
-            lines.append("")
-        if research_files:
-            lines.append(f"**Research ({len(research_files)}):**")
-            for f in research_files:
-                lines.append(f"- {f}")
-            lines.append("")
-
-    # ── PROJECTS ──
-    if projects:
-        lines += [
-            "## 🎯 Personal Projects in Memory",
-            "",
-        ]
-        for p in projects:
-            if isinstance(p, dict):
-                name = p.get("name", p.get("title", str(p)[:60]))
-                lines.append(f"- **{name}**")
-            else:
-                lines.append(f"- {str(p)[:100]}")
+        for f in lessons:
+            lines.append(f"- {f}")
         lines.append("")
 
     # ── AGENT WIRING STATUS ──
@@ -300,7 +254,7 @@ def build_report():
         "",
         "**For architecture review:**",
         "```",
-        "Here is a full overview of my local 9-agent AI system.",
+        f"Here is a full overview of my local {n_agents}-agent AI system.",
         "Review the memory growth, task history, and agent wiring.",
         "What is working well, what looks weak, and what should I",
         "focus on improving next? Be specific and direct.",
@@ -316,14 +270,14 @@ def build_report():
         "",
         "**For bug hunting:**",
         "```",
-        "Here is my 9-agent local AI system overview.",
+        f"Here is my {n_agents}-agent local AI system overview.",
         "Based on the memory counts and task results,",
         "what failure modes or silent bugs might exist",
         "that I would not notice in daily use?",
         "```",
         "",
         "---",
-        "*Generated by ModelOverview.py — run anytime to get a fresh snapshot.*",
+        "*Generated by scripts/ModelOverview.py — run anytime to get a fresh snapshot.*",
     ]
 
     return "\n".join(lines)

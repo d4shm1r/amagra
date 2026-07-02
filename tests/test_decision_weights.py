@@ -7,7 +7,20 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import pytest
+
 import decision.weights as dw
+
+
+@pytest.fixture(autouse=True)
+def _reset_weights_cache():
+    """Tests here monkeypatch DB_PATH to a tmp DB, which warms the in-process
+    cache from that tmp DB. Teardown restores DB_PATH but not the cache, so
+    without this reset every weights reader in the next CACHE_TTL seconds
+    (e.g. identity fingerprints) sees tmp-DB values against the real DB."""
+    yield
+    with dw._lock:
+        dw._cache, dw._cache_ts = {}, 0.0
 
 
 # ── _defaults ─────────────────────────────────────────────────────────────────
