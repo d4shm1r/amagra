@@ -5,50 +5,60 @@
 //
 //   Workspace  = do work        Memory   = manage knowledge
 //   Runs       = inspect runs    Research = experiment
-//   Cognition  = monitor system  Settings = configure
+//   Cognition  = monitor system  Setup    = configure
+// Per-tab `sym` gives each tile its own mark for recognition; the surface `sym`
+// stays the section signature (and the fallback). Glyphs stay in the geometric /
+// serif language of the theme — never emoji, which ignore the palette.
 export const SURFACES = [
   { id: "workspace", label: "Workspace", sym: "▸", desc: "Work with your project", tabs: [
-    { id: "chat",          label: "Chat" },
-    { id: "prompt",        label: "Prompt IDE" },
-    { id: "consensus",     label: "Consensus" },
-    { id: "explain",       label: "Explain",       adv: true },
-    { id: "goals",         label: "Goals",         adv: true },
-    { id: "tasks",         label: "Tasks",         adv: true },
-    { id: "project-state", label: "Project State", adv: true },
+    // Create tools stay ungrouped (the section's front door); planning tools
+    // sit under a "Plan" sub-header — all adv, so Simple mode shows no header.
+    { id: "chat",          label: "Chat",          sym: "⟡" },
+    { id: "prompt",        label: "Prompt IDE",    sym: "✎" },
+    { id: "consensus",     label: "Consensus",     sym: "⁂" },
+    { id: "explain",       label: "Explain",       sym: "∵", adv: true },
+    { id: "goals",         label: "Goals",         sym: "◎", adv: true, group: "Plan" },
+    { id: "tasks",         label: "Tasks",         sym: "≣", adv: true, group: "Plan" },
+    { id: "project-state", label: "Project State", sym: "⊡", adv: true, group: "Plan" },
   ]},
   { id: "runs", label: "Runs", sym: "⊙", desc: "Inspect agent executions", adv: true, tabs: [
-    { id: "overview",  label: "Overview"  },
-    { id: "runs",      label: "Runs"      },
-    { id: "brain",     label: "Decisions" },   // absorbs Trace (Live view) + Replay (inspector action)
-    { id: "inspector", label: "Inspector" },
+    { id: "overview",  label: "Overview",  sym: "◉" },
+    { id: "runs",      label: "All runs",  sym: "⊙" },  // "Runs" tile inside the Runs section read as a duplicate
+    { id: "brain",     label: "Decisions", sym: "◬" },   // absorbs Trace (Live view) + Replay (inspector action)
+    { id: "inspector", label: "Inspector", sym: "⊚" },
   ]},
   { id: "cognition", label: "Cognition", sym: "∴", desc: "Monitor system health and reasoning", adv: true, tabs: [
     // Dashboard = the at-a-glance health grid; Diagnostics folds the five focus
     // views (UCI/Risk/Events/Plan/Policy) into one tab with internal sections.
-    { id: "cog-dash",    label: "Dashboard",   group: "Health" },
-    { id: "diagnostics", label: "Diagnostics", group: "Health" },
-    { id: "cognitive",   label: "CogOS",       group: "Advanced" },
-    { id: "skills",      label: "Skills",      group: "Advanced" },
-    { id: "timeline",    label: "Timeline",    group: "Advanced" },
+    { id: "cog-dash",    label: "Dashboard",   sym: "▦", group: "Health" },
+    { id: "diagnostics", label: "Diagnostics", sym: "✳", group: "Health" },
+    { id: "cognitive",   label: "CogOS",       sym: "∞", group: "Advanced" },
+    { id: "skills",      label: "Skills",      sym: "✦", group: "Advanced" },
+    { id: "timeline",    label: "Timeline",    sym: "↺", group: "Advanced" },
   ]},
   { id: "memory", label: "Memory", sym: "◈", desc: "Explore stored knowledge and context", tabs: [
-    { id: "library",   label: "Library" },
-    { id: "memory",    label: "Browser",    adv: true },
-    { id: "knowledge", label: "Knowledge",  adv: true },
-    { id: "map",       label: "Memory Map", adv: true },
-    { id: "mindmap",   label: "Mind Map",   adv: true },
+    // Library is the friendly front door; the technical views live under one
+    // sub-header so the section leads with what most users came for.
+    { id: "library",   label: "Library",    sym: "❧" },
+    { id: "memory",    label: "Browser",    sym: "◈", adv: true, group: "Under the hood" },
+    { id: "knowledge", label: "Knowledge",  sym: "⊛", adv: true, group: "Under the hood" },
+    { id: "map",       label: "Memory Map", sym: "⊞", adv: true, group: "Under the hood" },
+    { id: "mindmap",   label: "Mind Map",   sym: "✧", adv: true, group: "Under the hood" },
   ]},
   { id: "research", label: "Research", sym: "⊹", desc: "Experiment, analyze, and compare", adv: true, tabs: [
-    { id: "research", label: "Lab" },
-    { id: "data",     label: "Analysis" },
+    { id: "research", label: "Lab",      sym: "⊹" },
+    { id: "data",     label: "Analysis", sym: "∑" },
   ]},
-  { id: "settings", label: "Settings", sym: "⚙", desc: "Configure Amagra", tabs: [
-    { id: "guide",    label: "Guide" },
-    { id: "model",    label: "Model" },
-    { id: "progress", label: "Progress", adv: true },
-    { id: "promises", label: "Promises", adv: true },
-    { id: "log",      label: "Log",      adv: true },
-    { id: "releases", label: "Releases" },
+  // "Setup" (was "Settings") — renamed so the surface stops colliding with the
+  // Settings *modal* in the launcher's System section. Essentials (Guide, Model,
+  // Releases) stay ungrouped; project-meta tabs sit under a "Project" sub-header.
+  { id: "settings", label: "Setup", sym: "⚙", desc: "Configure Amagra", tabs: [
+    { id: "guide",    label: "Guide",    sym: "§" },
+    { id: "model",    label: "Model",    sym: "⬡" },
+    { id: "releases", label: "Releases", sym: "❖" },
+    { id: "progress", label: "Progress", sym: "◐", adv: true, group: "Project" },
+    { id: "promises", label: "Promises", sym: "✓", adv: true, group: "Project" },
+    { id: "log",      label: "Log",      sym: "▤", adv: true, group: "Project" },
   ]},
 ];
 

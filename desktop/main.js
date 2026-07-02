@@ -19,6 +19,13 @@ const PORT = parseInt(process.env.AMAGRA_PORT || "8000", 10);
 // Use `localhost` (not 127.0.0.1) so the window origin matches the UI's default
 // API base (ui/src/api.js → http://localhost:8000) and stays same-origin: no CORS.
 const BASE = `http://localhost:${PORT}`;
+// Dev loop: point the window at the Vite dev server (hot module reload) instead
+// of the static ui/build the backend serves — UI edits then apply live, no
+// `vite build` + reload. Run `cd ui && npm run dev` alongside, then
+// `AMAGRA_DEV=1 npm start`. The API still lives at :8000; CORS already allows
+// :3000 (api.py ALLOWED_ORIGINS), so cross-origin calls work.
+const UI_URL = process.env.AMAGRA_UI_URL
+  || (process.env.AMAGRA_DEV === "1" ? "http://localhost:3000" : BASE);
 const REPO_ROOT = path.join(__dirname, "..");
 
 let backend = null; // child we spawned (null if we reused an existing server)
@@ -104,7 +111,7 @@ function createWindow() {
     shell.openExternal(url);
     return { action: "deny" };
   });
-  win.loadURL(BASE);
+  win.loadURL(UI_URL);
   win.on("closed", () => { win = null; });
 }
 

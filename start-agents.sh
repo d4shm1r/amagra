@@ -69,12 +69,40 @@ cmd_start() {
     ok "UI launching (logs/ui.log, ~10s first run)"
   fi
 
-  # 4. Browser — wait for the UI port, then open once
+  # 4. Front-end window — wait for the UI port, then open once.
+  #    Default: the native AMAGRA desktop window (Electron, dev/HMR mode → it
+  #    loads the :3000 Vite server, so UI edits hot-reload live).
+  #    Override with AMAGRA_OPEN=browser (open a browser tab) or =none.
   run "Waiting for UI..."
   for _ in $(seq 1 30); do port_up "$UI_PORT" && break; sleep 1; done
-  port_up "$UI_PORT" && xdg-open "http://localhost:$UI_PORT" >/dev/null 2>&1 &
+
+  local open="${AMAGRA_OPEN:-desktop}"
+  if [[ "$open" == "desktop" && ! -x "$AI_DIR/desktop/node_modules/.bin/electron" ]]; then
+    warn "desktop deps missing (run: cd desktop && npm install) — opening browser instead"
+    open="browser"
+  fi
+  case "$open" in
+    desktop)
+      if port_up "$UI_PORT"; then
+        run "Opening AMAGRA desktop window..."
+        # setsid: run Electron in its own session so a hangup to this script's
+        #   process group can't reach it (Electron quits on SIGHUP; nohup only
+        #   shields the wrapper, not the Electron grandchild).
+        # run.sh (not `npm start`): it unsets ELECTRON_RUN_AS_NODE and passes
+        #   --no-sandbox — required here because the npm-installed chrome-sandbox
+        #   isn't setuid root and Ubuntu's apparmor_restrict_unprivileged_userns=1
+        #   blocks the fallback, so a bare `electron .` aborts with SIGTRAP.
+        ( cd "$AI_DIR/desktop" && setsid env AMAGRA_DEV=1 \
+            bash run.sh >"$LOG_DIR/desktop.log" 2>&1 & echo $! >"$LOG_DIR/desktop.pid" )
+        ok "Desktop launching (logs/desktop.log)"
+      fi ;;
+    browser)
+      port_up "$UI_PORT" && xdg-open "http://localhost:$UI_PORT" >/dev/null 2>&1 & ;;
+    none) : ;;
+  esac
 
   echo ""
+  echo "  Desktop   : AMAGRA window (AMAGRA_OPEN=browser for a tab instead)"
   echo "  Dashboard : http://localhost:$UI_PORT"
   echo "  API       : http://localhost:$API_PORT"
   echo "  API docs  : http://localhost:$API_PORT/docs"
@@ -95,11 +123,13 @@ kill_pidfile() {  # $1=name $2=pidfile
 
 cmd_stop() {
   echo ""
+  kill_pidfile "Desktop" "$LOG_DIR/desktop.pid"
   kill_pidfile "UI"  "$LOG_DIR/ui.pid"
   kill_pidfile "API" "$LOG_DIR/api.pid"
   # Fallbacks in case PID files are stale (e.g. reload spawned children)
-  pkill -f "uvicorn api:app"     2>/dev/null
-  pkill -f "react-scripts start" 2>/dev/null
+  pkill -f "desktop/node_modules/electron" 2>/dev/null
+  pkill -f "uvicorn api:app"          2>/dev/null
+  pkill -f "$AI_DIR/ui/node_modules"  2>/dev/null  # vite dev server + workers
   # Leave Ollama running by default (shared, slow to reload).
   # Stop it too with:  ai-start stop --all
   if [[ "${1:-}" == "--all" ]]; then
@@ -115,6 +145,8 @@ cmd_status() {
   pgrep -x ollama       >/dev/null 2>&1 && ok "Ollama  running" || warn "Ollama  down"
   port_up "$API_PORT"   && ok "API     :$API_PORT" || warn "API     down"
   port_up "$UI_PORT"    && ok "UI      :$UI_PORT"  || warn "UI      down"
+  pgrep -f "desktop/node_modules/electron" >/dev/null 2>&1 \
+    && ok "Desktop running" || warn "Desktop down"
   echo ""
 }
 

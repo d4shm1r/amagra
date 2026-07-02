@@ -53,6 +53,12 @@ input:focus-visible,
 textarea:focus-visible,
 select:focus-visible { outline-offset: 1px; }
 
+/* The chat composer wraps its textarea in a pill that already lights up on
+   focus (gold border + glow). The default focus-visible ring on the inner
+   textarea would paint a second concentric outline — a "form inside a form".
+   Suppress it here; the pill wrapper carries the focus affordance. */
+.chat-composer-input:focus-visible { outline: none !important; }
+
 /* ── Reduced motion ──────────────────────────────────────────
    The app leans on pulses, fades, and lifts. Honor the OS-level
    "reduce motion" preference by collapsing animations/transitions for
