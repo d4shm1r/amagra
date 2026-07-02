@@ -186,6 +186,18 @@ def cos_skills(query: str = ""):
         raise HTTPException(status_code=503, detail=str(e))
 
 
+@router.get("/cos/skills/entropy")
+def cos_skills_entropy(window: int = 100):
+    """Rolling skill-selection entropy — the saturation diagnostic that gates
+    tuning of the A←R coupling gains (see infrastructure/skill_graph.py and
+    docs/design/TCST_AGENT_MODEL.md §5)."""
+    try:
+        from infrastructure.skill_graph import entropy_report
+        return entropy_report(window=window)
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
 @router.get("/verify/stats")
 def verify_stats_route(n: int = 200):
     try:

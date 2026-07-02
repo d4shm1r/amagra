@@ -375,7 +375,10 @@ def plan_query(
     # Refine agent list via skill graph when no domain agents were provided
     try:
         from infrastructure.skill_graph import select_skills, skill_summary
-        skills = select_skills(query, n=3)
+        # A ← R coupling: condition skill selection on the reasoning state
+        # (action + chosen agents) the planner already holds, instead of the
+        # bare query. A re-rank bias, not a filter — see select_skills().
+        skills = select_skills(query, n=3, action=action, prefer_agents=agents)
         if skills:
             skill_agents = list(dict.fromkeys(s.agent for s in skills))
             if agents == ["knowledge_learning"] and skill_agents:
