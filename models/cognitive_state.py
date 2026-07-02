@@ -124,7 +124,8 @@ class CognitiveState:
             pass
 
     def end_request(self, agent: str, outcome: str = "completed",
-                    response_snippet: str = "") -> None:
+                    response_snippet: str = "",
+                    quality: float | None = None, kept: str = "") -> None:
         self.request.agent    = agent
         self.request.ended_at = time.time()
 
@@ -147,13 +148,21 @@ class CognitiveState:
 
         try:
             from infrastructure.event_bus import emit, EventType
-            emit(EventType.RESPONSE_GENERATED, {
+            payload = {
                 "session_id": self.session_id,
                 "run_id":     self.request.run_id,
                 "agent":      agent,
                 "outcome":    outcome,
                 "latency_ms": self.request.latency_ms,
-            })
+            }
+            # Responder transparency (#47): disclose the critic-gate quality
+            # score as confidence and the kept response as evidence. Keys are
+            # omitted when the gate didn't run — never fabricated.
+            if quality is not None:
+                payload["confidence"] = round(float(quality), 3)
+            if kept:
+                payload["evidence"] = kept
+            emit(EventType.RESPONSE_GENERATED, payload)
         except Exception:
             pass
 

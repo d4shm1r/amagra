@@ -509,6 +509,9 @@ async def ask(req: AskRequest, request: Request):
                 agent            = agent_used,
                 outcome          = "completed",
                 response_snippet = response[:300],
+                quality          = result.get("response_quality"),
+                kept             = result.get("gram_winner")
+                                   or result.get("response_kept", ""),
             )
         except Exception:
             pass

@@ -146,8 +146,8 @@ def cos_uci_trajectory(n: int = 100):
 
 @router.get("/cos/transparency")
 def cos_transparency(window: int = 2000):
-    """Classify each component as transparent / partial / opaque / unobserved
-    from the evidence + confidence its events disclose."""
+    """Classify each component as transparent / partial / opaque / mechanical
+    / unobserved from the evidence + confidence its events disclose."""
     try:
         from infrastructure.transparency import classify_components
         return classify_components(window=window)
