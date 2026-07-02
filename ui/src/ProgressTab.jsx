@@ -250,10 +250,12 @@ export default function ProgressTab() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <SectionHead title="Memory Health" />
             <div style={{ display: "flex", gap: 8 }}>
-              <a href={`${API}/memory/export.csv`} download="memories.csv"
-                style={{ padding: "4px 12px", borderRadius: 3, fontSize: 11, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", background: "#0F766E18", color: "#0F766E", border: "1px solid #0F766E40", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                ⬇ CSV
-              </a>
+              {[["csv", "memories.csv"], ["json", "memories.json"], ["md", "memories.md"]].map(([fmt, fname]) => (
+                <a key={fmt} href={`${API}/memory/export.${fmt}`} download={fname}
+                  style={{ padding: "4px 12px", borderRadius: 3, fontSize: 11, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", background: "#0F766E18", color: "#0F766E", border: "1px solid #0F766E40", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  ⬇ {fmt.toUpperCase()}
+                </a>
+              ))}
               <button onClick={runConsolidate} disabled={consolidating}
                 style={{ padding: "4px 12px", borderRadius: 3, fontSize: 11, fontWeight: 700, fontFamily: "inherit", cursor: consolidating ? "not-allowed" : "pointer", background: "#1E5A8A18", color: "#1E5A8A", border: "1px solid #1E5A8A40" }}>
                 {consolidating ? "Running…" : "⊕ Consolidate"}

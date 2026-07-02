@@ -5,20 +5,22 @@ import RiskObservatoryTab from "./RiskObservatoryTab";
 import EventLogTab       from "./EventLogTab";
 import PlanGraphTab      from "./PlanGraphTab";
 import PolicyTab         from "./PolicyTab";
+import VerifierPanel     from "./VerifierPanel";
 
 // ── Diagnostics (v1.6.2 IA restraint) ─────────────────────────────
-// The five focused system-health views (UCI, Risk, Events, Plan, Policy) used
-// to be five peer tabs under Cognition — most of which already appear as cells
+// The focused system-health views (UCI, Risk, Verifier, Events, Plan, Policy)
+// used to be peer tabs under Cognition — most of which already appear as cells
 // on the Dashboard "at a glance" grid. They collapse into ONE tab here, with a
 // calm segmented control, so Cognition reads as Dashboard + Diagnostics + the
-// three Advanced views instead of nine peers. Each section reuses its existing
+// three Advanced views instead of many peers. Each section reuses its existing
 // full-screen component unchanged (each fetches its own data).
 const SECTIONS = [
-  { id: "uci",    label: "Intelligence", Comp: UCIDashboard },
-  { id: "risk",   label: "Risk",         Comp: RiskObservatoryTab },
-  { id: "events", label: "Events",       Comp: EventLogTab },
-  { id: "plan",   label: "Plan",         Comp: PlanGraphTab },
-  { id: "policy", label: "Policy",       Comp: PolicyTab },
+  { id: "uci",      label: "Intelligence", Comp: UCIDashboard },
+  { id: "risk",     label: "Risk",         Comp: RiskObservatoryTab },
+  { id: "verifier", label: "Verifier",     Comp: VerifierPanel },
+  { id: "events",   label: "Events",       Comp: EventLogTab },
+  { id: "plan",     label: "Plan",         Comp: PlanGraphTab },
+  { id: "policy",   label: "Policy",       Comp: PolicyTab },
 ];
 
 export default function DiagnosticsTab({ initialSection = "uci" }) {
@@ -29,7 +31,7 @@ export default function DiagnosticsTab({ initialSection = "uci" }) {
 
   return (
     <div style={{ animation: "fadeIn .2s" }}>
-      {/* Segmented section nav — one decision, five calm options */}
+      {/* Segmented section nav — one decision, six calm options */}
       <div style={{ display: "flex", gap: 6, marginBottom: 18, flexWrap: "wrap" }}>
         {SECTIONS.map(s => {
           const on = s.id === sec;
