@@ -32,9 +32,9 @@ const FEATURES = [
   },
   {
     sym: "Ψ",
-    title: "Nothing is hidden",
-    body: "Every answer can be inspected, replayed, and understood. See exactly why the system did what it did — never a black box.",
-    pills: ["Inspect any answer", "Replay decisions", "Full transparency"],
+    title: "See why it answered",
+    body: "Replay any answer's decision — which agent was chosen, what memory it drew on, and how it was scored. All of it logged, locally.",
+    pills: ["Inspect any answer", "Replay decisions", "Local decision log"],
   },
   {
     sym: "◎",

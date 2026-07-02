@@ -18,8 +18,9 @@
 
 <p align="center">
   Amagra runs entirely on your own machine. It remembers your work across sessions,
-  routes each question to the right specialist, and logs every decision so you can
-  always replay <i>why</i> it answered the way it did. No black box. Nothing leaves your machine.
+  routes each question to the right specialist, and records every routing decision —
+  which agent, which memories, what confidence — so you can replay <i>why</i> each
+  answer was produced. Nothing leaves your machine.
 </p>
 
 <p align="center">
@@ -41,7 +42,8 @@
 - **Stays private** — self-hosted via [Ollama](https://ollama.com) or your own cloud key.
   Nothing leaves your machine. MIT licensed.
 - **Remembers your work** — context carries across sessions, so you stop re-explaining yourself.
-- **Shows its reasoning** — every answer can be inspected and replayed. No black box.
+- **Shows its reasoning** — replay any answer's decision: which agent was chosen, what
+  memory it drew on, and how the critic scored it.
 
 ---
 
@@ -49,6 +51,10 @@
 
 For one-off questions, plain Ollama or ChatGPT is fine. Amagra is for the work you come
 back to for weeks — where you need the tool to remember it and show how it got there.
+
+Six months in, that compounds: every new conversation starts with your accumulated
+projects, decisions, and corrections already in context, and any past answer can be
+traced back to what produced it. A chat tool's history scrolls away; a workspace compounds.
 
 | | **Amagra** | Ollama / OpenWebUI | Cloud ChatGPT / Claude |
 |---|:---:|:---:|:---:|

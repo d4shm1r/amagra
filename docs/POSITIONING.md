@@ -36,6 +36,13 @@ Sell the worry removed, not the trace produced:
 - *Why did Claude disagree with GPT?* → divergence view
 - *Can I reproduce this tomorrow?* → it's local, logged, replayable
 
+**Hook vs. stay:** comparison wins the click; memory wins the return. The bridge line —
+*"Chat tools answer questions; Amagra is for work you come back to for weeks"* — tested as
+the strongest single sentence in the July 2026 external pitch review. Lead with the
+divergence run, land the weeks line, then the philosophy. And state the six-month outcome
+plainly: every new conversation starts with your accumulated projects, decisions, and
+corrections already in context. A chat tool's history scrolls away; a workspace compounds.
+
 ---
 
 ## Channel hooks
@@ -73,8 +80,11 @@ Priority order:
 2. A **head-to-head vs OpenWebUI / LibreChat / AnythingLLM** table — the comparison people already search for.
 3. A **before / after prompt-debugging** example — one weak prompt, the divergence that exposes it, the fix.
 4. A **5-minute walkthrough video** — becomes the README hero and the source material YouTube reviewers reuse.
-5. The **routing benchmark / FINDINGS numbers**, packaged as a shareable card.
-6. **One real user quote** after first use — the most persuasive asset, and the one you can't manufacture.
+5. **One real user quote** after first use — the most persuasive asset, and the one you can't manufacture.
+6. The **routing benchmark / FINDINGS numbers** — docs and deep-dives only, not the pitch.
+   External pitch testing (July 2026) found internal benchmarks (98% routing, UCI 89.8)
+   *reduce* credibility without third-party context: they read as unverifiable engineering
+   notes and invite "according to whose benchmark?"
 
 ---
 
@@ -85,6 +95,10 @@ Priority order:
   waves. The job isn't "don't blow our one chance" — it's to remove the first-run cliff
   *before* spending a wave, because each wave converts better only if the floor is solid.
   (This is why frictionless install/onboarding is distribution work, not feature work.)
+- **Claim replay, not omniscience.** Decision replay is real today; blanket "every decision
+  is explainable" is not yet (component transparency ~31% — issues #47/#48). Outward copy
+  claims precisely what ships — "replay why every answer was routed the way it was" — and
+  the transparency number is positioning work with a deadline, not background engineering debt.
 - **Kill the category sprawl in copy.** Never list "chat client / agent framework / memory
   system / prompt debugger / observability platform" in one breath — it reads as unfocused
   to every audience at once. Pick the one sentence; let the rest be discovered *inside* the
