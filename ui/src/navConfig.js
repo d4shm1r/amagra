@@ -28,8 +28,8 @@ export const SURFACES = [
     { id: "inspector", label: "Inspector", sym: "⊚" },
   ]},
   { id: "cognition", label: "Cognition", sym: "∴", desc: "Monitor system health and reasoning", adv: true, tabs: [
-    // Dashboard = the at-a-glance health grid; Diagnostics folds the five focus
-    // views (UCI/Risk/Events/Plan/Policy) into one tab with internal sections.
+    // Dashboard = the at-a-glance health grid; Diagnostics folds the six focus
+    // views (UCI/Risk/Verifier/Events/Plan/Policy) into one tab with internal sections.
     { id: "cog-dash",    label: "Dashboard",   sym: "▦", group: "Health" },
     { id: "diagnostics", label: "Diagnostics", sym: "✳", group: "Health" },
     { id: "cognitive",   label: "CogOS",       sym: "∞", group: "Advanced" },

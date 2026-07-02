@@ -623,6 +623,85 @@ function SubCard({ label, value, unit = "", color, sub, icon }) {
   );
 }
 
+// ── IdentityPanel ─────────────────────────────────────────────
+// The identity contract (models/identity.py, docs/design/IDENTITY.md):
+// who the system is = intrinsic state (yours) + learned state (earned).
+// The fingerprint hashes the whole snapshot — it only changes when durable
+// state changes, never on restart.
+function IdentityPanel({ identity, fingerprint }) {
+  if (!identity) return null;
+  const intrinsic = identity.intrinsic || {};
+  const learned   = identity.learned   || {};
+  const weights   = learned.decision_weights || {};
+  const goalsN    = intrinsic.goals?.count ?? 0;
+  const keysN     = intrinsic.permissions?.active_keys ?? 0;
+  const profileSet = Object.keys(intrinsic.profile || {}).length > 0;
+  const memN      = learned.memory?.total ?? learned.memory?.count ?? null;
+  const fp        = fingerprint?.fingerprint || "";
+
+  const weightRows = Object.entries(weights).sort((a, b) => a[0].localeCompare(b[0]));
+
+  return (
+    <Panel title="Identity" icon="⛊" action={
+      <span title={fp} style={{
+        fontSize: 10, fontFamily: "monospace", color: T.muted,
+        fontWeight: 500, letterSpacing: 0, textTransform: "none",
+      }}>
+        {fp ? `${fp.slice(0, 12)}…` : "—"} · schema v{fingerprint?.schema_version ?? "?"}
+      </span>
+    }>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 18 }}>
+        {/* Intrinsic — declared by the owner, mutated only by explicit action */}
+        <div>
+          <div style={{ fontSize: 9, color: T.muted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
+            Intrinsic — yours
+          </div>
+          {[
+            { label: "Profile",     value: profileSet ? "set" : "not set" },
+            { label: "Goals",       value: goalsN },
+            { label: "Active keys", value: keysN },
+          ].map(r => (
+            <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: `1px solid ${T.border}` }}>
+              <span style={{ fontSize: 11.5, color: T.mutedLt }}>{r.label}</span>
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: T.text, fontFamily: "monospace" }}>{r.value}</span>
+            </div>
+          ))}
+          {memN != null && (
+            <div style={{ fontSize: 10, color: T.muted, marginTop: 8, lineHeight: 1.5 }}>
+              + {memN} learned memories. Intrinsic state changes only when you change it;
+              learned state moves with every interaction.
+            </div>
+          )}
+        </div>
+
+        {/* Learned — per-agent routing weights earned from real outcomes */}
+        <div>
+          <div style={{ fontSize: 9, color: T.muted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
+            Learned — earned per agent
+          </div>
+          {weightRows.length === 0 ? (
+            <div style={{ fontSize: 11.5, color: T.muted, fontStyle: "italic" }}>No learned weights yet.</div>
+          ) : weightRows.map(([agent, w]) => (
+            <div key={agent} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0" }}>
+              <span style={{ fontSize: 11, color: T.mutedLt, minWidth: 118 }}>{agent.replace(/_/g, " ")}</span>
+              <div style={{ flex: 1, height: 4, background: T.surface2, borderRadius: 2, overflow: "hidden" }}>
+                <div style={{
+                  width: `${Math.min(100, w * 100)}%`, height: "100%",
+                  background: w >= 0.95 ? T.success : w >= 0.85 ? T.accent : T.warn,
+                  borderRadius: 2,
+                }} />
+              </div>
+              <span style={{ fontSize: 10.5, fontFamily: "monospace", color: T.text, minWidth: 44, textAlign: "right" }}>
+                {typeof w === "number" ? w.toFixed(3) : "—"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
 // ── ContradictionsPanel ───────────────────────────────────────
 function ContradictionsPanel({ items }) {
   const [expanded, setExpanded] = useState(null);
@@ -791,6 +870,8 @@ export default function CognitiveOSTab({ coherence: cohProp = null }) {
   const [mem,     setMem]     = useState(null);
   const [contras, setContras] = useState(null);
   const [dyn,     setDyn]     = useState(null);
+  const [ident,   setIdent]   = useState(null);
+  const [identFp, setIdentFp] = useState(null);
   const [dynWin,  setDynWin]  = useState(50);
   const [loading, setLoading] = useState(true);
 
@@ -799,17 +880,21 @@ export default function CognitiveOSTab({ coherence: cohProp = null }) {
 
   const load = useCallback(async () => {
     try {
-      const [dR, mR, ctR, dynR] = await Promise.all([
+      const [dR, mR, ctR, dynR, idR, fpR] = await Promise.all([
         fetch(`${API}/decisions?limit=50`),
         fetch(`${API}/memory/stats`),
         fetch(`${API}/contradictions?limit=30`),
         fetch(`${API}/coherence/dynamics?window=${dynWin}`),
+        fetch(`${API}/identity`),
+        fetch(`${API}/identity/fingerprint`),
       ]);
       setDec(dR.ok     ? await dR.json()  : null);
       setMem(mR.ok     ? await mR.json()  : null);
       setContras(ctR.ok ? await ctR.json() : []);
       const dynData = dynR.ok ? await dynR.json() : [];
       setDyn(Array.isArray(dynData) ? dynData : (dynData?.history || []));
+      setIdent(idR.ok  ? await idR.json() : null);
+      setIdentFp(fpR.ok ? await fpR.json() : null);
     } catch {}
     setLoading(false);
   }, [dynWin]);
@@ -964,6 +1049,13 @@ export default function CognitiveOSTab({ coherence: cohProp = null }) {
           )}
         </Panel>
       </div>
+
+      {/* ── Identity contract ── */}
+      {ident && (
+        <div style={{ marginBottom: 14 }}>
+          <IdentityPanel identity={ident} fingerprint={identFp} />
+        </div>
+      )}
 
       {/* ── Misroute Candidates ── */}
       {misroutes.length > 0 && (
