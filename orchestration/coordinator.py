@@ -287,6 +287,7 @@ def _run_with_reflection(invoke_fn, state: AgentState):
     # Replaces hardcoded proxy (0.75/0.55) as the learning signal for
     # non-reflected requests — grounding learning on real quality.
     _critic_perf: float | None = None
+    _critic_kept: str = ""
     if task and response_raw:
         try:
             agent_type_gate = state.get("reflect_type", "general")
@@ -306,8 +307,10 @@ def _run_with_reflection(invoke_fn, state: AgentState):
                 if retry_score >= gate_score:
                     result       = retry_result
                     response_raw = retry_raw
+                    _critic_kept = "retry"
                     print(f"[critic_gate] retry score={retry_score} accepted")
                 else:
+                    _critic_kept = "first_attempt"
                     print(
                         f"[critic_gate] retry score={retry_score} no improvement, "
                         f"keeping original"
@@ -319,6 +322,7 @@ def _run_with_reflection(invoke_fn, state: AgentState):
                 _log_gate(agent, agent_type_gate, task, gate_score, retry_score, False)
             else:
                 _critic_perf = gate_score
+                _critic_kept = "first_attempt"
                 run_tracer.record_critic(run_id, score_initial=gate_score,
                                          accepted_on_first=True)
                 _log_gate(agent, agent_type_gate, task, gate_score, None, True)
@@ -397,6 +401,12 @@ def _run_with_reflection(invoke_fn, state: AgentState):
         except Exception as e:
             print(f"[coordinator] contradiction gate error: {e}")
 
+    # Responder transparency (#47): quality score + which response was kept,
+    # propagated into `result` so the response.generated event can disclose
+    # them. Starts from the critic gate; the reflected path overrides below.
+    _resp_quality: float | None = _critic_perf
+    _resp_kept: str = _critic_kept
+
     if state.get("reflect", False) or reflect_level in {"light", "full"}:
         # ── Reflected path: grounded performance signal ───────
         try:
@@ -462,8 +472,11 @@ def _run_with_reflection(invoke_fn, state: AgentState):
                 },
             )
 
+            if history:
+                _resp_quality = score_final
             if refined and refined != response:
                 print(f"[reflection] {reflect_type} response improved")
+                _resp_kept = "reflection_rewrite"
                 result = {
                     **result,
                     "messages": [*result["messages"][:-1], AIMessage(content=refined)],
@@ -515,6 +528,10 @@ def _run_with_reflection(invoke_fn, state: AgentState):
     if gram_winner:
         updates["gram_winner"] = gram_winner
         updates["gram_log"]    = gram_log
+    if _resp_quality is not None:
+        # Honest values only — keys absent when the critic gate didn't run.
+        updates["response_quality"] = round(float(_resp_quality), 3)
+        updates["response_kept"]    = _resp_kept or "first_attempt"
     if updates:
         result = {**result, **updates}
 

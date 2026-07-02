@@ -47,8 +47,23 @@ CONFIDENCE_KEYS = frozenset({
 EVIDENCE_KEYS = frozenset({
     "issues", "evidence", "recommendation", "reason", "signal", "args",
     "factors", "memory_id", "memory_ids", "source", "sources",
-    "query", "steps", "parallel_groups",
+    "query", "steps", "parallel_groups", "deltas",
 })
+
+# ── Mechanical components (issue #48) ─────────────────────────
+# Components whose action is a deterministic reduction over fully-disclosed
+# inputs. They have no confidence to disclose — the reduction is certain by
+# construction, and emitting a number would fabricate a value. Classifying
+# them "opaque" misreads mechanical for secretive, so they get their own
+# status and are excluded from the transparency-score denominator.
+MECHANICAL: Dict[str, str] = {
+    "Dispatch": (
+        "Pure frozen reducer (delta algebra): the delta.dispatched payload "
+        "already discloses every input that drove the reduction (base + the "
+        "full materialized delta set per hook). A deterministic reduction "
+        "has no uncertainty, so a confidence value would be fabricated."
+    ),
+}
 
 # ── Component catalog: event-type prefix → human-facing component ──
 # Prefix match against EventType values (see infrastructure/event_bus.py).
@@ -131,7 +146,7 @@ def classify_components(window: int = 2000) -> Dict[str, Any]:
     for comp, slot in agg.items():
         has_conf = bool(slot["conf"])
         has_evid = bool(slot["evid"])
-        rows.append({
+        row = {
             "component":       comp,
             "status":          _status(has_conf, has_evid),
             "events":          slot["events"],
@@ -140,7 +155,11 @@ def classify_components(window: int = 2000) -> Dict[str, Any]:
             "confidence_keys": sorted(slot["conf"]),
             "evidence_keys":   sorted(slot["evid"]),
             "sample_event":    slot["sample"],
-        })
+        }
+        if comp in MECHANICAL:
+            row["status"]    = "mechanical"
+            row["rationale"] = MECHANICAL[comp]
+        rows.append(row)
 
     # Surface cataloged components that emitted nothing as "unobserved".
     observed = {r["component"] for r in rows}
@@ -159,11 +178,15 @@ def classify_components(window: int = 2000) -> Dict[str, Any]:
 
     rows.sort(key=lambda r: (-r["events"], r["component"]))
 
-    summary = {"transparent": 0, "partial": 0, "opaque": 0, "unobserved": 0}
+    summary = {"transparent": 0, "partial": 0, "opaque": 0,
+               "unobserved": 0, "mechanical": 0}
     for r in rows:
         summary[r["status"]] = summary.get(r["status"], 0) + 1
 
-    cataloged = len(set(CATALOG.values()))
+    # Mechanical components are out of scope for the score: they can never
+    # become "transparent" without fabricating confidence, so counting them
+    # in the denominator would permanently cap the score below 1.0.
+    cataloged = len(set(CATALOG.values()) - set(MECHANICAL))
     score = round(summary["transparent"] / cataloged, 3) if cataloged else 0.0
 
     return {

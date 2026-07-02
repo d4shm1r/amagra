@@ -244,6 +244,7 @@ const TP_COLOR = {
   partial:     T.warn,
   opaque:      T.error,
   unobserved:  T.muted,
+  mechanical:  T.muted,
 };
 
 function TransparencyPanel({ data }) {
@@ -263,7 +264,7 @@ function TransparencyPanel({ data }) {
           <div style={{ fontSize: 9, color: T.muted, marginTop: 2 }}>transparent</div>
         </div>
         <div style={{ display: "flex", gap: 5, flexWrap: "wrap", flex: 1 }}>
-          {["transparent", "partial", "opaque", "unobserved"].map(s => (
+          {["transparent", "partial", "opaque", "mechanical", "unobserved"].map(s => (
             summary[s] ? (
               <span key={s} title={s} style={{
                 fontSize: 9, fontFamily: FONT_MONO, fontWeight: 700,
@@ -283,7 +284,9 @@ function TransparencyPanel({ data }) {
           <div key={c.component} title={
             c.status === "unobserved"
               ? "Emitted no events in the observation window"
-              : `confidence: ${c.confidence_keys.join(", ") || "none"}\nevidence: ${c.evidence_keys.join(", ") || "none"}`
+              : c.status === "mechanical"
+                ? c.rationale || "Deterministic reduction over fully-disclosed inputs"
+                : `confidence: ${c.confidence_keys.join(", ") || "none"}\nevidence: ${c.evidence_keys.join(", ") || "none"}`
           } style={{
             display: "flex", alignItems: "center", gap: 8,
             padding: "5px 0", borderBottom: `1px solid ${T.border}`,
