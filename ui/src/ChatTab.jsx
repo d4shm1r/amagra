@@ -892,6 +892,7 @@ export default function ChatTab({
           }}>
             <textarea
               ref={textareaRef}
+              className="chat-composer-input"
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
@@ -923,15 +924,18 @@ export default function ChatTab({
               title={editingIndex != null ? "Resend edited message (Enter)" : "Send (Enter)"}
               style={{
                 width: 38, height: 38, flexShrink: 0, borderRadius: "50%",
-                background: canSend
-                  ? "linear-gradient(135deg, #DEB838 0%, #C48808 55%, #9A6C00 100%)"
-                  : T.surface2,
-                border: canSend ? "none" : `1px solid ${T.border}`,
+                // Elegant white face with a crisp gold ring — premium and calm.
+                // Stays fully legible when empty (a softer glow, never faint or
+                // greyed out); active state just warms up the ring and glow.
+                background: "#FFFFFF",
+                border: `1.5px solid ${canSend ? "#C48808" : "#C4880877"}`,
                 fontSize: 16, fontWeight: 700,
                 cursor: canSend ? "pointer" : "not-allowed",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                color: canSend ? "#FFFDF5" : T.muted,
-                boxShadow: canSend ? "0 2px 10px rgba(196,136,8,0.35)" : "none",
+                color: canSend ? "#B27A05" : "#C48808CC",
+                boxShadow: canSend
+                  ? "0 3px 14px rgba(196,136,8,0.28)"
+                  : "0 1px 5px rgba(72,52,28,0.08)",
                 transition: "all .18s ease",
               }}>↑</button>
           </div>

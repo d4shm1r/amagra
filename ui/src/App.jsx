@@ -370,6 +370,33 @@ export default function App() {
             0 0 44px rgba(196,136,8,0.28);
           transform: translateY(-2px);
         }
+        /* Menu launcher (☰) — a calm cream squircle with a gold hairline ring
+           and gold bars, not a filled gold pill. Matches the app-icon look:
+           soft-embossed white face + luminous gold border. */
+        .menu-fab {
+          display: inline-flex; align-items: center; justify-content: center;
+          cursor: pointer; font-family: inherit;
+          background: linear-gradient(155deg, #FFFEFA 0%, #FBF6EC 100%);
+          border: 1.5px solid rgba(196,136,8,0.55);
+          box-shadow:
+            0 4px 14px rgba(72,52,28,0.10),
+            0 1px 3px rgba(72,52,28,0.07),
+            inset 0 1px 1px rgba(255,255,255,0.90),
+            inset 0 -1px 2px rgba(196,136,8,0.07);
+          transition:
+            transform 200ms cubic-bezier(0.22,1,0.36,1),
+            box-shadow 200ms ease-out,
+            border-color 200ms ease-out;
+        }
+        .menu-fab:hover {
+          border-color: #C48808;
+          box-shadow:
+            0 6px 18px rgba(72,52,28,0.14),
+            0 0 22px rgba(196,136,8,0.18),
+            inset 0 1px 1px rgba(255,255,255,0.95),
+            inset 0 -1px 2px rgba(196,136,8,0.10);
+          transform: translateY(-1px);
+        }
         /* Ghost button — cream fill + luminous gold gradient border (mirrors
            landing .btn-ghost / the GitHub button). For secondary CTAs. */
         .btn-ghost {
@@ -431,11 +458,11 @@ export default function App() {
           {/* The only chrome: a single floating luxurious gold ☰ (top-left, over the content).
               No bar, no labels, no sub-nav — everything lives in the AppLauncher it opens. */}
           <button onClick={() => setLauncherOpen(true)} aria-label="Open menu" title="Menu  (Ctrl+B)"
-            className="btn-gold menu-fab"
+            className="menu-fab"
             style={{ position: "absolute", top: 13, left: 15, zIndex: 50,
               width: 44, height: 44, borderRadius: 14, padding: 0 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FBF6E8"
-              strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C48808"
+              strokeWidth="2.4" strokeLinecap="round" aria-hidden>
               <line x1="3.5" y1="7" x2="20.5" y2="7" /><line x1="3.5" y1="12" x2="20.5" y2="12" /><line x1="3.5" y1="17" x2="20.5" y2="17" />
             </svg>
           </button>
