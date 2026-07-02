@@ -16,6 +16,10 @@ plane) from execution (runtime plane).**
 >
 > **v3 changes** — added vaulted Credentials/Secrets as a distinct scoped
 > resource (§10) and an Evaluation suite — Evaluator, Dataset, EvalRun (§11).
+>
+> **v4 changes** — added Identity as a first-class entity (§14): the stable
+> behavioral core (goals, values, preferences, permissions, accumulated
+> learning) that subsystems read from rather than owning pieces of.
 
 ---
 
@@ -335,3 +339,42 @@ Global Library (platform-owned)
   Workspace design plane and inherit the binding + cascade + environment rules
   for free.
 ```
+
+---
+
+## 14. Identity (v4)
+
+Everything above versions **configuration** (design plane) or records
+**execution** (runtime plane). Neither plane owns the thing users actually
+experience as "my AI": its goals, values, preferences, permissions, and
+accumulated learning. That state was previously emergent — scattered across
+profile config, weight tables, and memory stores. **Identity** names it:
+
+```text
+Identity                    (scoped per Organization; single instance per tenant)
+ ├── Intrinsic              changes via explicit configuration / governance
+ │    ├── Profile             (preferences, values, constraints)
+ │    ├── Goals               (persistent intents)
+ │    └── Permissions         (access grants — references, never secrets)
+ └── Learned                changes via attributable learning events
+      ├── DecisionWeights     (routing experience)
+      ├── Calibration         (confidence-vs-outcome history)
+      └── MemoryRefs          (references into MemoryStores — not the records)
+```
+
+- **Reference, don't own (§2) applies:** Identity holds *references* to
+  MemoryStores and Credentials, never copies. The records stay in their planes.
+- **It is not versioned config and not a runtime artifact** — it is a third
+  kind of state whose mutation discipline is the contract: intrinsic parts
+  change through governance, learned parts through learning events, and
+  **capability replacement (a new model, provider, or tool version) must not
+  modify it.** Swapping an Environment's model version (§6) leaves Identity
+  untouched by definition.
+- **Snapshot/restore and migration** operate on the single serialized Identity
+  document, giving portability between deployments and a concrete answer to
+  "why did the system behave this way" (its identity at time T is replayable).
+- In multi-tenant mode Identity is per-Organization and read access is gated
+  like any other resource.
+
+Reference implementation and invariants: `docs/IDENTITY.md`,
+`models/identity.py`, `tests/test_identity.py`.

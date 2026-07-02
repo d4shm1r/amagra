@@ -310,6 +310,7 @@ from routes.readiness   import router as readiness_router
 from routes.debug_prompt import router as debug_prompt_router
 from routes.consensus    import router as consensus_router
 from routes.project      import router as project_router
+from routes.identity     import router as identity_router
 
 app.include_router(core_router)
 app.include_router(register_router)
@@ -337,6 +338,7 @@ app.include_router(readiness_router)
 app.include_router(debug_prompt_router)
 app.include_router(consensus_router)
 app.include_router(project_router)
+app.include_router(identity_router)
 
 # ── Bundled UI ────────────────────────────────────────────────────────────────
 # Mounted LAST so every API route above takes precedence. html=True serves
