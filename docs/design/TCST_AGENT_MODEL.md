@@ -240,6 +240,15 @@ made confidence-dependent), not raised. Only after that diagnostic exists should
 the fixed `0.15 / 0.05` gains be learned from routing outcomes; tuning a closed
 feedback loop without it tunes blind.
 
+> **Status: the diagnostic shipped with the coupling.**
+> `infrastructure/skill_graph.entropy_report()` measures rolling selection
+> entropy (raw bits, normalized against the 21-skill capacity, older-vs-newer
+> half delta, coupled-selection share) over the last ≤512 selections, served at
+> `GET /cos/skills/entropy`. `falling: true` (newer half ≥ 0.5 bits below the
+> older) is the attenuate-don't-raise signal described above. The gains remain
+> fixed constants — learning them is still gated, now on what the report shows
+> under real load, not on missing instrumentation.
+
 ---
 
 ## 6. Bottom line

@@ -29,8 +29,11 @@ Usage:
     agent = skill_to_agent(skills[0]) if skills else "knowledge_learning"
 """
 
+import math
+import time
+from collections import Counter, deque
 from dataclasses import dataclass
-from typing import List
+from typing import Any, Dict, List
 
 # ── Skill node ────────────────────────────────────────────────
 
@@ -326,15 +329,87 @@ _ACTION_AFFINITY: dict[str, set[str]] = {
 #
 # CALIBRATION PENDING — these are hand-tuned coupling *gains*, not learned
 # parameters. They set the stability regime of the R→A→M→R feedback loop, so
-# they are deliberately fixed until there is a diagnostic for it. The signal to
-# watch before tuning them is rolling skill-selection *entropy*: if it falls
-# while task success stays flat, the closed loop is saturating (skill diversity
-# collapsing onto R's prior) and these gains should be attenuated — or made
-# confidence-dependent — rather than raised. Do not learn these against routing
-# outcomes until that entropy diagnostic exists, or the feedback loop tunes
-# itself blind. See docs/design/TCST_AGENT_MODEL.md §5.
+# they are deliberately fixed. The signal to watch before tuning them is
+# rolling skill-selection *entropy* — now measured by entropy_report() below
+# (served at GET /cos/skills/entropy): if it falls while task success stays
+# flat, the closed loop is saturating (skill diversity collapsing onto R's
+# prior) and these gains should be attenuated — or made confidence-dependent —
+# rather than raised. Do not learn these against routing outcomes without
+# watching that report, or the feedback loop tunes itself blind.
+# See docs/design/TCST_AGENT_MODEL.md §5.
 _BIAS_PREFER_AGENT = 0.15
 _BIAS_ACTION_FIT   = 0.05
+
+# ── Entropy diagnostic (the gate for tuning the gains above) ──
+# Every select_skills() call that matches something appends its top skill
+# here; entropy_report() reads it back. In-process and bounded — a rolling
+# diagnostic window, not durable telemetry.
+_SELECTION_LOG: deque = deque(maxlen=512)
+
+
+def _shannon_bits(counts: List[int]) -> float:
+    """Shannon entropy in bits over a count distribution."""
+    total = sum(counts)
+    if total == 0:
+        return 0.0
+    h = 0.0
+    for c in counts:
+        if c:
+            p = c / total
+            h -= p * math.log2(p)
+    return h
+
+
+def entropy_report(window: int = 100) -> Dict[str, Any]:
+    """
+    Rolling skill-selection entropy over the last `window` selections.
+
+    The saturation signal from the coupling-gain comment above, made
+    measurable: `delta_bits` compares the newer half of the window against
+    the older half — a clearly negative delta means selection diversity is
+    falling, and if task success is flat at the same time, the R→A coupling
+    is collapsing skill diversity onto reasoning's prior (attenuate the
+    gains, don't raise them).
+    """
+    sample = list(_SELECTION_LOG)[-window:]
+    n = len(sample)
+    capacity_bits = math.log2(len(_SKILLS)) if _SKILLS else 0.0
+
+    if n == 0:
+        return {
+            "n": 0, "window": window, "distinct": 0,
+            "entropy_bits": None, "entropy_norm": None,
+            "capacity_bits": round(capacity_bits, 3),
+            "coupled_share": None, "older_bits": None, "newer_bits": None,
+            "delta_bits": None, "falling": False,
+            "note": "no selections recorded yet",
+        }
+
+    names   = [name for _, name, _ in sample]
+    coupled = sum(1 for _, _, c in sample if c)
+    h       = _shannon_bits(list(Counter(names).values()))
+
+    older, newer = names[: n // 2], names[n // 2:]
+    h_old = _shannon_bits(list(Counter(older).values())) if older else None
+    h_new = _shannon_bits(list(Counter(newer).values()))
+    delta = round(h_new - h_old, 3) if h_old is not None else None
+    # "Falling" needs both halves populated and a drop beyond half a bit —
+    # small wobble is noise, a half-bit drop halves effective diversity.
+    falling = h_old is not None and (h_new - h_old) < -0.5
+
+    return {
+        "n": n, "window": window, "distinct": len(set(names)),
+        "entropy_bits":  round(h, 3),
+        "entropy_norm":  round(h / capacity_bits, 3) if capacity_bits else None,
+        "capacity_bits": round(capacity_bits, 3),
+        "coupled_share": round(coupled / n, 3),
+        "older_bits": round(h_old, 3) if h_old is not None else None,
+        "newer_bits": round(h_new, 3),
+        "delta_bits": delta,
+        "falling": falling,
+        "note": ("selection diversity falling — check task success before "
+                 "touching coupling gains" if falling else "stable"),
+    }
 
 
 def _action_fits(action: str, skill: "SkillNode") -> bool:
@@ -380,6 +455,10 @@ def select_skills(query: str, n: int = 3, *,
             scored.append(node)
 
     scored.sort(key=lambda s: s.score, reverse=True)
+    if scored:
+        # Feed the entropy diagnostic: top skill + whether coupling was live.
+        _SELECTION_LOG.append((time.time(), scored[0].name,
+                               bool(prefer or action)))
     return scored[:n]
 
 
