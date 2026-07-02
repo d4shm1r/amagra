@@ -63,6 +63,7 @@ function loadSettings() {
 export default function App() {
   const [activeTab,    setActiveTab]    = useState("chat");
   const [launcherOpen, setLauncherOpen] = useState(false);   // the unified ☰ app-grid menu
+  const [launcherSearchSignal, setLauncherSearchSignal] = useState(0); // bumped by ⌘K → launcher focuses its search
   const [researchDoc,  setResearchDoc]  = useState(null);
   const [apiStatus,    setApiStatus]    = useState("checking");
   const [activityPct,  setActivityPct]  = useState(0);
@@ -254,9 +255,9 @@ export default function App() {
             case ",": e.preventDefault(); setActiveModal("settings");  break;
             case "/": e.preventDefault(); setActiveModal("shortcuts"); break;
             case "b": case "B": e.preventDefault(); setLauncherOpen(o => !o); break;
-            // Command-palette convention: ⌘/Ctrl+K summons the launcher; its
-            // search field autofocuses, so this is "search everything".
-            case "k": case "K": e.preventDefault(); setLauncherOpen(true); break;
+            // Command-palette convention: ⌘/Ctrl+K summons the launcher with
+            // search focused — the ☰ path opens it calm, no field activated.
+            case "k": case "K": e.preventDefault(); setLauncherOpen(true); setLauncherSearchSignal(n => n + 1); break;
             default: break;
           }
         }
@@ -460,13 +461,20 @@ export default function App() {
         <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
           {/* The only chrome: a single floating luxurious gold ☰ (top-left, over the content).
               No bar, no labels, no sub-nav — everything lives in the AppLauncher it opens. */}
-          <button onClick={() => setLauncherOpen(true)} aria-label="Open menu" title="Menu  (Ctrl+B)"
+          <button onClick={() => setLauncherOpen(o => !o)}
+            aria-label={launcherOpen ? "Close menu" : "Open menu"}
+            title={launcherOpen ? "Close menu  (Ctrl+B)" : "Menu  (Ctrl+B)"}
             className="menu-fab"
-            style={{ position: "absolute", top: 13, left: 15, zIndex: 50,
+            style={{ position: launcherOpen ? "fixed" : "absolute", top: 13, left: 15,
+              zIndex: launcherOpen ? 9010 : 50,
               width: 44, height: 44, borderRadius: 14, padding: 0 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C48808"
-              strokeWidth="2.4" strokeLinecap="round" aria-hidden>
-              <line x1="3.5" y1="7" x2="20.5" y2="7" /><line x1="3.5" y1="12" x2="20.5" y2="12" /><line x1="3.5" y1="17" x2="20.5" y2="17" />
+              strokeWidth="2.4" strokeLinecap="round" aria-hidden
+              style={{ transition: "transform 240ms cubic-bezier(0.22,1,0.36,1)",
+                transform: launcherOpen ? "rotate(90deg)" : "none" }}>
+              {launcherOpen
+                ? <><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></>
+                : <><line x1="3.5" y1="7" x2="20.5" y2="7" /><line x1="3.5" y1="12" x2="20.5" y2="12" /><line x1="3.5" y1="17" x2="20.5" y2="17" /></>}
             </svg>
           </button>
 
@@ -553,6 +561,7 @@ export default function App() {
         apiStatus={apiStatus}
         coherence={coherence}
         onModal={setActiveModal}
+        searchSignal={launcherSearchSignal}
       />
 
       {/* ── Modal overlay ── */}

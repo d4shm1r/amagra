@@ -6,17 +6,6 @@ import { AGENTS, PROGRESS_STEPS, AGENT_ID_REVERSE } from "./constants";
 import AgentContextPanel from "./AgentContextPanel";
 import { T, FONT_DISPLAY } from "./theme";
 
-const STARTER_PROMPTS = [
-  { icon: "⊃", text: "My Wi-Fi keeps dropping — help me diagnose it" },
-  { icon: "λ", text: "Write a Python script to watch a folder for new files" },
-  { icon: "∴", text: "Explain how neural networks learn with backpropagation" },
-  { icon: "⬡", text: "Set up a .NET 8 minimal API with EF Core and SQLite" },
-  { icon: "∑", text: "Analyse this CSV and find outliers using pandas" },
-  { icon: "⚙", text: "Write a Docker Compose setup for a FastAPI + Postgres app" },
-  { icon: "⊹", text: "Build a React hook that debounces a search input" },
-  { icon: "¶", text: "Improve the clarity of this technical paragraph" },
-];
-
 // ── Signal Pill ────────────────────────────────────────────────
 function Pill({ label, color, title }) {
   return (
@@ -610,13 +599,14 @@ export default function ChatTab({
             {messages.length === 0 && (
               <div style={{ paddingTop: 56, textAlign: "center" }}>
 
-                {/* Gold AMAGRA logo */}
+                {/* Gold AMAGRA logo — inert brand mark, not selectable or clickable */}
                 <div style={{
                   fontSize: 44, fontWeight: 600, letterSpacing: "0.06em",
                   fontFamily: FONT_DISPLAY,
                   background: "linear-gradient(135deg, #6C4C00 0%, #9A6C00 18%, #C48808 36%, #DEB838 52%, #C48808 68%, #9A6C00 84%, #6C4C00 100%)",
                   WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                   backgroundClip: "text", marginBottom: 14, lineHeight: 1,
+                  userSelect: "none", WebkitUserSelect: "none", pointerEvents: "none",
                 }}>
                   AMAGRA
                 </div>
@@ -625,40 +615,19 @@ export default function ChatTab({
                 <div style={{
                   fontSize: 16, fontWeight: 500, color: T.text, marginBottom: 5,
                   fontFamily: FONT_DISPLAY, letterSpacing: "0.005em",
+                  userSelect: "none", WebkitUserSelect: "none", pointerEvents: "none",
                 }}>
                   The AI you can trust with long-term work.
                 </div>
-                <div style={{ fontSize: 12, color: T.muted, maxWidth: 420, margin: "0 auto 28px", lineHeight: 1.65 }}>
+                <div style={{
+                  fontSize: 12, color: T.muted, maxWidth: 420, margin: "0 auto 28px", lineHeight: 1.65,
+                  userSelect: "none", WebkitUserSelect: "none", pointerEvents: "none",
+                }}>
                   Ask anything. The right specialist answers, remembers your work, and shows you
                   exactly how it got there.
                 </div>
 
-                {/* Starter prompts — elegant entry points (online only) */}
-                {online ? (
-                  <div style={{
-                    display: "grid", gap: 8, maxWidth: 560, margin: "0 auto",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(248px, 1fr))",
-                  }}>
-                    {STARTER_PROMPTS.map(s => (
-                      <button
-                        key={s.text}
-                        onClick={() => {
-                          setInput(s.text);
-                          setTimeout(() => { autoResize(); textareaRef.current?.focus(); }, 0);
-                        }}
-                        className="lux-card lux-card-i"
-                        style={{
-                          display: "flex", alignItems: "center", gap: 11,
-                          padding: "11px 14px", cursor: "pointer",
-                          fontFamily: "inherit", textAlign: "left",
-                        }}
-                      >
-                        <span style={{ fontSize: 15, color: T.accent, flexShrink: 0, lineHeight: 1, fontFamily: "monospace" }}>{s.icon}</span>
-                        <span style={{ fontSize: 12, color: T.mutedLt, lineHeight: 1.4 }}>{s.text}</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
+                {!online && (
                   <div style={{ fontSize: 11, color: T.error, marginBottom: 36 }}>
                     ⚠ Backend offline — run <code style={{ background: "#B4231818", padding: "1px 5px", borderRadius: 3 }}>ai-start</code>
                   </div>

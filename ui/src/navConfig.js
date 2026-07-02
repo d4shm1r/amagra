@@ -5,23 +5,25 @@
 //
 //   Workspace  = do work        Memory   = manage knowledge
 //   Runs       = inspect runs    Research = experiment
-//   Cognition  = monitor system  Settings = configure
+//   Cognition  = monitor system  Setup    = configure
 // Per-tab `sym` gives each tile its own mark for recognition; the surface `sym`
 // stays the section signature (and the fallback). Glyphs stay in the geometric /
 // serif language of the theme — never emoji, which ignore the palette.
 export const SURFACES = [
   { id: "workspace", label: "Workspace", sym: "▸", desc: "Work with your project", tabs: [
+    // Create tools stay ungrouped (the section's front door); planning tools
+    // sit under a "Plan" sub-header — all adv, so Simple mode shows no header.
     { id: "chat",          label: "Chat",          sym: "⟡" },
     { id: "prompt",        label: "Prompt IDE",    sym: "✎" },
     { id: "consensus",     label: "Consensus",     sym: "⁂" },
     { id: "explain",       label: "Explain",       sym: "∵", adv: true },
-    { id: "goals",         label: "Goals",         sym: "◎", adv: true },
-    { id: "tasks",         label: "Tasks",         sym: "≣", adv: true },
-    { id: "project-state", label: "Project State", sym: "⊡", adv: true },
+    { id: "goals",         label: "Goals",         sym: "◎", adv: true, group: "Plan" },
+    { id: "tasks",         label: "Tasks",         sym: "≣", adv: true, group: "Plan" },
+    { id: "project-state", label: "Project State", sym: "⊡", adv: true, group: "Plan" },
   ]},
   { id: "runs", label: "Runs", sym: "⊙", desc: "Inspect agent executions", adv: true, tabs: [
     { id: "overview",  label: "Overview",  sym: "◉" },
-    { id: "runs",      label: "Runs",      sym: "⊙" },
+    { id: "runs",      label: "All runs",  sym: "⊙" },  // "Runs" tile inside the Runs section read as a duplicate
     { id: "brain",     label: "Decisions", sym: "◬" },   // absorbs Trace (Live view) + Replay (inspector action)
     { id: "inspector", label: "Inspector", sym: "⊚" },
   ]},
@@ -35,23 +37,28 @@ export const SURFACES = [
     { id: "timeline",    label: "Timeline",    sym: "↺", group: "Advanced" },
   ]},
   { id: "memory", label: "Memory", sym: "◈", desc: "Explore stored knowledge and context", tabs: [
+    // Library is the friendly front door; the technical views live under one
+    // sub-header so the section leads with what most users came for.
     { id: "library",   label: "Library",    sym: "❧" },
-    { id: "memory",    label: "Browser",    sym: "◈", adv: true },
-    { id: "knowledge", label: "Knowledge",  sym: "⊛", adv: true },
-    { id: "map",       label: "Memory Map", sym: "⊞", adv: true },
-    { id: "mindmap",   label: "Mind Map",   sym: "✧", adv: true },
+    { id: "memory",    label: "Browser",    sym: "◈", adv: true, group: "Under the hood" },
+    { id: "knowledge", label: "Knowledge",  sym: "⊛", adv: true, group: "Under the hood" },
+    { id: "map",       label: "Memory Map", sym: "⊞", adv: true, group: "Under the hood" },
+    { id: "mindmap",   label: "Mind Map",   sym: "✧", adv: true, group: "Under the hood" },
   ]},
   { id: "research", label: "Research", sym: "⊹", desc: "Experiment, analyze, and compare", adv: true, tabs: [
     { id: "research", label: "Lab",      sym: "⊹" },
     { id: "data",     label: "Analysis", sym: "∑" },
   ]},
-  { id: "settings", label: "Settings", sym: "⚙", desc: "Configure Amagra", tabs: [
+  // "Setup" (was "Settings") — renamed so the surface stops colliding with the
+  // Settings *modal* in the launcher's System section. Essentials (Guide, Model,
+  // Releases) stay ungrouped; project-meta tabs sit under a "Project" sub-header.
+  { id: "settings", label: "Setup", sym: "⚙", desc: "Configure Amagra", tabs: [
     { id: "guide",    label: "Guide",    sym: "§" },
     { id: "model",    label: "Model",    sym: "⬡" },
-    { id: "progress", label: "Progress", sym: "◐", adv: true },
-    { id: "promises", label: "Promises", sym: "✓", adv: true },
-    { id: "log",      label: "Log",      sym: "▤", adv: true },
     { id: "releases", label: "Releases", sym: "❖" },
+    { id: "progress", label: "Progress", sym: "◐", adv: true, group: "Project" },
+    { id: "promises", label: "Promises", sym: "✓", adv: true, group: "Project" },
+    { id: "log",      label: "Log",      sym: "▤", adv: true, group: "Project" },
   ]},
 ];
 

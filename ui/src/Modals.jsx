@@ -185,7 +185,7 @@ const SHORTCUT_GROUPS = [
     ["Cognition",         "Ctrl+4"],
     ["Memory",            "Ctrl+5"],
     ["Research",          "Ctrl+6"],
-    ["Settings",          "Ctrl+7"],
+    ["Setup",             "Ctrl+7"],
     ["Search menu",       "Ctrl+K"],
   ]},
   { title: "Debug", rows: [
