@@ -186,7 +186,7 @@ const SHORTCUT_GROUPS = [
     ["Memory",            "Ctrl+5"],
     ["Research",          "Ctrl+6"],
     ["Settings",          "Ctrl+7"],
-    ["Focus Chat input",  "Ctrl+K"],
+    ["Search menu",       "Ctrl+K"],
   ]},
   { title: "Debug", rows: [
     ["Decisions",         "Ctrl+Shift+D"],
@@ -208,7 +208,7 @@ const SHORTCUT_GROUPS = [
     ["Version History",   "Ctrl+Shift+H"],
   ]},
   { title: "Interface", rows: [
-    ["Toggle Sidebar",    "Ctrl+B"],
+    ["Toggle menu",       "Ctrl+B"],
     ["Open Settings",     "Ctrl+,"],
     ["Keyboard Shortcuts","Ctrl+/"],
     ["Close modal",       "Escape"],
@@ -231,10 +231,10 @@ const SIMPLE_SHORTCUT_GROUPS = [
     ["Library",           "Ctrl+5"],
     ["Model",             "Ctrl+6"],
     ["Guide",             "Ctrl+7"],
-    ["Focus Chat input",  "Ctrl+K"],
+    ["Search menu",       "Ctrl+K"],
   ]},
   { title: "Interface", rows: [
-    ["Toggle Sidebar",    "Ctrl+B"],
+    ["Toggle menu",       "Ctrl+B"],
     ["Open Settings",     "Ctrl+,"],
     ["Keyboard Shortcuts","Ctrl+/"],
     ["Close modal",       "Escape"],

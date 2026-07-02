@@ -200,10 +200,15 @@ export default function App() {
     else if (action.startsWith("doc:")) { setResearchDoc(action.slice(4)); navTo("research"); }
   };
 
-  // In Simple mode, hidden surfaces/sub-tabs are unreachable from the chrome but
-  // can still be hit via keyboard shortcuts — bounce off them to a visible view.
+  // Switching to Simple mode while sitting on a now-hidden surface/sub-tab
+  // bounces to a visible view. Only on the mode FLIP itself — an explicit
+  // navigation to an Advanced tab (launcher search, restored session) is a
+  // deliberate ask and must stick even in Simple mode.
+  const prevModeRef = useRef(mode);
   useEffect(() => {
-    if (mode !== "simple") return;
+    const flipped = prevModeRef.current !== mode;
+    prevModeRef.current = mode;
+    if (!flipped || mode !== "simple") return;
     const s = surfaceOf(activeTab);
     // Bounce off Advanced-only surfaces entirely…
     if (NAV.find(n => n.id === s)?.adv) { navTo("chat"); return; }
@@ -249,11 +254,9 @@ export default function App() {
             case ",": e.preventDefault(); setActiveModal("settings");  break;
             case "/": e.preventDefault(); setActiveModal("shortcuts"); break;
             case "b": case "B": e.preventDefault(); setLauncherOpen(o => !o); break;
-            case "k": case "K":
-              e.preventDefault();
-              navTo("chat");
-              setTimeout(() => document.querySelector("textarea")?.focus(), 80);
-              break;
+            // Command-palette convention: ⌘/Ctrl+K summons the launcher; its
+            // search field autofocuses, so this is "search everything".
+            case "k": case "K": e.preventDefault(); setLauncherOpen(true); break;
             default: break;
           }
         }

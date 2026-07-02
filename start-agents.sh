@@ -87,11 +87,13 @@ cmd_start() {
         run "Opening AMAGRA desktop window..."
         # setsid: run Electron in its own session so a hangup to this script's
         #   process group can't reach it (Electron quits on SIGHUP; nohup only
-        #   shields the npm wrapper, not the Electron grandchild).
-        # env -u ELECTRON_RUN_AS_NODE: some shells (e.g. the VS Code terminal)
-        #   export it, which makes Electron boot as plain Node and crash.
-        ( cd "$AI_DIR/desktop" && setsid env -u ELECTRON_RUN_AS_NODE AMAGRA_DEV=1 \
-            npm start >"$LOG_DIR/desktop.log" 2>&1 & echo $! >"$LOG_DIR/desktop.pid" )
+        #   shields the wrapper, not the Electron grandchild).
+        # run.sh (not `npm start`): it unsets ELECTRON_RUN_AS_NODE and passes
+        #   --no-sandbox — required here because the npm-installed chrome-sandbox
+        #   isn't setuid root and Ubuntu's apparmor_restrict_unprivileged_userns=1
+        #   blocks the fallback, so a bare `electron .` aborts with SIGTRAP.
+        ( cd "$AI_DIR/desktop" && setsid env AMAGRA_DEV=1 \
+            bash run.sh >"$LOG_DIR/desktop.log" 2>&1 & echo $! >"$LOG_DIR/desktop.pid" )
         ok "Desktop launching (logs/desktop.log)"
       fi ;;
     browser)

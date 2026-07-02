@@ -6,7 +6,7 @@
 // Design contract (docs/DESIGN_PRINCIPLES.md): chat is the clean home; navigation
 // is summoned, not always-on. Gilded Calm — cream field, gold as the signature
 // (never the hierarchy system), serif AMAGRA wordmark, calm ease-out motion.
-import { useEffect, useState, useCallback } from "react";
+import { Fragment, useEffect, useState, useCallback, useRef } from "react";
 import { API } from "./api";
 import { SURFACES, NAV, surfaceOf } from "./navConfig";
 import { T, LUX, FONT_UI, FONT_DISPLAY, EASE, DUR } from "./theme";
@@ -15,35 +15,42 @@ import { T, LUX, FONT_UI, FONT_DISPLAY, EASE, DUR } from "./theme";
 export const chatEvent = (name, detail) =>
   window.dispatchEvent(new CustomEvent(name, { detail }));
 
-function Tile({ label, sym, sub, active, onClick, ariaLabel }) {
+// `primary` marks the menu's one visual anchor (New chat): a double-width tile
+// with icon-beside-text and the gold chip worn permanently — everything else
+// stays a quiet square, so the eye has a landing point.
+function Tile({ label, sym, sub, active, primary, onClick, ariaLabel }) {
+  const gold = active || primary;
   return (
     <button
       onClick={onClick}
       aria-label={ariaLabel || label}
       className="launch-tile"
       style={{
-        display: "flex", flexDirection: "column", gap: 11, textAlign: "left",
+        display: "flex", flexDirection: primary ? "row" : "column",
+        alignItems: primary ? "center" : undefined,
+        gap: primary ? 13 : 11, textAlign: "left",
+        gridColumn: primary ? "span 2" : undefined,
         padding: "15px 15px", minHeight: 96, cursor: "pointer",
         borderRadius: 14, fontFamily: FONT_UI,
-        border: `1px solid ${active ? T.accent : T.border}`,
+        border: `1px solid ${gold ? T.accent : T.border}`,
         background: active ? `${T.accent}0E` : T.surface,
         transition: `transform ${DUR.base} ${EASE.out}, border-color ${DUR.base} ${EASE.out}, background ${DUR.base} ${EASE.out}, box-shadow ${DUR.base} ${EASE.out}`,
       }}
     >
       {/* app-icon-style chip */}
       <span aria-hidden className="tile-ico" style={{
-        width: 30, height: 30, borderRadius: 9, flexShrink: 0,
+        width: primary ? 38 : 30, height: primary ? 38 : 30, borderRadius: primary ? 11 : 9, flexShrink: 0,
         display: "inline-flex", alignItems: "center", justifyContent: "center",
-        fontSize: 15, lineHeight: 1, fontFamily: FONT_DISPLAY,
-        color: active ? "#6C4C00" : T.accent2,
-        background: active ? "linear-gradient(135deg,#FFE880 0%,#DEB838 55%,#C48808 100%)" : `${T.accent}14`,
-        border: `1px solid ${active ? "transparent" : "rgba(196,136,8,0.20)"}`,
-        boxShadow: active ? "inset 0 1px 1px rgba(255,248,215,0.6)" : "none",
+        fontSize: primary ? 19 : 15, lineHeight: 1, fontFamily: FONT_DISPLAY,
+        color: gold ? "#6C4C00" : T.accent2,
+        background: gold ? "linear-gradient(135deg,#FFE880 0%,#DEB838 55%,#C48808 100%)" : `${T.accent}14`,
+        border: `1px solid ${gold ? "transparent" : "rgba(196,136,8,0.20)"}`,
+        boxShadow: gold ? "inset 0 1px 1px rgba(255,248,215,0.6)" : "none",
       }}>{sym}</span>
       <div style={{ minWidth: 0, width: "100%" }}>
         <div style={{
-          fontSize: 13, fontWeight: active ? 700 : 600,
-          color: active ? T.text : T.mutedLt, letterSpacing: "-0.01em",
+          fontSize: primary ? 14.5 : 13, fontWeight: active || primary ? 700 : 600,
+          color: active || primary ? T.text : T.mutedLt, letterSpacing: "-0.01em",
           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
         }}>{label}</div>
         {sub && <div style={{ fontSize: 10.5, color: T.muted, marginTop: 3, lineHeight: 1.3,
@@ -53,7 +60,7 @@ function Tile({ label, sym, sub, active, onClick, ariaLabel }) {
   );
 }
 
-function Section({ sym, title, desc, children, delay = 0 }) {
+function Section({ sym, title, desc, children, extra, delay = 0 }) {
   return (
     <section className="launch-sec" style={{ marginBottom: 30, animationDelay: `${delay}ms` }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginBottom: 12, paddingLeft: 2 }}>
@@ -68,7 +75,84 @@ function Section({ sym, title, desc, children, delay = 0 }) {
       }}>
         {children}
       </div>
+      {extra}
     </section>
+  );
+}
+
+// ── Recent threads: compact time-grouped rows (not app tiles) ─────────────────
+// Threads are history objects, not destinations — they read as a list, grouped
+// by recency, so the eye separates "where can I go" (tiles) from "what was I
+// doing" (rows).
+function relTime(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const s = (Date.now() - d.getTime()) / 1000;
+  if (s < 60) return "now";
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h`;
+  if (s < 7 * 86400) return `${Math.floor(s / 86400)}d`;
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function threadGroups(threads) {
+  const today = new Date().toDateString();
+  const yesterday = new Date(Date.now() - 864e5).toDateString();
+  const groups = { Today: [], Yesterday: [], Earlier: [] };
+  for (const t of threads) {
+    const d = new Date(t.updated_at || t.created_at);
+    const key = isNaN(d) ? "Earlier"
+      : d.toDateString() === today ? "Today"
+      : d.toDateString() === yesterday ? "Yesterday" : "Earlier";
+    groups[key].push(t);
+  }
+  return Object.entries(groups).filter(([, items]) => items.length);
+}
+
+function ThreadRow({ thread, onClick }) {
+  const title = thread.title || "Untitled";
+  const turns = thread.turn_count || 0;
+  return (
+    <button
+      onClick={onClick}
+      className="launch-row"
+      aria-label={`Open thread: ${title}`}
+      title={`${title} — ${turns} turn${turns === 1 ? "" : "s"}`}
+      style={{
+        display: "flex", alignItems: "center", gap: 10, width: "100%",
+        padding: "8px 12px", borderRadius: 10, cursor: "pointer", textAlign: "left",
+        border: "1px solid transparent", background: "transparent", fontFamily: FONT_UI,
+        transition: `background ${DUR.base} ${EASE.out}, border-color ${DUR.base} ${EASE.out}`,
+      }}
+    >
+      <span aria-hidden style={{ fontSize: 12, lineHeight: 1, color: T.accent2, fontFamily: FONT_DISPLAY, flexShrink: 0 }}>✎</span>
+      <span style={{
+        flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 600, color: T.mutedLt,
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+      }}>{title}</span>
+      <span style={{ fontSize: 10.5, color: T.muted, flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+        {relTime(thread.updated_at || thread.created_at)}
+      </span>
+    </button>
+  );
+}
+
+function RecentThreads({ threads, onSwitch }) {
+  if (!threads.length) return null;
+  return (
+    <div style={{ marginTop: 16 }}>
+      {threadGroups(threads).map(([label, items]) => (
+        <div key={label} style={{ marginBottom: 6 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em",
+            textTransform: "uppercase", color: T.muted, padding: "0 2px 5px", fontFamily: FONT_UI }}>
+            {label}
+          </div>
+          <div style={{ display: "grid", gap: 2, gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
+            {items.map(t => <ThreadRow key={t.id} thread={t} onClick={() => onSwitch(t.id)} />)}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -76,21 +160,36 @@ export default function AppLauncher({
   open, onClose, activeTab, onNav, mode, onToggleMode, apiStatus, coherence, onModal,
 }) {
   const [threads, setThreads] = useState([]);
+  const [query, setQuery] = useState("");
+  const searchRef = useRef(null);
   const online = apiStatus === "online";
   const currentSurface = surfaceOf(activeTab);
 
-  // Esc to close.
+  // Esc clears the search first; a second Esc closes the launcher.
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => { if (e.key === "Escape") { e.preventDefault(); onClose(); } };
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        if (query) setQuery(""); else onClose();
+      }
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, onClose, query]);
+
+  // Fresh query + focused search every time the launcher opens (⌘K-style).
+  useEffect(() => {
+    if (!open) return;
+    setQuery("");
+    const t = setTimeout(() => searchRef.current?.focus(), 60);
+    return () => clearTimeout(t);
+  }, [open]);
 
   // Pull recent threads when the launcher opens.
   useEffect(() => {
     if (!open || !online) return;
-    fetch(`${API}/threads?limit=8`)
+    fetch(`${API}/threads?limit=12`)
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.threads) setThreads(d.threads); })
       .catch(() => {});
@@ -109,7 +208,35 @@ export default function AppLauncher({
 
   if (!open) return null;
 
-  const surfaces = SURFACES.filter(s => mode !== "simple" || !s.adv);
+  // Search filters everything the launcher can reach. A live query deliberately
+  // ignores Simple mode — typing a name is an explicit ask, so Advanced tools
+  // are findable even when the grid hides them.
+  const q = query.trim().toLowerCase();
+  const hit = (label) => label.toLowerCase().includes(q);
+
+  const actions = [
+    { label: "New chat", sym: "＋", sub: "start a fresh thread",  run: newChat, primary: true },
+    { label: "Context",  sym: "◈", sub: "what the model sees",   run: () => openChatPanel("context") },
+    { label: "Advanced", sym: "⚙", sub: "agent · reflect · pin", run: () => openChatPanel("advanced") },
+  ].filter(a => !q || hit(a.label));
+
+  const visibleSurfaces = (q
+    ? SURFACES.map(s => [s, s.tabs.filter(t => hit(t.label) || hit(s.label))])
+    : SURFACES.filter(s => mode !== "simple" || !s.adv)
+        .map(s => [s, s.tabs.filter(t => mode !== "simple" || !t.adv)])
+  ).filter(([, tabs]) => tabs.length);
+
+  const shownThreads = q ? threads.filter(t => hit(t.title || "Untitled")) : threads;
+  const noResults = q && !actions.length && !visibleSurfaces.length && !shownThreads.length;
+
+  // Enter opens the top match: conversation action → first tab → first thread.
+  const firstHit = !q ? null
+    : actions[0] ? actions[0].run
+    : visibleSurfaces[0] ? () => go(visibleSurfaces[0][1][0].id)
+    : shownThreads[0] ? () => switchThread(shownThreads[0].id)
+    : null;
+
+  const isMac = /Mac/i.test(navigator.platform);
 
   return (
     <div
@@ -133,10 +260,15 @@ export default function AppLauncher({
           box-shadow: 0 8px 22px rgba(72,52,28,0.10);
         }
         .launch-tile:hover .tile-ico { background: linear-gradient(135deg,#FFF3C4,#EACB62) !important; color: #6C4C00 !important; }
+        .launch-tile:active { transform: scale(0.98); }
         .launch-tile:focus-visible { outline: 2px solid ${T.accent}; outline-offset: 2px; }
         .launch-pill:hover { background: ${T.surface} !important; }
+        .launch-row:hover { background: ${T.surface} !important; border-color: ${T.border} !important; }
+        .launch-row:focus-visible { outline: 2px solid ${T.accent}; outline-offset: 1px; }
+        .launch-search::placeholder { color: ${T.muted}; }
+        .launch-search:focus { border-color: ${T.accent} !important; box-shadow: 0 0 0 4px ${T.accent}1F; }
         @media (prefers-reduced-motion: reduce) {
-          .launch-tile:hover { transform: none; }
+          .launch-tile:hover, .launch-tile:active { transform: none; }
           .launch-sec { animation: none; }
           [role=dialog] { animation: none !important; }
         }
@@ -196,38 +328,75 @@ export default function AppLauncher({
           </button>
         </header>
 
+        {/* Search — filters tabs & threads; Enter opens the top match */}
+        <div style={{ flexShrink: 0, marginBottom: 20, position: "relative", maxWidth: 560, width: "100%", alignSelf: "center" }}>
+          <input
+            ref={searchRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && firstHit) { e.preventDefault(); firstHit(); } }}
+            placeholder="Search apps & threads…"
+            aria-label="Search apps and threads"
+            className="launch-search"
+            style={{
+              width: "100%", boxSizing: "border-box", padding: "10px 64px 10px 16px",
+              borderRadius: 12, border: `1px solid ${T.border}`, background: T.surface,
+              fontFamily: FONT_UI, fontSize: 13.5, color: T.text, outline: "none",
+              transition: `border-color ${DUR.base} ${EASE.out}, box-shadow ${DUR.base} ${EASE.out}`,
+            }}
+          />
+          <kbd aria-hidden style={{
+            position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+            fontFamily: FONT_UI, fontSize: 10.5, fontWeight: 600, color: T.muted,
+            padding: "2px 7px", borderRadius: 6, border: `1px solid ${T.border}`,
+            background: "transparent", pointerEvents: "none",
+          }}>{isMac ? "⌘K" : "Ctrl K"}</kbd>
+        </div>
+
         {/* Scrollable grid */}
         <div style={{ flex: 1, overflowY: "auto", paddingBottom: 28 }}>
           {/* Conversation — the rehomed chat side rail (Threads / Context / Advanced) */}
-          <Section sym="⟡" title="Conversation" desc="your chat, threads & controls">
-            <Tile label="New chat" sym="＋" sub="start a fresh thread" onClick={newChat} />
-            <Tile label="Context"  sym="◈" sub="what the model sees"  onClick={() => openChatPanel("context")} />
-            <Tile label="Advanced" sym="⚙" sub="agent · reflect · pin" onClick={() => openChatPanel("advanced")} />
-            {threads.map(t => (
-              <Tile key={t.id}
-                label={t.title || "Untitled"}
-                sym="✎"
-                sub={`${t.turn_count || 0} turn${t.turn_count === 1 ? "" : "s"}`}
-                onClick={() => switchThread(t.id)}
-                ariaLabel={`Open thread: ${t.title || "Untitled"}`}
-              />
-            ))}
-          </Section>
+          {(actions.length > 0 || shownThreads.length > 0) && (
+            <Section sym="⟡" title="Conversation" desc="your chat, threads & controls"
+              extra={<RecentThreads threads={shownThreads} onSwitch={switchThread} />}>
+              {actions.map(a => (
+                <Tile key={a.label} label={a.label} sym={a.sym} sub={a.sub}
+                  primary={a.primary} onClick={a.run} />
+              ))}
+            </Section>
+          )}
 
-          {/* One section per surface → its tab tiles */}
-          {surfaces.map((s, i) => {
-            const tabs = s.tabs.filter(t => mode !== "simple" || !t.adv);
-            if (!tabs.length) return null;
+          {/* One section per surface → its tab tiles. Tabs carrying a `group`
+              (e.g. Cognition's Health/Advanced) get full-row sub-headers. */}
+          {visibleSurfaces.map(([s, tabs], i) => {
+            const tile = (t) => (
+              <Tile key={t.id} label={t.label} sym={t.sym || s.sym}
+                active={t.id === activeTab}
+                onClick={() => go(t.id)} />
+            );
+            const groups = [...new Set(tabs.map(t => t.group).filter(Boolean))];
             return (
               <Section key={s.id} sym={s.sym} title={s.label} desc={s.desc} delay={(i + 1) * 45}>
-                {tabs.map(t => (
-                  <Tile key={t.id} label={t.label} sym={s.sym}
-                    active={t.id === activeTab}
-                    onClick={() => go(t.id)} />
+                {tabs.filter(t => !t.group).map(tile)}
+                {groups.map(g => (
+                  <Fragment key={g}>
+                    <div style={{ gridColumn: "1 / -1", fontSize: 10, fontWeight: 700,
+                      letterSpacing: "0.12em", textTransform: "uppercase", color: T.muted,
+                      fontFamily: FONT_UI, padding: "4px 2px 0" }}>{g}</div>
+                    {tabs.filter(t => t.group === g).map(tile)}
+                  </Fragment>
                 ))}
               </Section>
             );
           })}
+
+          {noResults && (
+            <div style={{ textAlign: "center", padding: "48px 0", color: T.muted,
+              fontFamily: FONT_UI, fontSize: 13 }}>
+              Nothing matches “{query.trim()}”
+            </div>
+          )}
 
           {/* Global actions */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, paddingTop: 6,
