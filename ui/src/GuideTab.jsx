@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { AGENTS } from "./constants";
 import { PageHeader } from "./ObsShared";
+import { API } from "./api";
 
 // ── Metric glossary ────────────────────────────────────────────
 const METRICS = [
@@ -92,11 +95,11 @@ const METRICS = [
 // ── How-to sections ───────────────────────────────────────────
 const HOW_TO = [
   {
-    title: "💬 Chat", color: "#15803D",
+    title: "Chat", color: "#15803D",
     items: [
       "Type a message and press Enter to send. Shift+Enter for a new line.",
       "The agent icon shows which specialist answered (not always the coordinator).",
-      "Click 📋 on any response to copy the full text.",
+      "Click ⊞ on any response to copy the full text.",
       "Click 👍/👎 to rate a response — this updates memory quality and trains the router.",
       "Click ⬇ Export to save the session as a Markdown file.",
       "The small signal pills below each response show domain, answer shape, and verbosity.",
@@ -112,7 +115,7 @@ const HOW_TO = [
     ],
   },
   {
-    title: "👑 Force Route", color: "#7E3F8F",
+    title: "Force Route", color: "#7E3F8F",
     items: [
       "Row of agent buttons above the input. Click any to bypass automatic routing.",
       "The selected agent appears highlighted — it will receive every message until cleared.",
@@ -148,7 +151,7 @@ const HOW_TO = [
     ],
   },
   {
-    title: "Settings → Progress", color: "#1E5A8A",
+    title: "Setup → Progress", color: "#1E5A8A",
     items: [
       "System metrics, memory health, and build history in one place.",
       "⊕ Consolidate: removes near-duplicate memories (cosine > 0.93) — run periodically.",
@@ -170,21 +173,116 @@ const HOW_TO = [
 
 // ── Arch sections ─────────────────────────────────────────────
 const ARCH = [
-  { title: "Request Flow", color: "#15803D", steps: ["User message → ChatTab → POST /ask", "Coordinator receives AgentState", "Core Brain (think()) decides agent, action, complexity, reflect level", "Hybrid router runs in parallel for diagnostics (brain always wins)", "Chosen agent runs with memory context injected", "Optional: grounded_evaluate critic scores response", "Optional: dual-trajectory for code agents (A vs B + critic pick)", "Response + signal metadata returned to UI"] },
+  { title: "Request Flow", color: "#15803D", steps: ["User message → ChatTab → POST /ask/stream (SSE)", "Coordinator receives AgentState", "Core Brain (think()) decides agent, action, complexity, reflect level", "Hybrid router runs in parallel for diagnostics (brain always wins)", "Chosen agent runs with memory context injected", "Optional: grounded_evaluate critic scores response", "Optional: dual-trajectory for code agents (A vs B + critic pick)", "Response + signal metadata streamed back to the UI"] },
   { title: "Memory Pipeline", color: "#1E5A8A", steps: ["Query embedded by nomic-embed-text (cached 512 entries)", "FAISSBackend.retrieve() → IndexIDMap search → cosine rerank with quality × freshness × type_weight", "Top-k injected into agent system prompt", "Agent response saved via memory_filter → dedup check (cos > 0.93) → SQLite + FAISS incremental add", "Quality updated per retrieval via Bayesian log-odds", "Auto-promotion at use_count = 5 (+0.03 log-odds boost)"] },
-  { title: "Learning Loop", color: "#9A6C00", steps: ["Every decision logged to logs/decisions.db", "apply_learning_update() runs after each response", "Weight delta = clip(α × (L − w), −0.02, +0.02)", "Adaptive α from instability index: low I → high learning rate", "Learned router weights stored in brain_weights.json (6 agents)", "Regret estimated from coherence drift or user feedback", "Brain decisions calibrated against calibration.db over time"] },
+  { title: "Learning Loop", color: "#9A6C00", steps: ["Every decision logged to logs/decisions.db", "apply_learning_update() runs after each response", "Weight delta = clip(α × (L − w), −0.02, +0.02)", "Adaptive α from instability index: low I → high learning rate", "Learned router model persisted under logs/ — retrained from trace_dataset.jsonl", "Regret estimated from coherence drift or user feedback", "Brain decisions calibrated against calibration.db over time"] },
 ];
 
 const TECH = [
   { group: "Core",      items: ["LangGraph v1.0.8", "phi4-mini via Ollama", "Python 3.12+"] },
-  { group: "Inference", items: ["RTX 2050 GPU", "CUDA 12", "OLLAMA_MAX_LOADED_MODELS=1"] },
+  { group: "Inference", items: ["Ollama (local, default)", "Cloud: Claude / GPT / Gemini (BYO key)", "Hybrid escalation (AMAGRA_HYBRID)"] },
   { group: "Backend",   items: ["FastAPI + uvicorn", "asyncio task queue", "SQLite + WAL mode"] },
   { group: "Memory",    items: ["nomic-embed-text", "faiss-cpu 1.14.2", "LRU embedding cache (512)"] },
   { group: "Routing",   items: ["QuerySignal normalizer", "core_brain (BrainDecision)", "hybrid_router (keyword + signal)"] },
   { group: "Quality",   items: ["grounded_evaluate critic", "dual-trajectory GRAM", "reflection triage (none/light/full)"] },
-  { group: "Frontend",  items: ["React 18", "ReactMarkdown + GFM", "recharts"] },
-  { group: "System",    items: ["Ubuntu Linux", "nomic-embed-text embeddings", "WAL SQLite journaling"] },
+  { group: "Frontend",  items: ["React 19 + Vite", "ReactMarkdown + GFM", "Monaco (Prompt IDE, bundled)"] },
+  { group: "System",    items: ["Ubuntu Linux", "Electron desktop shell", "AppImage packaging"] },
 ];
+
+// ── Live documentation (served by the backend) ────────────────
+// The runtime ships its own manual: GET /docs/index lists the curated project
+// docs and GET /docs/{name} returns the markdown. Reading them here means the
+// in-app guide can never drift from the repo docs the way hardcoded text does.
+const DOC_LABELS = {
+  "project-map":         "Project Map",
+  "guide":               "User Guide",
+  "architecture":        "Architecture",
+  "reference":           "Technical Reference",
+  "roadmap":             "Roadmap",
+  "design-principles":   "Design Principles",
+  "identity":            "Identity Contract",
+  "plugin-architecture": "Plugin Architecture",
+  "history":             "Build History",
+  "findings":            "Routing Findings",
+  "failures":            "Failure Modes & Invariants",
+  "issues":              "Known Issues",
+  "vision":              "Vision",
+  "comparison":          "Comparison",
+  "deploy":              "Deploy",
+  "providers":           "Cloud Providers",
+};
+
+function DocsSection() {
+  const [docs, setDocs]         = useState(null);   // null = loading, [] = unavailable
+  const [openDoc, setOpenDoc]   = useState(null);
+  const [content, setContent]   = useState({});     // name → markdown
+
+  useEffect(() => {
+    fetch(`${API}/docs/index`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setDocs(d?.docs || []))
+      .catch(() => setDocs([]));
+  }, []);
+
+  const toggle = async (name) => {
+    if (openDoc === name) { setOpenDoc(null); return; }
+    setOpenDoc(name);
+    if (!content[name]) {
+      try {
+        const r = await fetch(`${API}/docs/${name}`);
+        if (r.ok) {
+          const d = await r.json();
+          setContent(prev => ({ ...prev, [name]: d.content }));
+        } else {
+          setContent(prev => ({ ...prev, [name]: "*Couldn't load this document.*" }));
+        }
+      } catch {
+        setContent(prev => ({ ...prev, [name]: "*Backend offline — couldn't load this document.*" }));
+      }
+    }
+  };
+
+  if (docs !== null && docs.length === 0) return null;   // API unavailable — stay quiet
+
+  return (
+    <Card mb={20}>
+      <SectionHead title="Documentation" sub="The project's own docs, served live by the backend — always current" />
+      {docs === null ? (
+        <div style={{ fontSize: 12, color: "#9A7A60", fontStyle: "italic", padding: "6px 0" }}>Loading documentation…</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {docs.map(d => {
+            const isOpen = openDoc === d.name;
+            const label  = DOC_LABELS[d.name] || d.name;
+            return (
+              <div key={d.name}
+                style={{ background: "#F4F0E8", border: `1.5px solid #9A6C00${isOpen ? "66" : "22"}`, borderRadius: 3, padding: "10px 14px", transition: "all .2s" }}>
+                <div className="hoverable" onClick={() => toggle(d.name)}
+                  style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#9A6C00", flex: 1 }}>{label}</span>
+                  <span style={{ fontSize: 10, color: "#9A7A60", fontFamily: "monospace" }}>{(d.size / 1024).toFixed(1)} KB</span>
+                  <span style={{ color: "#9A6C00", opacity: .5, fontSize: 11 }}>{isOpen ? "▲" : "▼"}</span>
+                </div>
+                {isOpen && (
+                  <div className="doc-reader" style={{
+                    marginTop: 10, padding: "14px 18px", background: "#FAF7F2",
+                    borderRadius: 7, border: "1px solid #9A6C0022",
+                    fontSize: 13, color: "#2E2010", lineHeight: 1.7,
+                    maxHeight: 480, overflowY: "auto", overflowX: "auto",
+                  }}>
+                    {content[d.name]
+                      ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content[d.name]}</ReactMarkdown>
+                      : <span style={{ fontStyle: "italic", color: "#9A7A60" }}>Loading…</span>}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Card>
+  );
+}
 
 // ── Shared helpers ────────────────────────────────────────────
 function SectionHead({ title, sub }) {
@@ -251,7 +349,7 @@ export default function GuideTab() {
             { label: "Dashboard", value: "localhost:3000" },
             { label: "API",       value: "localhost:8000" },
             { label: "Health",    value: "localhost:8000/health" },
-            { label: "Model",     value: "phi4-mini · RTX 2050" },
+            { label: "Model",     value: "phi4-mini · Setup → Model" },
           ].map(item => (
             <div key={item.label} style={{ background: "#F4F0E8", borderRadius: 4, padding: "8px 12px", border: "1px solid #15803D20" }}>
               <div style={{ fontSize: 10, color: "#9A7A60", marginBottom: 2 }}>{item.label}</div>
@@ -291,12 +389,12 @@ export default function GuideTab() {
 
       {/* ── Agent reference ── */}
       <Card mb={20}>
-        <SectionHead title="Agent Reference" sub="All 7 specialist agents + coordinator" />
+        <SectionHead title="Agent Reference" sub={`All ${AGENTS.length - 1} specialist agents + coordinator`} />
 
         {/* Coordinator special card */}
         <div style={{ background: "linear-gradient(135deg,#F5EDD6,#F4F0E8)", border: "2px solid #9A6C0066", borderRadius: 3, padding: "14px 18px", marginBottom: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 28 }}>👑</span>
+            <span style={{ fontSize: 28, color: "#9A6C00" }}>{AGENTS[0].icon}</span>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: "#9A6C00" }}>Coordinator</span>
@@ -397,6 +495,19 @@ export default function GuideTab() {
           })}
         </div>
       </Card>
+
+      {/* ── Live documentation ── */}
+      <style>{`
+        .doc-reader table { border-collapse: collapse; margin: 10px 0; }
+        .doc-reader th, .doc-reader td { border: 1px solid #E0D6C4; padding: 5px 10px; font-size: 12px; text-align: left; }
+        .doc-reader th { background: #F4F0E8; }
+        .doc-reader code { background: #F4F0E8; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+        .doc-reader pre { background: #F4F0E8; padding: 10px 14px; border-radius: 6px; overflow-x: auto; }
+        .doc-reader pre code { background: transparent; padding: 0; }
+        .doc-reader h1, .doc-reader h2, .doc-reader h3 { color: #2E2010; margin: 14px 0 8px; }
+        .doc-reader img { max-width: 100%; }
+      `}</style>
+      <DocsSection />
 
       {/* ── Tech stack ── */}
       <Card mb={0}>
