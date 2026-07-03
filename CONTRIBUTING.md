@@ -48,7 +48,7 @@ PYTHONPATH=. python3 -m pytest tests/ -q   # or: make test [PYTHON=path/to/your/
 ```
 
 - **Lint:** `ruff` is the source of truth (`ruff.toml`). `ruff check . --fix` autofixes most issues.
-- **Tests:** the suite is currently **974 passing**. New behavior needs a test; bug fixes should add a regression test.
+- **Tests:** the suite is currently **986 passing**. New behavior needs a test; bug fixes should add a regression test.
 - **Match the surrounding code** — naming, comment density, and idiom. Don't reformat unrelated lines.
 
 ---

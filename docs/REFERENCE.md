@@ -163,7 +163,7 @@ q_new = sigmoid(l_new)
 ```
 Memories near q=0.9 resist small noise; memories near q=0.5 update linearly.
 
-**Backend:** FAISSBackend (auto-promotes from SQLiteBackend at 800 entries). 628+ vectors, search P50 = 0.38ms. LRU embedding cache: 52× speedup, ~40% hit rate in real sessions.
+**Backend:** FAISSBackend (auto-promotes from SQLiteBackend at 800 entries). Vector count is runtime state (97 at the 2026-07-03 snapshot; the 0.38ms P50 was benchmarked on a 628-vector index). LRU embedding cache: 52× speedup, ~40% hit rate in real sessions.
 
 **Dedup:** cosine similarity ≥ 0.93 threshold suppresses near-duplicate writes.
 
@@ -222,7 +222,7 @@ h_UCI = 0.30 × Reliability + 0.30 × Intelligence + 0.25 × Adaptation + 0.15 �
 - **Adaptation** — weight drift, memory quality trend, agent diversity
 - **Productivity** — goal completion rate, avg response latency (target ≤ 8s)
 
-Current: **h_UCI ≈ 80.8**
+Current: **h_UCI ≈ 90.8** (2026-07-03 snapshot; live value at `GET /cos/uci/hierarchical`)
 
 ---
 
@@ -307,12 +307,12 @@ Current: **h_UCI ≈ 80.8**
 | Build phases completed | 37 |
 | Routing accuracy | 97% · 99% ablation (internal dev metrics — see [FINDINGS.md](records/FINDINGS.md)) |
 | Skill graph nodes | 21 |
-| FAISS vectors | 628+ |
+| FAISS vectors | runtime state (97 at 2026-07-03) |
 | FAISS search P50 | 0.38ms |
 | LRU cache speedup | 52× |
-| UCI score | ~80.8 |
-| API endpoints | 100+ (141 routes) |
-| Test suite | 974 passing |
+| UCI score | ~90.8 (2026-07-03) |
+| API endpoints | 100+ (153 routes) |
+| Test suite | 986 passing |
 | Avg response latency | ~4–8s (phi4-mini on RTX 2050) |
 | Full reflection rate | ~15% (down from 58% pre-triage) |
 
