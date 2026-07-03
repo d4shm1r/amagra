@@ -1,6 +1,6 @@
 # Project Map — Amagra
 
-**Updated:** 2026-07-02 · **Version:** v1.6.3
+**Updated:** 2026-07-03 · **Version:** v1.6.3
 **Mission:** the local-first cognitive runtime developers build agents on top of.
 
 This is the orientation map. Each area links to the canonical document — this file does **not** duplicate their content.
@@ -12,7 +12,7 @@ Docs are grouped by what kind of question they answer:
 | Directory | Question | Contents |
 |---|---|---|
 | `docs/` (top level) | *Where do I start?* | This map · [GUIDE.md](GUIDE.md) (day-to-day usage) · [ARCHITECTURE.md](ARCHITECTURE.md) (evaluator-facing claims → files) · [REFERENCE.md](REFERENCE.md) (every number) · [ROADMAP.md](ROADMAP.md) (what's next) |
-| [`docs/design/`](design/) | *What are the contracts?* | [PLATFORM_ENTITY_MODEL.md](design/PLATFORM_ENTITY_MODEL.md) · [PLUGIN_ARCHITECTURE.md](design/PLUGIN_ARCHITECTURE.md) · [PROMPT_ARTIFACT_CONTRACT.md](design/PROMPT_ARTIFACT_CONTRACT.md) · [IDENTITY.md](design/IDENTITY.md) · [OCAC_STABILITY_BRIDGE.md](design/OCAC_STABILITY_BRIDGE.md) · [DESIGN_PRINCIPLES.md](design/DESIGN_PRINCIPLES.md) (the UX filter) |
+| [`docs/design/`](design/) | *What are the contracts?* | [PLATFORM_ENTITY_MODEL.md](design/PLATFORM_ENTITY_MODEL.md) · [PLUGIN_ARCHITECTURE.md](design/PLUGIN_ARCHITECTURE.md) · [PROMPT_ARTIFACT_CONTRACT.md](design/PROMPT_ARTIFACT_CONTRACT.md) · [IDENTITY.md](design/IDENTITY.md) · [OCAC_STABILITY_BRIDGE.md](design/OCAC_STABILITY_BRIDGE.md) · [TCST_AGENT_MODEL.md](design/TCST_AGENT_MODEL.md) · [DESIGN_PRINCIPLES.md](design/DESIGN_PRINCIPLES.md) (the UX filter) |
 | [`docs/records/`](records/) | *What happened, and what's true?* | [HISTORY.md](records/HISTORY.md) (phase-by-phase build log) · [FINDINGS.md](records/FINDINGS.md) (routing eval write-up) · [FAILURES.md](records/FAILURES.md) (invariants you must not break) · [ISSUES.md](records/ISSUES.md) (known bugs & limitations) · [METRICS_ROADMAP.md](records/METRICS_ROADMAP.md) · [IMPROVEMENTS.md](records/IMPROVEMENTS.md) |
 | [`docs/product/`](product/) | *Why does this exist, for whom?* | [VISION.md](product/VISION.md) · [POSITIONING.md](product/POSITIONING.md) · [COMPARISON.md](product/COMPARISON.md) (honest head-to-head) · [LAUNCH_DEBUGGER.md](product/LAUNCH_DEBUGGER.md) · [_someday.md](product/_someday.md) (frozen ideas) |
 | [`docs/ops/`](ops/) | *How do I run it in the world?* | [DEPLOY.md](ops/DEPLOY.md) (marketing site + Docker) · [PROVIDERS.md](ops/PROVIDERS.md) (cloud model keys) |
@@ -43,7 +43,7 @@ A curated subset of these docs is served by the API at `GET /docs/index` + `GET 
 | `desktop/` | Electron shell + `install-desktop-entry.sh` (Linux launcher entry) |
 | `packaging/` | AppImage build (`build-appimage.sh`) |
 | `scripts/` | Live utilities only: `migrate.py`, `migrate_to_single_db.py`, `ModelOverview.py` |
-| `tests/` | Pytest suite (974 passing) |
+| `tests/` | Pytest suite (986 passing) |
 
 Runtime state (`memory/*.db`, `tasks.db`, `logs/`) is generated, never committed.
 
@@ -57,10 +57,10 @@ Runtime state (`memory/*.db`, `tasks.db`, `logs/`) is generated, never committed
 | Specialist agents | 10 (`agents/registry.py` is canonical) |
 | Skill graph | 21 nodes |
 | Routing accuracy | ~99% curated · ~42% held-out adversarial (internal metrics, not validated — see [FINDINGS.md](records/FINDINGS.md) §3a) |
-| Memory | SQLite → auto-promote to FAISS at 800 entries · 628+ vectors · P50 0.38ms · 52× LRU cache |
-| UCI health | h_UCI ≈ 80.8 (internal heuristic, not a quality measure — not surfaced publicly) |
-| API surface | 100+ endpoints (141 routes) |
-| Tests | 974 passing |
+| Memory | SQLite → auto-promote to FAISS at 800 entries · 52× LRU cache (vector count is runtime state — 97 at the 2026-07-03 snapshot) |
+| UCI health | h_UCI ≈ 90.8 (2026-07-03 snapshot; internal heuristic, not a quality measure — not surfaced publicly) |
+| API surface | 100+ endpoints (153 routes) |
+| Tests | 986 passing |
 | Auth | API-key, deny-by-default when `REQUIRE_AUTH=1` |
 
 ---
@@ -122,7 +122,7 @@ See [ROADMAP.md](ROADMAP.md) for the full forward plan and [HISTORY.md](records/
 | Item | Notes |
 |------|-------|
 | Plan Graph pre-query | Empty state until first compound query runs. |
-| gate_accept_rate ~69% | Critic threshold calibrated for stronger models than phi4-mini. |
-| Feedback coverage 0% | All quality signals are proxies until real 👍/👎 ratings accumulate. |
+| Feedback-negative 36% | 1,096 real 👍/👎 ratings exist (64% positive) — Adaptation is the weakest UCI layer; negative feedback isn't yet mined into fixes. |
+| No external benchmarks in the health picture | HumanEval/adversarial/recall harnesses exist in `evaluation/` but run ad hoc — no dated ledger, no unseen-workload suite. |
 
 Full bug/limitation list: [ISSUES.md](records/ISSUES.md).

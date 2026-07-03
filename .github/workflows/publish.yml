@@ -8,7 +8,12 @@ name: Publish Docker image
 #   DOCKERHUB_TOKEN     a Docker Hub access token (Account Settings → Security)
 #
 # To release:  git tag v1.2.0 && git push origin v1.2.0
-# Produces:    d4shm1r/amagra:1.2.0  and  d4shm1r/amagra:latest  (linux/amd64 + arm64)
+# Produces:    d4shm1r/amagra:1.2.0  and  d4shm1r/amagra:latest  (linux/amd64)
+#
+# amd64-only on purpose: the arm64 leg was built under QEMU emulation and cost
+# ~9 of the ~11 min. Dropping it takes the publish to ~2 min. To bring arm64
+# back *fast*, build it natively on an `ubuntu-24.04-arm` runner via a matrix
+# + manifest merge rather than re-adding QEMU emulation here.
 
 on:
   push:
@@ -20,9 +25,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - uses: docker/setup-buildx-action@v3
 
@@ -45,7 +47,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

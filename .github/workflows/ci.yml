@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: ["main", "master"]
 
+# A newer push on the same ref cancels the in-flight run instead of stacking.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: Lint
