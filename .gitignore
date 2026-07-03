@@ -85,3 +85,6 @@ provider_config.json
 
 # Desktop packaging build output (AppImage + staging)
 /dist/
+
+# Editor workspace config — local-only theming (file header says so)
+.vscode/
