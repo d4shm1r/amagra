@@ -470,15 +470,25 @@ def affine_lyapunov_decay(alpha: float) -> dict:
 
 def instability_conjunctive(r: float, cal_error: float,
                             weight_var: float) -> float:
-    """Soft-OR instability  I = 1 − ∏(1 − tᵢ)  (OCAC A1∧A2∧A3 form).
+    """Soft-OR instability  I = 1 − ∏(1 − tᵢ)  (OCAC A1∧A2∧A3′ form).
 
     OCAC proves the three stability conditions A1 (smoothness ↔ regret),
-    A2 (contraction ↔ weight variance) and A3 (bounded sensitivity ↔
-    calibration error) are each *individually necessary* — each has its
-    own counterexample.  They are therefore conjunctive: the system is
-    stable only if all three hold.  A weighted average (instability_index)
-    lets one healthy term mask a failing one; this soft-OR spikes to ~1 as
-    soon as *any* single term degrades, matching the proved necessity.
+    A2 (contraction ↔ weight variance) and A3′ (growth-controlled
+    sensitivity ↔ calibration error) are each *individually necessary* —
+    each has its own counterexample.  They are therefore conjunctive: the
+    system is stable only if all three hold.  A weighted average
+    (instability_index) lets one healthy term mask a failing one; this
+    soft-OR spikes to ~1 as soon as *any* single term degrades, matching
+    the proved necessity.
+
+    A3 → A3′ (OCAC falsity finding, 2026-07-03): plain *boundedness* of the
+    sensitivity at each order (old A3) is provably NOT sufficient — bounds
+    that grow across recursion depth void every depth budget while each
+    depth looks healthy (lacunary counterexample).  The snapshot term here
+    stays a per-window scalar; the depth-resolved growth check that A3′
+    actually demands is ``gevrey_rate_estimate`` — run it on any
+    depth-indexed sensitivity series before trusting
+    ``stable_recursion_depth``.
 
     Drop-in alternative to instability_index() for the adaptive_alpha gate.
     """
@@ -690,10 +700,189 @@ def gevrey_majorant(a0: float, rho: float, n: int) -> float:
     free even under a per-step contraction.
 
     a0:  base (depth-0) sensitivity
-    rho: per-level growth rate (ρ = B·M²/(M−L) in OCAC convolution_dominated)
+    rho: per-level growth rate.  UPDATED (OCAC 2026-07-01/03): the proved sharp
+         balance is ρ = M, the Gevrey rate itself
+         (``derivative_recursion_bound_of_majorant``); the earlier
+         ``convolution_dominated`` constant ρ = B·M²/(M−L) is superseded.
+         Derive M from per-step kernel data with ``certified_rate``.
     n:   recursion depth
     """
     return a0 * (rho ** n) * math.factorial(n)
+
+
+def certified_rate(L: float, B: float, K: float) -> float:
+    """Sharp certified per-level Gevrey rate  M = L·(1 + 2B/(1−K)).
+
+    From OCAC's proved coupled induction ``gevrey_majorant_of_kernel_bounds``:
+    if each step's *kernel* (the derivative of the step map along the state)
+    has Gevrey data — amplitude ``B`` and rate ``L`` — and the step is a
+    contraction with modulus ``K < 1``, then any majorant rate ``M`` satisfying
+    the balance  B·L/(M−L) ≤ (1−K)/2  certifies the depth recursion
+    ``aₙ₊₁ ≤ M·(n+1)·aₙ``.  The minimal such rate is
+
+        M = L + 2·B·L/(1−K) = L·(1 + 2B/(1−K)).
+
+    Interpretation for agent chains: the safe per-level growth rate must
+    dominate the kernel's own rate ``L`` with a margin set by the contraction
+    gap ``1−K``.  A weak contraction (K → 1) inflates the certified rate — the
+    quantitative form of "slow learning tolerates less recursive depth".
+    Feed the result into ``gevrey_majorant`` / ``stable_recursion_depth``.
+
+    Traces to: ``gevrey_majorant_of_kernel_bounds`` +
+    ``derivative_recursion_bound_of_majorant`` (OCAC/MajorantSeries.lean,
+    sharp ρ = M, 2026-07-01).
+    """
+    if K >= 1.0:
+        return float("inf")
+    if L < 0.0 or B < 0.0:
+        raise ValueError("kernel data B, L must be nonnegative")
+    return L * (1.0 + 2.0 * B / (1.0 - K))
+
+
+def compose_gevrey_rates(B_outer: float, D_outer: float,
+                         C_inner: float, M_inner: float) -> dict:
+    """Gevrey rate composition law for NESTED (not sequential) agent processes.
+
+    OCAC's machine-checked composition estimate
+    (``norm_iteratedDeriv_vcomp_le_of_gevrey``, GevreyComposition.lean,
+    2026-07-03): if an outer process has depth-sensitivity bounds
+    ``B·Dᵏ·k!`` and the inner process it wraps has bounds ``C·Mʲ·j!``, then
+    the *composite* obeys ``B·(M(1+DC))ⁱ·i!``.  Rates do NOT multiply:
+
+        (B, D) ∘ (C, M)  =  (B, M·(1 + D·C)).
+
+    ``chain_error_bound`` covers *sequential* pipelines (first-order product of
+    per-step factors); this covers *nested* composition — reflection wrapping a
+    chain, an agent invoking a sub-agent, tool-use inside reasoning — where
+    higher-order compounding accumulates.  Amplitude is inherited from the
+    outer process alone; the inner amplitude ``C`` enters only through the rate
+    (so a high-gain inner loop inside a gentle wrapper still inflates depth
+    growth).
+
+    Returns {B, M, note}.
+    """
+    if min(B_outer, D_outer, C_inner, M_inner) < 0.0:
+        raise ValueError("Gevrey data must be nonnegative")
+    return {
+        "B": B_outer,
+        "M": M_inner * (1.0 + D_outer * C_inner),
+        "note": "composite depth-n sensitivity ≤ B·Mⁿ·n!",
+    }
+
+
+def interaction_pathways(n: int, E: float) -> float:
+    """Exact weighted count of interaction pathways at recursion depth n.
+
+    OCAC's exact partition identity (``sum_gevrey_weight``,
+    GevreyComposition.lean, 2026-07-03):
+
+        Σ_{π ⊢ n} E^{|π|}·|π|!·Π_{b∈π}|b|!  =  n!·E·(1+E)^{n−1}   (n ≥ 1).
+
+    Model: at depth ``n`` the ways sub-results can regroup and re-enter the
+    computation are the set partitions of the n levels; ``E`` is the coupling
+    weight per group.  The count is factorial-times-geometric with effective
+    branching base ``1+E`` — NOT exponential in the Bell numbers, which is why
+    the composed Gevrey bound stays factorial with rate ``M(1+E)`` rather than
+    blowing up faster.  This is the combinatorial ceiling behind
+    ``compose_gevrey_rates``.
+    """
+    if n < 0:
+        raise ValueError("depth must be ≥ 0")
+    if n == 0:
+        return 1.0
+    return math.factorial(n) * E * (1.0 + E) ** (n - 1)
+
+
+def gevrey_rate_estimate(series: list[float]) -> dict:
+    """Empirical per-level growth rate ρ̂ of a depth-indexed sensitivity series.
+
+    ρ̂ₙ = aₙ₊₁ / ((n+1)·aₙ) — the observed analogue of the majorant recursion
+    ``aₙ₊₁ ≤ ρ·(n+1)·aₙ``.  If ρ̂ stays bounded, the series is Gevrey-1 with
+    rate ≈ ``rho_hat`` and ``stable_recursion_depth`` budgets are valid.
+
+    **Why this exists (OCAC 2026-07-03 falsity finding).**  Boundedness at each
+    depth separately is PROVABLY NOT ENOUGH: OCAC's lacunary counterexample
+    (``T s x = ½x + Σₖe^{−k²}cos(eᵏs)``) satisfies "every order is bounded"
+    (axiom A3) yet its sensitivities grow like e^{n²/4} — super-factorially —
+    and no depth budget exists.  The corrected axiom A3′ demands the bounds be
+    *factorial-geometric across depths*, i.e. exactly that ρ̂ₙ stays bounded.
+    So monitor the TREND of ρ̂ₙ, not just per-depth finiteness: ``rising`` is
+    the A3-but-not-A3′ signature (each level fine, budget silently void).
+
+    Returns {rho_hat, ratios, rising, a3_prime_ok}:
+      rho_hat      — max observed ρ̂ₙ (certified-rate candidate)
+      ratios       — the per-depth list
+      rising       — last ratio strictly above the running median (growth of
+                     growth: super-factorial escape in progress)
+      a3_prime_ok  — all ratios finite and not rising
+    """
+    ratios: list[float] = []
+    for n in range(len(series) - 1):
+        a_n, a_next = series[n], series[n + 1]
+        if a_n <= 0.0:
+            ratios.append(float("inf") if a_next > 0.0 else 0.0)
+        else:
+            ratios.append(a_next / ((n + 1) * a_n))
+    if not ratios:
+        return {"rho_hat": 0.0, "ratios": [], "rising": False, "a3_prime_ok": True}
+    finite = all(r != float("inf") for r in ratios)
+    srt = sorted(ratios)
+    median = srt[len(srt) // 2]
+    rising = len(ratios) >= 2 and ratios[-1] > median
+    return {
+        "rho_hat": round(max(ratios), 6),
+        "ratios": [round(r, 6) for r in ratios],
+        "rising": rising,
+        "a3_prime_ok": finite and not rising,
+    }
+
+
+# ────────────────────────────────────────────────────────────────
+# § Fractional reflection depth  (OCAC P5 — height chart, RESOLVED)
+# ────────────────────────────────────────────────────────────────
+# OCAC P5 (existence of a strictly monotone half-iterate of exp) was RESOLVED
+# 2026-06-29 by an elementary, fully constructive height chart — no Kneser
+# analyticity needed (exists_strictMono_sqrt_exp, OCAC/Hyper/Seed.lean).  The
+# real line tiles as ℝ = ⊔ₖ exp^[k]((−∞,0]); the height h(x) = level + e^source
+# conjugates exp to the unit shift, h(exp x) = h(x) + 1.  Fractional iteration
+# is then exact: φ_t = h⁻¹ ∘ (·+t) ∘ h, with the semigroup law φ_s∘φ_t = φ_{s+t}
+# — the property the discrete reflect_level ∈ {none, light, full} lacks.
+
+def _height(x: float, max_level: int = 64) -> float:
+    """h(x) = level + exp(source): strictly monotone bijection ℝ → (0, ∞)."""
+    level = 0
+    while x > 0.0 and level < max_level:
+        x = math.log(x)
+        level += 1
+    return level + math.exp(x)
+
+
+def _height_inv(y: float, max_level: int = 64) -> float:
+    """Inverse of _height: y ∈ (0, ∞) → x with h(x) = y."""
+    if y <= 0.0:
+        raise ValueError("height must be > 0")
+    level = math.ceil(y) - 1                    # y ∈ (level, level+1]
+    x = math.log(y - level)                     # source ∈ (−∞, 0]
+    for _ in range(min(level, max_level)):
+        x = math.exp(x)
+    return x
+
+
+def fractional_reflection_depth(s: float, t: float) -> float:
+    """Exact fractional iterate  φ_t(s) = h⁻¹(h(s) + t)  of exp.
+
+    Continuous reflection-depth control: ``t = 0`` is the identity (no
+    reflection), ``t = 1`` is one full pass (φ₁ = exp in the model), ``t = ½``
+    is the canonical half pass, and φ_s∘φ_t = φ_{s+t} exactly — so "two light
+    passes = one full pass" holds by construction instead of by convention.
+    Squeeze: for t ∈ (0,1), id < φ_t < exp on the model scale — a partial pass
+    strictly improves but strictly less than a full one (OCAC bridge §2).
+
+    Upgrades the discrete reflect_level ∈ {none, light, full} (0 / ½ / 1) to a
+    continuous dial.  Traces to: exists_strictMono_sqrt_exp
+    (OCAC/Hyper/Seed.lean + HalfExp.lean, P5 RESOLVED 2026-06-29).
+    """
+    return _height_inv(_height(s) + t)
 
 
 def stable_recursion_depth(rho: float, ceiling: float = 100.0,
@@ -892,6 +1081,49 @@ def _run_tests():
     d_small = stable_recursion_depth(0.5, ceiling=100.0)
     d_big   = stable_recursion_depth(3.0, ceiling=100.0)
     assert d_small > d_big, "slower growth → deeper safe recursion"
+
+    # Certified rate (sharp ρ = M): dominates the kernel rate, inflates as K→1
+    assert abs(certified_rate(1.0, 1.0, 0.5) - 5.0) < eps        # 1·(1+2/0.5)
+    assert certified_rate(1.0, 1.0, 0.9) > certified_rate(1.0, 1.0, 0.5)
+    assert certified_rate(2.0, 0.0, 0.5) == 2.0                   # no kernel gain → M = L
+    assert certified_rate(1.0, 1.0, 1.0) == float("inf")          # contraction lost
+    # Rate composition law: (B,D)∘(C,M) = (B, M(1+DC)) — rates don't multiply
+    comp = compose_gevrey_rates(2.0, 1.0, 3.0, 0.5)
+    assert comp["B"] == 2.0 and abs(comp["M"] - 2.0) < eps        # 0.5·(1+3)
+    ident = compose_gevrey_rates(1.0, 0.0, 5.0, 0.7)              # decoupled outer
+    assert abs(ident["M"] - 0.7) < eps                            # inner rate unchanged
+    # Exact pathway count: n!·E·(1+E)^{n−1}; sanity n=1,2 and Fubini check E=1
+    assert interaction_pathways(0, 2.0) == 1.0
+    assert abs(interaction_pathways(1, 2.0) - 2.0) < eps          # 1!·2·(3)⁰
+    assert abs(interaction_pathways(2, 1.0) - 4.0) < eps          # 2!·1·2 = ∑: {12}:2, {1|2}:2
+    assert abs(interaction_pathways(3, 1.0) - 24.0) < eps         # 3!·2² — ordered-Fubini 2^{n−1}·n!
+    # Empirical Gevrey rate: factorial series aₙ = ρⁿn! has constant ratios = ρ
+    fact_series = [1.0 * (0.5 ** n) * math.factorial(n) for n in range(6)]
+    g = gevrey_rate_estimate(fact_series)
+    assert abs(g["rho_hat"] - 0.5) < 1e-6 and g["a3_prime_ok"]
+    # A3-but-not-A3′ signature: super-factorial (e^{n²}-ish) growth → rising ratios
+    super_series = [math.exp(n * n) for n in range(6)]
+    s = gevrey_rate_estimate(super_series)
+    assert s["rising"] and not s["a3_prime_ok"], "per-depth finite but budget void"
+    assert gevrey_rate_estimate([])["a3_prime_ok"]                # empty → trivially fine
+    assert gevrey_rate_estimate([0.0, 1.0])["rho_hat"] == float("inf")  # escape from 0
+
+    # Fractional reflection depth (P5 height chart): exact semigroup law
+    for x0 in (-1.0, 0.3, 1.2):
+        half_twice = fractional_reflection_depth(
+            fractional_reflection_depth(x0, 0.5), 0.5)
+        assert abs(half_twice - math.exp(x0)) < 1e-9, "φ½∘φ½ = exp"
+        assert abs(fractional_reflection_depth(x0, 1.0) - math.exp(x0)) < 1e-9
+        assert abs(fractional_reflection_depth(x0, 0.0) - x0) < 1e-9
+    # squeeze id < φ_t < exp for t ∈ (0,1), and monotone in t
+    x0 = 0.4
+    phi_half = fractional_reflection_depth(x0, 0.5)
+    assert x0 < phi_half < math.exp(x0)
+    assert (fractional_reflection_depth(x0, 0.25)
+            < fractional_reflection_depth(x0, 0.75))
+    # height chart roundtrip
+    for x0 in (-2.0, 0.0, 0.5, 3.0):
+        assert abs(_height_inv(_height(x0)) - x0) < 1e-9
 
     print("math_metrics: all tests passed ✓")
 
