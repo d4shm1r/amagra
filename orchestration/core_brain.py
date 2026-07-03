@@ -481,6 +481,23 @@ def think(task: str, state: AgentState) -> BrainDecision:
         else:
             primary = domains[0] if domains else "knowledge_learning"
 
+        # ── Semantic rescue: keyword/signal routing produced the
+        #    knowledge_learning fallthrough. Try an embedding k-NN route to
+        #    training exemplars instead of dumping into the catch-all bucket.
+        #    Flag-gated (AGENTIC_SEMANTIC_FALLBACK=1), crash-safe (None → no-op).
+        #    See semantic_fallback.py / semantic_route_eval.py for the measured lift.
+        if primary == "knowledge_learning":
+            try:
+                from orchestration import semantic_fallback as _sf
+                if _sf.is_enabled():
+                    _hit = _sf.route(query)
+                    if _hit and _hit[0] != "knowledge_learning":
+                        print(f"[core_brain] semantic rescue: knowledge_learning → "
+                              f"{_hit[0]} (sim={_hit[1]:.2f})")
+                        primary = _hit[0]
+            except Exception:
+                pass
+
         # Compound tasks: include all real-domain agents in the plan.
         if complexity == "compound" and len(core_domains) > 1:
             agents = core_domains[:]
@@ -668,6 +685,34 @@ def think(task: str, state: AgentState) -> BrainDecision:
             signal_domain=signal.domain, signal_conf=signal.domain_conf,
             signal_shape=signal.answer_shape, signal_verbosity=signal.verbosity,
         )
+
+    # ── Semantic rescue before the LLM clarify path ──────────────
+    # A keyword-free query reaches here with no detected domain — in the eval
+    # this is exactly the case that dumped into knowledge_learning. Rather than
+    # pay an LLM clarify round-trip, try the embedding k-NN router first.
+    # Flag-gated + crash-safe; low confidence keeps light verification on.
+    try:
+        from orchestration import semantic_fallback as _sf
+        if _sf.is_enabled():
+            _hit = _sf.route(query)
+            if _hit and _hit[0] != "knowledge_learning":
+                print(f"[core_brain] semantic rescue (LLM path): → {_hit[0]} (sim={_hit[1]:.2f})")
+                return BrainDecision(
+                    intent=f"{action} via {_hit[0]} (semantic)",
+                    action=action,
+                    complexity=complexity,
+                    agent_strategy=[_hit[0]],
+                    needs_plan=False,
+                    reflect=True,
+                    reflect_type="general",
+                    reflect_level="light",
+                    confidence=round(min(0.70, max(0.40, _hit[1])), 3),
+                    regret=0.0,
+                    signal_domain=signal.domain, signal_conf=signal.domain_conf,
+                    signal_shape=signal.answer_shape, signal_verbosity=signal.verbosity,
+                )
+    except Exception:
+        pass
 
     # ── LLM path: ambiguous or no domain detected ─────────────
     print(
