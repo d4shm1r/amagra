@@ -131,10 +131,11 @@ Reflection is functional iteration `s_{n+1} = R(s_n)`; we track
    UCI comparisons are valid.
 3. **Gevrey majorant on error propagation.** OCAC's factorial-growth engine
    bounds compounding: `aₙ₊₁ ≤ ρ(n+1)aₙ`, composed via `convolution_dominated`
-   (`ρ = B·M²/(M−L)`, `OCAC/MajorantSeries.lean`). Each agent step has
-   sensitivity `(1−K)⁻¹`; chaining N steps yields a provable worst-case bound on
-   how a small mis-specification amplifies through deep recursion / multi-agent
-   orchestration.
+   (`ρ = B·M²/(M−L)`, `OCAC/MajorantSeries.lean`). *(Constant superseded — the
+   proved sharp balance is `ρ = M`; see §6b and `certified_rate`.)* Each agent
+   step has sensitivity `(1−K)⁻¹`; chaining N steps yields a provable
+   worst-case bound on how a small mis-specification amplifies through deep
+   recursion / multi-agent orchestration.
 
 ---
 
@@ -188,15 +189,77 @@ All changes verified against the **full suite (833 tests pass)** plus the
 `math_metrics` self-tests.
 
 **Still open** (research-flavoured, not yet started):
-- Tighten the chain bound with the *convolution* form (`convolution_dominated`,
-  `ρ = B·M²/(M−L)`) for chains with depth-dependent coupling, not just a product
-  of independent per-step factors.
-- A real-analytic / monotone construction for fractional reflection depth
-  (OCAC P5, Kneser) if graded `reflect_level ∈ (0,1)` is ever wanted as a
-  continuous control rather than the current discrete none/light/full.
+- ~~Tighten the chain bound with the *convolution* form (`convolution_dominated`,
+  `ρ = B·M²/(M−L)`)~~ — **superseded and DONE, see §6**: OCAC proved the sharp
+  balance `ρ = M`; landed here as `certified_rate` + the composition law.
+- ~~A real-analytic / monotone construction for fractional reflection depth
+  (OCAC P5, Kneser)~~ — **P5 was RESOLVED (2026-06-29) constructively**, no
+  Kneser needed; landed here as `fractional_reflection_depth` (§6).
+
+---
+
+## 6. 2026-07-03 refinement pass — syncing with the latest OCAC findings
+
+Four OCAC results landed after §1–§5 were written; two *correct* claims above,
+two *add* capability. All are now reflected in `evaluation/math_metrics.py`.
+
+**(a) A falsity finding that touches our A3 story.** OCAC refuted its own
+Gevrey chain as stated: per-order bounded sensitivity (axiom A3, "every
+derivative order is uniformly bounded") is **provably insufficient** for the
+factorial majorant — the lacunary counterexample `T s x = ½x + Σₖe^(−k²)cos(eᵏs)`
+satisfies A1+A2+A3 yet has sensitivities growing like `e^(n²/4)`, so *no depth
+budget exists*. The corrected axiom **A3′** requires factorial-geometric bounds
+`‖dⁿT‖ ≤ B·Dⁿ·n!` — growth *control across orders*, not boundedness per order.
+Agent translation: a per-window sensitivity scalar (our calibration term) can
+look healthy at every depth while the *depth trend* silently voids
+`stable_recursion_depth`. Landed: `gevrey_rate_estimate(series)` — the
+depth-resolved ρ̂ₙ = aₙ₊₁/((n+1)aₙ) check whose `rising` flag is exactly the
+A3-but-not-A3′ signature; `instability_conjunctive` docstring re-anchored to A3′.
+
+**(b) The chain-bound constant was superseded — sharp `ρ = M`.** §4.3 cited
+`convolution_dominated`'s `ρ = B·M²/(M−L)`. OCAC's completed coupled induction
+(`gevrey_majorant_of_kernel_bounds` + `derivative_recursion_bound_of_majorant`)
+proves the **sharp balance ρ = M** with the kernel data entering through
+`B·L/(M−L) ≤ (1−K)/2`. Landed: `certified_rate(L, B, K) = L·(1 + 2B/(1−K))` —
+the minimal certified per-level rate from per-step kernel data `(B, L)` and
+contraction modulus `K`; feeds `gevrey_majorant` / `stable_recursion_depth`
+(docstrings updated). Note the clean qualitative law: the certified rate
+inflates like `1/(1−K)` as contraction weakens — slow learning tolerates less
+recursion depth, now with the exact constant.
+
+**(c) New: a machine-checked composition law for *nested* processes.** OCAC's
+`norm_iteratedDeriv_vcomp_le_of_gevrey` (GevreyComposition.lean, axiom-clean)
+proves: outer Gevrey data `(B, D)` composed with inner `(C, M)` yields
+`(B, M(1+DC))` — **rates compose as `M ↦ M(1+DC)`, they do not multiply**, and
+the outer amplitude survives alone. `chain_error_bound` covers *sequential*
+pipelines; this covers *nested* composition (reflection wrapping a chain, agent
+invoking sub-agent). Its combinatorial engine is an exact identity — the
+weighted count of interaction pathways at depth n is `n!·E·(1+E)^(n−1)`
+(effective branching base `1+E`, not Bell-number blow-up). Landed:
+`compose_gevrey_rates`, `interaction_pathways`.
+
+**(d) P5 resolved ⟹ continuous reflection depth is constructive.** The height
+chart `h` (level + e^source over the tiling `ℝ = ⊔ₖ exp^[k]((−∞,0])`) conjugates
+`exp` to the unit shift, so `φ_t = h⁻¹∘(·+t)∘h` gives **exact** fractional
+iteration with the semigroup law `φ_s∘φ_t = φ_{s+t}` — "two half passes = one
+full pass" by construction. Landed: `fractional_reflection_depth(s, t)` (+
+`_height`/`_height_inv`), self-tested to `φ½∘φ½ = exp` at 1e-9. The discrete
+`reflect_level ∈ {none, light, full}` can now be a dial.
+
+**(e) A caveat inherited from OCAC P1 (norm geometry).** The general-Banach
+stability chain requires *2-uniform smoothness*, which fails on `L¹/L∞/c₀` —
+i.e. **sup/max-type aggregates admit no smooth Lyapunov energy argument**.
+`invariant_health`'s `floor`/`spread` are exactly such aggregates: fine as
+*invariants* (that's their point), but do not build energy-decrease gates on
+them — use quadratic means (RMS) for anything Lyapunov-shaped. Recorded here so
+the next metrics iteration doesn't trip on it.
+
+*(All §6 additions verified by the module self-tests; suite below.)*
 
 ---
 
 *Source of truth for the proofs: the Lean development at `~/Desktop/lean`
-(`STATUS_AND_ROADMAP.md`). Re-verify any cited theorem with
-`lake build OCAC` and `#print axioms <name>`.*
+(`STATUS_AND_ROADMAP.md`); the A3′ restatement, sharp-ρ, and composition-law
+results live in the `ocac`/`ocac_2` repos (`OCAC/MajorantSeries.lean`,
+`OCAC/GevreyComposition.lean`, `paper/open-problems-formal.tex`). Re-verify any
+cited theorem with `lake build OCAC` and `#print axioms <name>`.*
