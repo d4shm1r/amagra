@@ -9,7 +9,7 @@
 //
 // Env overrides: AMAGRA_PORT, AMAGRA_NO_OLLAMA=1.
 
-const { app, BrowserWindow, shell } = require("electron");
+const { app, BrowserWindow, Menu, shell } = require("electron");
 const { spawn } = require("child_process");
 const http = require("http");
 const path = require("path");
@@ -97,7 +97,16 @@ function createWindow() {
     title: "AMAGRA",
     backgroundColor: "#F0E9DF", // cream — no white flash on load (see DESIGN_PRINCIPLES.md)
     icon: path.join(REPO_ROOT, "ui", "public", "logo512.png"),
-    autoHideMenuBar: true,
+    // Branded top bar: hide the OS title bar and paint the native window-controls
+    // overlay in Gilded Calm (cream field, gold symbols). Win/Linux only — on
+    // macOS the traffic-lights sit top-left, exactly where the ☰ launcher lives
+    // (App.jsx: top 13 / left 15), so keep the native inset bar there.
+    ...(process.platform === "darwin"
+      ? {}
+      : {
+          titleBarStyle: "hidden",
+          titleBarOverlay: { color: "#F0E9DF", symbolColor: "#8A5A00", height: 36 },
+        }),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -111,11 +120,29 @@ function createWindow() {
     shell.openExternal(url);
     return { action: "deny" };
   });
+  // Frameless top bar (Win/Linux): the hidden title bar turns the top strip into
+  // client area, so declare a drag region — a transparent 36px strip that sits
+  // UNDER the ☰ launcher (z 50) — and opt every interactive control out of it so
+  // clicks/inputs still register. Injected from the shell to avoid touching the
+  // React UI; delete this block to revert.
+  if (process.platform !== "darwin") {
+    win.webContents.on("did-finish-load", () => {
+      win.webContents.insertCSS(
+        "html::before{content:'';position:fixed;top:0;left:0;right:0;height:36px;" +
+        "-webkit-app-region:drag;z-index:5}" +
+        "button,a,input,textarea,select,label,summary,[role='button']," +
+        "[role='tab'],[contenteditable],[tabindex]{-webkit-app-region:no-drag}"
+      ).catch(() => {});
+    });
+  }
   win.loadURL(UI_URL);
   win.on("closed", () => { win = null; });
 }
 
 app.whenReady().then(async () => {
+  // No File/Edit menu bar on Win/Linux (the ☰ launcher is the only chrome).
+  // Keep the native app menu on macOS so Cmd+Q / copy-paste accelerators live.
+  if (process.platform !== "darwin") Menu.setApplicationMenu(null);
   startOllama();
   const ok = await startBackend();
   if (!ok) {
