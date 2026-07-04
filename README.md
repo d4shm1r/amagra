@@ -24,12 +24,11 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/chat.png" width="90%" alt="Chat — specialist agents with persistent memory" />
+  <img src="docs/screenshots/divergence.gif" width="90%" alt="Run one prompt across GPT, Claude, Gemini and local models — the agreement score resolves live" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/library.png" width="49%" alt="Library — documents Amagra has read" />
-  <img src="docs/screenshots/inspect.png" width="49%" alt="Inspect — decisions and runs at a glance" />
+  <img src="docs/screenshots/replay.gif" width="90%" alt="Click any past answer and replay why the system routed and answered the way it did" />
 </p>
 
 ---
