@@ -29,7 +29,13 @@ npm run record       # → out/shot1-divergence.webm, shot2-replay.webm
 ./to-gif.sh          # → out/*.gif  (960px @ 15fps; pass "800 12" for smaller)
 ```
 
-Watch it work (non-headless): open `record.mjs`, set `chromium.launch({ headless: false })`.
+Runs **headed** by default (a real window drives itself — don't touch it) because
+headless Chromium blanks the styled result panels in the video. Force headless
+with `HEADLESS=1 npm run record` only if your environment has no display.
+
+**Trim the lead-in** so a GIF opens on the action instead of the launcher/nav:
+`./to-gif.sh 960 15 2` skips 2s from every clip, or set a per-file override —
+`TRIM_shot2_replay=3 ./to-gif.sh` (basename with dashes as underscores).
 
 ### Config (env vars)
 
