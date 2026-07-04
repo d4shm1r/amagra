@@ -25,10 +25,14 @@
 
 <p align="center">
   <img src="docs/screenshots/divergence.gif" width="90%" alt="Run one prompt across GPT, Claude, Gemini and local models — the agreement score resolves live" />
+  <br />
+  <sub><b>Divergence run</b> — one prompt, every model at once, agreement scored live. Spot a silent prompt failure before your users do.</sub>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/replay.gif" width="90%" alt="Click any past answer and replay why the system routed and answered the way it did" />
+  <br />
+  <sub><b>Decision replay</b> — click any past answer and reconstruct exactly why it was routed and answered that way: which agent, which memories, what confidence.</sub>
 </p>
 
 ---
@@ -152,24 +156,6 @@ learning loop nudges routing toward the paths that score well — no model weigh
 The engineering detail — the LangGraph state machine, the routing accuracy and its honest
 failure modes, the observability stack — lives in **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
 and **[docs/records/FINDINGS.md](docs/records/FINDINGS.md)**.
-
----
-
-## Roadmap
-
-| | Milestone | |
-|---|---|---|
-| ✅ | **Tool-using agents · multi-provider models** | files, sandboxed code, web search; Ollama + Claude + GPT + Gemini |
-| ✅ | **Cross-model prompt debugger & consensus** | run a prompt across N models, score their agreement |
-| ✅ | **Unified workspace UI · hybrid inference** | one coherent dashboard; local-by-default, cloud when it counts |
-| ✅ | **Prompts as first-class, versioned artifacts** *(v1.6.0)* | prompts persist as files, every save is a version, decisions link to the version that produced them, side-by-side version diff |
-| ✅ | **Installable desktop app · chat-first UX** *(v1.6.3)* | native AMAGRA window (Electron) + one-file Linux AppImage; all navigation folded into a single ☰ app-grid launcher over a clean chat home |
-| 🔜 | **Workspaces & RBAC** | isolated projects per user, roles, a custom agent builder |
-| ○ | **Team memory & governance** *(v1.7)* | shared memory, audit trails, SSO, air-gapped installer |
-| ○ | **Agent registry & SDK** *(v2.0)* | build and share custom agents as portable packages |
-
-The full plan — with dates, tracking issues, and design notes — is in
-**[docs/ROADMAP.md](docs/ROADMAP.md)**. Delivery commitments are published in-app under **Promises**.
 
 ---
 
