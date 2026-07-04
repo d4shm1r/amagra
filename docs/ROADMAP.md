@@ -1,18 +1,25 @@
 # Amagra — Roadmap v2
 
-> **The token meter for agentic AI.**
-> Run an agentic task, see what it cost, verify each step, replay the decision,
-> and check whether the models actually agreed it was right.
+> **The local AI workspace that lets you compare models and inspect every AI
+> decision.** Run one prompt across GPT, Claude, Gemini and your local models, see
+> exactly where they disagree, and replay *why* the system answered the way it did —
+> all on hardware you control.
 
-**Who it's for:** developers already burning tokens on agentic coding
-(Claude Code / Cursor / Codex / OpenHands users) who have no idea whether the
-spend was worth it.
+> **The pitch is settled elsewhere.** [`POSITIONING.md`](product/POSITIONING.md) is the
+> single source of messaging truth; this roadmap defers to it. The job here is
+> *sequencing the distribution work*, not re-deciding the story. (The sharper
+> "token meter for agentic AI" framing is a real future wedge — it is staged in
+> Line 2, not the headline, for the reason spelled out there.)
 
-**Why now:** the *State of the AI Economy 2026* deck shows agentic coding is the
-live wave (it burns ~1,200× the tokens of a chat task) and that the industry's
-single unsolved problem is that **tokens are the billing metric but not yet a
-unit of value**. That gap is exactly what Amagra's verification + replay +
-cross-model agreement already measure.
+**Who it's for:** developers who run more than one model and need to see where they
+disagree and why the system chose what it did — on their own hardware, with nothing
+leaving the machine.
+
+**Why now:** the constraint is **"almost nobody has seen it,"** not "they saw it and
+left." Those demand opposite responses, and this is the better problem. The *State of
+the AI Economy 2026* read still holds — AI revenue is ~0.4% of US GDP, a rounding error —
+so designing enterprise tiers at user #0 is backwards. The next unit of work that moves
+Amagra is therefore **evidence + reach**, not another advanced feature no one has watched.
 
 > **The one rule this version exists to enforce:** distribution is the
 > bottleneck, not features. You do not get to build Line 2 until Line 1 draws a
@@ -24,13 +31,15 @@ cross-model agreement already measure.
 
 ### Line 1 — Distribution *(do this before any new code)*
 
-The product has never been shown to a single stranger. Fix that first.
+The product has never been shown to a single stranger. Fix that first. The pitch itself
+is already decided — [`POSITIONING.md`](product/POSITIONING.md) is settled and the README,
+landing, and [`COMPARISON.md`](product/COMPARISON.md) already tell its story — so Line 1 is
+**reach**, not re-writing copy.
 
 | Step | Concrete action |
 |------|-----------------|
-| Reframe the pitch | Replace the abstract "accountable AI runtime" copy with the wedge above, everywhere (README, landing, POSITIONING.md). |
-| Record one 60-sec GIF | agentic task → cost ticks up → step verifier flags a bad step → decision replay → "models agreed: 2/3." That's the whole product in one clip. |
-| **Post it** | Show HN + r/LocalLLaMA, same day. Angle: *"I built a local 'token meter' that tells you if your agent's work was actually correct."* |
+| Shoot the three GIFs | The three-shot demo already specified in POSITIONING.md: **divergence run** (paste a prompt, fire at 4 models, Aligned/Mixed/Divergent resolves), **decision replay** (click a past answer, watch the routing reconstruct), **offline proof** (pull the network, it still answers locally). Three GIFs ≈ the whole pitch, no narration. |
+| **Post it** | Show HN + r/LocalLLaMA, same day. Lead with the divergence run; use the titles already drafted in POSITIONING.md's *Channel hooks* (e.g. *"Compare GPT, Claude, Gemini and local models on one prompt — and replay every decision"*). |
 
 **Success metric (honest — not MRR):** did *one stranger* run a task? First HN
 comment, first star, first issue from someone who isn't you. That is the 0 → 1.
@@ -41,6 +50,15 @@ comment, first star, first issue from someone who isn't you. That is the 0 → 1
 |------|--------|
 | **Run Report** | One screen: cost + per-step verify pass/fail + cross-model agreement score + replay link, for a single agentic run. Assemble what already exists; build nothing new underneath. |
 | **OpenAI-compatible `/v1`** | `OPENAI_BASE_URL=localhost:8000/v1` drop-in so devs point existing agent tooling at Amagra and get the meter for free. |
+
+> **The token-meter wedge lives here, not at the top.** *"Amagra is the token meter for
+> agentic AI — see whether your agent's spend was actually correct"* is a genuinely sharper
+> pitch, but it only becomes *true for the target user* once the `/v1` drop-in ships: they
+> have to be able to point Claude Code / Cursor / Codex at Amagra to get the meter for free.
+> Leading with it today would pitch a capability Line 1 forbids us to build yet. So it is
+> staged as the **Line-2 repositioning** — revisit the headline in
+> [`POSITIONING.md`](product/POSITIONING.md) the moment `/v1` lands and the Run Report is
+> real, not before.
 
 ### Line 3 — Moat *(only after real users; let usage pull it)*
 
@@ -71,8 +89,10 @@ Full version-by-version history lives in git tags (v1.0 → v1.6) and
 ## Strategic positioning
 
 **The category to own:** not "local chat UI" (Open WebUI owns that). The wedge is
-**telling a developer whether their agentic-AI spend was worth it** — cost,
-correctness, and agreement in one place.
+**showing a developer where their models disagree and why the system decided what it
+did** — comparison + decision replay in one place, on their own hardware. (The sharper
+"was the agentic spend worth it?" framing is the Line-2 evolution of this once `/v1`
+ships, not a competing story — see Line 2.)
 
 **Genuinely differentiated — protect these:**
 - Decision replay + routing telemetry (nobody else shows *why*).

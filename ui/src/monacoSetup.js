@@ -27,14 +27,16 @@ monaco.editor.defineTheme("amagra", {
   inherit: true,
   rules: [
     { token: "",        foreground: "2E2010" },
-    { token: "comment", foreground: "9A7A60", fontStyle: "italic" },
+    // was 9A7A60 — theme.js flags that exact value as below the AA floor (3.3:1)
+    // on cream; use the corrected muted (T.muted, ~4.7:1) so comments stay legible.
+    { token: "comment", foreground: "806044", fontStyle: "italic" },
     { token: "keyword", foreground: "9A6C00" },
     { token: "string",  foreground: "0F766E" },
   ],
   colors: {
     "editor.background":                  "#F0E9DF",
     "editor.foreground":                  "#2E2010",
-    "editorLineNumber.foreground":        "#C9B79B",
+    "editorLineNumber.foreground":        "#B39B78",
     "editorLineNumber.activeForeground":  "#9A6C00",
     "editor.lineHighlightBackground":     "#E9E0D2",
     "editor.lineHighlightBorder":         "#00000000",

@@ -520,20 +520,36 @@ ships a single file.
 - **Community profile** — `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SECURITY.md`
 - **Gilded Calm social-preview card** (1280×640) for GitHub link sharing
 
-**Live Snapshot (2026-06-23):**
+### v1.6.3 — Desktop App & Unified Launcher ✅
+
+- **AMAGRA desktop app** — Electron shell around the local FastAPI server + built UI, wordmark branding, branded frameless top bar on Win/Linux (#96, #113)
+- **Unified ☰ launcher nav** — sidebar + sub-nav + chat side rail collapsed into one phone-style app grid; event-driven chat panels (#96, #98)
+- **v1.6.1 / v1.6.2 UI work folded in** — calm tab-by-tab redesign and the TYPE/EASE/DUR design-token scale (#94, #95); these shipped inside the v1.6.3 tag rather than as their own releases
+
+### v1.6.4 — System Alignment & Honesty Pass ✅
+
+Consolidation release flushing the 14 commits that accrued after the v1.6.3 tag.
+
+- **Honesty batch** — measured routing accuracy (no invented headline), live figures across the UI, arena crash fix (#108); transparency evidence for the responder + dispatch sinks (#47/#48, #99/#101); hardened non-English detection against a labeled set (#18)
+- **Identity as an architectural contract** — snapshot / fingerprint / changed-paths, intrinsic vs learned, invariant tests (#100)
+- **Skill-graph A←R coupling** + the entropy diagnostic that gated it (`GET /cos/skills/entropy`) (#105)
+- **OCAC §6 math sync** — A3′ correction, sharp certified rate, nested composition law, constructive fractional depth (#107)
+- **UI ↔ system alignment** — live docs, verifier & identity surfaces, Guide accuracy pass (#104); launcher IA pass (#98)
+- **Cleanup** — deep-clean docs categorization, dead-code removal, `/docs` API rewire, test-isolation fix (#102); legacy CLI entrypoint removed (#106)
+- **Roadmap ↔ positioning reconciliation** — POSITIONING.md set as the single source of messaging truth; the token-meter framing demoted to a staged Line-2 wedge in ROADMAP.md
+
+**Live Snapshot (2026-07-04):**
 
 | Metric | Value |
 |--------|-------|
-| Version | v1.5.0 (hybrid inference) |
+| Version | v1.6.4 (system alignment & honesty pass) |
 | Routing accuracy | measured honestly — curated ceiling vs sealed adversarial floor, see [FINDINGS.md](FINDINGS.md) (no single headline figure) |
-| Specialist agents | 10 (registry-canonical) |
-| FAISS vectors | 628+ at 0.38ms P50 |
-| API endpoints | 100+ (141 routes) |
-| Build phases complete | 39 (+ v0.9 → v1.5.0 releases) |
-| UCI score | ~80.8 |
-| Auth | API key auth (REQUIRE_AUTH=0 dev, 1 prod) |
-| Docker | Dockerfile + docker-compose.yml with GPU passthrough |
-| Test suite | 865 passing |
+| Test suite | 986 passing (CI figure; local full run needs faiss/httpx) |
+
+> The remaining engine metrics — specialist agents (10), FAISS vectors (628+ @ 0.38ms P50),
+> API endpoints (100+ / 141 routes), UCI (~80.8), auth, Docker — were last measured at the
+> v1.5.0 baseline (2026-06-23) and are carried pending re-measurement, not re-verified as of
+> this snapshot.
 
 ---
 
