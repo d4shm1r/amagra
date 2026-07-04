@@ -88,6 +88,61 @@ Priority order:
 
 ---
 
+## The value discipline
+
+Where the standards in this document come from. Distilled from the July 2026
+luxury-values review: Amagra's engineering choices happen to express the values
+that make enduring brands endure — local-first *is* discretion, decision replay
+*is* honest communication, persistent memory *is* recognition, restraint *is*
+craftsmanship. These are architectural facts, not branding decisions. The lesson
+is not "position as luxury"; it's that the values sort into three tiers with
+different rules for each.
+
+**Foundational — designed in, from day one.** Trust, discretion, craftsmanship,
+recognition (memory), respect for time. These are product qualities: when the
+product demonstrates them consistently, users feel them without being told. The
+architecture already carries them; the open work is making them *felt* at first
+touch (install, first run) and keeping every claim exactly as large as what ships.
+
+**Cultural — earned, never declared.** Heritage, reputation, relationships,
+mutual standards. These accumulate from years of consistent behavior — Rolex
+didn't invent heritage, it accumulated it. The in-app build log, HISTORY.md, and
+the records discipline are the deposit slips; the origin story gets written once
+and the rest is not breaking character.
+
+**Positional — chosen deliberately.** Identity and exclusivity. In software,
+exclusivity is not scarce access; it is **scarcity of surface** — editorial
+discipline about what the product refuses to become. Not everyone is excluded
+from the product; ideas that weaken it are. And identity is only half chosen:
+the first visible cohort co-authors what using Amagra says about someone, which
+makes channel selection (r/LocalLLaMA over a generic launch surge) identity
+work, not just distribution.
+
+Two rules fall out:
+
+- **Never trade a foundational value for growth.** Tier 1 is the raw material of
+  tier 2: heritage is foundational values with a timestamp. Adding telemetry,
+  softening claim precision, or shipping a rushed release doesn't just cost that
+  value — it spends the accumulated deposit toward heritage, which takes years
+  to fill and one transaction to empty. No-telemetry is therefore permanent
+  brand law, not a current setting.
+- **The rarity test.** For every roadmap item: *does adding this make the
+  product rarer or more common?* A feature every competitor has makes Amagra
+  more common even when it is individually good. This is the roadmap-facing
+  twin of the DESIGN_PRINCIPLES experience filter, and it names the cost of a
+  yes, not just the clutter.
+
+The identity this produces borrows no prestige from any category:
+
+> **Quality from discipline, not abundance.** No unnecessary features, no data
+> collection, no exaggerated claims, no wasted interactions, no visual excess.
+
+That sentence is philosophy-layer material — the *how* behind "observable,
+reproducible, and under your control" — never a rival headline. The one
+sentence at the top of this document stays the only hook.
+
+---
+
 ## Guardrails
 
 - **Conversion before the push — but discovery is not one-shot.** Show HN, a later Reddit
@@ -99,6 +154,11 @@ Priority order:
   is explainable" is not yet (component transparency ~31% — issues #47/#48). Outward copy
   claims precisely what ships — "replay why every answer was routed the way it was" — and
   the transparency number is positioning work with a deadline, not background engineering debt.
+- **Luxury is a lens, not a label.** "Luxury" appears only in internal docs
+  (DESIGN_PRINCIPLES defines it as restraint — *quiet, not expensive-looking*)
+  as a design compass. It never appears in outward copy. The brand doesn't
+  borrow prestige from another category; it defines its own standards and holds
+  them — see "The value discipline" above.
 - **Kill the category sprawl in copy.** Never list "chat client / agent framework / memory
   system / prompt debugger / observability platform" in one breath — it reads as unfocused
   to every audience at once. Pick the one sentence; let the rest be discovered *inside* the
