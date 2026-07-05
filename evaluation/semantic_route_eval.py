@@ -152,7 +152,14 @@ def main() -> None:
     print(f"  Held-out prompts: {len(ADV_PROMPTS)}   Exemplars: {len(TRAIN_PROMPTS)}")
     print("=" * 66)
 
-    provider = OllamaEmbeddingProvider()
+    # Backend selectable so this eval can compare embed providers apples-to-apples.
+    # AGENTIC_EMBED_BACKEND=onnx uses the local ONNX model; default stays Ollama.
+    if os.getenv("AGENTIC_EMBED_BACKEND", "ollama").lower() == "onnx":
+        from providers.onnx_embed import ONNXEmbeddingProvider
+        provider = ONNXEmbeddingProvider()
+    else:
+        provider = OllamaEmbeddingProvider()
+    print(f"  Embed backend: {provider.model_id}")
     cache = _load_cache()
 
     ex_labels = [p[1] for p in TRAIN_PROMPTS]     # field[1] is already the agent
