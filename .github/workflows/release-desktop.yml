@@ -1,0 +1,76 @@
+name: Release desktop app
+
+# Builds the Electron desktop app (macOS .dmg, Windows .exe, Linux AppImage) with
+# the FastAPI backend frozen in as a PyInstaller sidecar, so users get a
+# double-click install with no Python/venv required.
+#
+#   tag v* → attach installers to the GitHub Release
+#   manual (workflow_dispatch) → upload as CI artifacts only
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04    # widest glibc reach for the Linux target
+          - os: macos-14        # Apple Silicon
+          - os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Python deps + PyInstaller
+        run: python -m pip install --upgrade pip -r requirements.txt pyinstaller
+
+      - name: Build the UI
+        run: |
+          npm --prefix ui ci
+          npm --prefix ui run build
+
+      - name: Freeze the backend sidecar
+        shell: bash
+        run: bash desktop/build-sidecar.sh
+
+      - name: Build the desktop app
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm ci
+          npx electron-builder --publish never
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: amagra-desktop-${{ matrix.os }}
+          path: |
+            desktop/dist/*.dmg
+            desktop/dist/*.exe
+            desktop/dist/*.AppImage
+          if-no-files-found: warn
+
+      - name: Attach to release (tags only)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            desktop/dist/*.dmg
+            desktop/dist/*.exe
+            desktop/dist/*.AppImage
+          fail_on_unmatched_files: false

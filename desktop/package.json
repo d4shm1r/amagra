@@ -21,7 +21,8 @@
     "productName": "AMAGRA",
     "files": ["main.js", "preload.js"],
     "extraResources": [
-      { "from": "../ui/build", "to": "ui/build" }
+      { "from": "../ui/build", "to": "ui/build" },
+      { "from": "backend", "to": "backend" }
     ],
     "directories": { "output": "dist" },
     "linux": {
@@ -32,11 +33,11 @@
     "mac": {
       "target": ["dmg"],
       "category": "public.app-category.developer-tools",
-      "icon": "build/icon.icns"
+      "icon": "../ui/public/logo512.png"
     },
     "win": {
       "target": ["nsis"],
-      "icon": "build/icon.ico"
+      "icon": "../ui/public/logo512.png"
     }
   }
 }
