@@ -32,7 +32,7 @@ function Bar({ percent }) {
   );
 }
 
-export default function Onboarding({ apiBase = API_BASE, onDismiss, onStart, onMode, mode = "simple" }) {
+export default function Onboarding({ apiBase = API_BASE, onDismiss, onStart }) {
   const [status, setStatus]   = useState(null);   // /setup/status payload
   const [loading, setLoading] = useState(true);
   const [pulling, setPulling] = useState({});     // model -> { percent, status, error, done }
@@ -188,38 +188,6 @@ export default function Onboarding({ apiBase = API_BASE, onDismiss, onStart, onM
             </div>
           )}
         </Step>
-
-        {onMode && (
-          <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 16, marginTop: 4 }}>
-            <div style={{ color: T.mutedLt, fontSize: 13, marginBottom: 10 }}>
-              How much do you want to see?
-            </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              {[
-                { val: "simple",   title: "Keep it simple",   sub: "Just the essentials — recommended" },
-                { val: "advanced", title: "Show all tools",   sub: "Every panel and diagnostic" },
-              ].map(opt => {
-                const active = mode === opt.val;
-                return (
-                  <button
-                    key={opt.val}
-                    onClick={() => onMode(opt.val)}
-                    style={{
-                      flex: 1, textAlign: "left", cursor: "pointer",
-                      background: active ? LUX.goldTint : T.surface2,
-                      border: `1.5px solid ${active ? T.accent : T.border}`,
-                      borderRadius: 12, padding: "12px 14px",
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{opt.title}</div>
-                    <div style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>{opt.sub}</div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 24 }}>
           <button style={skipBtn} onClick={onDismiss}>Skip for now</button>

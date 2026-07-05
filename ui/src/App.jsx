@@ -42,8 +42,7 @@ import { ApiOfflineBanner } from "./ObsShared";
 import { SettingsModal, ShortcutsModal } from "./Modals";
 import AppLauncher from "./AppLauncher";
 import {
-  NAV, TABS_BY_SURFACE, SURFACE_BY_TAB, DEFAULT_TAB,
-  TAB_ALIASES, VALID_TABS, surfaceOf, firstVisibleTab,
+  SURFACE_BY_TAB, DEFAULT_TAB, TAB_ALIASES, VALID_TABS,
 } from "./navConfig";
 import { T, LUX, GOLD, TYPE, FONT_UI, FONT_DISPLAY } from "./theme";
 
@@ -87,30 +86,10 @@ export default function App() {
     setShowOnboarding(false);
   }, []);
 
-  // ── Simple / Advanced UI mode ──────────────────────────────────
-  // "simple" trims the chrome to the first-run trust workflow (Chat,
-  // Prompt IDE, Consensus, Library, Guide, Model); "advanced" reveals every
-  // surface, menu, and diagnostic.
-  // Calm by default: everyone starts in Simple (the luxury "complexity on
-  // demand" posture) unless they've explicitly chosen Advanced before. The
-  // toggle is one click away and a one-time hint points to it, so no tool is
-  // ever truly hidden — it's just not in your face until you ask for it.
-  const [mode, setMode] = useState(() => {
-    try {
-      return localStorage.getItem("ui_mode_v1") || "simple";
-    } catch { return "simple"; }
-  });
-  const setModePersisted = useCallback((next) => {
-    setMode(next);
-    try { localStorage.setItem("ui_mode_v1", next); } catch {}
-  }, []);
-  const toggleMode = useCallback(() => {
-    setMode(prev => {
-      const next = prev === "simple" ? "advanced" : "simple";
-      try { localStorage.setItem("ui_mode_v1", next); } catch {}
-      return next;
-    });
-  }, []);
+  // The Simple/Advanced toggle was removed — every surface, menu, and diagnostic
+  // is always shown. `mode` is pinned to "advanced" so the handful of components
+  // that still branch on it render the full experience.
+  const mode = "advanced";
 
   const updateSetting = useCallback((key, val) => {
     setSettings(prev => {
@@ -204,28 +183,9 @@ export default function App() {
   const handleMenuAction = (action) => {
     if (action === "clearLog") setSessionLog([]);
     else if (action === "toggleSidebar") setLauncherOpen(o => !o);
-    else if (action === "toggleMode") toggleMode();
     else if (action === "exportCsv") window.open(`${API}/memory/export.csv`, "_blank");
     else if (action.startsWith("doc:")) { setResearchDoc(action.slice(4)); navTo("concepts"); }
   };
-
-  // Switching to Simple mode while sitting on a now-hidden surface/sub-tab
-  // bounces to a visible view. Only on the mode FLIP itself — an explicit
-  // navigation to an Advanced tab (launcher search, restored session) is a
-  // deliberate ask and must stick even in Simple mode.
-  const prevModeRef = useRef(mode);
-  useEffect(() => {
-    const flipped = prevModeRef.current !== mode;
-    prevModeRef.current = mode;
-    if (!flipped || mode !== "simple") return;
-    const s = surfaceOf(activeTab);
-    // Bounce off Advanced-only surfaces entirely…
-    if (NAV.find(n => n.id === s)?.adv) { navTo("chat"); return; }
-    // …and off Advanced sub-tabs of an otherwise-visible surface.
-    if ((TABS_BY_SURFACE[s] || []).find(t => t.id === activeTab)?.adv) {
-      navTo(firstVisibleTab(s, "simple"));
-    }
-  }, [mode, activeTab, navTo]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -234,7 +194,6 @@ export default function App() {
       if (inInput) return;
       if (e.ctrlKey || e.metaKey) {
         if (e.shiftKey) {
-          if (mode === "simple") return;
           switch (e.key.toLowerCase()) {
             case "e": e.preventDefault(); navTo("prompt");    break;
             case "d": e.preventDefault(); navTo("brain");     break;
@@ -255,10 +214,10 @@ export default function App() {
           switch (e.key) {
             case "1": e.preventDefault(); navTo("home"); break;
             case "2": e.preventDefault(); navTo("chat"); break;
-            case "3": e.preventDefault(); navTo(mode === "simple" ? "prompt" : "overview"); break;
-            case "4": e.preventDefault(); navTo(mode === "simple" ? "consensus" : "cog-dash"); break;
-            case "5": e.preventDefault(); navTo(mode === "simple" ? "library" : "memory"); break;
-            case "6": e.preventDefault(); navTo(mode === "simple" ? "model" : "data"); break;
+            case "3": e.preventDefault(); navTo("overview"); break;
+            case "4": e.preventDefault(); navTo("cog-dash"); break;
+            case "5": e.preventDefault(); navTo("memory"); break;
+            case "6": e.preventDefault(); navTo("data"); break;
             case "7": e.preventDefault(); navTo("guide"); break;
             case ",": e.preventDefault(); setActiveModal("settings");  break;
             case "/": e.preventDefault(); setActiveModal("shortcuts"); break;
@@ -273,11 +232,11 @@ export default function App() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [mode, navTo]);
+  }, [navTo]);
 
   const MODAL_CONTENT = {
-    settings: <SettingsModal settings={settings} onUpdate={updateSetting} coherence={coherence} apiStatus={apiStatus} mode={mode} onSetMode={setModePersisted} />,
-    shortcuts: <ShortcutsModal mode={mode} />,
+    settings: <SettingsModal settings={settings} onUpdate={updateSetting} coherence={coherence} apiStatus={apiStatus} />,
+    shortcuts: <ShortcutsModal />,
     about: (
       <div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 16 }}>
@@ -459,8 +418,6 @@ export default function App() {
         <Onboarding
           onDismiss={dismissOnboarding}
           onStart={(p) => { setSeedPrompt(p); navTo("chat"); }}
-          onMode={setModePersisted}
-          mode={mode}
         />
       )}
 
@@ -572,8 +529,6 @@ export default function App() {
         onClose={() => setLauncherOpen(false)}
         activeTab={activeTab}
         onNav={navTo}
-        mode={mode}
-        onToggleMode={toggleMode}
         apiStatus={apiStatus}
         coherence={coherence}
         onModal={setActiveModal}

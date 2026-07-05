@@ -157,7 +157,7 @@ function RecentThreads({ threads, onSwitch }) {
 }
 
 export default function AppLauncher({
-  open, onClose, activeTab, onNav, mode, onToggleMode, apiStatus, coherence, onModal,
+  open, onClose, activeTab, onNav, apiStatus, coherence, onModal,
   searchSignal = 0,
 }) {
   const [threads, setThreads] = useState([]);
@@ -236,15 +236,14 @@ export default function AppLauncher({
   // App chrome (modals, not tabs) — rendered as a proper tile section at the
   // bottom, same visual language as the surfaces above.
   const system = [
-    { label: "Settings",     sym: "⚙", sub: "preferences & mode",  run: () => { onModal("settings");  onClose(); } },
+    { label: "Settings",     sym: "⚙", sub: "preferences",  run: () => { onModal("settings");  onClose(); } },
     { label: "Shortcuts",    sym: "⌘", sub: "keyboard reference",  run: () => { onModal("shortcuts"); onClose(); } },
     { label: "About AMAGRA", sym: "❋", sub: "version & build",     run: () => { onModal("about");     onClose(); } },
   ].filter(a => !q || hit(a.label));
 
   const visibleSurfaces = (q
     ? SURFACES.map(s => [s, s.tabs.filter(t => hit(t.label) || hit(s.label))])
-    : SURFACES.filter(s => mode !== "simple" || !s.adv)
-        .map(s => [s, s.tabs.filter(t => mode !== "simple" || !t.adv)])
+    : SURFACES.map(s => [s, s.tabs])
   ).filter(([, tabs]) => tabs.length);
 
   const shownThreads = q ? threads.filter(t => hit(t.title || "Untitled")) : threads;
@@ -297,10 +296,6 @@ export default function AppLauncher({
         }
         .launch-tile:active { transform: translateY(-1px) scale(0.985); }
         .launch-tile:focus-visible { outline: 2px solid ${T.accent}; outline-offset: 2px; }
-        .launch-pill:hover {
-          background: #FFFEFA !important; border-color: rgba(196,136,8,0.45) !important;
-          color: #6C4C00 !important; box-shadow: 0 2px 10px rgba(72,52,28,0.08);
-        }
         .launch-row:hover {
           background: #FFFEFA !important; border-color: rgba(196,136,8,0.30) !important;
           transform: translateX(3px); box-shadow: 0 2px 10px rgba(72,52,28,0.06);
@@ -342,8 +337,8 @@ export default function AppLauncher({
           padding: "20px clamp(20px, 4vw, 56px) 0", animation: `launchRise ${DUR.slow} ${EASE.out}`,
         }}
       >
-        {/* Header: wordmark · mode toggle · status — the ☰/✕ toggle in the app
-            chrome (top-left, same spot) is the single open/close control. */}
+        {/* Header: wordmark · status — the ☰/✕ toggle in the app chrome
+            (top-left, same spot) is the single open/close control. */}
         <header style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0, marginBottom: 22 }}>
           <button onClick={() => go("home")} aria-label="AMAGRA home"
             className="nav-btn"
@@ -354,20 +349,6 @@ export default function AppLauncher({
           </button>
 
           <div style={{ flex: 1 }} />
-
-          {/* Simple / Advanced */}
-          <button onClick={onToggleMode} className="launch-pill"
-            title={mode === "simple" ? "Simple mode — showing the essentials. Click for all tools." : "Advanced mode — every tool shown."}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 7, cursor: "pointer",
-              padding: "6px 12px", borderRadius: 20, fontFamily: FONT_UI, fontSize: 12, fontWeight: 600,
-              border: `1px solid ${T.border}`, background: "transparent", color: T.muted,
-              transition: `background ${DUR.base} ${EASE.out}, border-color ${DUR.base} ${EASE.out}, color ${DUR.base} ${EASE.out}, box-shadow ${DUR.base} ${EASE.out}`,
-            }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%",
-              background: mode === "simple" ? T.success : T.accent }} />
-            {mode === "simple" ? "Simple" : "Advanced"}
-          </button>
 
           {/* Connection */}
           <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12, color: T.muted, fontFamily: FONT_UI }}>

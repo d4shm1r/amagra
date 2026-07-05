@@ -4,7 +4,7 @@ import { AGENTS } from "./constants";
 import { T } from "./theme";
 
 // ── Settings modal ────────────────────────────────────────────
-export function SettingsModal({ settings, onUpdate, coherence, apiStatus, mode, onSetMode }) {
+export function SettingsModal({ settings, onUpdate, coherence, apiStatus }) {
   const [status,   setStatus]   = useState(null);
   const [memStats, setMemStats] = useState(null);
   const [saved,    setSaved]    = useState(false);
@@ -65,19 +65,6 @@ export function SettingsModal({ settings, onUpdate, coherence, apiStatus, mode, 
         <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.text, flex: 1 }}>Settings</h2>
         {saved && <span style={{ fontSize: 10, color: T.success, fontWeight: 600 }}>✓ Saved</span>}
       </div>
-
-      <SectionHead title="Interface" />
-
-      <Field label="Mode" hint="Simple keeps the essentials; Advanced reveals every tool and diagnostic">
-        <ButtonGroup
-          value={mode}
-          onChange={onSetMode}
-          options={[
-            { val: "simple",   label: "Simple"   },
-            { val: "advanced", label: "Advanced" },
-          ]}
-        />
-      </Field>
 
       <SectionHead title="Agent & Inference" />
 
@@ -222,34 +209,8 @@ const SHORTCUT_GROUPS = [
   ]},
 ];
 
-const SIMPLE_SHORTCUT_GROUPS = [
-  { title: "Primary Navigation", rows: [
-    ["Introduction",      "Ctrl+1"],
-    ["Chat",              "Ctrl+2"],
-    ["Prompt IDE",        "Ctrl+3"],
-    ["Consensus",         "Ctrl+4"],
-    ["Library",           "Ctrl+5"],
-    ["Model",             "Ctrl+6"],
-    ["Guide",             "Ctrl+7"],
-    ["Search menu",       "Ctrl+K"],
-  ]},
-  { title: "Interface", rows: [
-    ["Toggle menu",       "Ctrl+B"],
-    ["Open Settings",     "Ctrl+,"],
-    ["Keyboard Shortcuts","Ctrl+/"],
-    ["Close modal",       "Escape"],
-  ]},
-  { title: "Chat", rows: [
-    ["Send message",      "Enter"],
-    ["New line",          "Shift+Enter"],
-    ["Threads panel",     "Ctrl+Shift+T"],
-    ["Context panel",     "Ctrl+Shift+C"],
-    ["Advanced panel",    "Ctrl+Shift+O"],
-  ]},
-];
-
-export function ShortcutsModal({ mode = "advanced" }) {
-  const groups = mode === "simple" ? SIMPLE_SHORTCUT_GROUPS : SHORTCUT_GROUPS;
+export function ShortcutsModal() {
+  const groups = SHORTCUT_GROUPS;
   // Pair groups into 2 columns: [0,1], [2,3], [4]
   const pairs = [];
   for (let i = 0; i < groups.length; i += 2)
