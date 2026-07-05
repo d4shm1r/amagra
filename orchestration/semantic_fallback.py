@@ -81,10 +81,23 @@ def _exemplars() -> list[tuple[str, str]]:
 
 
 def _provider():
+    """
+    Embedding provider for the fallback. Backend chosen by AGENTIC_EMBED_BACKEND:
+      ollama (default) — nomic-embed-text over Ollama's HTTP API (network round-trip)
+      onnx             — local ONNX model, no network (see providers/onnx_embed.py)
+
+    The exemplar cache is keyed by provider.model_id, so switching backends
+    auto-invalidates the cache and rebuilds against the new vector space.
+    """
     global _PROVIDER
     if _PROVIDER is None:
-        from providers.ollama import OllamaEmbeddingProvider
-        _PROVIDER = OllamaEmbeddingProvider()
+        backend = os.getenv("AGENTIC_EMBED_BACKEND", "ollama").lower()
+        if backend == "onnx":
+            from providers.onnx_embed import ONNXEmbeddingProvider
+            _PROVIDER = ONNXEmbeddingProvider()
+        else:
+            from providers.ollama import OllamaEmbeddingProvider
+            _PROVIDER = OllamaEmbeddingProvider()
     return _PROVIDER
 
 
