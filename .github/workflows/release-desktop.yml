@@ -43,8 +43,11 @@ jobs:
         run: python -m pip install --upgrade pip -r requirements.txt pyinstaller
 
       - name: Build the UI
+        # Lockfiles are gitignored (repo convention), so `npm ci` has nothing to
+        # install from on a fresh checkout — fall back to `npm install`, matching
+        # packaging/build-appimage.sh which the Linux build already uses.
         run: |
-          npm --prefix ui ci
+          npm --prefix ui ci || npm --prefix ui install
           npm --prefix ui run build
 
       - name: Freeze the backend sidecar
@@ -61,7 +64,7 @@ jobs:
           # signing. See docs/ops/RELEASING.md.
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: |
-          npm ci
+          npm ci || npm install
           npx electron-builder --publish never
 
       - name: Upload installers
