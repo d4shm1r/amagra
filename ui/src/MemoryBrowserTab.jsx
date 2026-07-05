@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { API } from "./api";
 import { T, LUX, GOLD, FONT_MONO } from "./theme";
 import { RefreshBtn, EmptyState, PageHeader, MetricCard } from "./ObsShared";
+import CognitiveMapTab from "./CognitiveMapTab";
 
 const TYPES  = ["all", "code", "lesson", "episodic", "failure", "chat", "fact", "error"];
 const AGENTS = ["all", "python_dev", "ai_ml", "it_networking", "dotnet_dev",
@@ -158,6 +159,7 @@ export default function MemoryBrowserTab() {
   const [search,     setSearch]     = useState("");
   const [expanded,   setExpanded]   = useState(null);
   const [sortBy,     setSortBy]     = useState("newest"); // newest|quality|uses
+  const [view,       setView]       = useState("table");  // table|graph (graph = folded-in Memory Map)
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -207,8 +209,29 @@ export default function MemoryBrowserTab() {
 
       {/* ── Header ── */}
       <PageHeader title="Memory" subtitle={`${records.length} records`} gold>
-        <RefreshBtn onClick={fetchAll} />
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          {/* Table | Graph — the old "Memory Map" tab folded in as a view toggle */}
+          <div style={{ display: "flex", border: `1px solid ${T.border}`, borderRadius: 8, overflow: "hidden" }}>
+            {["table", "graph"].map(v => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                style={{
+                  border: "none", cursor: "pointer",
+                  padding: "5px 12px", fontSize: 11, fontFamily: "inherit",
+                  textTransform: "capitalize",
+                  background: view === v ? GOLD : "transparent",
+                  color: view === v ? "#2E2010" : T.muted,
+                  fontWeight: view === v ? 600 : 400,
+                }}
+              >{v === "graph" ? "Map" : "Table"}</button>
+            ))}
+          </div>
+          <RefreshBtn onClick={fetchAll} />
+        </div>
       </PageHeader>
+
+      {view === "graph" ? <CognitiveMapTab embedded /> : (<>
 
       {/* ── Stats ── */}
       {stats && (
@@ -373,6 +396,7 @@ export default function MemoryBrowserTab() {
         ))}
       </div>
 
+      </>)}
     </div>
   );
 }

@@ -140,7 +140,7 @@ function AgentCluster({ agent, memories, typeFilter }) {
   );
 }
 
-export default function CognitiveMapTab() {
+export default function CognitiveMapTab({ embedded = false }) {
   const [rawMem,      setRawMem]      = useState([]);
   const [stats,       setStats]       = useState(null);
   const [typeFilter,  setTypeFilter]  = useState("all");
@@ -201,25 +201,27 @@ export default function CognitiveMapTab() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, animation: "fadeIn .2s" }}>
 
-      {/* ── Header ── */}
-      <PageHeader
-        title="Memory Map"
-        subtitle={`${rawMem.length} memories across ${Object.keys(grouped).length} agents · ${totalVisible} visible`}
-      >
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          {stats && (
-            <span style={{ fontFamily: "monospace", fontSize: 11, color: C.green }}>
-              avg_q {stats.total ? (rawMem.reduce((s, m) => s + (m.quality || 0), 0) / rawMem.length).toFixed(3) : "–"}
-            </span>
-          )}
-          {stats?.prune_candidates > 0 && (
-            <span style={{ fontFamily: "monospace", fontSize: 11, color: C.red }}>
-              {stats.prune_candidates} prunable
-            </span>
-          )}
-          <RefreshBtn onClick={load} />
-        </div>
-      </PageHeader>
+      {/* ── Header (suppressed when embedded inside the Memory Browser) ── */}
+      {!embedded && (
+        <PageHeader
+          title="Memory Map"
+          subtitle={`${rawMem.length} memories across ${Object.keys(grouped).length} agents · ${totalVisible} visible`}
+        >
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            {stats && (
+              <span style={{ fontFamily: "monospace", fontSize: 11, color: C.green }}>
+                avg_q {stats.total ? (rawMem.reduce((s, m) => s + (m.quality || 0), 0) / rawMem.length).toFixed(3) : "–"}
+              </span>
+            )}
+            {stats?.prune_candidates > 0 && (
+              <span style={{ fontFamily: "monospace", fontSize: 11, color: C.red }}>
+                {stats.prune_candidates} prunable
+              </span>
+            )}
+            <RefreshBtn onClick={load} />
+          </div>
+        </PageHeader>
+      )}
 
       {/* ── Filter bar ── */}
       <div className="lux-card" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", padding: "10px 14px" }}>

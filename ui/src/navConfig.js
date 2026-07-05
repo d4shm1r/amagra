@@ -39,21 +39,26 @@ export const SURFACES = [
   { id: "memory", label: "Memory", sym: "◈", desc: "Explore stored knowledge and context", tabs: [
     // Library is the friendly front door; the technical views live under one
     // sub-header so the section leads with what most users came for.
+    // Browser now hosts the old "Memory Map" as a Table|Map toggle (same
+    // /memory/stats data — no reason to be two tabs). "Mind Map" was a live
+    // agent-routing view, not memory — it moved to Analytics.
     { id: "library",   label: "Library",    sym: "❧" },
     { id: "memory",    label: "Browser",    sym: "◈", adv: true, group: "Under the hood" },
     { id: "knowledge", label: "Knowledge",  sym: "⊛", adv: true, group: "Under the hood" },
-    { id: "map",       label: "Memory Map", sym: "⊞", adv: true, group: "Under the hood" },
-    { id: "mindmap",   label: "Mind Map",   sym: "✧", adv: true, group: "Under the hood" },
   ]},
-  { id: "research", label: "Research", sym: "⊹", desc: "Experiment, analyze, and compare", adv: true, tabs: [
-    { id: "research", label: "Lab",      sym: "⊹" },
-    { id: "data",     label: "Analysis", sym: "∑" },
+  // "Analytics" (was "Research") — the surface now holds only live-data views.
+  // The old "Lab" was static explainer prose, not an experiment; it moved to
+  // Setup › Concepts. Mind Map (live routing network) joins Analysis here.
+  { id: "research", label: "Analytics", sym: "⊹", desc: "Analyze routing, memory, and agent behavior", adv: true, tabs: [
+    { id: "data",    label: "Analysis", sym: "∑" },
+    { id: "mindmap", label: "Mind Map", sym: "✧" },
   ]},
   // "Setup" (was "Settings") — renamed so the surface stops colliding with the
   // Settings *modal* in the launcher's System section. Essentials (Guide, Model,
   // Releases) stay ungrouped; project-meta tabs sit under a "Project" sub-header.
   { id: "settings", label: "Setup", sym: "⚙", desc: "Configure Amagra", tabs: [
     { id: "guide",    label: "Guide",    sym: "§" },
+    { id: "concepts", label: "Concepts", sym: "◇", adv: true },  // ex-"Research Lab" explainer prose (C(t), calibration, memory types…)
     { id: "model",    label: "Model",    sym: "⬡" },
     { id: "releases", label: "Releases", sym: "❖" },
     { id: "progress", label: "Progress", sym: "◐", adv: true, group: "Project" },
@@ -69,6 +74,8 @@ export const SURFACE_BY_TAB  = Object.fromEntries(SURFACES.flatMap(s => s.tabs.m
 export const DEFAULT_TAB     = Object.fromEntries(SURFACES.map(s => [s.id, s.tabs[0].id]));
 export const TAB_ALIASES     = {
   agents: "skills", history: "releases", traces: "brain", replay: "brain",
+  // v1.6.4 consolidation: Memory Map folded into Browser; Research Lab → Setup › Concepts.
+  map: "memory", research: "concepts",
   // Cognition consolidation (v1.6.2): the five focus tabs now live as sections
   // inside Diagnostics — redirect old ids so deep links / shortcuts still land.
   uci: "diagnostics", "risk-obs": "diagnostics", "event-log": "diagnostics",
