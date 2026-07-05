@@ -344,12 +344,6 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
         >
           Full version history →
         </span>
-        <span
-          onClick={() => onNav("progress")}
-          style={{ ...TYPE.micro, fontWeight: 400, color: T.warn, cursor: "pointer", textDecoration: "underline" }}
-        >
-          Open issues →
-        </span>
       </div>
     </div>
   );

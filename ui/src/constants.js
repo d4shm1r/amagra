@@ -973,7 +973,10 @@ export const AGENT_ID_REVERSE = {
 };
 
 // ── User-facing promises / long-term commitments ──────────────────────────────
-// These are public pledges shown on the Promises tab — not internal ROADMAP items.
+// DEPRECATED (v1.7.1): the Promises tab was retired — it duplicated Releases,
+// which already renders ROADMAP upcoming (the open pledges) + BUILD_PHASES history
+// (the delivered ones). Kept here as the source record / for a possible landing
+// sync; no longer surfaced in the app menu.
 // status: "delivered" | "building" | "committed"
 // category: "Performance" | "AI" | "Developer" | "Platform" | "Privacy"
 

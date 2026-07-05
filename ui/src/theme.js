@@ -60,6 +60,13 @@ export const LUX = {
   goldTint:   "rgba(196, 136, 8, 0.10)",   // active/selected fills
   goldTint2:  "rgba(196, 136, 8, 0.22)",   // stronger fills / focus rings
   hover:      "rgba(72, 52, 28, 0.05)",    // neutral hover wash
+
+  // "Depth, not outline" — luxury cards resting on the cream field. The face is
+  // translucent so it borrows the canvas underneath; the hairline is a whisper
+  // of gold (not a grey box border); depth comes from a soft, warm lift shadow.
+  tileBorder: "rgba(182, 138, 50, 0.14)",  // near-invisible card hairline
+  tileFace:   "rgba(255, 255, 255, 0.58)", // frosted translucent card face
+  tileLift:   "0 8px 30px rgba(95, 75, 20, 0.05)", // resting depth (warm, low)
   shadowSm:   "0 1px 3px rgba(72, 52, 28, 0.08)",
   shadowMd:   "0 4px 18px rgba(72, 52, 28, 0.11)",
   shadowLg:   "0 18px 48px rgba(62, 44, 20, 0.20)",

@@ -5,7 +5,6 @@ import { API } from "./api";
 import Onboarding         from "./Onboarding";
 import HomeTab            from "./HomeTab";
 import ChatTab            from "./ChatTab";
-import { BUILD_PHASES, VERSION } from "./constants";
 // Lazy: every other tab is its own chunk, fetched on first visit. This keeps the
 // initial bundle to Chat/Home instead of parsing ~30 heavy tab trees (charts,
 // graphs, Monaco) up front, and — with startTransition in navTo + the Suspense
@@ -14,7 +13,6 @@ import { BUILD_PHASES, VERSION } from "./constants";
 const LogTab             = lazy(() => import("./LogTab"));
 const RunsTab            = lazy(() => import("./RunsTab"));
 const CognitionView      = lazy(() => import("./CognitionView"));
-const ProgressTab        = lazy(() => import("./ProgressTab"));
 const GuideTab           = lazy(() => import("./GuideTab"));
 const TaskQueue          = lazy(() => import("./TaskQueue"));
 const GoalTracker        = lazy(() => import("./GoalTracker"));
@@ -36,15 +34,14 @@ const PromptEditorTab    = lazy(() => import("./PromptEditorTab"));
 const ConsensusTab       = lazy(() => import("./ConsensusTab"));
 const ExplainProjectTab  = lazy(() => import("./ExplainProjectTab"));
 const SkillsTab          = lazy(() => import("./SkillsTab"));
-const PromisesTab        = lazy(() => import("./PromisesTab"));
 const ProviderSettingsTab = lazy(() => import("./ProviderSettingsTab"));
 import { ApiOfflineBanner } from "./ObsShared";
-import { SettingsModal, ShortcutsModal } from "./Modals";
+import { SettingsModal, ShortcutsModal, AboutView } from "./Modals";
 import AppLauncher from "./AppLauncher";
 import {
   SURFACE_BY_TAB, DEFAULT_TAB, TAB_ALIASES, VALID_TABS,
 } from "./navConfig";
-import { T, LUX, GOLD, TYPE, FONT_UI, FONT_DISPLAY } from "./theme";
+import { T, GOLD, TYPE, FONT_UI, FONT_DISPLAY } from "./theme";
 
 // ── App-wide settings ─────────────────────────────────────────
 const DEFAULT_SETTINGS = {
@@ -123,7 +120,6 @@ export default function App() {
     navTo("inspector");
   }, [navTo]);
   const [coherence,    setCoherence]    = useState(null);
-  const [activeModal,  setActiveModal]  = useState(null);
 
   useEffect(() => {
     try {
@@ -190,7 +186,7 @@ export default function App() {
   useEffect(() => {
     const handler = (e) => {
       const inInput = e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable;
-      if (e.key === "Escape") { setActiveModal(null); return; }
+      if (e.key === "Escape") return;
       if (inInput) return;
       if (e.ctrlKey || e.metaKey) {
         if (e.shiftKey) {
@@ -207,7 +203,6 @@ export default function App() {
             case "h": e.preventDefault(); navTo("releases");  break;
             case "g": e.preventDefault(); navTo("goals");     break;
             case "q": e.preventDefault(); navTo("tasks");     break;
-            case "p": e.preventDefault(); navTo("progress");  break;
             default: break;
           }
         } else {
@@ -219,8 +214,8 @@ export default function App() {
             case "5": e.preventDefault(); navTo("memory"); break;
             case "6": e.preventDefault(); navTo("data"); break;
             case "7": e.preventDefault(); navTo("guide"); break;
-            case ",": e.preventDefault(); setActiveModal("settings");  break;
-            case "/": e.preventDefault(); setActiveModal("shortcuts"); break;
+            case ",": e.preventDefault(); navTo("prefs");     break;
+            case "/": e.preventDefault(); navTo("shortcuts"); break;
             case "b": case "B": e.preventDefault(); setLauncherOpen(o => !o); break;
             // Command-palette convention: ⌘/Ctrl+K summons the launcher with
             // search focused — the ☰ path opens it calm, no field activated.
@@ -233,49 +228,6 @@ export default function App() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [navTo]);
-
-  const MODAL_CONTENT = {
-    settings: <SettingsModal settings={settings} onUpdate={updateSetting} coherence={coherence} apiStatus={apiStatus} />,
-    shortcuts: <ShortcutsModal />,
-    about: (
-      <div>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 16 }}>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, fontFamily: FONT_DISPLAY, letterSpacing: "0.06em", ...LUX.goldText }}>AMAGRA</h2>
-          <span style={{
-            fontSize: 11, fontWeight: 700, color: T.accent,
-            background: `${T.accent}18`, border: `1px solid ${T.accent}44`,
-            borderRadius: 4, padding: "2px 8px", fontFamily: "monospace",
-          }}>
-            v{VERSION}
-          </span>
-          <span style={{ fontSize: 10, color: T.muted }}>
-            Phase {BUILD_PHASES[BUILD_PHASES.length - 1].id} — {BUILD_PHASES[BUILD_PHASES.length - 1].title}
-          </span>
-        </div>
-        <p style={{ margin: "0 0 8px", fontSize: 12, color: T.mutedLt, lineHeight: 1.6 }}>
-          The AI you can trust with long-term work — it remembers what you've done, explains every
-          decision, and runs entirely on your hardware.
-        </p>
-        <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px" }}>
-          {[["Architecture","Signal-first routing"],["Memory","FAISS + LRU cache"],
-            ["Agents","Specialist + Coordinator"],["Eval","Dual-trajectory critic"],
-            ["UI","React + Vite"],["API","FastAPI / Python"]].map(([k,v]) => (
-            <div key={k} style={{ fontSize: 11 }}>
-              <span style={{ color: T.muted }}>{k}: </span>
-              <span style={{ color: T.text }}>{v}</span>
-            </div>
-          ))}
-        </div>
-        {coherence && (
-          <div style={{ marginTop: 16, padding: "10px 12px", background: T.surface, borderRadius: 4, fontSize: 11, fontFamily: "monospace", color: T.muted }}>
-            C(t) = {coherence.C?.toFixed(4)} &nbsp;|&nbsp; mem = {coherence.mem_n} &nbsp;|&nbsp;
-            routing = {coherence.c_routing?.toFixed(3)} &nbsp;|&nbsp;
-            calib = {coherence.c_calib?.toFixed(3)}
-          </div>
-        )}
-      </div>
-    ),
-  };
 
   return (
     <div style={{
@@ -513,9 +465,10 @@ export default function App() {
               {activeTab === "goals"         && <GoalTracker />}
               {activeTab === "tasks"         && <TaskQueue />}
               {activeTab === "log"           && <LogTab sessionLog={sessionLog} onClear={() => setSessionLog([])} />}
-              {activeTab === "progress"      && <ProgressTab />}
-              {activeTab === "promises"      && <PromisesTab />}
               {activeTab === "releases"      && <VersionHistoryTab />}
+              {activeTab === "prefs"         && <SettingsModal settings={settings} onUpdate={updateSetting} coherence={coherence} apiStatus={apiStatus} />}
+              {activeTab === "shortcuts"     && <ShortcutsModal />}
+              {activeTab === "about"         && <AboutView coherence={coherence} />}
               </Suspense>
             </div>
             )}
@@ -531,53 +484,8 @@ export default function App() {
         onNav={navTo}
         apiStatus={apiStatus}
         coherence={coherence}
-        onModal={setActiveModal}
         searchSignal={launcherSearchSignal}
       />
-
-      {/* ── Modal overlay ── */}
-      {activeModal && MODAL_CONTENT[activeModal] && (
-        <div
-          onClick={() => setActiveModal(null)}
-          style={{
-            position: "fixed", inset: 0,
-            background: "rgba(46, 32, 16, 0.30)",
-            backdropFilter: "blur(3px)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            zIndex: 10000,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: T.surface,
-              border: `1px solid ${T.border}`,
-              borderRadius: 14,
-              padding: "26px 30px",
-              minWidth: activeModal === "shortcuts" ? 580 : 420,
-              maxWidth: activeModal === "shortcuts" ? 680 : activeModal === "settings" ? 500 : 560,
-              width: "92%",
-              boxShadow: LUX.shadowLg,
-              animation: "modalIn 0.15s ease",
-              position: "relative",
-            }}
-          >
-            <button
-              onClick={() => setActiveModal(null)}
-              style={{
-                position: "absolute", top: 12, right: 14,
-                background: "transparent", border: "none",
-                color: T.muted, cursor: "pointer", fontSize: 18,
-                lineHeight: 1, padding: "2px 6px",
-              }}
-              className="nav-btn"
-            >
-              ×
-            </button>
-            {MODAL_CONTENT[activeModal]}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

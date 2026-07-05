@@ -32,8 +32,9 @@ function Tile({ label, sym, sub, active, primary, onClick, ariaLabel }) {
         gridColumn: primary ? "span 2" : undefined,
         padding: "15px 15px", minHeight: 96, cursor: "pointer",
         borderRadius: 14, fontFamily: FONT_UI,
-        border: `1px solid ${gold ? T.accent : T.border}`,
-        background: active ? `${T.accent}0E` : T.surface,
+        border: `1px solid ${gold ? T.accent : LUX.tileBorder}`,
+        background: active ? `${T.accent}0E` : primary ? T.surface : LUX.tileFace,
+        boxShadow: gold ? "none" : LUX.tileLift,
         transition: `transform ${DUR.base} ${EASE.out}, border-color ${DUR.base} ${EASE.out}, background ${DUR.base} ${EASE.out}, box-shadow ${DUR.base} ${EASE.out}`,
       }}
     >
@@ -62,7 +63,7 @@ function Tile({ label, sym, sub, active, primary, onClick, ariaLabel }) {
 
 function Section({ sym, title, desc, children, extra, delay = 0 }) {
   return (
-    <section className="launch-sec" style={{ marginBottom: 30, animationDelay: `${delay}ms` }}>
+    <section className="launch-sec" style={{ marginBottom: 48, animationDelay: `${delay}ms` }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginBottom: 12, paddingLeft: 2 }}>
         <span aria-hidden style={{ fontSize: 14, color: T.accent, fontFamily: FONT_DISPLAY }}>{sym}</span>
         <h3 style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: "0.14em",
@@ -157,7 +158,7 @@ function RecentThreads({ threads, onSwitch }) {
 }
 
 export default function AppLauncher({
-  open, onClose, activeTab, onNav, apiStatus, coherence, onModal,
+  open, onClose, activeTab, onNav, apiStatus, coherence,
   searchSignal = 0,
 }) {
   const [threads, setThreads] = useState([]);
@@ -233,28 +234,19 @@ export default function AppLauncher({
     { label: "Advanced", sym: "⚙", sub: "agent · reflect · pin", run: () => openChatPanel("advanced") },
   ].filter(a => !q || hit(a.label));
 
-  // App chrome (modals, not tabs) — rendered as a proper tile section at the
-  // bottom, same visual language as the surfaces above.
-  const system = [
-    { label: "Settings",     sym: "⚙", sub: "preferences",  run: () => { onModal("settings");  onClose(); } },
-    { label: "Shortcuts",    sym: "⌘", sub: "keyboard reference",  run: () => { onModal("shortcuts"); onClose(); } },
-    { label: "About AMAGRA", sym: "❋", sub: "version & build",     run: () => { onModal("about");     onClose(); } },
-  ].filter(a => !q || hit(a.label));
-
   const visibleSurfaces = (q
     ? SURFACES.map(s => [s, s.tabs.filter(t => hit(t.label) || hit(s.label))])
     : SURFACES.map(s => [s, s.tabs])
   ).filter(([, tabs]) => tabs.length);
 
   const shownThreads = q ? threads.filter(t => hit(t.title || "Untitled")) : threads;
-  const noResults = q && !actions.length && !visibleSurfaces.length && !shownThreads.length && !system.length;
+  const noResults = q && !actions.length && !visibleSurfaces.length && !shownThreads.length;
 
-  // Enter opens the top match: conversation action → first tab → first thread → system.
+  // Enter opens the top match: conversation action → first tab → first thread.
   const firstHit = !q ? null
     : actions[0] ? actions[0].run
     : visibleSurfaces[0] ? () => go(visibleSurfaces[0][1][0].id)
     : shownThreads[0] ? () => switchThread(shownThreads[0].id)
-    : system[0] ? system[0].run
     : null;
 
   const isMac = /Mac/i.test(navigator.platform);
@@ -280,13 +272,12 @@ export default function AppLauncher({
         @keyframes tileIn { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
         .launch-sec { animation: tileIn ${DUR.slow} ${EASE.out} both; }
         .launch-tile:hover {
-          transform: translateY(-3px);
-          border-color: ${T.accent} !important;
-          background: linear-gradient(165deg, #FFFEFA 0%, #FDF7EC 100%) !important;
+          transform: translateY(-2px);
+          border-color: rgba(182,138,50,0.42) !important;
+          background: linear-gradient(165deg, rgba(255,255,255,0.86) 0%, rgba(253,247,236,0.78) 100%) !important;
           box-shadow:
-            0 12px 28px rgba(72,52,28,0.12),
-            0 2px 6px rgba(72,52,28,0.06),
-            0 0 22px rgba(196,136,8,0.10);
+            0 16px 38px rgba(95,75,20,0.11),
+            0 3px 10px rgba(95,75,20,0.05);
         }
         .tile-ico { transition: transform ${DUR.base} ${EASE.out}, background ${DUR.base} ${EASE.out}, box-shadow ${DUR.base} ${EASE.out}; }
         .launch-tile:hover .tile-ico {
@@ -377,7 +368,7 @@ export default function AppLauncher({
             className="launch-search"
             style={{
               width: "100%", boxSizing: "border-box", padding: "10px 64px 10px 16px",
-              borderRadius: 12, border: `1px solid ${T.border}`, background: T.surface,
+              borderRadius: 12, border: `1px solid ${LUX.tileBorder}`, background: LUX.tileFace,
               fontFamily: FONT_UI, fontSize: 13.5, color: T.text, outline: "none",
               transition: `border-color ${DUR.base} ${EASE.out}, box-shadow ${DUR.base} ${EASE.out}`,
             }}
@@ -385,7 +376,7 @@ export default function AppLauncher({
           <kbd aria-hidden style={{
             position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
             fontFamily: FONT_UI, fontSize: 10.5, fontWeight: 600, color: T.muted,
-            padding: "2px 7px", borderRadius: 6, border: `1px solid ${T.border}`,
+            padding: "2px 7px", borderRadius: 6, border: `1px solid ${LUX.tileBorder}`,
             background: "transparent", pointerEvents: "none",
           }}>{isMac ? "⌘K" : "Ctrl K"}</kbd>
         </div>
@@ -432,16 +423,6 @@ export default function AppLauncher({
               fontFamily: FONT_UI, fontSize: 13 }}>
               Nothing matches “{query.trim()}”
             </div>
-          )}
-
-          {/* System — app chrome (modals), a first-class section like the rest */}
-          {system.length > 0 && (
-            <Section sym="✻" title="System" desc="preferences & app info"
-              delay={(visibleSurfaces.length + 1) * 45}>
-              {system.map(a => (
-                <Tile key={a.label} label={a.label} sym={a.sym} sub={a.sub} onClick={a.run} />
-              ))}
-            </Section>
           )}
         </div>
       </div>

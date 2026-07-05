@@ -60,10 +60,16 @@ export const SURFACES = [
     { id: "guide",    label: "Guide",    sym: "§" },
     { id: "concepts", label: "Concepts", sym: "◇", adv: true },  // ex-"Research Lab" explainer prose (C(t), calibration, memory types…)
     { id: "model",    label: "Model",    sym: "⬡" },
-    { id: "releases", label: "Releases", sym: "❖" },
-    { id: "progress", label: "Progress", sym: "◐", adv: true, group: "Project" },
-    { id: "promises", label: "Promises", sym: "✓", adv: true, group: "Project" },
-    { id: "log",      label: "Log",      sym: "▤", adv: true, group: "Project" },
+    { id: "releases", label: "Releases", sym: "❖" },  // absorbs the old Promises/Progress roadmap: ROADMAP upcoming + BUILD_PHASES history
+    { id: "log",      label: "Log",      sym: "▤", adv: true },
+  ]},
+  // App chrome as first-class surfaces (v1.7.1) — Settings/Shortcuts/About used
+  // to pop modals from a hardcoded launcher section; they're now normal
+  // destinations so everything in the menu behaves the same way.
+  { id: "system", label: "System", sym: "✻", desc: "Preferences & app info", tabs: [
+    { id: "prefs",     label: "Settings",  sym: "⚙" },
+    { id: "shortcuts", label: "Shortcuts", sym: "⌘" },
+    { id: "about",     label: "About",     sym: "❋" },
   ]},
 ];
 
