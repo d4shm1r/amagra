@@ -1,8 +1,12 @@
 name: Release desktop app
 
-# Builds the Electron desktop app for macOS (.dmg, Apple Silicon + Intel) and
-# Windows (.exe), with the FastAPI backend frozen in as a PyInstaller sidecar so
-# users get a double-click install with no Python/venv required.
+# Builds the Electron desktop app for macOS (.dmg, Apple Silicon) and Windows
+# (.exe), with the FastAPI backend frozen in as a PyInstaller sidecar so users get
+# a double-click install with no Python/venv required.
+#
+# Intel macOS (macos-13) is intentionally not built: GitHub is retiring those
+# runners and they queue for hours or never pick up, hanging every release. arm64
+# is the current majority; true Intel support would need a universal sidecar.
 #
 # Linux is deliberately NOT built here — it ships as the lighter python-appimage
 # build in release-appimage.yml. Keeping one Linux artifact avoids attaching two
@@ -25,7 +29,6 @@ jobs:
       matrix:
         include:
           - os: macos-14         # Apple Silicon (arm64)
-          - os: macos-13         # Intel (x64) — still a large install base
           - os: windows-latest
     runs-on: ${{ matrix.os }}
     steps:
