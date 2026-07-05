@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.6.4";
+export const VERSION = "1.7.0";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -917,6 +917,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.7.0", label: "Cross-Platform Desktop App", color: "#7E3F8F", phases: [97] },
   { version: "v1.6.4", label: "System Alignment & Honesty Pass", color: "#1E5A8A", phases: [96] },
   { version: "v1.6.3", label: "Desktop App & Unified Launcher", color: "#7E3F8F", phases: [95] },
   { version: "v1.6.0", label: "Prompt-as-Artifact & One-File Install", color: "#7E3F8F", phases: [94] },

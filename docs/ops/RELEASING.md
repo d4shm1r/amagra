@@ -13,11 +13,16 @@ FastAPI backend frozen in as a PyInstaller sidecar (`packaging/amagra-server.spe
 
 ## Cutting a release
 
-1. **Bump the version in all three sources — they must match** (drift ships a build
+1. **Bump the version in all four sources — they must match** (drift ships a build
    that reports the wrong version):
-   - `infrastructure/version.py` → `__version__`
-   - `desktop/package.json` → `version`
+   - `infrastructure/version.py` → `__version__` (backend / FastAPI / `/health`)
+   - `ui/src/constants.js` → `VERSION` (in-app UI marker)
    - `ui/package.json` → `version`
+   - `desktop/package.json` → `version`
+
+   Then regenerate the social card so its badge matches:
+   `python tools/gen_social_card.py` (reads `version.py`). Optionally refresh the
+   README release badge and the landing hero badge (`ui/public/landing.html`).
 2. Update the changelog / release notes.
 3. Commit, then tag and push:
    ```bash
