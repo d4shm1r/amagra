@@ -14,7 +14,6 @@ import MindMapInteractive from "./MindMapInteractive";
 import KnowledgeGraph     from "./KnowledgeGraph";
 import DecisionTimeline   from "./DecisionTimeline";
 import TimelineTab        from "./TimelineTab";
-import CognitiveMapTab    from "./CognitiveMapTab";
 import DataTab            from "./DataTab";
 import CognitiveOSTab       from "./CognitiveOSTab";
 import DiagnosticsTab       from "./DiagnosticsTab";
@@ -198,7 +197,7 @@ export default function App() {
     else if (action === "toggleSidebar") setLauncherOpen(o => !o);
     else if (action === "toggleMode") toggleMode();
     else if (action === "exportCsv") window.open(`${API}/memory/export.csv`, "_blank");
-    else if (action.startsWith("doc:")) { setResearchDoc(action.slice(4)); navTo("research"); }
+    else if (action.startsWith("doc:")) { setResearchDoc(action.slice(4)); navTo("concepts"); }
   };
 
   // Switching to Simple mode while sitting on a now-hidden surface/sub-tab
@@ -250,7 +249,7 @@ export default function App() {
             case "3": e.preventDefault(); navTo(mode === "simple" ? "prompt" : "overview"); break;
             case "4": e.preventDefault(); navTo(mode === "simple" ? "consensus" : "cog-dash"); break;
             case "5": e.preventDefault(); navTo(mode === "simple" ? "library" : "memory"); break;
-            case "6": e.preventDefault(); navTo(mode === "simple" ? "model" : "research"); break;
+            case "6": e.preventDefault(); navTo(mode === "simple" ? "model" : "data"); break;
             case "7": e.preventDefault(); navTo("guide"); break;
             case ",": e.preventDefault(); setActiveModal("settings");  break;
             case "/": e.preventDefault(); setActiveModal("shortcuts"); break;
@@ -517,10 +516,9 @@ export default function App() {
             {activeTab !== "chat" && activeTab !== "prompt" && (
             <div style={{ maxWidth: 1020, margin: "0 auto", width: "100%" }}>
               {activeTab === "home"          && <HomeTab apiStatus={apiStatus} coherence={coherence} totalQueries={totalQueries} onNav={navTo} mode={mode} />}
-              {activeTab === "research"      && <ResearchTab activeDoc={researchDoc} />}
+              {activeTab === "concepts"      && <ResearchTab activeDoc={researchDoc} />}
               {activeTab === "knowledge"     && <KnowledgeGraph />}
               {activeTab === "mindmap"       && <MindMapInteractive litNode={litNode} onForceAgent={(id) => { setForcedAgent(id); navTo("chat"); }} />}
-              {activeTab === "map"           && <CognitiveMapTab />}
               {activeTab === "library"       && <LibraryTab />}
               {activeTab === "memory"        && <MemoryBrowserTab />}
               {activeTab === "overview"      && <InspectOverviewTab onNav={navTo} />}
