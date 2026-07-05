@@ -5,6 +5,7 @@
   "main": "main.js",
   "author": "Amagra",
   "license": "MIT",
+  "repository": "https://github.com/d4shm1r/amagra",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder",
@@ -20,6 +21,7 @@
     "appId": "ai.amagra.desktop",
     "productName": "AMAGRA",
     "files": ["main.js", "preload.js"],
+    "publish": [{ "provider": "github", "owner": "d4shm1r", "repo": "amagra" }],
     "extraResources": [
       { "from": "../ui/build", "to": "ui/build" },
       { "from": "backend", "to": "backend" }
