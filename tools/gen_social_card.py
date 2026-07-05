@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Reuse the brand primitives (textile ground, wordmark fitter/masker, gold ramps).
 from tools.gen_brand_assets import (  # noqa: E402
-    G1, G2, G3, G4, G5, RICH, SHEEN,
+    G2, G3, G4, RICH, SHEEN,
     fit_font, textile, vgrad, wordmark_mask,
 )
 from infrastructure.version import __version__  # noqa: E402
