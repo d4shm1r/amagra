@@ -33,11 +33,16 @@
     "mac": {
       "target": ["dmg"],
       "category": "public.app-category.developer-tools",
-      "icon": "../ui/public/logo512.png"
+      "icon": "../ui/public/logo512.png",
+      "artifactName": "AMAGRA-${version}-${arch}.${ext}"
+    },
+    "dmg": {
+      "writeUpdateInfo": false
     },
     "win": {
       "target": ["nsis"],
-      "icon": "../ui/public/logo512.png"
+      "icon": "../ui/public/logo512.png",
+      "artifactName": "AMAGRA-Setup-${version}.${ext}"
     }
   }
 }

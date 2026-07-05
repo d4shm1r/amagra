@@ -39,7 +39,7 @@ function backendCommand() {
   const exe = process.platform === "win32" ? "amagra-server.exe" : "amagra-server";
   const frozen = path.join(process.resourcesPath || "", "backend", exe);
   if (fs.existsSync(frozen)) {
-    return { cmd: frozen, args: ["--host", "127.0.0.1", "--port", String(PORT)], cwd: path.dirname(frozen) };
+    return { cmd: frozen, args: ["--host", "127.0.0.1", "--port", String(PORT)], cwd: path.dirname(frozen), frozen: true };
   }
   const venvPy = path.join(process.env.HOME || "", ".venvs", "langgraph-env", "bin", "python");
   const py = fs.existsSync(venvPy) ? venvPy : "python3";
@@ -47,6 +47,7 @@ function backendCommand() {
     cmd: py,
     args: ["-m", "uvicorn", "api:app", "--host", "127.0.0.1", "--port", String(PORT)],
     cwd: REPO_ROOT,
+    frozen: false,
   };
 }
 
@@ -83,8 +84,15 @@ function startOllama() {
 
 async function startBackend() {
   if (await healthy()) return true; // reuse a server that's already up (e.g. ai-start)
-  const { cmd, args, cwd } = backendCommand();
-  backend = spawn(cmd, args, { cwd, stdio: "ignore", env: { ...process.env } });
+  const { cmd, args, cwd, frozen } = backendCommand();
+  // A packaged app installs read-only (a .app bundle, /opt, Program Files), so
+  // the frozen backend's own dir (sys._MEIPASS) can't hold databases. Point
+  // AMAGRA_DATA_DIR at the OS per-user data dir (~/Library/Application Support/
+  // AMAGRA, %APPDATA%\AMAGRA, ~/.config/AMAGRA) so memory persists and writes
+  // succeed. Dev (venv) keeps the project-dir default — matches `ai-start`.
+  const env = { ...process.env };
+  if (frozen) env.AMAGRA_DATA_DIR = app.getPath("userData");
+  backend = spawn(cmd, args, { cwd, stdio: "ignore", env });
   backend.on("error", (e) => console.error("backend spawn failed:", e.message));
   return waitForHealth();
 }
