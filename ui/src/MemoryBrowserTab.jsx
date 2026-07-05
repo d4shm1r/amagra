@@ -3,6 +3,7 @@ import { API } from "./api";
 import { T, LUX, GOLD, FONT_MONO } from "./theme";
 import { RefreshBtn, EmptyState, PageHeader, MetricCard } from "./ObsShared";
 import CognitiveMapTab from "./CognitiveMapTab";
+import { MemoryAdminPanel } from "./SystemPanels";
 
 const TYPES  = ["all", "code", "lesson", "episodic", "failure", "chat", "fact", "error"];
 const AGENTS = ["all", "python_dev", "ai_ml", "it_networking", "dotnet_dev",
@@ -288,6 +289,11 @@ export default function MemoryBrowserTab() {
           </div>
         </>
       )}
+
+      {/* ── Memory admin (prune / consolidate / export + at-risk) — folded in
+             from the retired Progress tab. Stats above are already fetched here;
+             this adds the actions that used to live only under Setup › Progress. ── */}
+      <MemoryAdminPanel stats={stats} onChanged={fetchAll} />
 
       {/* ── Controls ── */}
       <div style={{

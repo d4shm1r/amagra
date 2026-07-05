@@ -6,6 +6,7 @@ import EventLogTab       from "./EventLogTab";
 import PlanGraphTab      from "./PlanGraphTab";
 import PolicyTab         from "./PolicyTab";
 import VerifierPanel     from "./VerifierPanel";
+import { FeedbackLoopPanel } from "./SystemPanels";
 
 // ── Diagnostics (v1.6.2 IA restraint) ─────────────────────────────
 // The focused system-health views (UCI, Risk, Verifier, Events, Plan, Policy)
@@ -21,6 +22,7 @@ const SECTIONS = [
   { id: "events",   label: "Events",       Comp: EventLogTab },
   { id: "plan",     label: "Plan",         Comp: PlanGraphTab },
   { id: "policy",   label: "Policy",       Comp: PolicyTab },
+  { id: "feedback", label: "Feedback",     Comp: FeedbackLoopPanel },  // folded in from the retired Progress tab
 ];
 
 export default function DiagnosticsTab({ initialSection = "uci" }) {

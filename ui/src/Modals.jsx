@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { API } from "./api";
-import { AGENTS } from "./constants";
-import { T } from "./theme";
+import { AGENTS, BUILD_PHASES, VERSION } from "./constants";
+import { T, LUX, FONT_DISPLAY } from "./theme";
 
 // ── Settings modal ────────────────────────────────────────────
 export function SettingsModal({ settings, onUpdate, coherence, apiStatus }) {
@@ -191,7 +191,6 @@ const SHORTCUT_GROUPS = [
     ["Prompt Editor",     "Ctrl+Shift+E"],
     ["Task Queue",        "Ctrl+Shift+Q"],
     ["Goals",             "Ctrl+Shift+G"],
-    ["Progress",          "Ctrl+Shift+P"],
     ["Version History",   "Ctrl+Shift+H"],
   ]},
   { title: "Interface", rows: [
@@ -259,6 +258,49 @@ export function ShortcutsModal() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ── About (version & build) ───────────────────────────────────
+// Was inline in App.jsx's modal map; now a first-class surface (System › About).
+export function AboutView({ coherence }) {
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 16 }}>
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, fontFamily: FONT_DISPLAY, letterSpacing: "0.06em", ...LUX.goldText }}>AMAGRA</h2>
+        <span style={{
+          fontSize: 11, fontWeight: 700, color: T.accent,
+          background: `${T.accent}18`, border: `1px solid ${T.accent}44`,
+          borderRadius: 4, padding: "2px 8px", fontFamily: "monospace",
+        }}>
+          v{VERSION}
+        </span>
+        <span style={{ fontSize: 10, color: T.muted }}>
+          Phase {BUILD_PHASES[BUILD_PHASES.length - 1].id} — {BUILD_PHASES[BUILD_PHASES.length - 1].title}
+        </span>
+      </div>
+      <p style={{ margin: "0 0 8px", fontSize: 12, color: T.mutedLt, lineHeight: 1.6 }}>
+        The AI you can trust with long-term work — it remembers what you've done, explains every
+        decision, and runs entirely on your hardware.
+      </p>
+      <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px", maxWidth: 460 }}>
+        {[["Architecture","Signal-first routing"],["Memory","FAISS + LRU cache"],
+          ["Agents","Specialist + Coordinator"],["Eval","Dual-trajectory critic"],
+          ["UI","React + Vite"],["API","FastAPI / Python"]].map(([k,v]) => (
+          <div key={k} style={{ fontSize: 11 }}>
+            <span style={{ color: T.muted }}>{k}: </span>
+            <span style={{ color: T.text }}>{v}</span>
+          </div>
+        ))}
+      </div>
+      {coherence && (
+        <div style={{ marginTop: 16, padding: "10px 12px", background: T.surface, borderRadius: 4, fontSize: 11, fontFamily: "monospace", color: T.muted, maxWidth: 460 }}>
+          C(t) = {coherence.C?.toFixed(4)} &nbsp;|&nbsp; mem = {coherence.mem_n} &nbsp;|&nbsp;
+          routing = {coherence.c_routing?.toFixed(3)} &nbsp;|&nbsp;
+          calib = {coherence.c_calib?.toFixed(3)}
+        </div>
+      )}
     </div>
   );
 }
