@@ -1,38 +1,43 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense, startTransition } from "react";
 import { API } from "./api";
+// Eager: the landing tabs (Chat is the default view, Home the pre-nav landing)
+// plus first-run onboarding — these must paint immediately with no chunk fetch.
 import Onboarding         from "./Onboarding";
 import HomeTab            from "./HomeTab";
 import ChatTab            from "./ChatTab";
-import LogTab             from "./LogTab";
-import RunsTab            from "./RunsTab";
-import CognitionView      from "./CognitionView";
-import ProgressTab        from "./ProgressTab";
-import GuideTab           from "./GuideTab";
-import TaskQueue          from "./TaskQueue";
-import GoalTracker        from "./GoalTracker";
-import MindMapInteractive from "./MindMapInteractive";
-import KnowledgeGraph     from "./KnowledgeGraph";
-import DecisionTimeline   from "./DecisionTimeline";
-import TimelineTab        from "./TimelineTab";
-import DataTab            from "./DataTab";
-import CognitiveOSTab       from "./CognitiveOSTab";
-import DiagnosticsTab       from "./DiagnosticsTab";
-import ProjectStateTab      from "./ProjectStateTab";
-import MemoryBrowserTab     from "./MemoryBrowserTab";
-import ContextInspectorTab from "./ContextInspectorTab";
-import InspectOverviewTab  from "./InspectOverviewTab";
-import LibraryTab          from "./LibraryTab";
-import VersionHistoryTab   from "./VersionHistoryTab";
-import ResearchTab         from "./ResearchTab";
 import { BUILD_PHASES, VERSION } from "./constants";
-// Lazy — pulls in Monaco (~3.7 MB) only when the Prompt IDE is first opened,
-// keeping the initial dashboard bundle lean.
-const PromptEditorTab = lazy(() => import("./PromptEditorTab"));
-import ConsensusTab       from "./ConsensusTab";
-import ExplainProjectTab  from "./ExplainProjectTab";
-import SkillsTab          from "./SkillsTab";
-import PromisesTab        from "./PromisesTab";
-import ProviderSettingsTab from "./ProviderSettingsTab";
+// Lazy: every other tab is its own chunk, fetched on first visit. This keeps the
+// initial bundle to Chat/Home instead of parsing ~30 heavy tab trees (charts,
+// graphs, Monaco) up front, and — with startTransition in navTo + the Suspense
+// boundary below — makes tab switches non-blocking instead of janking on a big
+// synchronous mount. Monaco (~3.7 MB) rides in PromptEditorTab.
+const LogTab             = lazy(() => import("./LogTab"));
+const RunsTab            = lazy(() => import("./RunsTab"));
+const CognitionView      = lazy(() => import("./CognitionView"));
+const ProgressTab        = lazy(() => import("./ProgressTab"));
+const GuideTab           = lazy(() => import("./GuideTab"));
+const TaskQueue          = lazy(() => import("./TaskQueue"));
+const GoalTracker        = lazy(() => import("./GoalTracker"));
+const MindMapInteractive = lazy(() => import("./MindMapInteractive"));
+const KnowledgeGraph     = lazy(() => import("./KnowledgeGraph"));
+const DecisionTimeline   = lazy(() => import("./DecisionTimeline"));
+const TimelineTab        = lazy(() => import("./TimelineTab"));
+const DataTab            = lazy(() => import("./DataTab"));
+const CognitiveOSTab     = lazy(() => import("./CognitiveOSTab"));
+const DiagnosticsTab     = lazy(() => import("./DiagnosticsTab"));
+const ProjectStateTab    = lazy(() => import("./ProjectStateTab"));
+const MemoryBrowserTab   = lazy(() => import("./MemoryBrowserTab"));
+const ContextInspectorTab = lazy(() => import("./ContextInspectorTab"));
+const InspectOverviewTab = lazy(() => import("./InspectOverviewTab"));
+const LibraryTab         = lazy(() => import("./LibraryTab"));
+const VersionHistoryTab  = lazy(() => import("./VersionHistoryTab"));
+const ResearchTab        = lazy(() => import("./ResearchTab"));
+const PromptEditorTab    = lazy(() => import("./PromptEditorTab"));
+const ConsensusTab       = lazy(() => import("./ConsensusTab"));
+const ExplainProjectTab  = lazy(() => import("./ExplainProjectTab"));
+const SkillsTab          = lazy(() => import("./SkillsTab"));
+const PromisesTab        = lazy(() => import("./PromisesTab"));
+const ProviderSettingsTab = lazy(() => import("./ProviderSettingsTab"));
 import { ApiOfflineBanner } from "./ObsShared";
 import { SettingsModal, ShortcutsModal } from "./Modals";
 import AppLauncher from "./AppLauncher";
@@ -126,8 +131,12 @@ export default function App() {
     const next = VALID_TABS.has(tab) ? tab : "chat";
     const s = SURFACE_BY_TAB[next];
     if (s) setLastTabBySurface(prev => (prev[s] === next ? prev : { ...prev, [s]: next }));
-    setActiveTab(next);
-    setLauncherOpen(false);   // navigating always dismisses the menu
+    setLauncherOpen(false);   // urgent: the menu dismisses instantly
+    // Heavy tab trees (charts, graphs) can take several frames to mount. Mark the
+    // switch as a transition so React keeps the current view interactive and swaps
+    // in the new tab when it's ready, rather than blocking the click on a big
+    // synchronous render. Pairs with the lazy() chunks + Suspense boundary.
+    startTransition(() => setActiveTab(next));
   }, []);
 
   const handleInspect = useCallback((ctxId) => {
@@ -512,9 +521,17 @@ export default function App() {
               </Suspense>
             )}
 
-            {/* All other tabs share one centered content column */}
+            {/* All other tabs share one centered content column. One Suspense
+                boundary covers every lazy tab chunk (Home stays eager, so no
+                fallback flash on the landing view). */}
             {activeTab !== "chat" && activeTab !== "prompt" && (
             <div style={{ maxWidth: 1020, margin: "0 auto", width: "100%" }}>
+              <Suspense fallback={
+                <div style={{ padding: "48px 0", textAlign: "center",
+                              color: T.muted, fontSize: 13, fontFamily: FONT_DISPLAY, letterSpacing: "0.04em" }}>
+                  Loading…
+                </div>
+              }>
               {activeTab === "home"          && <HomeTab apiStatus={apiStatus} coherence={coherence} totalQueries={totalQueries} onNav={navTo} mode={mode} />}
               {activeTab === "concepts"      && <ResearchTab activeDoc={researchDoc} />}
               {activeTab === "knowledge"     && <KnowledgeGraph />}
@@ -542,6 +559,7 @@ export default function App() {
               {activeTab === "progress"      && <ProgressTab />}
               {activeTab === "promises"      && <PromisesTab />}
               {activeTab === "releases"      && <VersionHistoryTab />}
+              </Suspense>
             </div>
             )}
           </div>
