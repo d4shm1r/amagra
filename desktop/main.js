@@ -36,7 +36,8 @@ let win = null;
 // Production: a PyInstaller binary bundled next to the app (extraResources).
 // Dev: the project venv running uvicorn against the repo checkout.
 function backendCommand() {
-  const frozen = path.join(process.resourcesPath || "", "backend", "amagra-server");
+  const exe = process.platform === "win32" ? "amagra-server.exe" : "amagra-server";
+  const frozen = path.join(process.resourcesPath || "", "backend", exe);
   if (fs.existsSync(frozen)) {
     return { cmd: frozen, args: ["--host", "127.0.0.1", "--port", String(PORT)], cwd: path.dirname(frozen) };
   }
