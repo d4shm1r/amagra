@@ -91,9 +91,11 @@ def metallic_wordmark(base, text, target_w, top):
 
 
 def build():
+    # Lower grain than the default (4.0): film noise is what bloats the PNG, and
+    # a quieter ground also quantizes cleanly below (see save block).
     bg = textile(W, H, top=(245, 238, 226), bot=(228, 217, 198),
                  thread=(214, 192, 150), glow=(14, 9, 1), vignette=0.40,
-                 weave_amp=0.012, thread_amp=0.006).convert("RGBA")
+                 grain=1.6, weave_amp=0.012, thread_amp=0.006).convert("RGBA")
     d = ImageDraw.Draw(bg)
 
     # ── wordmark ──
@@ -146,11 +148,17 @@ def build():
     # ── thin inset frame (premium-print feel) ──
     d.rounded_rectangle([26, 26, W - 26, H - 26], 10, outline=G3 + (70,), width=2)
 
-    out = bg.convert("RGB")
+    # og:image must stay small — WhatsApp won't render a preview much over ~300 KB
+    # and some crawlers cap at 1 MB. An adaptive 256-colour palette + optimize cuts
+    # the file ~5x while the smooth gold gradients survive (dithered).
+    out = bg.convert("RGB").quantize(
+        colors=256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.FLOYDSTEINBERG
+    )
     for path in (os.path.join(PUB, "social-preview.png"),
                  os.path.join(BRAND, "social-preview.png")):
-        out.save(path)
-        print(f"✓ {os.path.relpath(path, ROOT)}  ({ver})")
+        out.save(path, optimize=True)
+        kb = os.path.getsize(path) // 1024
+        print(f"✓ {os.path.relpath(path, ROOT)}  ({ver}, {kb} KB)")
 
 
 if __name__ == "__main__":
