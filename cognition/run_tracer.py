@@ -53,6 +53,11 @@ class _RunCtx:
     tokens_out:    int   = 0
     gen_provider:  str   = ""
     escalated:     bool  = False
+    # self-consistency vote telemetry (measure-first calibration)
+    vote_confidence: Optional[float] = None
+    vote_votes:      Optional[int]   = None
+    vote_valid:      Optional[int]   = None
+    vote_escalated:  Optional[bool]  = None
 
 
 # ── DB setup ──────────────────────────────────────────────────
@@ -95,18 +100,26 @@ def _init() -> None:
             tokens_in        INTEGER DEFAULT 0,
             tokens_out       INTEGER DEFAULT 0,
             gen_provider     TEXT,
-            escalated        INTEGER DEFAULT 0
+            escalated        INTEGER DEFAULT 0,
+            vote_confidence  REAL,
+            vote_votes       INTEGER,
+            vote_valid       INTEGER,
+            vote_escalated   INTEGER
         )
     """)
     c.execute("CREATE INDEX IF NOT EXISTS idx_runs_ts ON runs(timestamp)")
     # Idempotent migration: add cost columns to a pre-existing runs table.
     _existing = {row[1] for row in c.execute("PRAGMA table_info(runs)")}
     for col, ddl in (
-        ("cost_usd",     "REAL DEFAULT 0.0"),
-        ("tokens_in",    "INTEGER DEFAULT 0"),
-        ("tokens_out",   "INTEGER DEFAULT 0"),
-        ("gen_provider", "TEXT"),
-        ("escalated",    "INTEGER DEFAULT 0"),
+        ("cost_usd",        "REAL DEFAULT 0.0"),
+        ("tokens_in",       "INTEGER DEFAULT 0"),
+        ("tokens_out",      "INTEGER DEFAULT 0"),
+        ("gen_provider",    "TEXT"),
+        ("escalated",       "INTEGER DEFAULT 0"),
+        ("vote_confidence", "REAL"),
+        ("vote_votes",      "INTEGER"),
+        ("vote_valid",      "INTEGER"),
+        ("vote_escalated",  "INTEGER"),
     ):
         if col not in _existing:
             c.execute(f"ALTER TABLE runs ADD COLUMN {col} {ddl}")
@@ -217,6 +230,28 @@ def record_cost(run_id: str, *, cost_usd: float, tokens_in: int = 0,
     })
 
 
+def record_vote(run_id: str, *, confidence: float, votes: int, valid: int,
+                escalated: bool) -> None:
+    """Record self-consistency vote telemetry for a run (measure-first).
+
+    Persisted by finish() so the escalation threshold can be calibrated from
+    production data (confidence bucket → escalation/quality), rather than the
+    one-off N=100 GSM8K sample. NULL on runs where self-consistency didn't run.
+    """
+    ctx = _get(run_id)
+    if not ctx:
+        return
+    ctx.vote_confidence = round(float(confidence), 4)
+    ctx.vote_votes      = int(votes)
+    ctx.vote_valid      = int(valid)
+    ctx.vote_escalated  = bool(escalated)
+    _add_step(ctx, "vote", {
+        "confidence": ctx.vote_confidence,
+        "votes":      f"{votes}/{valid}",
+        "escalated":  bool(escalated),
+    })
+
+
 def finish(run_id: str, *, agent: str, decision_id: int = -1,
            session_id: int = -1, duration_ms: int = 0) -> None:
     """Close the trace, derive root cause, and persist to DB."""
@@ -242,7 +277,8 @@ def finish(run_id: str, *, agent: str, decision_id: int = -1,
             critic_initial=?, critic_threshold=?, critic_retry=?,
             accepted_first=?, retry_improved=?,
             steps=?, root_cause=?, root_cause_label=?,
-            cost_usd=?, tokens_in=?, tokens_out=?, gen_provider=?, escalated=?
+            cost_usd=?, tokens_in=?, tokens_out=?, gen_provider=?, escalated=?,
+            vote_confidence=?, vote_votes=?, vote_valid=?, vote_escalated=?
         WHERE run_id=?
     """, (
         status, agent,
@@ -259,6 +295,8 @@ def finish(run_id: str, *, agent: str, decision_id: int = -1,
         root_cause, root_cause_label,
         round(ctx.cost_usd, 6), ctx.tokens_in, ctx.tokens_out,
         ctx.gen_provider or None, int(ctx.escalated),
+        ctx.vote_confidence, ctx.vote_votes, ctx.vote_valid,
+        (int(ctx.vote_escalated) if ctx.vote_escalated is not None else None),
         run_id,
     ))
     c.commit()
@@ -382,7 +420,8 @@ def get_run(run_id: str) -> Optional[dict]:
                    critic_initial, critic_threshold, critic_retry,
                    accepted_first, retry_improved,
                    steps, root_cause, root_cause_label,
-                   cost_usd, tokens_in, tokens_out, gen_provider, escalated
+                   cost_usd, tokens_in, tokens_out, gen_provider, escalated,
+                   vote_confidence, vote_votes, vote_valid, vote_escalated
             FROM runs WHERE run_id=?
         """, (run_id,)).fetchone()
         c.close()
@@ -417,6 +456,10 @@ def get_run(run_id: str) -> Optional[dict]:
             "tokens_out":       row[25] if row[25] is not None else 0,
             "gen_provider":     row[26],
             "escalated":        bool(row[27]) if row[27] is not None else False,
+            "vote_confidence":  row[28],
+            "vote_votes":       row[29],
+            "vote_valid":       row[30],
+            "vote_escalated":   bool(row[31]) if row[31] is not None else None,
         }
     except Exception:
         return None

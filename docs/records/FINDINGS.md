@@ -1,6 +1,6 @@
 # Signal-First Routing: Findings
 
-**Published:** June 7, 2026  
+**Published:** June 7, 2026 · **Updated:** July 6, 2026 (§9 reasoning)  
 **System:** LangGraph + phi4-mini · RTX 2050 4GB · SQLite + FAISS
 
 ---
@@ -160,7 +160,54 @@ These are prompt engineering problems, not phi4-mini bugs. A 70B model would avo
 
 ---
 
-## 9. Conclusions
+## 9. Reasoning: Self-Consistency Recovers Multi-Step Math
+
+§7 lists multi-step math as phi4-mini's clearest weakness. **Self-consistency** — sample
+the same prompt N times at a non-zero temperature and majority-vote the final answer — is
+the cheapest lever against it: inference-time compute, no weight changes.
+
+**Setup:** GSM8K, phi4-mini via Ollama, N=100 problems, 5 samples at temp 0.7, exact-match
+on the final number (no LLM judge). `evaluation/reasoning_eval.py`.
+
+| Condition | Accuracy |
+|-----------|----------|
+| baseline — single greedy sample | 0.61 |
+| voted — 5 samples, majority vote | **0.80** |
+| **lift** | **+0.19** |
+
+Voting fixed 23 problems and broke 4 (net +19/100).
+
+**The useful finding is the confidence signal, not the lift.** The winning-vote agreement
+(winner votes / valid votes) separates right from wrong almost cleanly:
+
+| Winning agreement | Accuracy |
+|-------------------|----------|
+| ≥ 3/5 (confident) | 67/69 = **0.97** |
+| ≤ 2/5 (split)     | 13/31 = **0.42** |
+
+Every error lived in the low-agreement bucket: escalating just the 31 split-vote problems
+targets **18 of the 20 total errors — 90% of the mistakes in 31% of the volume.** The
+failures split into two populations: (a) the correct answer *was* sampled but lost a close
+vote — recoverable by more samples or a bigger model; and (b) the model never produced it
+at all — a genuine capability ceiling voting can't fix. So "reasoning" here is really two
+problems wearing one label.
+
+**Shipped as an escalation gate, not just an eval.** `cognition/self_consistency.py` exposes
+the vote agreement as a confidence score with an escalation decision (`≥ 0.6` trust the local
+answer, else escalate); the coordinator wires it behind `AMAGRA_SELF_CONSISTENCY=1` for
+numeric-reasoning queries only, and `run_tracer` logs `vote_confidence` per run so the
+threshold can be calibrated from production traffic rather than this one sample.
+
+**Same honesty caveat as §3a.** N=100 is a single internal sample, phi4-mini-specific, with
+no held-out set, and the 0.6 threshold is fit on these 100 problems. Treat **+0.19** as
+directional and the **97% / 42%** split as a promising-but-unvalidated confidence signal
+until production votes accrue and the threshold is refit. The cost is real: N× local
+generations per reasoning query (~N × 14.5s on this CPU), which is why the gate is opt-in and
+shape-gated rather than always-on.
+
+---
+
+## 10. Conclusions
 
 Intelligence in a routing system comes from structure, not scale. A well-defined signal space with a clear confidence threshold outperforms an LLM classifier on latency, consistency, and debuggability — while reserving the LLM for genuinely ambiguous or novel queries.
 

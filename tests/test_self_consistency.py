@@ -5,10 +5,13 @@ The model call is injected, so we exercise answer extraction and majority
 voting deterministically with a fake generator — no Ollama, no network.
 """
 from cognition.self_consistency import (
+    escalation_decision,
     extract_final_answer,
+    is_numeric_reasoning,
     majority_vote,
     normalize_number,
     self_consistent_answer,
+    vote_confidence,
 )
 
 
@@ -97,3 +100,96 @@ def test_self_consistency_single_sample():
     res = self_consistent_answer("q", lambda p, t: "the answer is 8", n=1)
     assert res["answer"] == "8"
     assert res["n"] == 1
+
+
+# ── vote_confidence ───────────────────────────────────────────
+
+def test_vote_confidence_is_agreement_ratio():
+    assert vote_confidence({"votes": 3, "valid": 5}) == 0.6
+    assert vote_confidence({"votes": 5, "valid": 5}) == 1.0
+    assert vote_confidence({"votes": 1, "valid": 4}) == 0.25
+
+
+def test_vote_confidence_zero_when_nothing_parsed():
+    assert vote_confidence({"votes": 0, "valid": 0}) == 0.0
+
+
+# ── escalation_decision (the empirically-tuned gate) ──────────
+# Threshold matches the GSM8K / phi4-mini N=100 cut: ≥3/5 trust, ≤2/5 escalate.
+
+def test_escalation_trusts_a_confident_vote():
+    d = escalation_decision({"votes": 4, "valid": 5})
+    assert d["escalate"] is False
+    assert d["confidence"] == 0.8
+
+
+def test_escalation_trusts_the_exact_boundary():
+    # 3/5 = 0.60 sits on the default threshold and must count as trust, not escalate.
+    d = escalation_decision({"votes": 3, "valid": 5})
+    assert d["escalate"] is False
+
+
+def test_escalation_flags_a_split_vote():
+    d = escalation_decision({"votes": 2, "valid": 5})
+    assert d["escalate"] is True
+    assert d["confidence"] == 0.4
+
+
+def test_escalation_flags_total_disagreement():
+    d = escalation_decision({"votes": 0, "valid": 0})
+    assert d["escalate"] is True
+    assert d["confidence"] == 0.0
+
+
+def test_escalation_threshold_is_tunable():
+    res = {"votes": 4, "valid": 5}  # agreement 0.8
+    assert escalation_decision(res, trust_agreement=0.9)["escalate"] is True
+    assert escalation_decision(res, trust_agreement=0.7)["escalate"] is False
+
+
+def test_escalation_decision_end_to_end_from_samples():
+    # A split run (2/2/1) should surface as low-confidence → escalate.
+    scripted = iter(["#### 10", "#### 20", "#### 10", "#### 20", "#### 30"])
+    res = self_consistent_answer("q", lambda p, t: next(scripted), n=5)
+    d = escalation_decision(res)
+    assert res["votes"] == 2 and res["valid"] == 5
+    assert d["escalate"] is True
+
+
+# ── is_numeric_reasoning (the coordinator's applicability gate) ─
+
+def test_numeric_reasoning_fires_on_word_problems():
+    assert is_numeric_reasoning(
+        "Natalia sold 48 clips in April and half as many in May. How many total?"
+    )
+    assert is_numeric_reasoning("What is 12 times 8?")
+
+
+def test_numeric_reasoning_skips_ordinary_prose():
+    assert not is_numeric_reasoning("What year did World War 2 end?")   # number, no cue
+    assert not is_numeric_reasoning("Explain how TCP handshakes work")  # no numbers
+    assert not is_numeric_reasoning("what port does ssh use")           # no numbers
+    assert not is_numeric_reasoning("")
+
+
+def test_numeric_reasoning_needs_a_number_and_a_cue():
+    assert not is_numeric_reasoning("The answer is 42")   # number but no cue word
+    assert is_numeric_reasoning("Add 5 and 7 together")   # number + 'add'
+
+
+def test_coordinator_composition_picks_winning_sample_text():
+    # Mirrors the coordinator's inline block: sample texts → vote → winning text
+    # → escalation decision. Guards the composition without importing the graph.
+    samples = [
+        "step by step ... #### 72",
+        "hmm ... #### 71",
+        "reasoning ... #### 72",
+        "work ... #### 72",
+        "oops ... #### 24",
+    ]
+    answers = [extract_final_answer(s) for s in samples]
+    vote = majority_vote(answers)
+    winner_text = next(s for s, a in zip(samples, answers) if a == vote["answer"])
+    assert vote["answer"] == "72"
+    assert winner_text == "step by step ... #### 72"   # first sample with the winner
+    assert escalation_decision(vote)["escalate"] is False  # 3/5 agreement → trust

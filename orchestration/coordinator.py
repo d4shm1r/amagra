@@ -28,6 +28,12 @@ from agents.registry           import AGENT_IDS as _REGISTRY_IDS
 from cognition.dual_trajectory import dual_trajectory_invoke
 from cognition.deep_pipeline import run_deep_pipeline
 from cognition.reflection import grounded_evaluate
+from cognition.self_consistency import (
+    escalation_decision,
+    extract_final_answer,
+    is_numeric_reasoning,
+    majority_vote,
+)
 
 _COS_SESSION_ID = "cos-session-main"
 try:
@@ -249,6 +255,53 @@ def _run_with_reflection(invoke_fn, state: AgentState):
 
     run_tracer.record_generate(run_id, agent)
 
+    # ── Self-consistency (opt-in, numeric-reasoning only) ─────────
+    # For arithmetic word problems, majority-vote across N samples instead of
+    # trusting one greedy draft (+0.19 on GSM8K/phi4-mini). Reuse the draft we
+    # already have as sample 1 and gather N-1 more via re-invoke (the same
+    # natural-nondeterminism mechanism the critic gate uses). The winning-vote
+    # agreement is a calibrated confidence signal that also drives escalation:
+    # low agreement (<0.6, ~90% of errors at ~30% of volume) → escalate.
+    # Off unless AMAGRA_SELF_CONSISTENCY=1; gated to arithmetic queries so the
+    # N× cost never touches the common path.
+    _vote_escalate = False
+    if (os.environ.get("AMAGRA_SELF_CONSISTENCY") == "1"
+            and task and response_raw
+            and is_numeric_reasoning(task)):
+        try:
+            from langchain_core.messages import AIMessage as _AIMsgSC
+
+            _n = max(1, int(os.environ.get("SC_SAMPLES", "5")))
+            _sc_samples = [response_raw]
+            for _ in range(_n - 1):
+                _sr = invoke_fn(state)
+                _sc_samples.append(
+                    _sr["messages"][-1].content if _sr.get("messages") else ""
+                )
+            _answers = [extract_final_answer(s) for s in _sc_samples]
+            _vote    = majority_vote(_answers)
+            if _vote["answer"] is not None:
+                # Commit the full text of the sample that produced the winner.
+                _winner_text = next(
+                    (s for s, a in zip(_sc_samples, _answers) if a == _vote["answer"]),
+                    response_raw,
+                )
+                if _winner_text != response_raw:
+                    if result.get("messages"):
+                        result["messages"][-1] = _AIMsgSC(content=_winner_text)
+                    response_raw = _winner_text
+            _gate = escalation_decision(_vote)
+            _vote_escalate = _gate["escalate"]
+            run_tracer.record_vote(
+                run_id, confidence=_gate["confidence"],
+                votes=_vote["votes"], valid=_vote["valid"],
+                escalated=_vote_escalate,
+            )
+            print(f"[self_consistency] {_vote['votes']}/{_vote['valid']} → "
+                  f"{_gate['reason']}")
+        except Exception as _sc_e:
+            print(f"[self_consistency] skipped: {_sc_e}")
+
     # Make routing observable: who was selected, how confident, and the
     # QuerySignal that drove it (signal-first routing's actual evidence).
     try:
@@ -362,15 +415,16 @@ def _run_with_reflection(invoke_fn, state: AgentState):
         except Exception as _e:
             print(f"[hybrid] policy check skipped: {_e}")
 
-    if response_raw and (_legacy_escalate or _hybrid_escalate):
+    if response_raw and (_legacy_escalate or _hybrid_escalate or _vote_escalate):
         try:
             from models.smart_llm import enhance_response_detailed
             from langchain_core.messages import AIMessage as _AIMsg
-            # force the enhancement when only the hybrid trigger fired (the
-            # query's complexity is "simple", which enhance_response skips).
+            # force the enhancement when only a low-complexity trigger fired (the
+            # query's complexity is "simple", which enhance_response skips) — this
+            # covers the hybrid (low routing-conf) and vote (split-vote) triggers.
             _enhanced, _gen = enhance_response_detailed(
                 task, response_raw, agent, _complexity,
-                force=_hybrid_escalate and not _legacy_escalate,
+                force=(_hybrid_escalate or _vote_escalate) and not _legacy_escalate,
             )
             if _enhanced and _enhanced != response_raw:
                 if result.get("messages"):
