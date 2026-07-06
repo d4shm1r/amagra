@@ -125,3 +125,86 @@ def self_consistent_answer(
 
     vote = majority_vote(extracted)
     return {**vote, "n": max(1, n), "samples": samples}
+
+
+# ── Escalation gate ───────────────────────────────────────────
+# The winning-agreement ratio (winner votes / valid votes) is a strong
+# confidence signal, measured on GSM8K / phi4-mini (N=100, see the
+# self-consistency result memory / logs/reasoning_*.json):
+#
+#   agreement ≥ 0.6  (≥3/5 votes)  → 97–100% correct  → trust the local answer
+#   agreement ≤ 0.4  (≤2/5 votes)  → ~42% correct      → escalate
+#
+# Escalating just the low-agreement tail targets ~90% of all errors at ~30% of
+# the volume — the cheap, high-yield cut. The 0.5–0.6 band is the ambiguous
+# middle; where exactly to draw the line depends on escalation cost, so the
+# threshold is a tunable argument.
+TRUST_AGREEMENT = 0.6
+
+
+def vote_confidence(result: dict) -> float:
+    """
+    Winning-agreement ratio in [0, 1]: winner votes / valid votes.
+
+    Takes a `self_consistent_answer` / `majority_vote` result dict. Returns 0.0
+    when nothing parsed (`valid == 0`) — total disagreement, always escalate.
+    """
+    valid = result.get("valid", 0)
+    return result.get("votes", 0) / valid if valid else 0.0
+
+
+def escalation_decision(result: dict, trust_agreement: float = TRUST_AGREEMENT) -> dict:
+    """
+    Turn a self-consistency result into an escalation decision.
+
+    Mirrors the router's `decide_with_confidence` shape (a value plus a
+    confidence) so it can feed the same hybrid escalation gate: a low-agreement
+    vote is exactly the case to route to a bigger model or draw more samples.
+
+    Returns { confidence, escalate, reason }. `escalate` is True when the winner
+    carries less than `trust_agreement` of the valid votes.
+    """
+    conf = vote_confidence(result)
+    # +epsilon so an exact boundary (e.g. 3/5 = 0.6 at the default) counts as trust.
+    escalate = conf + 1e-9 < trust_agreement
+    votes, valid = result.get("votes", 0), result.get("valid", 0)
+    reason = (
+        f"vote agreement {conf:.2f} < {trust_agreement:.2f} "
+        f"({votes}/{valid}) — escalate"
+        if escalate
+        else f"vote agreement {conf:.2f} ≥ {trust_agreement:.2f} "
+        f"({votes}/{valid}) — trust local"
+    )
+    return {"confidence": round(conf, 4), "escalate": escalate, "reason": reason}
+
+
+# ── Applicability gate ────────────────────────────────────────
+# Cue words for quantitative word problems — where voting on a numeric final
+# answer helps. `extract_final_answer` is numeric, so self-consistency only
+# applies to arithmetic-shaped queries.
+_QUANTITY_CUE = re.compile(
+    r"\b(how many|how much|total|sum|average|mean|each|per|times|twice|half|"
+    r"double|percent|remaining|left|altogether|combined|costs?|price|profit|"
+    r"difference|more than|less than|fewer|add|subtract|multiply|divides?|"
+    r"divided|product)\b|%",
+    re.IGNORECASE,
+)
+
+
+def is_numeric_reasoning(query: str) -> bool:
+    """
+    Heuristic gate: does this query look like an arithmetic word problem, where
+    majority-voting over a numeric answer helps?
+
+    Deliberately conservative — it requires at least one number AND a
+    quantitative cue word, so ordinary prose ("what year did X happen") never
+    triggers the expensive N-sample path. (Word problems often spell a quantity
+    out — "half as many" — so a two-number floor misses real cases; the cue-word
+    requirement carries the precision.) The router has no "math" answer_shape,
+    so this is the local gate the coordinator uses to decide when to spend the
+    extra samples.
+    """
+    if not query:
+        return False
+    numbers = re.findall(r"\d[\d,]*(?:\.\d+)?", query)
+    return len(numbers) >= 1 and bool(_QUANTITY_CUE.search(query))

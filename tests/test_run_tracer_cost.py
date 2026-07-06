@@ -70,3 +70,41 @@ def test_cost_summary_empty_is_zero(tmp_path, monkeypatch):
     assert summary["runs"] == 0
     assert summary["total_cost_usd"] == 0.0
     assert summary["escalation_rate"] == 0.0
+
+
+# ── Self-consistency vote telemetry (step 2 — measure-first) ──
+
+def test_record_vote_persists(tmp_path, monkeypatch):
+    rt = _tracer(tmp_path, monkeypatch)
+    run_id = rt.start("A box has 8 rows of 9 apples. How many total?")
+    rt.record_vote(run_id, confidence=0.6, votes=3, valid=5, escalated=False)
+    rt.finish(run_id, agent="knowledge_learning", duration_ms=30)
+
+    trace = rt.get_run(run_id)
+    assert trace["vote_confidence"] == 0.6
+    assert trace["vote_votes"] == 3
+    assert trace["vote_valid"] == 5
+    assert trace["vote_escalated"] is False
+
+
+def test_vote_columns_null_when_self_consistency_off(tmp_path, monkeypatch):
+    # A run where record_vote was never called (SC off / non-numeric) leaves the
+    # vote columns NULL, so calibration queries can filter to real votes.
+    rt = _tracer(tmp_path, monkeypatch)
+    run_id = rt.start("explain tcp")
+    rt.finish(run_id, agent="terse", duration_ms=5)
+
+    trace = rt.get_run(run_id)
+    assert trace["vote_confidence"] is None
+    assert trace["vote_escalated"] is None
+
+
+def test_low_agreement_vote_records_escalation(tmp_path, monkeypatch):
+    rt = _tracer(tmp_path, monkeypatch)
+    run_id = rt.start("split arithmetic")
+    rt.record_vote(run_id, confidence=0.4, votes=2, valid=5, escalated=True)
+    rt.finish(run_id, agent="knowledge_learning")
+
+    trace = rt.get_run(run_id)
+    assert trace["vote_confidence"] == 0.4
+    assert trace["vote_escalated"] is True
