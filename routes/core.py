@@ -13,6 +13,8 @@ from pydantic import BaseModel
 
 from orchestration.coordinator import coordinator
 from core.logger import log_response, read_log
+from core.run_log import RunLog
+from core.contract import Result
 import cognition.run_tracer as run_tracer
 from infrastructure.db import path as _dbpath
 from infrastructure.inference_limit import inference_slot
@@ -23,6 +25,22 @@ from .deps import (
 )
 
 router = APIRouter()
+
+# Append-only transparent run log (core/run_log.py). One row per /ask run,
+# readable with a plain SELECT against logs/runtime.db. Lazy singleton so the
+# table is created once per process, not per request.
+_run_log: RunLog | None = None
+
+
+def _get_run_log() -> RunLog | None:
+    global _run_log
+    if _run_log is None:
+        try:
+            _run_log = RunLog()
+        except Exception:
+            return None
+    return _run_log
+
 
 _TELEMETRY_DB = _dbpath("telemetry")
 
@@ -392,6 +410,26 @@ async def ask(req: AskRequest, request: Request):
         )
         _conn.commit()
         _conn.close()
+    except Exception:
+        pass
+
+    # Transparent run log — one append-only row per run (core/run_log.py).
+    try:
+        _rl = _get_run_log()
+        if _rl is not None:
+            _bd = _bd_for_log
+            _rl.append(
+                task=req.message,
+                ext_id=_run_id,
+                result=Result(output=response, meta={
+                    "agent":        agent_used,
+                    "duration_ms":  duration_ms,
+                    "complexity":   _bd.get("complexity", "simple"),
+                    "signal_domain": _bd.get("signal_domain", "general"),
+                    "signal_shape": _bd.get("signal_shape", "explanation"),
+                    "signal_conf":  round(float(_bd.get("signal_conf", 0.0)), 3),
+                }),
+            )
     except Exception:
         pass
 
