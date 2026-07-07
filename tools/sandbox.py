@@ -22,13 +22,22 @@ not a security boundary against a determined adversary — gate the route
 """
 
 import os
-import resource
 import shutil
 import signal
 import subprocess
 import sys
 import tempfile
 import time
+
+# `resource` (setrlimit) is POSIX-only and absent on Windows. Import it lazily so
+# this module — pulled in unconditionally via routes/sandbox.py → api.py — never
+# crashes app startup on Windows. The sandbox itself needs POSIX resource limits
+# to be a real jail, so run_python() refuses to run without it (see below); the
+# rest of the backend boots normally. The route is opt-in (AMAGRA_SANDBOX=1).
+try:
+    import resource
+except ImportError:  # non-POSIX (Windows)
+    resource = None
 
 DEFAULT_TIMEOUT = 5            # wall-clock seconds
 DEFAULT_CPU_SECONDS = 5        # RLIMIT_CPU
@@ -40,7 +49,15 @@ MAX_CODE_BYTES = 256 * 1024
 
 
 def _preexec(cpu_seconds: int, mem_bytes: int, fsize_bytes: int, nproc: int):
-    """Return a child-side hook that drops resource limits and starts a new session."""
+    """Return a child-side hook that drops resource limits and starts a new session.
+
+    Returns None when `resource` is unavailable (non-POSIX) — subprocess requires
+    preexec_fn=None there. run_python() blocks that path anyway, so this is belt-
+    and-suspenders.
+    """
+    if resource is None:
+        return None
+
     def _apply():
         os.setsid()  # own process group, so a timeout can kill the whole tree
         resource.setrlimit(resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds))
@@ -65,6 +82,12 @@ def run_python(code: str,
 
     Returns {stdout, stderr, exit_code, timed_out, duration_ms, truncated}.
     """
+    if resource is None:
+        # No POSIX setrlimit → we can't cap CPU/memory/forks, so this stops being a
+        # resource jail. Refuse rather than run arbitrary code unbounded. (Windows.)
+        raise RuntimeError(
+            "code sandbox requires a POSIX host (resource limits unavailable on this platform)"
+        )
     if not isinstance(code, str) or not code.strip():
         raise ValueError("code must be a non-empty string")
     if len(code.encode("utf-8")) > MAX_CODE_BYTES:

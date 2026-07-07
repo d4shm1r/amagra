@@ -53,3 +53,6 @@ def run(req: RunRequest):
         return sbx.run_python(req.code, timeout=timeout)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        # e.g. non-POSIX host: the sandbox can't enforce resource limits there.
+        raise HTTPException(status_code=501, detail=str(e))
