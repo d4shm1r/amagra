@@ -36,6 +36,10 @@ def signal_route(query: str) -> str:
     """
     Pure signal-based routing — mirrors core_brain fast path, no LLM.
 
+    This is the PURE KEYWORD BASELINE: no semantic fallback, no flag dependence,
+    deterministic. Other tools (semantic_threshold_study.py) rely on it being the
+    untouched baseline, so the hybrid composition lives in hybrid_route(), NOT here.
+
     Routing priority:
       1. factual shape → terse (short concrete answer, any verbosity)
       2. confident domain (domain_conf > 0.3) → domain agent
@@ -53,6 +57,30 @@ def signal_route(query: str) -> str:
         return DOMAIN_TO_AGENT.get(sig.domain, "knowledge_learning")
     if sig.verbosity == "terse":
         return "terse"
+    return "knowledge_learning"
+
+
+def hybrid_route(query: str) -> str:
+    """
+    Production-faithful route: the keyword baseline, plus the semantic rescue on
+    the `knowledge_learning` fallthrough — mirroring core_brain's shipped hook.
+
+    The rescue fires ONLY when signal_route yields knowledge_learning AND the
+    fallback is enabled (AGENTIC_SEMANTIC_FALLBACK=1). Flag off → byte-identical
+    to signal_route, so the honest keyword baseline is always recoverable.
+    Crash-safe: any fallback failure keeps the knowledge_learning fallthrough.
+    """
+    base = signal_route(query)
+    if base != "knowledge_learning":
+        return base
+    try:
+        from orchestration import semantic_fallback as sf
+        if sf.is_enabled():
+            r = sf.route(query)
+            if r is not None and r[0] != "knowledge_learning":
+                return r[0]
+    except Exception:
+        pass
     return "knowledge_learning"
 
 

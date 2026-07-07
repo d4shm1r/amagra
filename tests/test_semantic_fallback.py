@@ -64,8 +64,14 @@ def _real_build(monkeypatch):
 
 
 # ── is_enabled / gating ──────────────────────────────────────────────────────
-def test_disabled_by_default(monkeypatch):
+def test_enabled_by_default(monkeypatch):
+    # ON by default since 2026-07-07 (threshold-study ship gate passed).
     monkeypatch.delenv("AGENTIC_SEMANTIC_FALLBACK", raising=False)
+    assert sf.is_enabled() is True
+
+
+def test_disabled_by_explicit_flag(monkeypatch):
+    monkeypatch.setenv("AGENTIC_SEMANTIC_FALLBACK", "0")
     assert sf.is_enabled() is False
 
 

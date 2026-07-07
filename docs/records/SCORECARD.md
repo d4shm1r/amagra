@@ -6,7 +6,7 @@
 > This is an honest self-assessment, not a marketing sheet — a low score is a
 > pointer to the next piece of work, not something to hide.
 
-**Last updated:** 2026-07-06 · **Scale:** 1–10 · **Overall ≈ 6.4/10**
+**Last updated:** 2026-07-07 · **Scale:** 1–10 · **Overall ≈ 6.4/10**
 
 | Dimension   | Score | Basis |
 |-------------|-------|-------|
@@ -14,7 +14,7 @@
 | Reasoning   | 5/10  | Self-consistency +0.19 (0.61→0.80 GSM8K, N=100, phi4-mini) just landed; small-model math is weak, Claude escalation optional. See [FINDINGS §9](FINDINGS.md) |
 | Memory      | 8/10  | FAISS (592+ vectors), 52× LRU cache, dedup/consolidation (cosine ≥0.93), 6 memory types, pruning, outcome-weighting. See [FINDINGS §5](FINDINGS.md) |
 | Tool Use    | 6/10  | Specialist-agent routing + tool runtime; not heavy autonomous tool-calling *(subjective)* |
-| Routing     | 7/10  | 97% dev-set / **42% held-out adversarial** (Wilson 95% CI [27%,59%]), <12ms, fully auditable. Engineering strong, generalization weak. See [FINDINGS §3/§3a](FINDINGS.md) |
+| Routing     | 7/10  | Keyword fast path: 97% dev-set but **30.8% held-out** (n=91 keyword-only). Semantic fallback (**ON by default since 2026-07-07**, in core_brain + eval) lifts held-out to **52.7%** (Wilson 95% CI [42.6%,62.7%]); ship gate 24 rescues vs 3 regressions, `knowledge_learning` sink 81%→7% of misroutes. <12ms keyword path, +~1 embed on fallthrough, degrades to baseline if no embedder, fully auditable. Generalization materially improved but single-rater labels (κ) still ungate any public number. See [FINDINGS §3/§3a](FINDINGS.md) |
 | Reflection  | 7/10  | Reflection triage + grounded eval + LLM critique/rewrite + contradiction gate; full-reflection rate 58%→15–20%. See [FINDINGS §6](FINDINGS.md) |
 | Efficiency  | 8/10  | 52× FAISS cache speedup, <12ms routing, local-first, opt-in escalation, lazy loading |
 | Autonomy    | 4/10  | Request→response assistant; no long-horizon autonomous execution loop *(subjective)* |
@@ -27,8 +27,9 @@
 (9)**, alongside memory, efficiency, and routing *engineering* — with the **frontier capabilities**
 (reasoning, planning, autonomy) still early and, importantly, *measured honestly rather
 than assumed*. The single most load-bearing caveat is the routing dev-vs-held-out gap
-(97% vs 42%): treat any "intelligence" score as engineering maturity, not validated
-generalization, until held-out numbers move.
+(97% dev vs 30.8% keyword-only held-out; semantic fallback recovers it to 52.7%): treat
+any "intelligence" score as engineering maturity, not validated generalization, until
+held-out numbers move *and* the single-rater labels clear an inter-rater κ bar.
 
 ## How to keep this current
 

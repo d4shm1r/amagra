@@ -41,7 +41,7 @@ import math
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evaluation.ablation_eval import signal_route  # reuse the exact production fast path
+from evaluation.ablation_eval import hybrid_route  # production-faithful: keyword baseline + semantic rescue (flag-gated)
 
 # ---------------------------------------------------------------------------
 # Held-out adversarial prompts.  (pid, expected_agent, category, prompt)
@@ -297,7 +297,7 @@ def run_adversarial():
     misses = []
 
     for pid, expected, category, prompt in PROMPTS:
-        got = signal_route(prompt)
+        got = hybrid_route(prompt)
         ok = (got == expected)
         correct += ok
         cs = cat_stats.setdefault(category, {"correct": 0, "total": 0})
@@ -345,10 +345,10 @@ def run_adversarial():
             print(f"    by category: {parts}")
 
     # --- confusion matrix (expected rows × got cols) ---------------------------
-    labels = sorted({p[1] for p in PROMPTS} | {signal_route(p[3]) for p in PROMPTS})
+    labels = sorted({p[1] for p in PROMPTS} | {hybrid_route(p[3]) for p in PROMPTS})
     conf: dict = {e: {g: 0 for g in labels} for e in labels}
     for pid, expected, category, prompt in PROMPTS:
-        conf[expected][signal_route(prompt)] += 1
+        conf[expected][hybrid_route(prompt)] += 1
     _bold = (lambda s: f"\033[1m{s}\033[0m") if sys.stdout.isatty() else (lambda s: s)
     short = {lab: lab[:4] for lab in labels}
     print("\n  Confusion matrix  (row = expected, col = routed-to; diagonal = correct):")

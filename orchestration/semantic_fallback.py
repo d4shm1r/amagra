@@ -20,7 +20,9 @@ DESIGN CONSTRAINTS (mirror learned_router.py's contract)
 --------------------------------------------------------
   * Never crashes think(). Every failure path returns None → caller keeps its
     existing behaviour.
-  * OFF by default. Enable with AGENTIC_SEMANTIC_FALLBACK=1.
+  * ON by default (2026-07-07, after the threshold-study ship gate). Disable
+    with AGENTIC_SEMANTIC_FALLBACK=0. Needs an embedding backend to actually
+    fire; with none available it degrades gracefully to the keyword baseline.
   * Exemplar embeddings are built once and cached to logs/; the hot path then
     costs a single embed() of the query plus an O(n) cosine scan (n=138).
   * If Ollama is unavailable, returns None (graceful, no exception surfaces).
@@ -57,7 +59,13 @@ _DISABLED = False   # set True after an unrecoverable init failure (don't retry 
 
 
 def is_enabled() -> bool:
-    return os.getenv("AGENTIC_SEMANTIC_FALLBACK", "0") == "1"
+    # ON by default as of 2026-07-07 — semantic_threshold_study.py cleared the
+    # ship gate on the n=91 held-out set: keyword 30.8% → hybrid 52.7% (+22.0%),
+    # 24 rescues vs 3 regressions, and no similarity floor helps (AUC 0.663, best
+    # T at the low end → _MIN_SIM stays 0.0). Crash-safe: with no embedding
+    # backend available, route() returns None and behaviour degrades to the
+    # keyword baseline. Disable explicitly with AGENTIC_SEMANTIC_FALLBACK=0.
+    return os.getenv("AGENTIC_SEMANTIC_FALLBACK", "1") == "1"
 
 
 # ── vector math ────────────────────────────────────────────────────────────
