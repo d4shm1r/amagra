@@ -26,6 +26,18 @@ sys.path.insert(0, ROOT)
 
 
 def main() -> None:
+    # Windows consoles/pipes default to a legacy code page (cp1252) that can't
+    # encode the emoji/unicode the app logs (e.g. api.py's "⚠" startup banner) —
+    # a bare print() then raises UnicodeEncodeError and aborts uvicorn startup.
+    # Force UTF-8 on the std streams so the frozen server logs identically on every
+    # OS; errors="replace" is a belt so no stray glyph can ever kill the process.
+    # Done before `import api` below so import-time banners are covered too.
+    for _stream in (sys.stdout, sys.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
     ap = argparse.ArgumentParser(prog="amagra-server")
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8000)

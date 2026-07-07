@@ -57,6 +57,34 @@ jobs:
         shell: bash
         run: bash desktop/build-sidecar.sh
 
+      - name: Smoke-test the frozen sidecar
+        # Actually RUN the frozen exe and wait for /health — build-sidecar.sh only
+        # proves it was produced, not that it boots. Import-time platform crashes
+        # (Windows-only Unix imports, cp1252 encode errors on emoji logging) pass
+        # the freeze but kill the app on a real machine; this catches them in CI
+        # before the installer is ever attached. No PYTHONUTF8 here on purpose —
+        # the frozen server must be self-sufficient (see packaging/server_entry.py).
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN=desktop/backend/amagra-server
+          [ -f "$BIN.exe" ] && BIN="$BIN.exe"
+          "$BIN" --host 127.0.0.1 --port 8000 > sidecar-smoke.log 2>&1 &
+          PID=$!
+          ok=0
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:8000/health > /dev/null 2>&1; then ok=1; break; fi
+            if ! kill -0 "$PID" 2>/dev/null; then break; fi   # process died
+            sleep 2
+          done
+          kill "$PID" 2>/dev/null || true
+          echo "===== sidecar-smoke.log ====="; cat sidecar-smoke.log || true
+          if [ "$ok" != 1 ]; then
+            echo "::error::frozen sidecar did not become healthy — see log above"
+            exit 1
+          fi
+          echo "✓ frozen sidecar booted and /health returned 200"
+
       - name: Build the desktop app
         working-directory: desktop
         env:

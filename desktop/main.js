@@ -103,6 +103,17 @@ async function startBackend() {
   // succeed. Dev (venv) keeps the project-dir default — matches `ai-start`.
   const env = { ...process.env };
   if (frozen) env.AMAGRA_DATA_DIR = app.getPath("userData");
+  // Force UTF-8 for the backend process. Windows defaults to a legacy code page
+  // (cp1252) for both console output AND file I/O, so the app's emoji/unicode
+  // logging and any implicitly-encoded file read would crash on a box that was
+  // developed on Linux. PYTHONUTF8=1 flips the whole interpreter to UTF-8 mode.
+  env.PYTHONUTF8 = "1";
+  env.PYTHONIOENCODING = "utf-8";
+  // Mark each launch in the logfile so stale entries from a previous crashed run
+  // aren't mistaken for the current one (the log is append-mode for crash history).
+  try {
+    fs.writeSync(logFd(), `\n===== AMAGRA backend launch ${new Date().toISOString()} =====\n`);
+  } catch {}
   // Capture the sidecar's stdout+stderr to a logfile instead of discarding it
   // (stdio:"ignore"), so a boot failure leaves a diagnosable trail rather than a
   // silent "did not become healthy". The dialog below points the user here.
