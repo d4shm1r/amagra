@@ -1,6 +1,6 @@
 {
   "name": "amagra-desktop",
-  "version": "1.7.3",
+  "version": "1.7.4",
   "description": "AMAGRA desktop shell — native window around the local FastAPI server + built UI",
   "main": "main.js",
   "author": "Amagra",

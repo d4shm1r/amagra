@@ -191,7 +191,7 @@ function createWindow() {
   win.on("closed", () => { win = null; });
 }
 
-app.whenReady().then(async () => {
+async function startup() {
   // No File/Edit menu bar on Win/Linux (the ☰ launcher is the only chrome).
   // Keep the native app menu on macOS so Cmd+Q / copy-paste accelerators live.
   if (process.platform !== "darwin") Menu.setApplicationMenu(null);
@@ -212,10 +212,40 @@ app.whenReady().then(async () => {
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
-});
+}
+
+// Single-instance guard: a second double-click must NOT spawn a competing
+// backend — that's the port-8000 bind conflict ("only one usage of each socket
+// address is normally permitted"). Bounce the duplicate and just focus the
+// window the first instance already opened.
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    }
+  });
+  app.whenReady().then(startup);
+}
 
 function shutdown() {
-  if (backend && backend.exitCode === null) backend.kill();
+  if (backend && backend.exitCode === null) {
+    // A PyInstaller onefile exe runs a bootloader parent that unpacks and spawns
+    // the real Python child; on Windows `backend.kill()` reaps only the parent,
+    // leaving the child holding port 8000 (→ EADDRINUSE on the next launch). Kill
+    // the whole tree so the port is actually released.
+    if (process.platform === "win32") {
+      try {
+        spawn("taskkill", ["/pid", String(backend.pid), "/T", "/F"], { stdio: "ignore" });
+      } catch {
+        backend.kill();
+      }
+    } else {
+      backend.kill();
+    }
+  }
   if (ollama && ollama.exitCode === null) ollama.kill(); // leave pre-existing ollama alone (spawn no-ops if already up)
 }
 app.on("window-all-closed", () => { shutdown(); if (process.platform !== "darwin") app.quit(); });
