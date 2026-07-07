@@ -16,9 +16,17 @@ const path = require("path");
 const fs = require("fs");
 
 const PORT = parseInt(process.env.AMAGRA_PORT || "8000", 10);
-// Use `localhost` (not 127.0.0.1) so the window origin matches the UI's default
-// API base (ui/src/api.js → http://localhost:8000) and stays same-origin: no CORS.
+// Renderer origin: keep `localhost` (not 127.0.0.1) so the window matches the UI's
+// default API base (ui/src/api.js → http://localhost:8000) and stays same-origin:
+// no CORS. Chromium special-cases `localhost` to loopback and tries both families,
+// so the window load is robust even when the server is IPv4-only.
 const BASE = `http://localhost:${PORT}`;
+// Health probe origin: the backend binds IPv4 `127.0.0.1` (see backendCommand),
+// but on Windows `localhost` frequently resolves to IPv6 `::1` first — and Node's
+// http.get, unlike Chromium, may not fall back to 127.0.0.1. Probing 127.0.0.1
+// directly matches the actual listener on every platform. (This was the #1 cause
+// of "Backend did not become healthy" on Windows.)
+const PROBE = `http://127.0.0.1:${PORT}`;
 // Dev loop: point the window at the Vite dev server (hot module reload) instead
 // of the static ui/build the backend serves — UI edits then apply live, no
 // `vite build` + reload. Run `cd ui && npm run dev` alongside, then
@@ -53,7 +61,7 @@ function backendCommand() {
 
 function healthy() {
   return new Promise((resolve) => {
-    const req = http.get(`${BASE}/health`, (res) => {
+    const req = http.get(`${PROBE}/health`, (res) => {
       res.resume();
       resolve(res.statusCode === 200);
     });
@@ -62,7 +70,10 @@ function healthy() {
   });
 }
 
-async function waitForHealth(timeoutMs = 60000) {
+// A frozen onefile sidecar unpacks to %TEMP%/_MEIxxxx on every launch, and a
+// fresh Windows Defender install scans every extracted file — cold first-launch
+// can run well past a minute. Give it room before declaring failure.
+async function waitForHealth(timeoutMs = 120000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     if (await healthy()) return true;
@@ -92,9 +103,30 @@ async function startBackend() {
   // succeed. Dev (venv) keeps the project-dir default — matches `ai-start`.
   const env = { ...process.env };
   if (frozen) env.AMAGRA_DATA_DIR = app.getPath("userData");
-  backend = spawn(cmd, args, { cwd, stdio: "ignore", env });
+  // Capture the sidecar's stdout+stderr to a logfile instead of discarding it
+  // (stdio:"ignore"), so a boot failure leaves a diagnosable trail rather than a
+  // silent "did not become healthy". The dialog below points the user here.
+  backend = spawn(cmd, args, { cwd, stdio: ["ignore", logFd(), logFd()], env });
   backend.on("error", (e) => console.error("backend spawn failed:", e.message));
   return waitForHealth();
+}
+
+// Path to the backend logfile in the OS per-user data dir, and a lazily-opened
+// append fd onto it. One shared fd for stdout+stderr keeps the stream ordered.
+function logPath() {
+  return path.join(app.getPath("userData"), "logs", "backend.log");
+}
+let _logFd = null;
+function logFd() {
+  if (_logFd !== null) return _logFd;
+  try {
+    const p = logPath();
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    _logFd = fs.openSync(p, "a");
+  } catch {
+    _logFd = "ignore"; // fall back to discarding rather than crashing the shell
+  }
+  return _logFd;
 }
 
 function createWindow() {
@@ -156,7 +188,12 @@ app.whenReady().then(async () => {
   const ok = await startBackend();
   if (!ok) {
     const { dialog } = require("electron");
-    dialog.showErrorBox("AMAGRA", `Backend did not become healthy on ${BASE}.\nCheck logs / that the venv exists.`);
+    dialog.showErrorBox(
+      "AMAGRA",
+      `The backend did not start within the time limit.\n\n` +
+        `A startup log was written to:\n${logPath()}\n\n` +
+        `Please open that file (or share it) so the failure can be diagnosed.`
+    );
     app.quit();
     return;
   }
