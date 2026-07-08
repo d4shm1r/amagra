@@ -1,13 +1,13 @@
 # Signal-First Routing: Findings
 
-**Published:** June 7, 2026 · **Updated:** July 6, 2026 (§9 reasoning)  
+**Published:** June 7, 2026 · **Updated:** July 7, 2026 (§3a held-out re-baseline)  
 **System:** LangGraph + phi4-mini · RTX 2050 4GB · SQLite + FAISS
 
 ---
 
 ## Abstract
 
-Key empirical findings from developing a local-first agentic AI over 37 phases. The central finding: replacing LLM-based intent classification with deterministic geometric signal detection increased routing accuracy from 70% to 97% while reducing median classification latency from ~800ms to ~12ms. **These are internal development metrics on a self-authored set — on a held-out adversarial set the same router scores ~42% (see §3a). Treat the headline numbers as indicative of the engineering, not as validated accuracy.**
+Key empirical findings from developing a local-first agentic AI over 37 phases. The central finding: replacing LLM-based intent classification with deterministic geometric signal detection increased routing accuracy from 70% to 97% while reducing median classification latency from ~800ms to ~12ms. **These are internal development metrics on a self-authored set — on a held-out adversarial set (n=91) the keyword rules alone score ~31%; an on-by-default semantic fallback recovers this to ~53% (see §3a). Treat the headline numbers as indicative of the engineering, not as validated accuracy.**
 
 ---
 
@@ -56,25 +56,38 @@ measures "can the rules recognise prompts that resemble the rules?" — evaluati
 development distribution, not a held-out test. An external eval-methodology review flagged
 this directly, and it's correct.
 
-So there is a second, deliberately hostile eval (`evaluation/adversarial_eval.py`): 33 held-out
-prompts written to be hard and **keyword-free** — cross-domain ("spin up containers to run an
-AI experiment"), keyword-decoys, and paraphrases that avoid the trigger words the rules key on.
+So there is a second, deliberately hostile eval (`evaluation/adversarial_eval.py`): **91 held-out**
+prompts (grown from an initial 33; the extension deliberately over-samples the `paraphrase`
+category, where the weakness concentrates). All are **keyword-free** — cross-domain ("spin up
+containers to run an AI experiment"), keyword-decoys, paraphrases that avoid the trigger words
+the rules key on, and terse-traps.
 
-| Eval | Signal-only routing accuracy |
-|------|------------------------------|
+| Eval | Routing accuracy |
+|------|------------------|
 | Curated ablation (same set used for tuning) | ~99% |
-| **Held-out adversarial** (33 prompts) | **42.4%**, Wilson 95% CI **[27%, 59%]** |
+| **Held-out — keyword fast path only** (n=91) | **30.8%**, Wilson 95% CI **[22%, 41%]** |
+| **Held-out — + semantic fallback** (on by default) | **52.7%**, Wilson 95% CI **[43%, 63%]** |
 
-The drop is the honest finding, and the *failure pattern* is the useful part: paraphrases
-collapse to the fallback agent (`knowledge_learning`) — i.e. the rules keyword-match, they
-don't generalise — and cross-domain prompts pick a plausible-but-not-primary specialist.
-Production sits between these two numbers, closer to the floor than the ceiling.
+The drop on the keyword path is the honest finding, and the *failure pattern* pointed straight
+at the fix: **81% of all misroutes collapsed into the single `knowledge_learning` fallback
+bucket** — the rules keyword-match, they don't generalise, so any paraphrase with no trigger word
+fell through to the catch-all.
 
-**Caveat on the 42% itself:** those labels are single-rater (one author's best call). Before
-*either* number is publishable, the prior question — is the routing target even well-defined? —
-needs answering with inter-rater agreement. `evaluation/rater_harness.py` collects independent
-blind labels and computes Fleiss' κ; the bar is κ ≳ 0.6, after which the majority vote becomes
-consensus gold labels. Until then: internal metrics only.
+**The fix (shipped, on by default 2026-07-07):** `orchestration/semantic_fallback.py` routes the
+keyword-free fallthroughs by embedding k-NN to training exemplars instead of dumping them in the
+sink. Held-out **30.8% → 52.7% (+22 pts)**, and the sink shrank from **81% → 7%** of misroutes.
+The ship gate (`evaluation/semantic_threshold_study.py`) recorded **24 rescues vs 3 regressions**,
+and showed no similarity floor helps (right/wrong routes separate only weakly, AUC 0.663) — so the
+rescue runs unfloored. It uses a local ONNX embedder (~2–5 ms, no network) when present and falls
+back to Ollama, degrading to the 30.8% keyword baseline when neither is available. Production now
+sits at the 52.7% figure with an embedder present.
+
+**Caveat — this is the real ceiling, and it applies to 52.7% exactly as much as to 30.8%:** the
+labels are single-rater (one author's best call). A better number on single-rater labels is still
+not a *validated* one. Before either figure is publishable, the prior question — is the routing
+target even well-defined? — needs answering with inter-rater agreement. `evaluation/rater_harness.py`
+collects independent blind labels and computes Fleiss' κ; the bar is κ ≳ 0.6, after which the
+majority vote becomes consensus gold labels. Until then: internal metrics only.
 
 ---
 
@@ -197,6 +210,23 @@ the vote agreement as a confidence score with an escalation decision (`≥ 0.6` 
 answer, else escalate); the coordinator wires it behind `AMAGRA_SELF_CONSISTENCY=1` for
 numeric-reasoning queries only, and `run_tracer` logs `vote_confidence` per run so the
 threshold can be calibrated from production traffic rather than this one sample.
+
+**The gate's system-level payoff, measured.** `evaluation/escalation_gate_eval.py` takes the
+saved per-problem votes and applies the *shipped* `escalation_decision` (it reuses the runtime
+call, so eval and production can't drift), then simulates routing the 31 escalated problems to
+a stronger ceiling model:
+
+| Ceiling accuracy on the escalated subset | Gated accuracy | Escalation rate |
+|------------------------------------------|----------------|-----------------|
+| 0.80 | 0.918 | 31% |
+| 0.90 | **0.949** | 31% |
+| 0.95 | 0.965 | 31% |
+
+So the trajectory is **baseline 0.61 → voted 0.80 → gated ≈0.95** (ceiling 0.90) while sending
+only **31% of queries** to the expensive model — near-frontier accuracy at roughly a third of
+the frontier cost. The trust/escalate accuracies (0.97 / 0.42) and the 31% rate are *measured*;
+the gated column is a simulation linear in the ceiling parameter — a live frontier column
+(`reasoning_eval.py --ceiling`) is the one number still missing to make it fully end-to-end.
 
 **Same honesty caveat as §3a.** N=100 is a single internal sample, phi4-mini-specific, with
 no held-out set, and the 0.6 threshold is fit on these 100 problems. Treat **+0.19** as

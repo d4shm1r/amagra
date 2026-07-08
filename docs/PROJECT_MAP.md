@@ -56,7 +56,7 @@ Runtime state (`memory/*.db`, `tasks.db`, `logs/`) is generated, never committed
 | Version | v1.6.3 (desktop app + unified launcher nav) |
 | Specialist agents | 10 (`agents/registry.py` is canonical) |
 | Skill graph | 21 nodes |
-| Routing accuracy | ~99% curated · ~42% held-out adversarial (internal metrics, not validated — see [FINDINGS.md](records/FINDINGS.md) §3a) |
+| Routing accuracy | ~99% curated · held-out (n=91): ~31% keyword-only → ~53% with semantic fallback (on by default) — internal metrics, not validated (single-rater), see [FINDINGS.md](records/FINDINGS.md) §3a |
 | Memory | SQLite → auto-promote to FAISS at 800 entries · 52× LRU cache (vector count is runtime state — 97 at the 2026-07-03 snapshot) |
 | UCI health | h_UCI ≈ 90.8 (2026-07-03 snapshot; internal heuristic, not a quality measure — not surfaced publicly) |
 | API surface | 100+ endpoints (153 routes) |
