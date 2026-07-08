@@ -32,7 +32,8 @@ Then point the provider at the directory holding model.onnx + tokenizer.json:
     # tokenizer.json is looked up in that dir OR its parent.
 
 Env knobs:
-    AGENTIC_ONNX_EMBED_DIR    directory containing model.onnx  (required)
+    AGENTIC_ONNX_EMBED_DIR    directory containing model.onnx
+                              (default: ~/.cache/amagra/bge-small/onnx)
     AGENTIC_ONNX_EMBED_ID     model_id / namespace tag         (default: bge-small-en-v1.5-onnx)
     AGENTIC_ONNX_POOL         cls | mean                       (default: cls — correct for BGE)
     AGENTIC_ONNX_MAXLEN       tokenizer truncation length      (default: 512)
@@ -45,6 +46,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from providers.base import EmbeddingProvider
 
+# Conventional local cache path — matches the `huggingface-cli download ... --local-dir
+# ~/.cache/amagra/bge-small` command in this module's header. Used when neither the
+# constructor arg nor AGENTIC_ONNX_EMBED_DIR is set, so a user who followed the docs
+# gets auto-detection with no env var. Absent → _ensure_loaded raises cleanly.
+_DEFAULT_ONNX_DIR = os.path.join(
+    os.path.expanduser("~"), ".cache", "amagra", "bge-small", "onnx"
+)
+
 
 class ONNXEmbeddingProvider(EmbeddingProvider):
     """Local ONNX text-embedding provider. CPU, no network."""
@@ -56,7 +65,7 @@ class ONNXEmbeddingProvider(EmbeddingProvider):
         pooling: str | None = None,
         max_len: int | None = None,
     ):
-        self._dir     = model_dir or os.environ.get("AGENTIC_ONNX_EMBED_DIR", "")
+        self._dir     = model_dir or os.environ.get("AGENTIC_ONNX_EMBED_DIR") or _DEFAULT_ONNX_DIR
         self._id      = model_id  or os.environ.get("AGENTIC_ONNX_EMBED_ID", "bge-small-en-v1.5-onnx")
         self._pool    = (pooling  or os.environ.get("AGENTIC_ONNX_POOL", "cls")).lower()
         self._max_len = int(max_len or os.environ.get("AGENTIC_ONNX_MAXLEN", "512"))

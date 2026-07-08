@@ -80,6 +80,45 @@ def test_enabled_by_flag(monkeypatch):
     assert sf.is_enabled() is True
 
 
+# ── backend auto-selection (out-of-the-box: local ONNX first, Ollama fallback) ─
+def test_auto_prefers_onnx_when_available(monkeypatch):
+    monkeypatch.delenv("AGENTIC_EMBED_BACKEND", raising=False)
+    monkeypatch.setattr(sf, "_PROVIDER", None)
+    onnx, ollama = object(), object()
+    monkeypatch.setattr(sf, "_make_onnx", lambda: onnx)
+    monkeypatch.setattr(sf, "_make_ollama", lambda: ollama)
+    assert sf._provider() is onnx
+
+
+def test_auto_falls_back_to_ollama_when_no_onnx(monkeypatch):
+    monkeypatch.delenv("AGENTIC_EMBED_BACKEND", raising=False)
+    monkeypatch.setattr(sf, "_PROVIDER", None)
+    ollama = object()
+    monkeypatch.setattr(sf, "_make_onnx", lambda: None)   # model absent / deps missing
+    monkeypatch.setattr(sf, "_make_ollama", lambda: ollama)
+    assert sf._provider() is ollama
+
+
+def test_explicit_ollama_skips_onnx(monkeypatch):
+    monkeypatch.setenv("AGENTIC_EMBED_BACKEND", "ollama")
+    monkeypatch.setattr(sf, "_PROVIDER", None)
+    ollama = object()
+    monkeypatch.setattr(sf, "_make_onnx", lambda: (_ for _ in ()).throw(AssertionError("onnx must not be tried")))
+    monkeypatch.setattr(sf, "_make_ollama", lambda: ollama)
+    assert sf._provider() is ollama
+
+
+def test_make_onnx_returns_none_on_failure(monkeypatch):
+    # A missing model / import error must be swallowed → None, never raise.
+    import providers.onnx_embed as oe
+
+    class _Boom:
+        def __init__(self, *a, **k): pass
+        def embed(self, *a, **k): raise RuntimeError("model.onnx not found")
+    monkeypatch.setattr(oe, "ONNXEmbeddingProvider", _Boom)
+    assert sf._make_onnx() is None
+
+
 def test_empty_query_returns_none():
     assert sf.route("") is None
     assert sf.route("   ") is None
