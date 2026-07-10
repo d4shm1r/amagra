@@ -42,6 +42,9 @@ launch users hit a warning:
   the app → *Open*, or `xattr -dr com.apple.quarantine /Applications/AMAGRA.app`.
 - **Windows** — SmartScreen "Windows protected your PC." Click *More info* → *Run anyway*.
 
+See [TROUBLESHOOTING_WINDOWS.md](TROUBLESHOOTING_WINDOWS.md) for the full
+install/first-launch walkthrough and how to recover from startup failures.
+
 Removing this requires an Apple Developer ID (notarization) and an Authenticode
 cert. When those exist, add them as repo secrets and set `CSC_LINK`/`CSC_KEY_PASSWORD`
 (and `APPLE_ID`/`APPLE_APP_SPECIFIC_PASSWORD`/`APPLE_TEAM_ID` for notarization) in
