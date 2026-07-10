@@ -39,7 +39,6 @@ from typing import Callable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import tools.tool_loop as tool_loop
-import tools.workspace as ws
 
 
 # ── Task model ────────────────────────────────────────────────

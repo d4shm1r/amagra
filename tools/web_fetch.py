@@ -34,7 +34,10 @@ import socket
 from urllib.parse import urlparse
 
 import requests
-from bs4 import BeautifulSoup
+
+# bs4 is imported lazily inside _extract(): it's an optional dependency (this tool
+# is gated behind AMAGRA_WEB_FETCH=1), so importing this module — pulled in by
+# tools/catalog.py everywhere — must never hard-fail when bs4 is absent.
 
 DEFAULT_TIMEOUT = 10          # seconds
 MAX_TEXT_CHARS = 20_000       # extracted-text cap returned to the model
@@ -65,6 +68,19 @@ class BlockedURL(FetchError):
 
 def is_enabled() -> bool:
     return os.environ.get("AMAGRA_WEB_FETCH", "0") == "1"
+
+
+def _bs4_installed() -> bool:
+    try:
+        import bs4  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def available() -> bool:
+    """Catalog gate: only offer fetch_page when switched on AND parseable."""
+    return is_enabled() and _bs4_installed()
 
 
 def _allowlist() -> set[str]:
@@ -128,6 +144,10 @@ def _http_get(url: str, timeout: int):
 
 def _extract(html: str) -> tuple[str, str]:
     """Return (title, readable_text) from an HTML document."""
+    try:
+        from bs4 import BeautifulSoup
+    except ImportError as e:
+        raise FetchError("web fetch needs beautifulsoup4 (pip install beautifulsoup4)") from e
     soup = BeautifulSoup(html or "", "html.parser")
     for tag in soup(_STRIP_TAGS):
         tag.decompose()

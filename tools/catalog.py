@@ -103,7 +103,7 @@ TOOLS: dict[str, dict] = {
     "fetch_page": {
         "fn": _fetch_page, "args": ["url"],
         "desc": "Fetch a web page and return its readable text (untrusted content).",
-        "available": web_fetch.is_enabled,
+        "available": web_fetch.available,
     },
     "browser_open": {
         "fn": _browser_open, "args": ["url"],
