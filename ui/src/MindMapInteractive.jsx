@@ -18,6 +18,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { T, SEM } from "./theme";
 import { AGENTS as BASE_AGENTS } from "./constants";
 
 import { API } from "./api";
@@ -86,7 +87,7 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
 
     if (litNodeProp !== "coordinator" && VALID_IDS.has(litNodeProp)) {
       const agent = AGENTS.find(a => a.id === litNodeProp);
-      setAnimLine({ from: "coordinator", to: litNodeProp, color: agent?.color || "#15803D", conflict: false });
+      setAnimLine({ from: "coordinator", to: litNodeProp, color: agent?.color || T.success, conflict: false });
       const clearLine = setTimeout(() => setAnimLine(null), 1000);
       return () => clearTimeout(clearLine);
     }
@@ -110,7 +111,7 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
     const agent = AGENTS.find(a => a.id === agentId);
 
     setLitNode("coordinator");
-    setAnimLine({ from: "coordinator", to: agentId, color: agent?.color || "#15803D", conflict: dec.conflict });
+    setAnimLine({ from: "coordinator", to: agentId, color: agent?.color || T.success, conflict: dec.conflict });
 
     const step2 = setTimeout(() => {
       setLitNode(agentId);
@@ -193,24 +194,24 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
 
       {/* ── Header bar ── */}
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 3,
+        <div style={{ fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 99,
           background: online ? "#E7F2E6" : "#F9E7E1",
-          color:      online ? "#15803D" : "#B42318",
-          border: `1px solid ${online ? "#15803D44" : "#B4231844"}` }}>
+          color:      online ? T.success : T.error,
+          border: `1px solid ${online ? `${T.success}44` : `${T.error}44`}` }}>
           {online ? "● LIVE" : "○ OFFLINE"}
         </div>
         {updatedAt && (
-          <span style={{ fontSize: 11, color: "#9A7A60" }}>updated {updatedAt}</span>
+          <span style={{ fontSize: 11, color: T.muted }}>updated {updatedAt}</span>
         )}
-        <span style={{ fontSize: 11, color: "#9A7A60" }}>
+        <span style={{ fontSize: 11, color: T.muted }}>
           · {totalDecisions} decisions
         </span>
         {selected && (
-          <span style={{ fontSize: 11, color: "#9A6C00" }}>· replay paused</span>
+          <span style={{ fontSize: 11, color: T.accent2 }}>· replay paused</span>
         )}
         <button onClick={() => { setSelected(null); loadData(); }}
-          style={{ marginLeft: "auto", background: "transparent", border: "1px solid #E0D6C4",
-            borderRadius: 3, color: "#9A7A60", padding: "5px 12px",
+          style={{ marginLeft: "auto", background: "transparent", border: `1px solid ${T.border}`,
+            borderRadius: 99, color: T.muted, padding: "5px 12px",
             fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>
           ↻ Refresh
         </button>
@@ -222,7 +223,7 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
         <div style={{
           flex: 1, position: "relative", height: 450,
           background: "radial-gradient(ellipse at 50% 50%, #E7F2E6 0%, #F7F3EC 72%)",
-          border: "1px solid #E0D6C4", borderRadius: 14, overflow: "hidden",
+          border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden",
         }}>
 
           {/* SVG: connection lines + animated routing line */}
@@ -233,7 +234,7 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
                 <line key={a.id}
                   x1="50%" y1="50%"
                   x2={`${a.x}%`} y2={`${a.y}%`}
-                  stroke={isHighlighted ? `${a.color}55` : "#FAF7F2"}
+                  stroke={isHighlighted ? `${a.color}55` : T.surface}
                   strokeWidth={isHighlighted ? 2 : 1.5}
                   strokeDasharray="6,5"
                   style={{ transition: "stroke 0.3s, stroke-width 0.3s" }}
@@ -248,7 +249,7 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
                 <line
                   x1={`${c.x1}%`} y1={`${c.y1}%`}
                   x2={`${c.x2}%`} y2={`${c.y2}%`}
-                  stroke={animLine.conflict ? "#C2410C" : animLine.color}
+                  stroke={animLine.conflict ? SEM.clay : animLine.color}
                   strokeWidth="3"
                   strokeLinecap="round"
                   strokeDasharray="10,6"
@@ -287,7 +288,7 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
                     : isSelected
                       ? `0 0 18px ${agent.color}88`
                       : highConflict
-                        ? `0 0 16px #C2410C77`
+                        ? `0 0 16px ${SEM.clay}77`
                         : s.count > 0
                           ? `0 0 ${8 + usageFrac * 24}px ${agent.color}44`
                           : "none",
@@ -301,9 +302,9 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
                 </div>
                 {s.count > 0 && (
                   <div style={{ fontSize: 8, marginTop: 2,
-                    background: highConflict ? "#C2410C22" : `${agent.color}22`,
-                    color: highConflict ? "#C2410C" : agent.color,
-                    borderRadius: 3, padding: "1px 5px", fontWeight: 700 }}>
+                    background: highConflict ? `${SEM.clay}22` : `${agent.color}22`,
+                    color: highConflict ? SEM.clay : agent.color,
+                    borderRadius: 99, padding: "1px 5px", fontWeight: 700 }}>
                     {s.count}{highConflict ? " ⚡" : ""}
                   </div>
                 )}
@@ -314,7 +315,7 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
           {/* Replay badge */}
           {!selected && decisions.length > 0 && (
             <div style={{ position: "absolute", bottom: 10, left: 12, fontSize: 10,
-              color: "#9A7A60", background: "#F4F0E899", padding: "3px 8px", borderRadius: 4 }}>
+              color: T.muted, background: `${T.surface2}99`, padding: "3px 8px", borderRadius: 99 }}>
               ↻ replaying recent decisions
             </div>
           )}
@@ -329,16 +330,16 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
 
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                 <div style={{ width: 38, height: 38, background: `${selectedAgent.color}1a`,
-                  border: `2px solid ${selectedAgent.color}`, borderRadius: 3,
+                  border: `2px solid ${selectedAgent.color}`, borderRadius: 12,
                   display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
                   {selectedAgent.icon}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: selectedAgent.color }}>{selectedAgent.label}</div>
-                  <div style={{ fontSize: 10, color: "#9A7A60" }}>{selStats.count} decisions</div>
+                  <div style={{ fontSize: 10, color: T.muted }}>{selStats.count} decisions</div>
                 </div>
                 <button onClick={() => setSelected(null)}
-                  style={{ background: "transparent", border: "none", color: "#9A7A60",
+                  style={{ background: "transparent", border: "none", color: T.muted,
                     cursor: "pointer", fontSize: 16, padding: "2px 4px", lineHeight: 1 }}>✕</button>
               </div>
 
@@ -354,12 +355,12 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
                   { label: "Conf",
                     value: selHealth?.confidence != null ? `${Math.round(selHealth.confidence * 100)}%` : "—" },
                 ].map(({ label, value, warn }) => (
-                  <div key={label} style={{ background: "#F4F0E8", borderRadius: 3, padding: "8px 10px",
-                    border: warn ? "1px solid #C2410C33" : "1px solid #E0D6C4" }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: warn ? "#C2410C" : selectedAgent.color }}>
+                  <div key={label} style={{ background: T.surface2, borderRadius: 10, padding: "8px 10px",
+                    border: warn ? `1px solid ${SEM.clay}33` : `1px solid ${T.border}` }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: warn ? SEM.clay : selectedAgent.color }}>
                       {value}
                     </div>
-                    <div style={{ fontSize: 10, color: "#9A7A60", marginTop: 1 }}>{label}</div>
+                    <div style={{ fontSize: 10, color: T.muted, marginTop: 1 }}>{label}</div>
                   </div>
                 ))}
               </div>
@@ -368,16 +369,16 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
               {selStats.count > 0 && (
                 <div style={{ marginBottom: 12 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 10, color: "#9A7A60" }}>Conflict rate</span>
-                    <span style={{ fontSize: 10, color: "#9A7A60" }}>
+                    <span style={{ fontSize: 10, color: T.muted }}>Conflict rate</span>
+                    <span style={{ fontSize: 10, color: T.muted }}>
                       {Math.round(selStats.conflicts / selStats.count * 100)}%
                     </span>
                   </div>
-                  <div style={{ height: 4, background: "#E0D6C4", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ height: 4, background: T.border, borderRadius: 2, overflow: "hidden" }}>
                     <div style={{ height: "100%", borderRadius: 2, transition: "width 0.4s",
                       width: `${(selStats.conflicts / selStats.count) * 100}%`,
                       background: selStats.conflicts / selStats.count > 0.40
-                        ? "linear-gradient(90deg,#C2410C,#B42318)"
+                        ? `linear-gradient(90deg,${SEM.clay},${T.error})`
                         : selectedAgent.color }} />
                   </div>
                 </div>
@@ -387,12 +388,12 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
               {totalDecisions > 0 && (
                 <div style={{ marginBottom: 12 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 10, color: "#9A7A60" }}>Usage share</span>
-                    <span style={{ fontSize: 10, color: "#9A7A60" }}>
+                    <span style={{ fontSize: 10, color: T.muted }}>Usage share</span>
+                    <span style={{ fontSize: 10, color: T.muted }}>
                       {Math.round(selStats.count / totalDecisions * 100)}%
                     </span>
                   </div>
-                  <div style={{ height: 4, background: "#E0D6C4", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ height: 4, background: T.border, borderRadius: 2, overflow: "hidden" }}>
                     <div style={{ height: "100%", borderRadius: 2, transition: "width 0.4s",
                       width: `${(selStats.count / totalDecisions) * 100}%`,
                       background: selectedAgent.color }} />
@@ -403,12 +404,12 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
               {/* Recent queries */}
               {selStats.queries.length > 0 && (
                 <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: "#9A7A60",
+                  <div style={{ fontSize: 9, fontWeight: 700, color: T.muted,
                     letterSpacing: "0.1em", marginBottom: 5 }}>RECENT QUERIES</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {selStats.queries.map((q, i) => (
-                      <div key={i} style={{ fontSize: 11, color: "#2E2010", background: "#F4F0E8",
-                        borderRadius: 3, padding: "5px 8px", lineHeight: 1.4,
+                      <div key={i} style={{ fontSize: 11, color: T.text, background: T.surface2,
+                        borderRadius: 8, padding: "5px 8px", lineHeight: 1.4,
                         border: `1px solid ${selectedAgent.color}18` }}>
                         "{q.slice(0, 48)}{q.length > 48 ? "…" : ""}"
                       </div>
@@ -420,7 +421,7 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
               {selected.id !== "coordinator" && (
                 <button onClick={() => { onForceAgent?.(selected.id); setSelected(null); }}
                   style={{ width: "100%", background: selectedAgent.color, border: "none",
-                    borderRadius: 4, color: "#F4F0E8", padding: "9px 0",
+                    borderRadius: 99, color: T.surface2, padding: "9px 0",
                     fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
                     marginTop: "auto" }}>
                   💬 Chat with this agent
@@ -430,13 +431,13 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
 
           ) : (
             /* Recent decisions feed */
-            <div style={{ background: "#FAF7F2", border: "1px solid #E0D6C4",
-              borderRadius: 3, padding: 12, flex: 1, display: "flex", flexDirection: "column" }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: "#9A7A60",
+            <div style={{ background: T.surface, border: `1px solid ${T.border}`,
+              borderRadius: 12, padding: 12, flex: 1, display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: T.muted,
                 letterSpacing: "0.1em", marginBottom: 8 }}>RECENT DECISIONS</div>
               <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 5 }}>
                 {recentFeed.length === 0 ? (
-                  <div style={{ fontSize: 12, color: "#9A7A60", textAlign: "center", paddingTop: 24 }}>
+                  <div style={{ fontSize: 12, color: T.muted, textAlign: "center", paddingTop: 24 }}>
                     No decisions yet
                   </div>
                 ) : recentFeed.map((d, i) => {
@@ -444,21 +445,21 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
                   return (
                     <div key={i}
                       onClick={() => { const a = AGENTS.find(x => x.id === d.final_agent); if (a) handleNodeClick(a); }}
-                      style={{ padding: "6px 8px", background: "#F4F0E8",
-                        border: `1px solid ${d.conflict ? "#C2410C22" : (agent?.color || "#9A7A60") + "22"}`,
-                        borderRadius: 3, cursor: "pointer", transition: "border-color 0.18s" }}
-                      onMouseEnter={e => e.currentTarget.style.borderColor = (agent?.color || "#9A7A60") + "55"}
-                      onMouseLeave={e => e.currentTarget.style.borderColor = d.conflict ? "#C2410C22" : (agent?.color || "#9A7A60") + "22"}>
+                      style={{ padding: "6px 8px", background: T.surface2,
+                        border: `1px solid ${d.conflict ? `${SEM.clay}22` : (agent?.color || T.muted) + "22"}`,
+                        borderRadius: 8, cursor: "pointer", transition: "border-color 0.18s" }}
+                      onMouseEnter={e => e.currentTarget.style.borderColor = (agent?.color || T.muted) + "55"}
+                      onMouseLeave={e => e.currentTarget.style.borderColor = d.conflict ? `${SEM.clay}22` : (agent?.color || T.muted) + "22"}>
                       <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
                         <span style={{ fontSize: 12 }}>{agent?.icon || "?"}</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: agent?.color || "#9A7A60" }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: agent?.color || T.muted }}>
                           {(d.final_agent || "").replace(/_/g, " ")}
                         </span>
                         {d.conflict
-                          ? <span style={{ fontSize: 9, color: "#C2410C", marginLeft: "auto" }}>⚡ conflict</span>
-                          : <span style={{ fontSize: 9, color: "#9A7A60", marginLeft: "auto" }}>{d.action}</span>}
+                          ? <span style={{ fontSize: 9, color: SEM.clay, marginLeft: "auto" }}>⚡ conflict</span>
+                          : <span style={{ fontSize: 9, color: T.muted, marginLeft: "auto" }}>{d.action}</span>}
                       </div>
-                      <div style={{ fontSize: 10, color: "#9A7A60", overflow: "hidden",
+                      <div style={{ fontSize: 10, color: T.muted, overflow: "hidden",
                         textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.3 }}>
                         {(d.task || "—").slice(0, 44)}{(d.task || "").length > 44 ? "…" : ""}
                       </div>
@@ -468,8 +469,8 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
               </div>
 
               {/* Agent legend */}
-              <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #E0D6C4" }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: "#9A7A60",
+              <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.border}` }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: T.muted,
                   letterSpacing: "0.1em", marginBottom: 6 }}>AGENT USAGE</div>
                 {AGENTS.filter(a => !a.center && agentStats[a.id].count > 0)
                   .sort((a, b) => agentStats[b.id].count - agentStats[a.id].count)
@@ -481,10 +482,10 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
                         style={{ display: "flex", alignItems: "center", gap: 6,
                           marginBottom: 4, cursor: "pointer" }}>
                         <span style={{ fontSize: 12, flexShrink: 0 }}>{a.icon}</span>
-                        <div style={{ flex: 1, height: 3, background: "#E0D6C4", borderRadius: 2, overflow: "hidden" }}>
+                        <div style={{ flex: 1, height: 3, background: T.border, borderRadius: 2, overflow: "hidden" }}>
                           <div style={{ height: "100%", width: `${pct * 100}%`, background: a.color, borderRadius: 2 }} />
                         </div>
-                        <span style={{ fontSize: 10, color: "#9A7A60", minWidth: 22, textAlign: "right" }}>
+                        <span style={{ fontSize: 10, color: T.muted, minWidth: 22, textAlign: "right" }}>
                           {s.count}
                         </span>
                       </div>

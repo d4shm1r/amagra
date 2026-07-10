@@ -104,22 +104,20 @@
   }
   </script>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Cormorant+Garamond:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-    rel="stylesheet"
-  />
+  <!-- Self-hosted brand fonts + the shared Gilded Calm palette (tokens.css is
+       the single palette source for landing, FAQ, and the app). -->
+  <link rel="stylesheet" href="/fonts.css" />
+  <link rel="stylesheet" href="/tokens.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Local aliases — mapped onto the shared tokens, never standalone hex.
+       (This page had drifted onto its own off-system palette.) */
     :root {
-      --bg:    #FAF7F2;
-      --panel: #FEFCFA;
-      --ink:   #2A2114;
-      --muted: #6B5D45;
-      --line:  #E3DACB;
-      --g3:    #C48808;
-      --g4:    #9A6C00;
+      --bg:    var(--l2);
+      --panel: var(--l4);
+      --ink:   var(--t1);
+      --muted: var(--text-muted);
+      --line:  var(--border);
     }
     html { scroll-behavior: smooth; }
     body {

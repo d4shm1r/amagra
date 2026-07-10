@@ -1,34 +1,33 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { T as C } from "./theme";
+import { T, SEM } from "./theme";
 import { PageHeader } from "./ObsShared";
+import { AGENTS } from "./constants";
 
 import { API } from "./api";
 
-const AGENT_META = {
-  coordinator:        { label: "Coordinator",  icon: "👑", color: "#9A6C00" },
-  it_networking:      { label: "Networking",   icon: "🌐", color: "#15803D" },
-  python_dev:         { label: "Python Dev",   icon: "🐍", color: "#C48808" },
-  dotnet_dev:         { label: ".NET / Blazor", icon: "⚡", color: "#7C3AED" },
-  ai_ml:              { label: "AI & ML",      icon: "🤖", color: "#BE185D" },
-  knowledge_learning: { label: "Knowledge",    icon: "📚", color: "#1E5A8A" },
-  terse:              { label: "Terse",        icon: "🎯", color: "#9A6C00" },
-};
+// One source of truth for agent identity — constants.js AGENTS (unicode
+// symbols + palette colors, never emoji). A local emoji copy had drifted.
+const AGENT_META = Object.fromEntries(
+  AGENTS.map(a => [a.id, { label: a.label, icon: a.icon, color: a.color }])
+);
+const metaFor = (name) =>
+  AGENT_META[name] || { label: name || "?", icon: "◈", color: T.muted };
 
 function Badge({ label, color }) {
   return (
     <span style={{ background: `${color}22`, border: `1px solid ${color}55`,
-      color, borderRadius: 4, padding: "2px 8px", fontSize: 10, fontWeight: 700,
+      color, borderRadius: 99, padding: "2px 9px", fontSize: 10, fontWeight: 700,
       fontFamily: "monospace", whiteSpace: "nowrap" }}>
       {label}
     </span>
   );
 }
 
-function Bar({ value, max = 1, color = C.success, width = 160, height = 10 }) {
+function Bar({ value, max = 1, color = T.success, width = 160, height = 10 }) {
   const pct = Math.min(1, Math.max(0, value / max));
   return (
     <svg width={width} height={height} style={{ display: "block" }}>
-      <rect x={0} y={0} width={width} height={height} fill="#E0D6C4" rx={3} />
+      <rect x={0} y={0} width={width} height={height} fill={T.border} rx={3} />
       <rect x={0} y={0} width={width * pct} height={height} fill={color} rx={3} />
     </svg>
   );
@@ -40,7 +39,7 @@ function CoherenceChart({ data }) {
 
   if (!data || data.length < 2) {
     return (
-      <div style={{ color: C.muted, textAlign: "center", padding: 30, fontSize: 12 }}>
+      <div style={{ color: T.muted, textAlign: "center", padding: 30, fontSize: 12 }}>
         Collecting data — need 2+ decision windows
       </div>
     );
@@ -66,38 +65,38 @@ function CoherenceChart({ data }) {
         onMouseLeave={() => setTip(null)}>
         {ticks.map(t => (
           <g key={t}>
-            <line x1={PX} y1={ys(t)} x2={W - PX} y2={ys(t)} stroke={C.border} strokeDasharray="3,3" />
-            <text x={PX - 5} y={ys(t) + 4} fill={C.muted} fontSize={9} textAnchor="end">{t.toFixed(2)}</text>
+            <line x1={PX} y1={ys(t)} x2={W - PX} y2={ys(t)} stroke={T.border} strokeDasharray="3,3" />
+            <text x={PX - 5} y={ys(t) + 4} fill={T.muted} fontSize={9} textAnchor="end">{t.toFixed(2)}</text>
           </g>
         ))}
-        {line("c_routing", C.accent)}
-        {line("c_quality", "#7E3F8F")}
-        {line("C", C.success)}
+        {line("c_routing", T.accent)}
+        {line("c_quality", SEM.purple)}
+        {line("C", T.success)}
         {data.map((d, i) => (
-          <circle key={i} cx={xs(i)} cy={ys(d.C ?? 0)} r={3} fill={C.success} opacity={0.85}
+          <circle key={i} cx={xs(i)} cy={ys(d.C ?? 0)} r={3} fill={T.success} opacity={0.85}
             style={{ cursor: "crosshair" }}
             onMouseEnter={() => setTip({ x: xs(i), y: ys(d.C ?? 0), d, i })} />
         ))}
         {xTicks.map(d => (
           <text key={d.window_idx} x={xs(d.window_idx)} y={H - 4}
-            fill={C.muted} fontSize={8} textAnchor="middle">w{d.window_idx}</text>
+            fill={T.muted} fontSize={8} textAnchor="middle">w{d.window_idx}</text>
         ))}
-        <line x1={PX} y1={PY} x2={PX} y2={H - PY} stroke={C.border} />
-        <line x1={PX} y1={H - PY} x2={W - PX} y2={H - PY} stroke={C.border} />
-        {[["C(t)", C.success], ["C_routing", C.accent], ["C_quality", "#7E3F8F"]].map(([lbl, col], li) => (
+        <line x1={PX} y1={PY} x2={PX} y2={H - PY} stroke={T.border} />
+        <line x1={PX} y1={H - PY} x2={W - PX} y2={H - PY} stroke={T.border} />
+        {[["C(t)", T.success], ["C_routing", T.accent], ["C_quality", SEM.purple]].map(([lbl, col], li) => (
           <g key={lbl} transform={`translate(${PX + li * 140}, ${PY - 8})`}>
             <line x1={0} y1={0} x2={16} y2={0} stroke={col} strokeWidth={1.8} />
-            <text x={20} y={4} fill={C.muted} fontSize={9}>{lbl}</text>
+            <text x={20} y={4} fill={T.muted} fontSize={9}>{lbl}</text>
           </g>
         ))}
         {tip && (
           <g>
             <line x1={tip.x} y1={PY} x2={tip.x} y2={H - PY} stroke="#1F140822" strokeDasharray="2,2" />
-            <rect x={tip.x + 6} y={tip.y - 28} width={98} height={32} rx={3} fill="#FAF7F2" stroke={C.border} />
-            <text x={tip.x + 10} y={tip.y - 15} fill={C.success} fontSize={9} fontFamily="monospace">
+            <rect x={tip.x + 6} y={tip.y - 28} width={98} height={32} rx={3} fill={T.surface} stroke={T.border} />
+            <text x={tip.x + 10} y={tip.y - 15} fill={T.success} fontSize={9} fontFamily="monospace">
               C={tip.d.C?.toFixed(4)}
             </text>
-            <text x={tip.x + 10} y={tip.y - 4} fill={C.muted} fontSize={8} fontFamily="monospace">
+            <text x={tip.x + 10} y={tip.y - 4} fill={T.muted} fontSize={8} fontFamily="monospace">
               w{tip.i} · cr={tip.d.c_routing?.toFixed(2)} cq={tip.d.c_quality?.toFixed(2)}
             </text>
           </g>
@@ -110,23 +109,23 @@ function CoherenceChart({ data }) {
 // ── Routing accuracy milestones ───────────────────────────────
 function AccuracyMilestones() {
   const milestones = [
-    { label: "Action-first baseline (50-prompt)",        pct: 70, color: C.error,   note: "15 misroutes — structural" },
-    { label: "Signal-first routing (50-prompt)",         pct: 92, color: C.warn,    note: "4 misroutes — boundary" },
-    { label: "Signal + brain + LLM (100-prompt)",        pct: 97, color: C.success, note: "Full pipeline" },
-    { label: "QuerySignal only — ablation (100-prompt)", pct: 99, color: C.accent,  note: "<2s, no LLM calls" },
+    { label: "Action-first baseline (50-prompt)",        pct: 70, color: T.error,   note: "15 misroutes — structural" },
+    { label: "Signal-first routing (50-prompt)",         pct: 92, color: T.warn,    note: "4 misroutes — boundary" },
+    { label: "Signal + brain + LLM (100-prompt)",        pct: 97, color: T.success, note: "Full pipeline" },
+    { label: "QuerySignal only — ablation (100-prompt)", pct: 99, color: T.accent,  note: "<2s, no LLM calls" },
   ];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {milestones.map(m => (
         <div key={m.label}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-            <span style={{ fontSize: 12, color: "#2E2010" }}>{m.label}</span>
+            <span style={{ fontSize: 12, color: T.text }}>{m.label}</span>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <span style={{ fontSize: 11, color: C.muted }}>{m.note}</span>
+              <span style={{ fontSize: 11, color: T.muted }}>{m.note}</span>
               <span style={{ fontFamily: "monospace", fontWeight: 700, color: m.color, fontSize: 13 }}>{m.pct}%</span>
             </div>
           </div>
-          <div style={{ width: "100%", height: 10, background: "#E0D6C4", borderRadius: 3, overflow: "hidden" }}>
+          <div style={{ width: "100%", height: 10, background: T.border, borderRadius: 3, overflow: "hidden" }}>
             <div style={{ width: `${m.pct}%`, height: "100%", background: m.color, borderRadius: 3 }} />
           </div>
         </div>
@@ -172,40 +171,41 @@ function DriftHealth({ drift }) {
 
   return (
     <div style={{ background: drift.healthy ? "#E7F2E6" : "#F9E7E1",
-      border: `1px solid ${drift.healthy ? "#15803D33" : "#B4231833"}`,
-      borderRadius: 4, padding: "14px 18px" }}>
+      border: `1px solid ${drift.healthy ? `${T.success}33` : `${T.error}33`}`,
+      borderRadius: 14, padding: "14px 18px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
         <div style={{ width: 8, height: 8, borderRadius: "50%",
-          background: drift.healthy ? C.success : C.error }} />
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#2E2010" }}>
+          background: drift.healthy ? T.success : T.error }} />
+        <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>
           System Drift Health
         </div>
         <Badge label={drift.healthy ? "ALL CLEAR" : `${drift.flags?.length || 0} FLAG${drift.flags?.length !== 1 ? "S" : ""}`}
-          color={drift.healthy ? C.success : C.error} />
+          color={drift.healthy ? T.success : T.error} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
         {detectors.map(d => (
-          <div key={d.key} style={{ background: d.hit ? "#B4231810" : "#F4F0E8",
-            border: `1px solid ${d.hit ? "#B4231844" : "#E0D6C4"}`, borderRadius: 4,
+          <div key={d.key} style={{ background: d.hit ? `${T.error}10` : T.surface2,
+            border: `1px solid ${d.hit ? `${T.error}44` : T.border}`, borderRadius: 10,
             padding: "12px 14px" }}>
             <div style={{ display: "flex", align: "center", gap: 6, marginBottom: 6 }}>
-              <span style={{ fontSize: 12, lineHeight: 1 }}>{d.hit ? "🔴" : "🟢"}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: d.hit ? C.error : "#2E2010" }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                background: d.hit ? T.error : T.success, display: "inline-block" }} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: d.hit ? T.error : T.text }}>
                 {d.label}
               </span>
             </div>
             <div style={{ fontFamily: "monospace", fontSize: 20, fontWeight: 700,
-              color: d.hit ? C.error : C.success, marginBottom: 4 }}>{d.value}</div>
-            <div style={{ fontSize: 10, color: C.muted }}>{d.unit}</div>
-            <div style={{ fontSize: 10, color: C.muted, marginTop: 4, lineHeight: 1.4 }}>{d.desc}</div>
+              color: d.hit ? T.error : T.success, marginBottom: 4 }}>{d.value}</div>
+            <div style={{ fontSize: 10, color: T.muted }}>{d.unit}</div>
+            <div style={{ fontSize: 10, color: T.muted, marginTop: 4, lineHeight: 1.4 }}>{d.desc}</div>
           </div>
         ))}
       </div>
       {drift.flags?.length > 0 && (
         <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 4 }}>
           {drift.flags.map((f, i) => (
-            <div key={i} style={{ fontSize: 11, color: C.error, background: "#B4231810",
-              border: "1px solid #B4231822", borderRadius: 3, padding: "5px 10px" }}>
+            <div key={i} style={{ fontSize: 11, color: T.error, background: `${T.error}10`,
+              border: `1px solid ${T.error}22`, borderRadius: 3, padding: "5px 10px" }}>
               {f.detail}
             </div>
           ))}
@@ -218,14 +218,14 @@ function DriftHealth({ drift }) {
 // ── Agent specialization table ────────────────────────────────
 function SpecializationTable({ spec }) {
   if (!spec || Object.keys(spec).length === 0) return (
-    <div style={{ color: C.muted, fontSize: 12 }}>No specialization data available.</div>
+    <div style={{ color: T.muted, fontSize: 12 }}>No specialization data available.</div>
   );
 
   const VERDICT_COLOR = {
-    core:       C.success,
-    narrow:     C.accent,
-    struggling: C.error,
-    redundant:  C.warn,
+    core:       T.success,
+    narrow:     T.accent,
+    struggling: T.error,
+    redundant:  T.warn,
   };
 
   const rows = Object.entries(spec)
@@ -236,25 +236,25 @@ function SpecializationTable({ spec }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
       <div style={{ display: "grid",
         gridTemplateColumns: "160px 80px 80px 80px 80px 80px 1fr",
-        gap: 8, padding: "6px 10px", fontSize: 10, color: C.muted, fontWeight: 700,
-        fontFamily: "monospace", borderBottom: `1px solid ${C.border}` }}>
+        gap: 8, padding: "6px 10px", fontSize: 10, color: T.muted, fontWeight: 700,
+        fontFamily: "monospace", borderBottom: `1px solid ${T.border}` }}>
         {["AGENT","VERDICT","DECISIONS","CONFLICT","REGRET","QUALITY","DOMAINS"].map(h => (
           <span key={h}>{h}</span>
         ))}
       </div>
       {rows.map((r, i) => {
         const verdict  = r.verdict || "narrow";
-        const vcol     = VERDICT_COLOR[verdict] || C.muted;
+        const vcol     = VERDICT_COLOR[verdict] || T.muted;
         const conflict = r.conflict_rate ?? 0;
         const regret   = r.avg_regret ?? 0;
         const quality  = r.avg_quality_proxy ?? 0;
-        const meta     = AGENT_META[r.agent] || { label: r.agent, icon: "🤖", color: "#9A7A60" };
+        const meta     = metaFor(r.agent);
         const domains  = Object.keys(r.domains || {}).slice(0, 3).join(", ");
         return (
           <div key={r.agent} style={{ display: "grid",
             gridTemplateColumns: "160px 80px 80px 80px 80px 80px 1fr",
             gap: 8, padding: "8px 10px", alignItems: "center",
-            background: i % 2 === 0 ? "#F4F0E866" : "transparent",
+            background: i % 2 === 0 ? `${T.surface2}66` : "transparent",
             borderRadius: 3 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: meta.color }}>
               {meta.icon} {meta.label}
@@ -264,22 +264,22 @@ function SpecializationTable({ spec }) {
               fontFamily: "monospace", fontWeight: 700 }}>
               {verdict}
             </span>
-            <span style={{ fontFamily: "monospace", fontSize: 12, color: "#2E2010" }}>
+            <span style={{ fontFamily: "monospace", fontSize: 12, color: T.text }}>
               {r.decisions || 0}
             </span>
             <span style={{ fontFamily: "monospace", fontSize: 11,
-              color: conflict > 0.4 ? C.error : conflict > 0.2 ? C.warn : C.success }}>
+              color: conflict > 0.4 ? T.error : conflict > 0.2 ? T.warn : T.success }}>
               {Math.round(conflict * 100)}%
             </span>
             <span style={{ fontFamily: "monospace", fontSize: 11,
-              color: regret > 0.15 ? C.error : regret > 0.08 ? C.warn : C.muted }}>
+              color: regret > 0.15 ? T.error : regret > 0.08 ? T.warn : T.muted }}>
               {regret.toFixed(3)}
             </span>
             <span style={{ fontFamily: "monospace", fontSize: 11,
-              color: quality >= 0.82 ? C.success : quality >= 0.68 ? C.warn : C.error }}>
+              color: quality >= 0.82 ? T.success : quality >= 0.68 ? T.warn : T.error }}>
               {quality.toFixed(3)}
             </span>
-            <span style={{ fontSize: 10, color: C.muted, overflow: "hidden",
+            <span style={{ fontSize: 10, color: T.muted, overflow: "hidden",
               textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {domains || "–"}
             </span>
@@ -295,29 +295,29 @@ function ContradictionsFeed({ items }) {
   const [expanded, setExp] = useState(null);
 
   if (!items || items.length === 0) return (
-    <div style={{ color: C.muted, fontSize: 12 }}>No contradiction events recorded.</div>
+    <div style={{ color: T.muted, fontSize: 12 }}>No contradiction events recorded.</div>
   );
 
-  const LEVEL_COLOR = { low: C.warn, medium: C.warn, high: C.error };
+  const LEVEL_COLOR = { low: T.warn, medium: T.warn, high: T.error };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>
+      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4 }}>
         Queries where the agent self-corrected — reflect_level indicates correction intensity.
       </div>
       {items.slice(0, 12).map(ev => {
         const isOpen = expanded === ev.id;
-        const meta   = AGENT_META[ev.agent] || { label: ev.agent, icon: "🤖", color: "#9A7A60" };
+        const meta   = metaFor(ev.agent);
         const lv     = ev.reflect_level || "low";
-        const lcol   = LEVEL_COLOR[lv] || C.muted;
+        const lcol   = LEVEL_COLOR[lv] || T.muted;
         return (
           <div key={ev.id}
             onClick={() => setExp(isOpen ? null : ev.id)}
-            style={{ background: "#FAF7F2", border: `1px solid ${isOpen ? lcol + "44" : C.border}`,
+            style={{ background: T.surface, border: `1px solid ${isOpen ? lcol + "44" : T.border}`,
               borderRadius: 4, padding: "8px 12px", cursor: "pointer",
               transition: "border-color 0.15s" }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <span style={{ fontSize: 10, color: C.muted, fontFamily: "monospace", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: 10, color: T.muted, fontFamily: "monospace", whiteSpace: "nowrap" }}>
                 {ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString() : "–"}
               </span>
               <span style={{ background: `${meta.color}22`, color: meta.color,
@@ -328,15 +328,15 @@ function ContradictionsFeed({ items }) {
                 borderRadius: 3, padding: "1px 6px", fontSize: 10, fontFamily: "monospace" }}>
                 {lv}
               </span>
-              <span style={{ flex: 1, fontSize: 12, color: "#2E2010", overflow: "hidden",
+              <span style={{ flex: 1, fontSize: 12, color: T.text, overflow: "hidden",
                 textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {(ev.query || "").slice(0, 80)}
               </span>
-              <span style={{ fontSize: 10, color: C.muted }}>{isOpen ? "▲" : "▼"}</span>
+              <span style={{ fontSize: 10, color: T.muted }}>{isOpen ? "▲" : "▼"}</span>
             </div>
             {isOpen && ev.response_snip && (
-              <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}`,
-                fontSize: 11, color: "#2E2010CC", lineHeight: 1.5,
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${T.border}`,
+                fontSize: 11, color: `${T.text}CC`, lineHeight: 1.5,
                 fontFamily: "Charter, 'Source Serif Pro', Georgia, serif" }}>
                 {ev.response_snip}
               </div>
@@ -354,7 +354,7 @@ function DecisionsTable({ decisions }) {
   const PAGE = 8;
 
   if (!decisions || decisions.length === 0) return (
-    <div style={{ color: C.muted, fontSize: 12 }}>No decisions recorded yet.</div>
+    <div style={{ color: T.muted, fontSize: 12 }}>No decisions recorded yet.</div>
   );
 
   const pageData = decisions.slice(page * PAGE, (page + 1) * PAGE);
@@ -365,45 +365,45 @@ function DecisionsTable({ decisions }) {
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
           <thead>
-            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+            <tr style={{ borderBottom: `1px solid ${T.border}` }}>
               {["#", "Task", "Agent", "Action", "Conflict", "Regret", "Time"].map(h => (
                 <th key={h} style={{ padding: "5px 8px", textAlign: "left",
-                  fontFamily: "monospace", fontSize: 10, color: C.muted, fontWeight: 700 }}>{h}</th>
+                  fontFamily: "monospace", fontSize: 10, color: T.muted, fontWeight: 700 }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {pageData.map((d, i) => {
-              const meta    = AGENT_META[d.final_agent] || { label: d.final_agent || "?", icon: "🤖", color: "#9A7A60" };
+              const meta    = metaFor(d.final_agent);
               const regret  = parseFloat(d.regret || 0);
               const conflict = d.has_conflict;
               const ts = d.timestamp ? new Date(d.timestamp).toLocaleTimeString() : "–";
               return (
-                <tr key={d.id || i} style={{ borderBottom: `1px solid #E0D6C422`,
-                  background: i % 2 === 0 ? "#F4F0E844" : "transparent" }}>
-                  <td style={{ padding: "6px 8px", fontFamily: "monospace", color: C.muted }}>
+                <tr key={d.id || i} style={{ borderBottom: `1px solid ${T.border}22`,
+                  background: i % 2 === 0 ? `${T.surface2}44` : "transparent" }}>
+                  <td style={{ padding: "6px 8px", fontFamily: "monospace", color: T.muted }}>
                     {d.id || "–"}
                   </td>
-                  <td style={{ padding: "6px 8px", color: "#2E2010", maxWidth: 220,
+                  <td style={{ padding: "6px 8px", color: T.text, maxWidth: 220,
                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {(d.task || "").slice(0, 60)}
                   </td>
                   <td style={{ padding: "6px 8px" }}>
                     <span style={{ color: meta.color, fontSize: 11 }}>{meta.icon} {meta.label}</span>
                   </td>
-                  <td style={{ padding: "6px 8px", fontFamily: "monospace", color: "#7E3F8F", fontSize: 10 }}>
+                  <td style={{ padding: "6px 8px", fontFamily: "monospace", color: SEM.purple, fontSize: 10 }}>
                     {d.action || "–"}
                   </td>
                   <td style={{ padding: "6px 8px", textAlign: "center" }}>
                     {conflict
-                      ? <span style={{ color: C.error, fontSize: 12 }}>✕</span>
-                      : <span style={{ color: C.success, fontSize: 12 }}>✓</span>}
+                      ? <span style={{ color: T.error, fontSize: 12 }}>✕</span>
+                      : <span style={{ color: T.success, fontSize: 12 }}>✓</span>}
                   </td>
                   <td style={{ padding: "6px 8px", fontFamily: "monospace",
-                    color: regret > 0.2 ? C.error : regret > 0.08 ? C.warn : C.muted }}>
+                    color: regret > 0.2 ? T.error : regret > 0.08 ? T.warn : T.muted }}>
                     {regret.toFixed(3)}
                   </td>
-                  <td style={{ padding: "6px 8px", fontFamily: "monospace", color: C.muted, fontSize: 10 }}>
+                  <td style={{ padding: "6px 8px", fontFamily: "monospace", color: T.muted, fontSize: 10 }}>
                     {ts}
                   </td>
                 </tr>
@@ -415,16 +415,16 @@ function DecisionsTable({ decisions }) {
       {pages > 1 && (
         <div style={{ display: "flex", gap: 4, marginTop: 8, alignItems: "center" }}>
           <button disabled={page === 0} onClick={() => setPage(p => p - 1)}
-            style={{ background: "#FAF7F2", border: `1px solid ${C.border}`, color: page === 0 ? C.muted : "#2E2010",
-              borderRadius: 3, padding: "4px 10px", fontSize: 11, cursor: page === 0 ? "default" : "pointer",
+            style={{ background: T.surface, border: `1px solid ${T.border}`, color: page === 0 ? T.muted : T.text,
+              borderRadius: 99, padding: "4px 12px", fontSize: 11, cursor: page === 0 ? "default" : "pointer",
               fontFamily: "inherit" }}>‹</button>
-          <span style={{ fontSize: 11, color: C.muted }}>page {page + 1} of {pages}</span>
+          <span style={{ fontSize: 11, color: T.muted }}>page {page + 1} of {pages}</span>
           <button disabled={page === pages - 1} onClick={() => setPage(p => p + 1)}
-            style={{ background: "#FAF7F2", border: `1px solid ${C.border}`,
-              color: page === pages - 1 ? C.muted : "#2E2010",
-              borderRadius: 3, padding: "4px 10px", fontSize: 11,
+            style={{ background: T.surface, border: `1px solid ${T.border}`,
+              color: page === pages - 1 ? T.muted : T.text,
+              borderRadius: 99, padding: "4px 12px", fontSize: 11,
               cursor: page === pages - 1 ? "default" : "pointer", fontFamily: "inherit" }}>›</button>
-          <span style={{ fontSize: 10, color: C.muted, marginLeft: 4 }}>{decisions.length} total</span>
+          <span style={{ fontSize: 10, color: T.muted, marginLeft: 4 }}>{decisions.length} total</span>
         </div>
       )}
     </div>
@@ -452,18 +452,18 @@ function RefreshTimer({ onRefresh, interval = 30 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <svg width={20} height={20} style={{ flexShrink: 0 }}>
-        <circle cx={10} cy={10} r={8} fill="none" stroke="#E0D6C4" strokeWidth={2} />
-        <circle cx={10} cy={10} r={8} fill="none" stroke={C.success} strokeWidth={2}
+        <circle cx={10} cy={10} r={8} fill="none" stroke={T.border} strokeWidth={2} />
+        <circle cx={10} cy={10} r={8} fill="none" stroke={T.success} strokeWidth={2}
           strokeDasharray={`${2 * Math.PI * 8}`}
           strokeDashoffset={`${2 * Math.PI * 8 * (1 - pct / 100)}`}
           transform="rotate(-90 10 10)" strokeLinecap="round" />
       </svg>
-      <span style={{ fontSize: 11, color: C.muted }}>
+      <span style={{ fontSize: 11, color: T.muted }}>
         refresh in {secs}s
       </span>
       <button onClick={() => { onRefresh(); setSecs(interval); }}
-        style={{ background: "#15803D22", border: `1px solid #15803D66`, color: C.success,
-          padding: "4px 12px", borderRadius: 3, fontSize: 11, fontWeight: 700,
+        style={{ background: `${T.success}22`, border: `1px solid ${T.success}66`, color: T.success,
+          padding: "4px 14px", borderRadius: 99, fontSize: 11, fontWeight: 700,
           cursor: "pointer", fontFamily: "inherit" }}>
         ↺ Now
       </button>
@@ -525,11 +525,11 @@ export default function TimelineTab() {
 
   useEffect(() => { load(); }, [load]);
 
-  if (loading) return <div style={{ color: C.muted, padding: 40, textAlign: "center" }}>Loading timeline data…</div>;
-  if (err)     return <div style={{ color: C.error, padding: 20, fontFamily: "monospace" }}>{err}</div>;
+  if (loading) return <div style={{ color: T.muted, padding: 40, textAlign: "center" }}>Loading timeline data…</div>;
+  if (err)     return <div style={{ color: T.error, padding: 20, fontFamily: "monospace" }}>{err}</div>;
 
   const C_val    = cohState?.C ?? 0;
-  const cohColor = C_val >= 0.82 ? C.success : C_val >= 0.70 ? C.warn : C.error;
+  const cohColor = C_val >= 0.82 ? T.success : C_val >= 0.70 ? T.warn : T.error;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20, animation: "fadeIn .2s" }}>
@@ -549,107 +549,106 @@ export default function TimelineTab() {
             sub: `routing ${cohState?.c_routing?.toFixed(2) ?? "–"} · calib ${cohState?.c_calib?.toFixed(2) ?? "–"}`,
             color: cohColor },
           { label: "Decisions logged", value: cohState?.n_decisions ?? "–",
-            sub: `window of ${cohState?.window ?? 20}`, color: C.accent },
+            sub: `window of ${cohState?.window ?? 20}`, color: T.accent },
           { label: "Conflict rate",   value: `${Math.round((cohState?.conflict_rate ?? 0) * 100)}%`,
-            sub: "brain vs router", color: (cohState?.conflict_rate ?? 0) > 0.35 ? C.error : C.warn },
+            sub: "brain vs router", color: (cohState?.conflict_rate ?? 0) > 0.35 ? T.error : T.warn },
           { label: "Reflection rate", value: `${Math.round((cohState?.reflection_rate ?? 0) * 100)}%`,
-            sub: "triggers / decisions", color: C.warn },
+            sub: "triggers / decisions", color: T.warn },
           { label: "Memories",        value: cohState?.mem_n ?? "–",
-            sub: `avg q ${cohState?.mem_avg_quality?.toFixed(3) ?? "–"}`, color: "#7E3F8F" },
+            sub: `avg q ${cohState?.mem_avg_quality?.toFixed(3) ?? "–"}`, color: SEM.purple },
           { label: "Reflection gain", value: cohState?.G_r_n > 0
               ? `${cohState.G_r_mean >= 0 ? "+" : ""}${cohState.G_r_mean?.toFixed(4)}` : "–",
             sub: `n=${cohState?.G_r_n ?? 0}  ${Math.round((cohState?.G_r_positive ?? 0) * 100)}% improved`,
-            color: (cohState?.G_r_mean ?? 0) >= 0 ? C.success : C.error },
+            color: (cohState?.G_r_mean ?? 0) >= 0 ? T.success : T.error },
         ].map(m => (
-          <div key={m.label} style={{ background: C.surface, border: `1px solid ${C.border}`,
-            borderRadius: 4, padding: "14px 16px" }}>
-            <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>{m.label}</div>
+          <div key={m.label} className="lux-card lux-card-i" style={{ padding: "14px 16px" }}>
+            <div style={{ fontSize: 11, color: T.muted, marginBottom: 4 }}>{m.label}</div>
             <div style={{ fontSize: 22, fontWeight: 700, fontFamily: "monospace", color: m.color }}>{m.value}</div>
-            <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>{m.sub}</div>
+            <div style={{ fontSize: 10, color: T.muted, marginTop: 4 }}>{m.sub}</div>
           </div>
         ))}
       </div>
 
       {/* ── Coherence dynamics chart ── */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: 18 }}>
+      <div className="lux-card" style={{ padding: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#2E2010" }}>Coherence Dynamics — C(t)</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>Coherence Dynamics — C(t)</div>
           <div style={{ display: "flex", gap: 6 }}>
-            <Badge label={`${dynamics.length} windows`} color={C.muted} />
-            <Badge label="w=20" color={C.muted} />
+            <Badge label={`${dynamics.length} windows`} color={T.muted} />
+            <Badge label="w=20" color={T.muted} />
           </div>
         </div>
         <CoherenceChart data={dynamics} />
-        <div style={{ fontSize: 11, color: C.muted, marginTop: 8 }}>
+        <div style={{ fontSize: 11, color: T.muted, marginTop: 8 }}>
           Each window = 20 decisions with 50% overlap.
           C(t) = (C_routing + C_calib + C_quality) / 3. Hover dots for window detail.
         </div>
       </div>
 
       {/* ── Routing accuracy milestones ── */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: 18 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#2E2010", marginBottom: 14 }}>Routing Accuracy — Progress</div>
+      <div className="lux-card" style={{ padding: 18 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 14 }}>Routing Accuracy — Progress</div>
         <AccuracyMilestones />
         <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
-          <Badge label="McNemar χ²=5.88  p=0.015" color={C.success} />
-          <Badge label="95% CI: 7–37 pts" color={C.success} />
-          <Badge label="terse 0%→100% architectural signal" color={C.accent} />
+          <Badge label="McNemar χ²=5.88  p=0.015" color={T.success} />
+          <Badge label="95% CI: 7–37 pts" color={T.success} />
+          <Badge label="terse 0%→100% architectural signal" color={T.accent} />
         </div>
       </div>
 
       {/* ── Specialization table ── */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: 18 }}>
+      <div className="lux-card" style={{ padding: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#2E2010" }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>
             Agent Specialization
-            <span style={{ fontSize: 11, color: C.muted, fontWeight: 400, marginLeft: 8 }}>
+            <span style={{ fontSize: 11, color: T.muted, fontWeight: 400, marginLeft: 8 }}>
               derived from trace dataset
             </span>
           </div>
-          {!spec && <span style={{ fontSize: 11, color: C.muted }}>loading…</span>}
+          {!spec && <span style={{ fontSize: 11, color: T.muted }}>loading…</span>}
         </div>
         <SpecializationTable spec={spec} />
-        <div style={{ fontSize: 10, color: C.muted, marginTop: 12 }}>
-          Verdicts: <span style={{ color: C.success }}>core</span> = high volume, low conflict ·{" "}
-          <span style={{ color: C.accent }}>narrow</span> = low volume, specialized ·{" "}
-          <span style={{ color: C.error }}>struggling</span> = high conflict + regret ·{" "}
-          <span style={{ color: C.warn }}>redundant</span> = domain overlap candidate
+        <div style={{ fontSize: 10, color: T.muted, marginTop: 12 }}>
+          Verdicts: <span style={{ color: T.success }}>core</span> = high volume, low conflict ·{" "}
+          <span style={{ color: T.accent }}>narrow</span> = low volume, specialized ·{" "}
+          <span style={{ color: T.error }}>struggling</span> = high conflict + regret ·{" "}
+          <span style={{ color: T.warn }}>redundant</span> = domain overlap candidate
         </div>
       </div>
 
       {/* ── Agent health weights ── */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: 18 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#2E2010", marginBottom: 14 }}>
+      <div className="lux-card" style={{ padding: 18 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 14 }}>
           Agent Health — Live Weights
-          <span style={{ fontSize: 11, color: C.muted, fontWeight: 400, marginLeft: 8 }}>sorted by weight</span>
+          <span style={{ fontSize: 11, color: T.muted, fontWeight: 400, marginLeft: 8 }}>sorted by weight</span>
         </div>
         {agentH.length === 0 ? (
-          <div style={{ color: C.muted, fontSize: 12 }}>No agent health data yet.</div>
+          <div style={{ color: T.muted, fontSize: 12 }}>No agent health data yet.</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {agentH.map((a, i) => {
               const w      = parseFloat(a.weight || 0);
               const conf   = parseFloat(a.confidence || 0);
               const regret = parseFloat(a.avg_regret || 0);
-              const wColor = w >= 0.85 ? C.success : w >= 0.65 ? C.warn : C.error;
+              const wColor = w >= 0.85 ? T.success : w >= 0.65 ? T.warn : T.error;
               return (
                 <div key={a.agent} style={{ display: "grid",
                   gridTemplateColumns: "160px 1fr 70px 70px 70px",
                   gap: 10, alignItems: "center",
-                  background: i % 2 === 0 ? "#F4F0E866" : "transparent",
+                  background: i % 2 === 0 ? `${T.surface2}66` : "transparent",
                   borderRadius: 3, padding: "8px 10px" }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: "#2E2010" }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>
                     {(a.agent || "").replace(/_/g, " ")}
                   </span>
                   <Bar value={w} max={1.5} color={wColor} width={220} height={10} />
                   <span style={{ fontFamily: "monospace", fontSize: 11, color: wColor, textAlign: "right" }}>
                     {w.toFixed(3)}
                   </span>
-                  <span style={{ fontFamily: "monospace", fontSize: 11, color: C.muted, textAlign: "right" }}>
+                  <span style={{ fontFamily: "monospace", fontSize: 11, color: T.muted, textAlign: "right" }}>
                     c={conf.toFixed(2)}
                   </span>
                   <span style={{ fontFamily: "monospace", fontSize: 11,
-                    color: regret > 0.1 ? C.error : C.muted, textAlign: "right" }}>
+                    color: regret > 0.1 ? T.error : T.muted, textAlign: "right" }}>
                     r={regret.toFixed(3)}
                   </span>
                 </div>
@@ -660,10 +659,10 @@ export default function TimelineTab() {
       </div>
 
       {/* ── Recent decisions table ── */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: 18 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#2E2010", marginBottom: 14 }}>
+      <div className="lux-card" style={{ padding: 18 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 14 }}>
           Recent Decisions
-          <span style={{ fontSize: 11, color: C.muted, fontWeight: 400, marginLeft: 8 }}>
+          <span style={{ fontSize: 11, color: T.muted, fontWeight: 400, marginLeft: 8 }}>
             ✓ = no conflict · ✕ = brain overrode router
           </span>
         </div>
@@ -672,69 +671,69 @@ export default function TimelineTab() {
 
       {/* ── Memory coherence ── */}
       {memCoh.length > 0 && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: 18 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#2E2010", marginBottom: 14 }}>
+        <div className="lux-card" style={{ padding: 18 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 14 }}>
             Memory Coherence — Quality by Type
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {memCoh.map((m, i) => {
               const q      = parseFloat(m.avg_quality || 0);
-              const qColor = q >= 0.80 ? C.success : q >= 0.65 ? C.warn : C.error;
+              const qColor = q >= 0.80 ? T.success : q >= 0.65 ? T.warn : T.error;
               return (
                 <div key={m.type} style={{ display: "grid",
                   gridTemplateColumns: "120px 1fr 60px 70px 70px",
                   gap: 10, alignItems: "center",
-                  background: i % 2 === 0 ? "#F4F0E866" : "transparent",
+                  background: i % 2 === 0 ? `${T.surface2}66` : "transparent",
                   borderRadius: 3, padding: "6px 10px" }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: "#2E2010" }}>{m.type}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{m.type}</span>
                   <Bar value={q} max={1} color={qColor} width={220} height={10} />
                   <span style={{ fontFamily: "monospace", fontSize: 11, color: qColor, textAlign: "right" }}>
                     {q.toFixed(3)}
                   </span>
-                  <span style={{ fontSize: 10, color: C.muted, textAlign: "right" }}>n={m.count}</span>
+                  <span style={{ fontSize: 10, color: T.muted, textAlign: "right" }}>n={m.count}</span>
                   <span style={{ fontSize: 10, textAlign: "right",
-                    color: m.low_quality > 0 ? C.error : C.muted }}>
+                    color: m.low_quality > 0 ? T.error : T.muted }}>
                     {m.low_quality > 0 ? `${m.low_quality} low` : "✓ clean"}
                   </span>
                 </div>
               );
             })}
           </div>
-          <div style={{ fontSize: 11, color: C.muted, marginTop: 10 }}>
-            Prune gate: q &lt; 0.55 and use_count = 0. Outcome-weighted 👍/👎 adjusts in real time.
+          <div style={{ fontSize: 11, color: T.muted, marginTop: 10 }}>
+            Prune gate: q &lt; 0.55 and use_count = 0. Outcome-weighted feedback adjusts in real time.
           </div>
         </div>
       )}
 
       {/* ── Contradictions feed ── */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: 18 }}>
+      <div className="lux-card" style={{ padding: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#2E2010" }}>Self-Correction Events</div>
-          {contras.length > 0 && <Badge label={`${contras.length} events`} color={C.warn} />}
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>Self-Correction Events</div>
+          {contras.length > 0 && <Badge label={`${contras.length} events`} color={T.warn} />}
         </div>
         <ContradictionsFeed items={contras} />
       </div>
 
       {/* ── Reflection gain ── */}
       {cohState?.G_r_n > 0 && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: 18 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#2E2010", marginBottom: 12 }}>
+        <div className="lux-card" style={{ padding: 18 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 12 }}>
             Reflection Gain — G_r = s_final − s_initial
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px,1fr))", gap: 14 }}>
             {[
-              { label: "Mean G_r",    value: `${cohState.G_r_mean >= 0 ? "+" : ""}${cohState.G_r_mean?.toFixed(4)}`, color: (cohState.G_r_mean ?? 0) >= 0 ? C.success : C.error },
-              { label: "Std G_r",     value: (cohState.G_r_std ?? 0).toFixed(4),   color: C.muted },
-              { label: "n reflected", value: cohState.G_r_n,                        color: C.accent },
-              { label: "G_r > 0",     value: `${Math.round((cohState.G_r_positive ?? 0) * 100)}%`, color: C.warn },
+              { label: "Mean G_r",    value: `${cohState.G_r_mean >= 0 ? "+" : ""}${cohState.G_r_mean?.toFixed(4)}`, color: (cohState.G_r_mean ?? 0) >= 0 ? T.success : T.error },
+              { label: "Std G_r",     value: (cohState.G_r_std ?? 0).toFixed(4),   color: T.muted },
+              { label: "n reflected", value: cohState.G_r_n,                        color: T.accent },
+              { label: "G_r > 0",     value: `${Math.round((cohState.G_r_positive ?? 0) * 100)}%`, color: T.warn },
             ].map(m => (
               <div key={m.label} style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>{m.label}</div>
+                <div style={{ fontSize: 10, color: T.muted, marginBottom: 4 }}>{m.label}</div>
                 <div style={{ fontFamily: "monospace", fontSize: 18, fontWeight: 700, color: m.color }}>{m.value}</div>
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 11, color: C.muted, marginTop: 12 }}>
+          <div style={{ fontSize: 11, color: T.muted, marginTop: 12 }}>
             Mean G_r ≥ 0 confirms reflection is non-destructive. Low positive fraction reflects near-ceiling pre-reflection quality.
           </div>
         </div>
@@ -742,15 +741,15 @@ export default function TimelineTab() {
 
       {/* ── Failure miner ── */}
       {failures && failures.total_decisions > 0 && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: 18 }}>
+        <div className="lux-card" style={{ padding: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#2E2010" }}>Conflict Resolution Mining</div>
-            <Badge label={`${failures.total_decisions} decisions analysed`} color={C.muted} />
+            <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>Conflict Resolution Mining</div>
+            <Badge label={`${failures.total_decisions} decisions analysed`} color={T.muted} />
           </div>
 
           {failures.conflict_by_agent && Object.keys(failures.conflict_by_agent).length > 0 && (
             <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 11, color: C.muted, marginBottom: 8, fontWeight: 600 }}>
+              <div style={{ fontSize: 11, color: T.muted, marginBottom: 8, fontWeight: 600 }}>
                 Brain-Router Conflict Rate by Agent
                 <span style={{ fontWeight: 400, marginLeft: 6 }}>— high rate = signal primitive gap</span>
               </div>
@@ -759,21 +758,21 @@ export default function TimelineTab() {
                   .sort((a, b) => b[1].conflict_rate - a[1].conflict_rate)
                   .map(([agent, v], i) => {
                     const rate = v.conflict_rate || 0;
-                    const col  = rate > 0.60 ? C.error : rate > 0.30 ? C.warn : C.success;
+                    const col  = rate > 0.60 ? T.error : rate > 0.30 ? T.warn : T.success;
                     return (
                       <div key={agent} style={{ display: "grid",
                         gridTemplateColumns: "160px 1fr 60px 80px",
                         gap: 8, alignItems: "center",
-                        background: i % 2 === 0 ? "#F4F0E866" : "transparent",
+                        background: i % 2 === 0 ? `${T.surface2}66` : "transparent",
                         borderRadius: 3, padding: "5px 8px" }}>
-                        <span style={{ fontSize: 11, color: "#2E2010" }}>{agent.replace(/_/g, " ")}</span>
-                        <div style={{ width: "100%", height: 8, background: "#E0D6C4", borderRadius: 3, overflow: "hidden" }}>
+                        <span style={{ fontSize: 11, color: T.text }}>{agent.replace(/_/g, " ")}</span>
+                        <div style={{ width: "100%", height: 8, background: T.border, borderRadius: 3, overflow: "hidden" }}>
                           <div style={{ width: `${rate * 100}%`, height: "100%", background: col, borderRadius: 3 }} />
                         </div>
                         <span style={{ fontFamily: "monospace", fontSize: 11, color: col, textAlign: "right" }}>
                           {Math.round(rate * 100)}%
                         </span>
-                        <span style={{ fontSize: 10, color: C.muted, textAlign: "right" }}>
+                        <span style={{ fontSize: 10, color: T.muted, textAlign: "right" }}>
                           {v.conflicts}/{v.total}
                         </span>
                       </div>
@@ -785,13 +784,13 @@ export default function TimelineTab() {
 
           {failures.regret_by_action && Object.keys(failures.regret_by_action).length > 0 && (
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, color: C.muted, marginBottom: 8, fontWeight: 600 }}>High-Regret Actions</div>
+              <div style={{ fontSize: 11, color: T.muted, marginBottom: 8, fontWeight: 600 }}>High-Regret Actions</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {Object.entries(failures.regret_by_action).map(([action, v]) => (
-                  <div key={action} style={{ background: "#F4F0E8", border: `1px solid ${C.border}`,
+                  <div key={action} style={{ background: T.surface2, border: `1px solid ${T.border}`,
                     borderRadius: 3, padding: "5px 10px" }}>
-                    <div style={{ fontSize: 10, color: C.muted }}>{action}</div>
-                    <div style={{ fontFamily: "monospace", fontSize: 13, color: C.warn }}>
+                    <div style={{ fontSize: 10, color: T.muted }}>{action}</div>
+                    <div style={{ fontFamily: "monospace", fontSize: 13, color: T.warn }}>
                       {v.count} × r={v.avg_regret.toFixed(3)}
                     </div>
                   </div>
@@ -802,21 +801,21 @@ export default function TimelineTab() {
 
           {failures.top_failures && failures.top_failures.length > 0 && (
             <div>
-              <div style={{ fontSize: 11, color: C.muted, marginBottom: 8, fontWeight: 600 }}>Worst Decisions by Regret</div>
+              <div style={{ fontSize: 11, color: T.muted, marginBottom: 8, fontWeight: 600 }}>Worst Decisions by Regret</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {failures.top_failures.slice(0, 5).map(f => (
-                  <div key={f.id} style={{ background: "#F4F0E8", border: `1px solid ${C.border}`,
+                  <div key={f.id} style={{ background: T.surface2, border: `1px solid ${T.border}`,
                     borderRadius: 3, padding: "5px 10px", fontSize: 11 }}>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 2 }}>
-                      <span style={{ fontFamily: "monospace", color: C.muted, fontSize: 10 }}>#{f.id}</span>
-                      <Badge label={f.agent?.replace(/_/g, " ") || "?"} color={C.accent} />
-                      <Badge label={f.action || "?"} color="#7E3F8F" />
+                      <span style={{ fontFamily: "monospace", color: T.muted, fontSize: 10 }}>#{f.id}</span>
+                      <Badge label={f.agent?.replace(/_/g, " ") || "?"} color={T.accent} />
+                      <Badge label={f.action || "?"} color={SEM.purple} />
                       <span style={{ marginLeft: "auto", fontFamily: "monospace",
-                        color: parseFloat(f.regret) > 0.2 ? C.error : C.warn, fontWeight: 700 }}>
+                        color: parseFloat(f.regret) > 0.2 ? T.error : T.warn, fontWeight: 700 }}>
                         regret {parseFloat(f.regret || 0).toFixed(3)}
                       </span>
                     </div>
-                    <div style={{ color: "#9A7A60", fontSize: 10 }}>{(f.task || "").slice(0, 90)}</div>
+                    <div style={{ color: T.muted, fontSize: 10 }}>{(f.task || "").slice(0, 90)}</div>
                   </div>
                 ))}
               </div>

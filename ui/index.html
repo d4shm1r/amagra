@@ -15,12 +15,10 @@
       content="Amagra — a local-first cognitive AI platform"
     />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=Cormorant+Garamond:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Self-hosted brand fonts + the shared Gilded Calm palette (also loaded
+         by landing.html) — no CDN, so the desktop app renders fully offline. -->
+    <link rel="stylesheet" href="/fonts.css" />
+    <link rel="stylesheet" href="/tokens.css" />
     <title>Amagra</title>
   </head>
   <body>

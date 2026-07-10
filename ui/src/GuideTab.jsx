@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { T, SEM } from "./theme";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AGENTS } from "./constants";
@@ -8,86 +9,86 @@ import { API } from "./api";
 // ── Metric glossary ────────────────────────────────────────────
 const METRICS = [
   {
-    id: "coherence", name: "C(t) — System Coherence", color: "#15803D",
+    id: "coherence", name: "C(t) — System Coherence", color: T.success,
     formula: "C(t) = ⅓ · [C_routing + C_calib + C_quality]",
     desc: "Composite system health score. C_routing tracks how consistent routing decisions are, C_calib measures how accurate the critic's confidence is, and C_quality averages memory quality across all stored entries. Displayed in the sidebar footer in real time.",
     thresholds: [
-      { range: "≥ 0.82", label: "Healthy",  color: "#15803D" },
-      { range: "0.70–0.82", label: "Watch",  color: "#9A6C00" },
-      { range: "< 0.70",  label: "Degraded", color: "#B42318" },
+      { range: "≥ 0.82", label: "Healthy",  color: T.success },
+      { range: "0.70–0.82", label: "Watch",  color: T.accent2 },
+      { range: "< 0.70",  label: "Degraded", color: T.error },
     ],
   },
   {
-    id: "confidence", name: "Routing Confidence", color: "#9A6C00",
+    id: "confidence", name: "Routing Confidence", color: T.accent2,
     formula: "conf = base + 0.05 (learned_router) + 0.04 (episodic hit)",
     desc: "The brain's certainty in its routing decision. Starts from a base score derived from pattern matches, then gets a +0.05 boost if the learned router agrees, and +0.04 if an episodic memory matched the query. Drives reflect level and dual-trajectory activation.",
     thresholds: [
-      { range: "≥ 0.70",      label: "High — direct answer",              color: "#15803D" },
-      { range: "0.52–0.70",   label: "Normal — no forced escalation",     color: "#9A6C00" },
-      { range: "0.40–0.52",   label: "Low — dual trajectory forced",      color: "#C2410C" },
-      { range: "< 0.40",      label: "Very low — full reflection forced",  color: "#B42318" },
+      { range: "≥ 0.70",      label: "High — direct answer",              color: T.success },
+      { range: "0.52–0.70",   label: "Normal — no forced escalation",     color: T.accent2 },
+      { range: "0.40–0.52",   label: "Low — dual trajectory forced",      color: SEM.clay },
+      { range: "< 0.40",      label: "Very low — full reflection forced",  color: T.error },
     ],
   },
   {
-    id: "reflect", name: "Reflect Level", color: "#0F766E",
+    id: "reflect", name: "Reflect Level", color: SEM.teal,
     formula: "none | light | full",
     desc: "Controls how deeply the agent reviews its own response before returning it. The brain assigns this automatically based on confidence, action type, and complexity. Users can override it with the System 1/2/3 toggle in Chat.",
     thresholds: [
-      { range: "none",  label: "Direct answer, no self-check",         color: "#9A7A60" },
-      { range: "light", label: "Critic gate — grounded quality score", color: "#9A6C00" },
-      { range: "full",  label: "LLM re-evaluation + possible retry",   color: "#7E3F8F" },
+      { range: "none",  label: "Direct answer, no self-check",         color: T.muted },
+      { range: "light", label: "Critic gate — grounded quality score", color: T.accent2 },
+      { range: "full",  label: "LLM re-evaluation + possible retry",   color: SEM.purple },
     ],
   },
   {
-    id: "entropy", name: "H(q) — Routing Entropy", color: "#0F766E",
+    id: "entropy", name: "H(q) — Routing Entropy", color: SEM.teal,
     formula: "H(q) = −Σ p(a|q) · log₂ p(a|q)",
     desc: "Shannon entropy over the agent probability distribution for a given query. Low entropy = the brain is sure which agent to pick. High entropy = the query is ambiguous and could go to multiple agents. Visible in Runs → Decisions per decision.",
     thresholds: [],
   },
   {
-    id: "quality", name: "Memory Quality Score", color: "#1E5A8A",
+    id: "quality", name: "Memory Quality Score", color: SEM.blue,
     formula: "q_new = σ(logit(q) + γ · Δf)",
     desc: "A per-memory score in [0, 1] updated via Bayesian log-odds each time the memory is retrieved and evaluated. Positive feedback (good response) pushes quality toward 1; negative feedback pushes it toward 0. Memories scoring below 0.55 are prunable.",
     thresholds: [
-      { range: "> 0.70",    label: "High quality — actively reinforced",  color: "#15803D" },
-      { range: "0.55–0.70", label: "At risk — low use or poor feedback",   color: "#9A6C00" },
-      { range: "< 0.55",    label: "Prunable — removed by Prune action",   color: "#B42318" },
+      { range: "> 0.70",    label: "High quality — actively reinforced",  color: T.success },
+      { range: "0.55–0.70", label: "At risk — low use or poor feedback",   color: T.accent2 },
+      { range: "< 0.55",    label: "Prunable — removed by Prune action",   color: T.error },
     ],
   },
   {
-    id: "pass_at_k", name: "Pass@k", color: "#7E3F8F",
+    id: "pass_at_k", name: "Pass@k", color: SEM.purple,
     formula: "Pass@k = 1 − C(n−c, k) / C(n, k)",
     desc: "Unbiased estimator of the probability that at least one of k sampled code completions passes all tests. From Chen et al. (2021). Used in benchmark_eval.py to measure code agent quality across multiple samples without inflating estimates.",
     thresholds: [],
   },
   {
-    id: "ece", name: "ECE — Expected Calibration Error", color: "#BE185D",
+    id: "ece", name: "ECE — Expected Calibration Error", color: SEM.magenta,
     formula: "ECE = Σ |acc(Bₘ) − conf(Bₘ)| · |Bₘ|/n",
     desc: "Measures how well the critic's confidence scores match actual correctness rates. Bins predictions by confidence; for each bin, computes |accuracy − mean_confidence|. Lower ECE = better calibrated critic gate.",
     thresholds: [
-      { range: "< 0.05",    label: "Well calibrated",     color: "#15803D" },
-      { range: "0.05–0.15", label: "Acceptable",          color: "#9A6C00" },
-      { range: "> 0.15",    label: "Poorly calibrated",   color: "#B42318" },
+      { range: "< 0.05",    label: "Well calibrated",     color: T.success },
+      { range: "0.05–0.15", label: "Acceptable",          color: T.accent2 },
+      { range: "> 0.15",    label: "Poorly calibrated",   color: T.error },
     ],
   },
   {
-    id: "brier", name: "Brier Score", color: "#C2410C",
+    id: "brier", name: "Brier Score", color: SEM.clay,
     formula: "BS = (1/n) Σ (sᵢ − lᵢ)²",
     desc: "Proper scoring rule for probabilistic predictions. Each score is the squared distance between the critic's confidence (sᵢ) and the actual pass/fail label (lᵢ). Perfect calibration = 0; random guessing = 0.25. Used alongside ECE in benchmark_eval.",
     thresholds: [
-      { range: "< 0.10", label: "Good",    color: "#15803D" },
-      { range: "< 0.20", label: "Decent",  color: "#9A6C00" },
-      { range: "≥ 0.20", label: "Poor",    color: "#B42318" },
+      { range: "< 0.10", label: "Good",    color: T.success },
+      { range: "< 0.20", label: "Decent",  color: T.accent2 },
+      { range: "≥ 0.20", label: "Poor",    color: T.error },
     ],
   },
   {
-    id: "instability", name: "Instability Index I", color: "#B42318",
+    id: "instability", name: "Instability Index I", color: T.error,
     formula: "I = 0.4·r + 0.4·|cal_err| + 0.2·weight_var",
     desc: "Composite measure of system instability. Combines regret (r), calibration error, and weight variance. Used in adaptive_alpha() to reduce the learning rate when the system is unstable. I > 0.5 triggers light reflection as a safety guard.",
     thresholds: [
-      { range: "< 0.3",    label: "Stable — normal learning",    color: "#15803D" },
-      { range: "0.3–0.5",  label: "Moderate — reduced α",        color: "#9A6C00" },
-      { range: "> 0.5",    label: "Unstable — reflection added",  color: "#B42318" },
+      { range: "< 0.3",    label: "Stable — normal learning",    color: T.success },
+      { range: "0.3–0.5",  label: "Moderate — reduced α",        color: T.accent2 },
+      { range: "> 0.5",    label: "Unstable — reflection added",  color: T.error },
     ],
   },
 ];
@@ -95,7 +96,7 @@ const METRICS = [
 // ── How-to sections ───────────────────────────────────────────
 const HOW_TO = [
   {
-    title: "Chat", color: "#15803D",
+    title: "Chat", color: T.success,
     items: [
       "Type a message and press Enter to send. Shift+Enter for a new line.",
       "The agent icon shows which specialist answered (not always the coordinator).",
@@ -106,7 +107,7 @@ const HOW_TO = [
     ],
   },
   {
-    title: "Context Pin", color: "#9A6C00",
+    title: "Context Pin", color: T.accent2,
     items: [
       "The yellow bar above the input field. Whatever you type there is prepended to EVERY message.",
       "Use it to set a working context: 'Working on Blazor login page' or 'Python FastAPI project'.",
@@ -115,7 +116,7 @@ const HOW_TO = [
     ],
   },
   {
-    title: "Force Route", color: "#7E3F8F",
+    title: "Force Route", color: SEM.purple,
     items: [
       "Row of agent buttons above the input. Click any to bypass automatic routing.",
       "The selected agent appears highlighted — it will receive every message until cleared.",
@@ -124,7 +125,7 @@ const HOW_TO = [
     ],
   },
   {
-    title: "Reflect Mode", color: "#0F766E",
+    title: "Reflect Mode", color: SEM.teal,
     items: [
       "The System 1 / System 2 / System 3 toggle in the Chat settings.",
       "System 1 = no reflection (fastest, direct answer).",
@@ -134,7 +135,7 @@ const HOW_TO = [
     ],
   },
   {
-    title: "Task Queue", color: "#0F766E",
+    title: "Task Queue", color: SEM.teal,
     items: [
       "Create tasks with a title, full prompt, priority, and target agent.",
       "Queue multiple tasks in advance. They run sequentially in the background.",
@@ -143,7 +144,7 @@ const HOW_TO = [
     ],
   },
   {
-    title: "Goals", color: "#C2410C",
+    title: "Goals", color: SEM.clay,
     items: [
       "Track project goals with title, description, and deadline.",
       "Goals are stored persistently in tasks.db — they survive restarts.",
@@ -151,7 +152,7 @@ const HOW_TO = [
     ],
   },
   {
-    title: "Setup → Progress", color: "#1E5A8A",
+    title: "Setup → Progress", color: SEM.blue,
     items: [
       "System metrics, memory health, and build history in one place.",
       "⊕ Consolidate: removes near-duplicate memories (cosine > 0.93) — run periodically.",
@@ -161,7 +162,7 @@ const HOW_TO = [
     ],
   },
   {
-    title: "Runs → Decisions", color: "#7E3F8F",
+    title: "Runs → Decisions", color: SEM.purple,
     items: [
       "Shows every routing decision the brain made, with confidence and reflect level.",
       "Color-coded by conflict (brain vs router disagreement) — yellow = conflicted.",
@@ -173,9 +174,9 @@ const HOW_TO = [
 
 // ── Arch sections ─────────────────────────────────────────────
 const ARCH = [
-  { title: "Request Flow", color: "#15803D", steps: ["User message → ChatTab → POST /ask/stream (SSE)", "Coordinator receives AgentState", "Core Brain (think()) decides agent, action, complexity, reflect level", "Hybrid router runs in parallel for diagnostics (brain always wins)", "Chosen agent runs with memory context injected", "Optional: grounded_evaluate critic scores response", "Optional: dual-trajectory for code agents (A vs B + critic pick)", "Response + signal metadata streamed back to the UI"] },
-  { title: "Memory Pipeline", color: "#1E5A8A", steps: ["Query embedded by nomic-embed-text (cached 512 entries)", "FAISSBackend.retrieve() → IndexIDMap search → cosine rerank with quality × freshness × type_weight", "Top-k injected into agent system prompt", "Agent response saved via memory_filter → dedup check (cos > 0.93) → SQLite + FAISS incremental add", "Quality updated per retrieval via Bayesian log-odds", "Auto-promotion at use_count = 5 (+0.03 log-odds boost)"] },
-  { title: "Learning Loop", color: "#9A6C00", steps: ["Every decision logged to logs/decisions.db", "apply_learning_update() runs after each response", "Weight delta = clip(α × (L − w), −0.02, +0.02)", "Adaptive α from instability index: low I → high learning rate", "Learned router model persisted under logs/ — retrained from trace_dataset.jsonl", "Regret estimated from coherence drift or user feedback", "Brain decisions calibrated against calibration.db over time"] },
+  { title: "Request Flow", color: T.success, steps: ["User message → ChatTab → POST /ask/stream (SSE)", "Coordinator receives AgentState", "Core Brain (think()) decides agent, action, complexity, reflect level", "Hybrid router runs in parallel for diagnostics (brain always wins)", "Chosen agent runs with memory context injected", "Optional: grounded_evaluate critic scores response", "Optional: dual-trajectory for code agents (A vs B + critic pick)", "Response + signal metadata streamed back to the UI"] },
+  { title: "Memory Pipeline", color: SEM.blue, steps: ["Query embedded by nomic-embed-text (cached 512 entries)", "FAISSBackend.retrieve() → IndexIDMap search → cosine rerank with quality × freshness × type_weight", "Top-k injected into agent system prompt", "Agent response saved via memory_filter → dedup check (cos > 0.93) → SQLite + FAISS incremental add", "Quality updated per retrieval via Bayesian log-odds", "Auto-promotion at use_count = 5 (+0.03 log-odds boost)"] },
+  { title: "Learning Loop", color: T.accent2, steps: ["Every decision logged to logs/decisions.db", "apply_learning_update() runs after each response", "Weight delta = clip(α × (L − w), −0.02, +0.02)", "Adaptive α from instability index: low I → high learning rate", "Learned router model persisted under logs/ — retrained from trace_dataset.jsonl", "Regret estimated from coherence drift or user feedback", "Brain decisions calibrated against calibration.db over time"] },
 ];
 
 const TECH = [
@@ -248,7 +249,7 @@ function DocsSection() {
     <Card mb={20}>
       <SectionHead title="Documentation" sub="The project's own docs, served live by the backend — always current" />
       {docs === null ? (
-        <div style={{ fontSize: 12, color: "#9A7A60", fontStyle: "italic", padding: "6px 0" }}>Loading documentation…</div>
+        <div style={{ fontSize: 12, color: T.muted, fontStyle: "italic", padding: "6px 0" }}>Loading documentation…</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {docs.map(d => {
@@ -256,23 +257,23 @@ function DocsSection() {
             const label  = DOC_LABELS[d.name] || d.name;
             return (
               <div key={d.name}
-                style={{ background: "#F4F0E8", border: `1.5px solid #9A6C00${isOpen ? "66" : "22"}`, borderRadius: 3, padding: "10px 14px", transition: "all .2s" }}>
+                style={{ background: T.surface2, border: `1.5px solid ${T.accent2}${isOpen ? "66" : "22"}`, borderRadius: 12, padding: "10px 14px", transition: "all .2s" }}>
                 <div className="hoverable" onClick={() => toggle(d.name)}
                   style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#9A6C00", flex: 1 }}>{label}</span>
-                  <span style={{ fontSize: 10, color: "#9A7A60", fontFamily: "monospace" }}>{(d.size / 1024).toFixed(1)} KB</span>
-                  <span style={{ color: "#9A6C00", opacity: .5, fontSize: 11 }}>{isOpen ? "▲" : "▼"}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: T.accent2, flex: 1 }}>{label}</span>
+                  <span style={{ fontSize: 10, color: T.muted, fontFamily: "monospace" }}>{(d.size / 1024).toFixed(1)} KB</span>
+                  <span style={{ color: T.accent2, opacity: .5, fontSize: 11 }}>{isOpen ? "▲" : "▼"}</span>
                 </div>
                 {isOpen && (
                   <div className="doc-reader" style={{
-                    marginTop: 10, padding: "14px 18px", background: "#FAF7F2",
-                    borderRadius: 7, border: "1px solid #9A6C0022",
-                    fontSize: 13, color: "#2E2010", lineHeight: 1.7,
+                    marginTop: 10, padding: "14px 18px", background: T.surface,
+                    borderRadius: 7, border: `1px solid ${T.accent2}22`,
+                    fontSize: 13, color: T.text, lineHeight: 1.7,
                     maxHeight: 480, overflowY: "auto", overflowX: "auto",
                   }}>
                     {content[d.name]
                       ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content[d.name]}</ReactMarkdown>
-                      : <span style={{ fontStyle: "italic", color: "#9A7A60" }}>Loading…</span>}
+                      : <span style={{ fontStyle: "italic", color: T.muted }}>Loading…</span>}
                   </div>
                 )}
               </div>
@@ -288,15 +289,15 @@ function DocsSection() {
 function SectionHead({ title, sub }) {
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#9A7A60", letterSpacing: "0.1em", textTransform: "uppercase" }}>{title}</div>
-      {sub && <div style={{ fontSize: 12, color: "#9A7A60", marginTop: 3 }}>{sub}</div>}
+      <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, letterSpacing: "0.1em", textTransform: "uppercase" }}>{title}</div>
+      {sub && <div style={{ fontSize: 12, color: T.muted, marginTop: 3 }}>{sub}</div>}
     </div>
   );
 }
 
 function Card({ children, mb = 20, accent }) {
   return (
-    <div style={{ background: "#FAF7F2", border: `2px solid ${accent || "#E0D6C4"}`, borderRadius: 14, padding: "18px 22px", marginBottom: mb }}>
+    <div style={{ background: T.surface, border: `2px solid ${accent || T.border}`, borderRadius: 14, padding: "18px 22px", marginBottom: mb }}>
       {children}
     </div>
   );
@@ -309,7 +310,7 @@ function Threshold({ items }) {
       {items.map((t, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 10, fontWeight: 700, fontFamily: "monospace", color: t.color, minWidth: 70 }}>{t.range}</span>
-          <span style={{ fontSize: 12, color: "#9A7A60" }}>{t.label}</span>
+          <span style={{ fontSize: 12, color: T.muted }}>{t.label}</span>
         </div>
       ))}
     </div>
@@ -328,19 +329,19 @@ export default function GuideTab() {
       <PageHeader title="Guide" subtitle="Commands, agents, and how to get the most out of Amagra." />
 
       {/* ── Quick start ── */}
-      <Card mb={20} accent="#15803D33">
-        <div style={{ fontSize: 16, fontWeight: 800, color: "#15803D", marginBottom: 14 }}>Quick Start</div>
-        <div style={{ fontFamily: "monospace", fontSize: 12, background: "#E7F2E6", borderRadius: 4, padding: "12px 16px", marginBottom: 14 }}>
+      <Card mb={20} accent={`${T.success}33`}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: T.success, marginBottom: 14 }}>Quick Start</div>
+        <div style={{ fontFamily: "monospace", fontSize: 12, background: "#E7F2E6", borderRadius: 8, padding: "12px 16px", marginBottom: 14 }}>
           {[
-            { cmd: "ai-ui",    desc: "starts React dashboard on localhost:3000", color: "#9A6C00" },
-            { cmd: "ai-start", desc: "starts FastAPI backend on port 8000",       color: "#9A6C00" },
-            { cmd: "ai-stop",  desc: "stops background worker",                   color: "#9A7A60" },
-            { cmd: "ai-logs",  desc: "tail the backend log",                      color: "#9A7A60" },
+            { cmd: "ai-ui",    desc: "starts React dashboard on localhost:3000", color: T.accent2 },
+            { cmd: "ai-start", desc: "starts FastAPI backend on port 8000",       color: T.accent2 },
+            { cmd: "ai-stop",  desc: "stops background worker",                   color: T.muted },
+            { cmd: "ai-logs",  desc: "tail the backend log",                      color: T.muted },
           ].map(r => (
             <div key={r.cmd} style={{ marginBottom: 6, display: "flex", gap: 12, alignItems: "baseline" }}>
               <span style={{ color: r.color, minWidth: 80 }}>{r.cmd}</span>
-              <span style={{ color: "#9A7A60" }}>→</span>
-              <span style={{ color: "#9A7A60" }}>{r.desc}</span>
+              <span style={{ color: T.muted }}>→</span>
+              <span style={{ color: T.muted }}>{r.desc}</span>
             </div>
           ))}
         </div>
@@ -351,9 +352,9 @@ export default function GuideTab() {
             { label: "Health",    value: "localhost:8000/health" },
             { label: "Model",     value: "phi4-mini · Setup → Model" },
           ].map(item => (
-            <div key={item.label} style={{ background: "#F4F0E8", borderRadius: 4, padding: "8px 12px", border: "1px solid #15803D20" }}>
-              <div style={{ fontSize: 10, color: "#9A7A60", marginBottom: 2 }}>{item.label}</div>
-              <div style={{ fontSize: 11, color: "#15803D", fontFamily: "monospace" }}>{item.value}</div>
+            <div key={item.label} style={{ background: T.surface2, borderRadius: 10, padding: "8px 12px", border: `1px solid ${T.success}20` }}>
+              <div style={{ fontSize: 10, color: T.muted, marginBottom: 2 }}>{item.label}</div>
+              <div style={{ fontSize: 11, color: T.success, fontFamily: "monospace" }}>{item.value}</div>
             </div>
           ))}
         </div>
@@ -368,16 +369,16 @@ export default function GuideTab() {
             return (
               <div key={section.title} className="hoverable"
                 onClick={() => setOpenHowTo(isOpen ? null : section.title)}
-                style={{ background: "#F4F0E8", border: `1.5px solid ${section.color}${isOpen ? "66" : "22"}`, borderRadius: 3, padding: "10px 14px", cursor: "pointer", transition: "all .2s" }}>
+                style={{ background: T.surface2, border: `1.5px solid ${section.color}${isOpen ? "66" : "22"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", transition: "all .2s" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 14, fontWeight: 700, color: section.color, flex: 1 }}>{section.title}</span>
-                  <span style={{ fontSize: 11, color: "#9A7A60" }}>{section.items.length} tips</span>
+                  <span style={{ fontSize: 11, color: T.muted }}>{section.items.length} tips</span>
                   <span style={{ color: section.color, opacity: .5, fontSize: 11 }}>{isOpen ? "▲" : "▼"}</span>
                 </div>
                 {isOpen && (
                   <ul style={{ margin: "10px 0 0", padding: "0 0 0 18px" }}>
                     {section.items.map((item, i) => (
-                      <li key={i} style={{ fontSize: 12, color: "#2E2010", lineHeight: 1.8, marginBottom: 2 }}>{item}</li>
+                      <li key={i} style={{ fontSize: 12, color: T.text, lineHeight: 1.8, marginBottom: 2 }}>{item}</li>
                     ))}
                   </ul>
                 )}
@@ -392,16 +393,16 @@ export default function GuideTab() {
         <SectionHead title="Agent Reference" sub={`All ${AGENTS.length - 1} specialist agents + coordinator`} />
 
         {/* Coordinator special card */}
-        <div style={{ background: "linear-gradient(135deg,#F5EDD6,#F4F0E8)", border: "2px solid #9A6C0066", borderRadius: 3, padding: "14px 18px", marginBottom: 10 }}>
+        <div style={{ background: `linear-gradient(135deg,#F5EDD6,${T.surface2})`, border: `2px solid ${T.accent2}66`, borderRadius: 12, padding: "14px 18px", marginBottom: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 28, color: "#9A6C00" }}>{AGENTS[0].icon}</span>
+            <span style={{ fontSize: 28, color: T.accent2 }}>{AGENTS[0].icon}</span>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: "#9A6C00" }}>Coordinator</span>
-                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "#9A6C0018", color: "#9A6C00", border: "1px solid #9A6C0040", fontWeight: 700 }}>SUPERVISOR</span>
+                <span style={{ fontSize: 15, fontWeight: 700, color: T.accent2 }}>Coordinator</span>
+                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 99, background: `${T.accent2}18`, color: T.accent2, border: `1px solid ${T.accent2}40`, fontWeight: 700 }}>SUPERVISOR</span>
               </div>
-              <div style={{ fontSize: 12, color: "#2E2010", lineHeight: 1.6 }}>{AGENTS[0].role}</div>
-              <div style={{ fontSize: 11, color: "#9A7A60", marginTop: 6 }}>
+              <div style={{ fontSize: 12, color: T.text, lineHeight: 1.6 }}>{AGENTS[0].role}</div>
+              <div style={{ fontSize: 11, color: T.muted, marginTop: 6 }}>
                 Runs core_brain (think()) to decide routing, then uses hybrid_router as a diagnostic check. Brain always wins on conflicts.
               </div>
             </div>
@@ -415,18 +416,18 @@ export default function GuideTab() {
             return (
               <div key={agent.id} className="hoverable"
                 onClick={() => setOpenAgent(isOpen ? null : agent.id)}
-                style={{ background: "#F4F0E8", border: `1.5px solid ${agent.color}${isOpen ? "88" : "33"}`, borderRadius: 4, padding: "12px 14px", cursor: "pointer", transition: "all .2s" }}>
+                style={{ background: T.surface2, border: `1.5px solid ${agent.color}${isOpen ? "88" : "33"}`, borderRadius: 12, padding: "12px 14px", cursor: "pointer", transition: "all .2s" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                   <span style={{ fontSize: 20 }}>{agent.icon}</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: agent.color, marginBottom: 2 }}>{agent.label}</div>
-                    <div style={{ fontSize: 11, color: "#9A7A60", lineHeight: 1.5 }}>{agent.focus}</div>
+                    <div style={{ fontSize: 11, color: T.muted, lineHeight: 1.5 }}>{agent.focus}</div>
                     {isOpen && (
-                      <div style={{ marginTop: 10, fontSize: 12, color: "#2E2010", lineHeight: 1.65, padding: "10px 12px", background: "#FAF7F2", borderRadius: 7, border: `1px solid ${agent.color}22` }}>
+                      <div style={{ marginTop: 10, fontSize: 12, color: T.text, lineHeight: 1.65, padding: "10px 12px", background: T.surface, borderRadius: 7, border: `1px solid ${agent.color}22` }}>
                         <div style={{ marginBottom: 8 }}>{agent.role}</div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                           {agent.keywords.map(kw => (
-                            <span key={kw} style={{ fontSize: 10, color: agent.color, background: `${agent.color}12`, padding: "2px 8px", borderRadius: 4, border: `1px solid ${agent.color}30`, fontFamily: "monospace" }}>{kw}</span>
+                            <span key={kw} style={{ fontSize: 10, color: agent.color, background: `${agent.color}12`, padding: "2px 8px", borderRadius: 99, border: `1px solid ${agent.color}30`, fontFamily: "monospace" }}>{kw}</span>
                           ))}
                         </div>
                       </div>
@@ -449,16 +450,16 @@ export default function GuideTab() {
             return (
               <div key={m.id} className="hoverable"
                 onClick={() => setOpenMetric(isOpen ? null : m.id)}
-                style={{ background: "#F4F0E8", border: `1.5px solid ${m.color}${isOpen ? "66" : "22"}`, borderRadius: 3, padding: "10px 14px", cursor: "pointer", transition: "all .2s" }}>
+                style={{ background: T.surface2, border: `1.5px solid ${m.color}${isOpen ? "66" : "22"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", transition: "all .2s" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: m.color, flex: 1 }}>{m.name}</span>
-                  <code style={{ fontSize: 11, color: "#9A7A60", background: "#E0D6C4", padding: "2px 8px", borderRadius: 3, fontFamily: "monospace", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.formula}</code>
+                  <code style={{ fontSize: 11, color: T.muted, background: T.border, padding: "2px 8px", borderRadius: 4, fontFamily: "monospace", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.formula}</code>
                   <span style={{ color: m.color, opacity: .5, fontSize: 11 }}>{isOpen ? "▲" : "▼"}</span>
                 </div>
                 {isOpen && (
-                  <div style={{ marginTop: 10, padding: "10px 12px", background: "#FAF7F2", borderRadius: 7, border: `1px solid ${m.color}22` }}>
-                    <code style={{ display: "block", fontSize: 12, color: m.color, background: "#F4F0E8", padding: "6px 10px", borderRadius: 3, fontFamily: "monospace", marginBottom: 10 }}>{m.formula}</code>
-                    <div style={{ fontSize: 12, color: "#2E2010", lineHeight: 1.7, marginBottom: 8 }}>{m.desc}</div>
+                  <div style={{ marginTop: 10, padding: "10px 12px", background: T.surface, borderRadius: 7, border: `1px solid ${m.color}22` }}>
+                    <code style={{ display: "block", fontSize: 12, color: m.color, background: T.surface2, padding: "6px 10px", borderRadius: 8, fontFamily: "monospace", marginBottom: 10 }}>{m.formula}</code>
+                    <div style={{ fontSize: 12, color: T.text, lineHeight: 1.7, marginBottom: 8 }}>{m.desc}</div>
                     <Threshold items={m.thresholds} />
                   </div>
                 )}
@@ -477,16 +478,16 @@ export default function GuideTab() {
             return (
               <div key={section.title} className="hoverable"
                 onClick={() => setOpenArch(isOpen ? null : section.title)}
-                style={{ background: "#F4F0E8", border: `1.5px solid ${section.color}${isOpen ? "66" : "22"}`, borderRadius: 3, padding: "10px 14px", cursor: "pointer", transition: "all .2s" }}>
+                style={{ background: T.surface2, border: `1.5px solid ${section.color}${isOpen ? "66" : "22"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", transition: "all .2s" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: section.color, flex: 1 }}>{section.title}</span>
-                  <span style={{ fontSize: 11, color: "#9A7A60" }}>{section.steps.length} steps</span>
+                  <span style={{ fontSize: 11, color: T.muted }}>{section.steps.length} steps</span>
                   <span style={{ color: section.color, opacity: .5, fontSize: 11 }}>{isOpen ? "▲" : "▼"}</span>
                 </div>
                 {isOpen && (
                   <ol style={{ margin: "10px 0 0", padding: "0 0 0 20px" }}>
                     {section.steps.map((step, i) => (
-                      <li key={i} style={{ fontSize: 12, color: "#2E2010", lineHeight: 1.8, marginBottom: 2 }}>{step}</li>
+                      <li key={i} style={{ fontSize: 12, color: T.text, lineHeight: 1.8, marginBottom: 2 }}>{step}</li>
                     ))}
                   </ol>
                 )}
@@ -499,12 +500,12 @@ export default function GuideTab() {
       {/* ── Live documentation ── */}
       <style>{`
         .doc-reader table { border-collapse: collapse; margin: 10px 0; }
-        .doc-reader th, .doc-reader td { border: 1px solid #E0D6C4; padding: 5px 10px; font-size: 12px; text-align: left; }
-        .doc-reader th { background: #F4F0E8; }
-        .doc-reader code { background: #F4F0E8; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
-        .doc-reader pre { background: #F4F0E8; padding: 10px 14px; border-radius: 6px; overflow-x: auto; }
+        .doc-reader th, .doc-reader td { border: 1px solid ${T.border}; padding: 5px 10px; font-size: 12px; text-align: left; }
+        .doc-reader th { background: ${T.surface2}; }
+        .doc-reader code { background: ${T.surface2}; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+        .doc-reader pre { background: ${T.surface2}; padding: 10px 14px; border-radius: 6px; overflow-x: auto; }
         .doc-reader pre code { background: transparent; padding: 0; }
-        .doc-reader h1, .doc-reader h2, .doc-reader h3 { color: #2E2010; margin: 14px 0 8px; }
+        .doc-reader h1, .doc-reader h2, .doc-reader h3 { color: ${T.text}; margin: 14px 0 8px; }
         .doc-reader img { max-width: 100%; }
       `}</style>
       <DocsSection />
@@ -514,10 +515,10 @@ export default function GuideTab() {
         <SectionHead title="Tech Stack" />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
           {TECH.map(group => (
-            <div key={group.group} style={{ background: "#F4F0E8", borderRadius: 4, padding: "10px 12px", border: "1px solid #E0D6C4" }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#9A7A60", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>{group.group}</div>
+            <div key={group.group} style={{ background: T.surface2, borderRadius: 10, padding: "10px 12px", border: `1px solid ${T.border}` }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: T.muted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>{group.group}</div>
               {group.items.map(item => (
-                <div key={item} style={{ fontSize: 11, color: "#2E2010", padding: "3px 0", borderBottom: "1px solid #E0D6C422", lineHeight: 1.6 }}>{item}</div>
+                <div key={item} style={{ fontSize: 11, color: T.text, padding: "3px 0", borderBottom: `1px solid ${T.border}22`, lineHeight: 1.6 }}>{item}</div>
               ))}
             </div>
           ))}

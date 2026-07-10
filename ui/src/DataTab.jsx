@@ -3,6 +3,7 @@ import { PageHeader } from "./ObsShared";
 import { T, SEM, TYPE } from "./theme";
 
 import { API } from "./api";
+import { AGENTS } from "./constants";
 
 const VERDICT_META = {
   core:       { color: T.success,   label: "CORE",       desc: "Essential — high volume, reliable routing" },
@@ -11,14 +12,10 @@ const VERDICT_META = {
   redundant:  { color: SEM.magenta, label: "REDUNDANT",  desc: "Domain overlaps with higher-quality agent" },
 };
 
-const AGENT_META = {
-  it_networking:      { icon: "🌐", color: T.success },
-  python_dev:         { icon: "🐍", color: T.accent },
-  dotnet_dev:         { icon: "⚡", color: SEM.violet },
-  ai_ml:              { icon: "🤖", color: SEM.magenta },
-  knowledge_learning: { icon: "📚", color: SEM.blue },
-  terse:              { icon: "⚡", color: T.accent2 },
-};
+// Unicode marks + colors from constants.js AGENTS — never emoji (palette rule).
+const AGENT_META = Object.fromEntries(
+  AGENTS.map(a => [a.id, { icon: a.icon, color: a.color }])
+);
 
 function StatCard({ label, value, sub, color = T.muted, wide = false }) {
   return (

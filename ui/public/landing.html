@@ -91,54 +91,13 @@
   }
   </script>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=Cormorant+Garamond:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
-    rel="stylesheet"
-  />
+  <!-- Self-hosted brand fonts + the shared Gilded Calm palette. tokens.css is
+       the single source of truth for the palette, loaded by this page AND the
+       app (index.html) — change colors there, never inline. -->
+  <link rel="stylesheet" href="/fonts.css" />
+  <link rel="stylesheet" href="/tokens.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --l0:   #EDE8DF;
-      --l1:   #F4F0E8;
-      --l2:   #FAF7F2;
-      --l3:   #FCFAF7;
-      --l4:   #FEFCFA;
-
-      --hero-bg:     #F0E9DF;
-      --features-bg: #EDE8DF;
-      --agents-bg:   #F3EDE6;
-      --how-bg:      #E9E3DA;
-      --pricing-bg:  #F1EBE3;
-      --cta-bg:      #EDE8DF;
-      --footer-bg:   #E5DFD6;
-      --cos-bg:      #EBE5DC;
-      --compare-bg:  #F0EAE1;
-      --trust-bg:    #E8E2D9;
-
-      --g1:   #FFE880;
-      --g2:   #DEB838;
-      --g3:   #C48808;
-      --g4:   #9A6C00;
-      --g5:   #6C4C00;
-
-      --t1:   #2E2010;
-      --t2:   #5C4030;
-      --t3:   #9A7A60;
-      --t4:   #BEA890;
-
-      --sd1:  rgba(72, 52, 28, 0.07);
-      --sd2:  rgba(72, 52, 28, 0.11);
-      --sd3:  rgba(62, 44, 20, 0.17);
-      --sl1:  rgba(255, 255, 255, 0.80);
-      --sl2:  rgba(255, 255, 255, 0.94);
-
-      --gg1:  rgba(196, 136, 8, 0.13);
-      --gg2:  rgba(196, 136, 8, 0.28);
-      --gg3:  rgba(154, 108, 0, 0.44);
-    }
 
     html { scroll-behavior: smooth; }
 

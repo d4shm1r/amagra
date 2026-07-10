@@ -1,3 +1,6 @@
+/* Palette values come from public/tokens.css (:root vars) — the ONE palette
+   shared with landing.html. Never hardcode Gilded Calm hex here. */
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -12,8 +15,8 @@ body {
   font-family: 'DM Sans', 'Manrope', system-ui, -apple-system, 'Segoe UI', 'Ubuntu', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #F0E9DF;
-  color: #2E2010;
+  background: var(--app-bg);
+  color: var(--t1);
 }
 
 /* Subtle paper-grain over the whole app (matches landing.html) */
@@ -44,7 +47,7 @@ code, pre, .mono {
    tabbing through the app is legible. !important is required to beat the inline
    `outline: none` (same pattern as .nav-btn:hover below). */
 :focus-visible {
-  outline: 2px solid #C48808 !important;   /* T.accent — gold core */
+  outline: 2px solid var(--g3) !important;   /* gold core */
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -81,7 +84,7 @@ select:focus-visible { outline-offset: 1px; }
   position: relative;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 42%),
-    #FAF7F2;
+    var(--l2);
   border: 1px solid rgba(255, 255, 255, 0.45);
   border-radius: 16px;
   box-shadow:
@@ -102,7 +105,7 @@ select:focus-visible { outline-offset: 1px; }
   border-radius: inherit;
   padding: 1px;
   /* Stays luminous edge-to-edge — no dark-brown corner. */
-  background: linear-gradient(145deg, #FFE880 0%, #DEB838 55%, #C48808 100%);
+  background: linear-gradient(145deg, var(--g1) 0%, var(--g2) 55%, var(--g3) 100%);
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -121,7 +124,7 @@ select:focus-visible { outline-offset: 1px; }
     -3px -3px 11px rgba(255, 255, 255, 0.75),
     inset 0 1px 1px rgba(255, 255, 255, 0.92),
     inset 0 -1px 1px rgba(138, 99, 36, 0.04),
-    0 0 32px rgba(196, 136, 8, 0.13);
+    0 0 32px var(--gg1);
 }
 
 /* ── Cognition dashboard: the cell IS the card ──────────────────
@@ -159,7 +162,7 @@ select:focus-visible { outline-offset: 1px; }
   font-family: 'Charter', 'Source Serif Pro', 'Iowan Old Style', Georgia, serif;
   font-size: 15px;
   line-height: 1.72;
-  color: #2E2010;
+  color: var(--t1);
   letter-spacing: 0.01em;
 }
 
@@ -169,18 +172,18 @@ select:focus-visible { outline-offset: 1px; }
 .msg-content code {
   font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
   font-size: 0.87em;
-  background: #F4F0E8;
-  border: 1px solid #E0D6C4;
+  background: var(--l1);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 1px 6px;
-  color: #8A5A00;
+  color: var(--gold-text);
 }
 
 .msg-content pre {
   position: relative;
   background: #F7F3EC;
-  border: 1px solid #E0D6C4;
-  border-left: 3px solid #C4880866;
+  border: 1px solid var(--border);
+  border-left: 3px solid rgba(196, 136, 8, 0.40);
   border-radius: 6px;
   padding: 12px 14px;
   overflow-x: auto;
@@ -200,14 +203,14 @@ select:focus-visible { outline-offset: 1px; }
 .msg-content li                  { margin: 5px 0; }
 .msg-content li > p              { margin: 0; }
 .msg-content strong              { color: #1F1408; font-weight: 600; }
-.msg-content em                  { color: #5C4030; font-style: italic; }
-.msg-content a                   { color: #9A6C00; text-decoration: underline; }
+.msg-content em                  { color: var(--t2); font-style: italic; }
+.msg-content a                   { color: var(--g4); text-decoration: underline; }
 
 .msg-content blockquote {
-  border-left: 3px solid #DEB838;
+  border-left: 3px solid var(--g2);
   margin: 10px 0;
   padding: 4px 14px;
-  color: #9A7A60;
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -221,10 +224,10 @@ select:focus-visible { outline-offset: 1px; }
   letter-spacing: -0.01em;
 }
 
-.msg-content h1 { font-size: 19px; border-bottom: 1px solid #E0D6C4; padding-bottom: 6px; }
-.msg-content h2 { font-size: 17px; border-bottom: 1px solid #E0D6C4; padding-bottom: 4px; }
+.msg-content h1 { font-size: 19px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+.msg-content h2 { font-size: 17px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
 .msg-content h3 { font-size: 15px; }
-.msg-content h4 { font-size: 14px; color: #9A7A60; }
+.msg-content h4 { font-size: 14px; color: var(--text-muted); }
 
 .msg-content table {
   border-collapse: collapse;
@@ -234,24 +237,24 @@ select:focus-visible { outline-offset: 1px; }
   font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   border-radius: 6px;
   overflow: hidden;
-  border: 1px solid #E0D6C4;
+  border: 1px solid var(--border);
 }
 
 .msg-content th, .msg-content td {
-  border: 1px solid #E0D6C4;
+  border: 1px solid var(--border);
   padding: 7px 12px;
   text-align: left;
 }
 
 .msg-content th {
-  background: #F4F0E8;
-  color: #6C4C00;
+  background: var(--l1);
+  color: var(--g5);
   font-weight: 600;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.msg-content tr:nth-child(even) td { background: #FAF7F2; }
-.msg-content tr:nth-child(odd)  td { background: #FCFAF7; }
-.msg-content hr { border: none; border-top: 1px solid #E0D6C4; margin: 16px 0; }
+.msg-content tr:nth-child(even) td { background: var(--l2); }
+.msg-content tr:nth-child(odd)  td { background: var(--l3); }
+.msg-content hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
