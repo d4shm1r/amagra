@@ -88,24 +88,48 @@ def _exemplars() -> list[tuple[str, str]]:
     return [(p[1], p[3]) for p in PROMPTS]
 
 
+def _make_onnx():
+    """Construct + probe the local ONNX provider. Returns it on success, else None
+    (model absent, onnxruntime/tokenizers missing, etc. — all non-fatal)."""
+    try:
+        from providers.onnx_embed import ONNXEmbeddingProvider
+        p = ONNXEmbeddingProvider()
+        p.embed("probe")          # forces lazy load; raises if model/deps absent
+        return p
+    except Exception:
+        return None
+
+
+def _make_ollama():
+    """Construct the Ollama provider. Cheap — failures surface later at embed()
+    time and are handled by the crash-safe _build_index / route wrappers."""
+    from providers.ollama import OllamaEmbeddingProvider
+    return OllamaEmbeddingProvider()
+
+
 def _provider():
     """
     Embedding provider for the fallback. Backend chosen by AGENTIC_EMBED_BACKEND:
-      ollama (default) — nomic-embed-text over Ollama's HTTP API (network round-trip)
-      onnx             — local ONNX model, no network (see providers/onnx_embed.py)
+      auto (default) — prefer local ONNX (CPU, no network); fall back to Ollama.
+                       This is what makes on-by-default work out-of-the-box: a user
+                       with the model at ~/.cache/amagra/bge-small/onnx pays no
+                       network round-trip, and an Ollama-only setup still works.
+      onnx           — force the local ONNX model (no fallback)
+      ollama         — force nomic-embed-text over Ollama's HTTP API (no fallback)
 
     The exemplar cache is keyed by provider.model_id, so switching backends
     auto-invalidates the cache and rebuilds against the new vector space.
     """
     global _PROVIDER
     if _PROVIDER is None:
-        backend = os.getenv("AGENTIC_EMBED_BACKEND", "ollama").lower()
+        backend = os.getenv("AGENTIC_EMBED_BACKEND", "auto").lower()
         if backend == "onnx":
             from providers.onnx_embed import ONNXEmbeddingProvider
             _PROVIDER = ONNXEmbeddingProvider()
-        else:
-            from providers.ollama import OllamaEmbeddingProvider
-            _PROVIDER = OllamaEmbeddingProvider()
+        elif backend == "ollama":
+            _PROVIDER = _make_ollama()
+        else:  # auto: local-first, then network
+            _PROVIDER = _make_onnx() or _make_ollama()
     return _PROVIDER
 
 
