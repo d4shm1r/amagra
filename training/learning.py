@@ -158,6 +158,10 @@ def apply_learning_update(
                 "weight_before": current,
                 "weight_after":  new_weight,
                 "delta":         round(bounded_delta, 4),
+                # α at this step IS the per-agent contraction modulus
+                # (K = 1−α); neutral_mode_drift needs it to find the
+                # slowest-contracting mode. (weights._neutral_mode)
+                "alpha":         round(alpha, 4),
             })
         except Exception as e:
             print(f"[learning] weight-change emit failed: {e}")

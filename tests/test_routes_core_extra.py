@@ -149,6 +149,17 @@ def test_telemetry_routing():
     if r.status_code == 200:
         data = r.json()
         assert "total" in data
+        # Signed, mode-resolved stability field (#74 task 5.3): always present
+        # and well-formed. 'flat' until the log carries adaptive-α; a live
+        # neutral mode names an agent with regime in the signed set.
+        assert "neutral_mode" in data
+        nm = data["neutral_mode"]
+        assert set(nm) == {"agent", "K", "signed_drift", "regime"}
+        assert nm["regime"] in {
+            "stabilizing", "destabilizing", "neutral", "flat"
+        }
+        if nm["agent"] is None:
+            assert nm["regime"] == "flat"
 
 
 # ── GET /history ──────────────────────────────────────────────────────────────

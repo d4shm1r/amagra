@@ -59,14 +59,25 @@ function backendCommand() {
   };
 }
 
+// Liveness probe. We intentionally hit "/" (the served UI root), NOT "/health":
+//   • "/" is a cheap static index.html read (JSON when no UI is bundled) — always
+//     200 the instant the server can accept connections, and it's exactly what
+//     win.loadURL() needs to succeed, so it tests the thing that actually matters.
+//   • "/health" does blocking work on EVERY call — a urllib probe of Ollama
+//     (http://localhost:11434, timeout=2s) plus cold lazy-imports of the memory/
+//     UCI modules. On Windows, unpacking a PyInstaller onefile into a Defender-
+//     scanned %TEMP% pushed /health past the old 1s probe timeout on every call,
+//     so a perfectly healthy server never passed the loop → the 120s "did not
+//     start" dialog fired while the app worked fine in a browser.
+// The 5s timeout is generous headroom over "/"'s sub-ms response, not a crutch.
 function healthy() {
   return new Promise((resolve) => {
-    const req = http.get(`${PROBE}/health`, (res) => {
+    const req = http.get(`${PROBE}/`, (res) => {
       res.resume();
       resolve(res.statusCode === 200);
     });
     req.on("error", () => resolve(false));
-    req.setTimeout(1000, () => { req.destroy(); resolve(false); });
+    req.setTimeout(5000, () => { req.destroy(); resolve(false); });
   });
 }
 
@@ -77,7 +88,13 @@ async function waitForHealth(timeoutMs = 120000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     if (await healthy()) return true;
-    if (backend && backend.exitCode !== null) return false; // died on boot
+    // The backend we spawned has exited — normally a boot failure, so stop
+    // looping for the full 120s. But the most common early-exit cause is
+    // EADDRINUSE: the port was already held by a healthy server (a prior AMAGRA
+    // instance, or `ai-start`) that our single reuse probe happened to miss.
+    // Re-probe once before giving up so we ADOPT that server instead of raising
+    // a spurious "did not start" dialog over an app that's actually working.
+    if (backend && backend.exitCode !== null) return healthy();
     await new Promise((r) => setTimeout(r, 500));
   }
   return false;
@@ -117,7 +134,11 @@ async function startBackend() {
   // Capture the sidecar's stdout+stderr to a logfile instead of discarding it
   // (stdio:"ignore"), so a boot failure leaves a diagnosable trail rather than a
   // silent "did not become healthy". The dialog below points the user here.
-  backend = spawn(cmd, args, { cwd, stdio: ["ignore", logFd(), logFd()], env });
+  // windowsHide: the frozen sidecar is a PyInstaller console app, so on Windows
+  // spawning it pops a stray `cmd`/console window next to (or instead of) the
+  // Electron shell. We already capture its stdout+stderr to the logfile, so the
+  // console is pure noise — suppress it. No effect on macOS/Linux.
+  backend = spawn(cmd, args, { cwd, stdio: ["ignore", logFd(), logFd()], env, windowsHide: true });
   backend.on("error", (e) => console.error("backend spawn failed:", e.message));
   return waitForHealth();
 }
@@ -251,3 +272,11 @@ function shutdown() {
 app.on("window-all-closed", () => { shutdown(); if (process.platform !== "darwin") app.quit(); });
 app.on("before-quit", shutdown);
 process.on("exit", shutdown);
+// A terminal Ctrl+C or an OS-delivered SIGTERM/SIGHUP can kill the shell WITHOUT
+// firing Electron's before-quit / window-all-closed — orphaning the spawned
+// backend, which keeps holding port 8000 so the NEXT launch dies with EADDRINUSE
+// (the recurring "port already in use" failure). Reap the child on these signals
+// too, then quit through Electron's normal path so the taskkill/kill completes.
+for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+  process.on(sig, () => { shutdown(); app.quit(); });
+}
