@@ -610,6 +610,58 @@ def drift_status_v2(weight_history: dict, *, divergence_eps: float = 0.05) -> di
     }
 
 
+def neutral_mode_drift(alphas: dict[str, float],
+                       drifts: dict[str, float]) -> dict:
+    """Signed drift of the slowest-contracting (neutral) agent mode.
+
+    Scalarizing the per-agent weight *vector* into a single stability number
+    is a vector→signed-scalar problem: it needs a **direction + covector**,
+    the right/left eigenvectors of the *neutral mode* (the Jacobian eigenvalue
+    ≈ 1 — the mode about to lose contraction). Current metrics instead collapse
+    the vector with pooled variance ``σ²_w`` (a norm), which is sign-blind and
+    can't say *which* mode is failing.
+
+    This finds the neutral mode directly: the update ``w ← (1−α)w + αL`` has
+    per-agent Lipschitz modulus ``K = 1−α`` (``effective_contraction``); the
+    **smallest α ⇒ K nearest 1** is the slowest-contracting mode. It reports
+    that mode's **signed** drift along the mode — the drift a norm erases.
+
+    Sign convention: a per-agent weight track's ``drift = w_now − w_start``.
+    A **positive** drift is the weight climbing *away* from the neutral prior
+    (1.0) while contraction is weakest ⇒ ``destabilizing``; a **negative** drift
+    is the neutral mode relaxing back ⇒ ``stabilizing``.
+
+    Args:
+        alphas: per-agent adaptive-α (the contraction step; from learning.py).
+        drifts: per-agent signed weight drift (w_now − w_start).
+
+    Returns ``{agent, K, signed_drift, regime}`` with
+    ``regime ∈ {stabilizing, destabilizing, neutral}`` (``flat`` when there is
+    no agent present in both inputs). Only agents appearing in *both* maps are
+    considered, so a missing α or a too-short track drops out cleanly.
+
+    Distinctive: nobody's agent dashboard reports a *signed, mode-resolved*
+    stability number — they report norms or (sign-folded) Lyapunov exponents.
+    Traces to: the scalarization obligation of ``stability_core`` (direction
+    ``v`` + covector ``ℓ``, OCAC/Dynamics.lean).
+    """
+    common = [a for a in alphas if a in drifts]
+    if not common:
+        return {"agent": None, "K": 0.0, "signed_drift": 0.0, "regime": "flat"}
+    # Neutral mode = smallest α ⇒ K = 1−α closest to 1 (weakest contraction).
+    agent = min(common, key=lambda a: alphas[a])
+    K = effective_contraction(alphas[agent])
+    d = drifts[agent]
+    regime = ("destabilizing" if d > 0.0 else
+              "stabilizing"   if d < 0.0 else "neutral")
+    return {
+        "agent":        agent,
+        "K":            round(K, 6),
+        "signed_drift": round(d, 6),
+        "regime":       regime,
+    }
+
+
 # ────────────────────────────────────────────────────────────────
 # § Coordinate-invariant health  (OCAC Δ-invariant / 𝒞 = C/(det J)³)
 # ────────────────────────────────────────────────────────────────
@@ -1032,6 +1084,24 @@ def _run_tests():
         "sharp": [1.0, 1.02, 1.08, 1.20],   # larger away-accel
     })
     assert worst["status"] == "runaway" and worst["agent"] == "sharp"
+
+    # neutral_mode_drift: signed drift of the slowest-contracting (min-α) mode
+    #   picks the min-α agent (smallest α ⇒ K nearest 1)
+    nm = neutral_mode_drift({"a": 0.14, "b": 0.03, "c": 0.10},
+                            {"a": 0.20, "b": 0.08, "c": -0.30})
+    assert nm["agent"] == "b"
+    assert abs(nm["K"] - 0.97) < 1e-9                   # K = 1 − 0.03
+    #   sign preserved + regime matches drift sign
+    assert nm["signed_drift"] == 0.08 and nm["regime"] == "destabilizing"
+    stab = neutral_mode_drift({"a": 0.14, "b": 0.03},
+                              {"a": 0.20, "b": -0.05})
+    assert stab["signed_drift"] == -0.05 and stab["regime"] == "stabilizing"
+    #   zero drift on the neutral mode → neutral (not stabilizing/destabilizing)
+    zero = neutral_mode_drift({"a": 0.03}, {"a": 0.0})
+    assert zero["regime"] == "neutral" and zero["signed_drift"] == 0.0
+    #   empty / disjoint inputs are safe (benign flat default)
+    assert neutral_mode_drift({}, {})["regime"] == "flat"
+    assert neutral_mode_drift({"a": 0.1}, {"b": 0.2})["agent"] is None
 
     # cubic basin: the nonlinear quality update has a bounded (not global) basin
     mid = quality_update_basin(0.5)
