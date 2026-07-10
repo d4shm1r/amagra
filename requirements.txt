@@ -68,3 +68,8 @@ xxhash==3.6.0
 yarl==1.22.0
 zstandard==0.25.0
 python-multipart
+
+# Optional, gated behind AMAGRA_BROWSER=1 — the interactive browser tools
+# (tools/browser.py). Not installed by default; a browser download is heavy.
+# Enable with:  pip install playwright && playwright install chromium
+# playwright==1.49.0

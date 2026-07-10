@@ -237,7 +237,113 @@ shape-gated rather than always-on.
 
 ---
 
-## 10. Conclusions
+## 10. Agentic Execution: The Substrate Ceiling Was the Bottleneck
+
+The scorecard rated Planning (5) and Autonomy (4) *(subjective)* because nothing
+measured multi-step, tool-using task completion. `evaluation/agentic_eval.py`
+supplies the missing instrument, and it separates a question the scorecard had
+conflated: the **substrate ceiling** (given a *perfect* agent that emits exactly
+the right tool calls, does the real plumbing — `tools/catalog.py` →
+`tools/tool_loop.py` → `tools/workspace.py` — complete the task and leave the
+correct end state on disk?) from **model capability** (can phi4-mini drive that
+loop, `--live`, pending). The ceiling is the honest floor: if a perfect agent
+scores 0, the model can never beat it, and no prompt work matters until the
+substrate is fixed. Six deterministic tasks (write a file, build a package,
+read-modify-write, search-then-report, rename, read-only), each checked by a
+workspace end-state assertion, offline, <1s.
+
+**The finding: the substrate was the bottleneck, not the model.** The tool
+catalog exposed only *reads* — so even a flawless agent could complete just the
+one read-only task:
+
+| Substrate | Completion | Blocked by |
+|-----------|-----------|------------|
+| baseline (catalog as shipped) | 1/6 = **17%** | `write_file` / `make_dir` / `move` not exposed |
+| after exposing jailed writes  | 6/6 = **100%** | — |
+
+The fix was small and matched the existing posture: the write ops already existed
+in `workspace.py`, fully jailed (traversal/symlink/absolute-path → `PathEscape`),
+but were reachable only over HTTP. Exposing `write_file`/`make_dir`/`move` through
+the catalog behind an opt-in `AMAGRA_WORKSPACE_WRITE=1` gate (mirroring the
+sandbox/web opt-ins; reads stay always-on) lifts the ceiling to 100% while keeping
+the jail intact through the new seam (`tests/test_catalog_writes.py`). An agent
+turn already routes through this catalog via `respond_with_optional_tools`, so with
+`AMAGRA_AGENT_TOOLS=1` the specialists can now *act*, not just read.
+
+**Honesty caveat.** 100% is the *perfect-agent* ceiling, not model-driven
+completion — it proves the plumbing can no longer be the excuse, not that
+phi4-mini drives it well. The `--live` mode (model emits its own tool calls via
+the production `models.llm` path, writes auto-enabled per isolated temp workspace,
+tool-call validity reported) is **now built and its measurement logic is
+verified deterministically** with injected model doubles — a competent double
+completes 6/6, a narrate-only double is correctly scored 0 / "no tool calls
+emitted" (`tests/test_agentic_eval.py`). What remains is purely a **hardware
+run**: point it at an Ollama box (`--live`), and the resulting completion +
+validity numbers — not the ceiling — are what can move Autonomy off 4.
+
+**Closing the loop: observation threading + bounded replan.** With the substrate
+unblocked, the remaining gap was in the multi-step executor itself
+(`cognition/deep_pipeline.py`). It was already verify-gated (retry/abort wired via
+`step_verifier.py`), but had two holes that made it a *fan-out*, not a sequential
+agent: (1) each step saw only its own description plus the original query — never
+the **outputs of the steps it depends on**, so "integrate the components" ran
+blind to what "implement the components" produced; and (2) a `replan` verdict was
+committed identically to `continue` — the recommendation existed but did nothing.
+Both are now closed: completed-step outputs are threaded forward into each step's
+task (bounded to the last 3 steps × 500 chars to cap prompt growth), and a
+`replan` verdict re-decomposes the *remaining* work once, splicing the new steps
+into a mutable execution queue and threading the failure note so they adapt to it.
+Replan is budgeted (`AMAGRA_PIPELINE_REPLAN`, default 1; `0` restores the old
+commit-and-continue exactly) so it cannot loop. Both behaviours are pinned
+deterministically with fake runners, no model needed
+(`tests/test_deep_pipeline_executor.py`): a later step provably carries the digest
+of an earlier one, a forced `replan` splices and runs a recovery step, and
+`budget=0` provably does not. The honest status is unchanged in kind — the
+*plumbing* of a closed executor now exists and is tested; whether phi4-mini drives
+it to higher end-to-end completion is still the `--live` measurement above, and
+that number, not the wiring, is what moves Planning/Autonomy off their scores.
+
+**Browser use, defensively (Phase C, step 1).** The first browser capability is
+the smallest one that's useful: `tools/web_fetch.py` does an HTTP GET + readability
+extraction (bs4, no browser engine), exposed as the `fetch_page` tool behind an
+opt-in `AMAGRA_WEB_FETCH=1` gate. It is built as a *security* surface from the
+start, because a fetched page is attacker-controlled input to an agent that can
+also write files and run code: (a) an **SSRF guard** resolves the host and refuses
+any private/loopback/link-local/reserved IP, and re-validates the final URL after
+redirects (so a public host can't 302 the agent onto `127.0.0.1:8000/admin`);
+(b) an optional **allowlist** (`AMAGRA_FETCH_ALLOWLIST`) restricts fetches to named
+domains and their subdomains; (c) every result is stamped `untrusted=True` with a
+`WARNING` that the text is *data, not instructions* — the prompt-injection posture
+that instructions found inside page content must never justify a tool call. Nine
+offline tests (DNS + HTTP injected) cover extraction, each guard, redirect
+re-validation, the marker, and the catalog gate (`tests/test_web_fetch_tool.py`).
+One residual is documented not hidden: the resolve-then-refetch gap leaves a
+DNS-rebinding window that IP-pinning would close in v2. This adds real agent reach
+*and* the injection/SSRF defenses that the heavier Playwright-driven browser tools
+(next) will reuse.
+
+**Interactive browsing (Phase C, step 2).** `tools/browser.py` drives a real
+headless Chromium (Playwright) an agent can navigate and act on: `browser_open`,
+`browser_read`, `browser_click`, `browser_fill`. Two choices make it fit a small
+local model and stay safe: (1) **text snapshots, not screenshots** — `browser_read`
+returns a flattened accessibility tree (`[role] name` per line, the screen-reader
+view), which a 3.8B model can operate on and pixels are not; selectors accept
+Playwright's `text=Label` engine so the model clicks by visible label. (2) **One
+shared policy with fetch** — navigation reuses `web_fetch._validate` (SSRF guard +
+redirect re-validation + `AMAGRA_FETCH_ALLOWLIST`) and every snapshot carries the
+same `untrusted=True` + `WARNING`. Playwright is optional and lazily imported: the
+module imports without it, the tools appear in the catalog only when
+`AMAGRA_BROWSER=1` *and* Playwright is installed, and the functions accept an
+injected page so nine tests (`tests/test_browser_tool.py`) cover navigation, the
+SSRF/redirect guard, ax-tree flattening, click/fill, the marker, and the gate with
+**no browser at all**. Same honesty line as `--live`: the logic is proven offline;
+a real-Chromium smoke run needs a machine where `playwright install chromium` has
+run, and that end-to-end pass is what would let the browser reach count toward a
+score rather than the wiring alone.
+
+---
+
+## 11. Conclusions
 
 Intelligence in a routing system comes from structure, not scale. A well-defined signal space with a clear confidence threshold outperforms an LLM classifier on latency, consistency, and debuggability — while reserving the LLM for genuinely ambiguous or novel queries.
 
