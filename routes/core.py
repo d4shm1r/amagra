@@ -788,12 +788,23 @@ def telemetry_routing(limit: int = 200):
         accuracy = round(correct / len(labeled), 3) if labeled else None
         avg_conf = round(sum(r[1] or 0 for r in rows) / total, 3) if total else 0
 
+        # Signed, mode-resolved stability: the slowest-contracting agent mode
+        # (min α ⇒ K nearest 1) and its signed drift — what pooled variance
+        # can't see. Best-effort so a metrics failure never 503s the endpoint.
+        try:
+            from decision.weights import _neutral_mode
+            neutral_mode = _neutral_mode()
+        except Exception:
+            neutral_mode = {"agent": None, "K": 0.0,
+                            "signed_drift": 0.0, "regime": "flat"}
+
         return {
             "total":          total,
             "accuracy":       accuracy,
             "labeled":        len(labeled),
             "avg_confidence": avg_conf,
             "agent_dist":     dict(agents.most_common()),
+            "neutral_mode":   neutral_mode,
             "recent":         [
                 {"agent": r[0], "conf": r[1], "complexity": r[2],
                  "ms": r[3], "correct": r[4]}

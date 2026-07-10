@@ -503,5 +503,44 @@ def _signed_drift_status(n: int = 200) -> dict:
     return drift_status_v2(history)
 
 
+def _neutral_mode(n: int = 200) -> dict:
+    """Reconstruct per-agent (α, drift) from the event log and report the
+    signed drift of the slowest-contracting mode (math_metrics.neutral_mode_drift).
+
+    ``drift`` is each agent's weight track end-to-start delta (same reconstruction
+    as ``_signed_drift_status``); ``α`` is the *latest* adaptive-α seen for that
+    agent (the current contraction modulus, K = 1−α). Pooled variance is
+    sign-blind and mode-blind — this names the one agent mode nearest the
+    contraction boundary and reports its signed drift.
+
+    Best-effort: an unavailable/empty log or a payload predating the α field
+    yields the benign 'flat' verdict so callers always get a well-formed dict.
+    """
+    from evaluation.math_metrics import neutral_mode_drift
+    try:
+        from infrastructure.event_bus import recent_events, EventType
+        events = recent_events(n, EventType.ROUTING_WEIGHT_CHANGED.value)
+    except Exception:
+        events = []
+
+    # recent_events is newest-first; rebuild each agent's track chronologically.
+    history: dict[str, list[float]] = {}
+    latest_alpha: dict[str, float] = {}
+    for ev in reversed(events):
+        p = ev.get("payload", {})
+        agent = p.get("agent")
+        if agent is None or "weight_after" not in p:
+            continue
+        track = history.setdefault(agent, [])
+        if not track and "weight_before" in p:
+            track.append(p["weight_before"])   # seed the track's starting point
+        track.append(p["weight_after"])
+        if "alpha" in p:
+            latest_alpha[agent] = p["alpha"]   # newest wins (reversed → chrono)
+
+    drifts = {a: t[-1] - t[0] for a, t in history.items() if len(t) >= 2}
+    return neutral_mode_drift(latest_alpha, drifts)
+
+
 # Auto-init on import
 _init_table()
