@@ -8,6 +8,7 @@ aiosignal==1.4.0
 annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.12.1
+beautifulsoup4==4.12.3
 attrs==25.4.0
 certifi==2026.1.4
 charset-normalizer==3.4.4
@@ -68,3 +69,8 @@ xxhash==3.6.0
 yarl==1.22.0
 zstandard==0.25.0
 python-multipart
+
+# Optional, gated behind AMAGRA_BROWSER=1 — the interactive browser tools
+# (tools/browser.py). Not installed by default; a browser download is heavy.
+# Enable with:  pip install playwright && playwright install chromium
+# playwright==1.49.0

@@ -115,6 +115,70 @@ def synthesize(original_query: str, agent_responses: list[dict]) -> str:
     return header + body
 
 
+# ── Closed-loop executor helpers ─────────────────────────────
+# The pipeline was a fan-out: each step saw only its own description + the
+# original query, never what earlier steps produced, and a "replan" verdict was
+# committed like "continue". These make it a sequential executor — steps build on
+# prior observations, and a replan re-decomposes the remaining work.
+
+_OBS_SNIPPET_CHARS = 500   # per-step context budget
+_OBS_MAX_STEPS     = 3     # only the most recent N completed steps are threaded
+
+
+def _thread_observations(base_task: str, completed: list[dict]) -> str:
+    """Prepend a compact digest of recent completed-step outputs to a sub-task, so
+    the agent executes with the results of the steps it depends on in view."""
+    if not completed:
+        return base_task
+    recent = completed[-_OBS_MAX_STEPS:]
+    lines = ["Context from completed steps (build on these; do not repeat them):"]
+    for r in recent:
+        snippet = (r.get("response") or "").strip().replace("\n", " ")
+        if len(snippet) > _OBS_SNIPPET_CHARS:
+            snippet = snippet[:_OBS_SNIPPET_CHARS] + "…"
+        lines.append(f"- [{r.get('step_id', '?')}/{r.get('agent', '?')}] {snippet}")
+    return "\n".join(lines) + "\n\n" + base_task
+
+
+def _replan_budget() -> int:
+    """How many times the pipeline may re-decompose remaining work. Default 1;
+    set AMAGRA_PIPELINE_REPLAN=0 to restore the old commit-and-continue behaviour."""
+    try:
+        return max(0, int(os.environ.get("AMAGRA_PIPELINE_REPLAN", "1")))
+    except ValueError:
+        return 1
+
+
+def _replan_remaining(query: str, agents: list[str], action: str, complexity: str,
+                      done_count: int, failure_note: str, tag: str):
+    """Re-decompose the work that remains after a failed step. Returns
+    (new_plan_steps, new_subs) for splicing into the queue, or ([], []) if a
+    replan can't be produced. Step ids are re-tagged so they never collide with
+    the steps already in the index. Isolated at module level so tests can stub it."""
+    try:
+        from orchestration.planner import plan_query
+        note = f"{query}\n\n[Replanning: a prior step failed — {failure_note}]"
+        plan = plan_query(note, action=action, agents=agents, complexity=complexity)
+        tail = plan.ordered_steps()[done_count:]
+        if not tail:
+            return [], []
+        new_steps, new_subs = [], []
+        for s in tail:
+            s.step_id = f"{tag}_{s.step_id}"
+            s.depends_on = []          # dependencies were on the discarded plan
+            new_steps.append(s)
+            new_subs.append({
+                "agent":       s.agent,
+                "sub_task":    f"{s.description}\n\nOriginal query: {query}",
+                "step_id":     s.step_id,
+                "uncertainty": s.uncertainty,
+            })
+        return new_steps, new_subs
+    except Exception as e:
+        print(f"[deep_pipeline] replan failed ({e}) — committing and continuing")
+        return [], []
+
+
 def run_deep_pipeline(
     query: str,
     agents: list[str],
@@ -187,17 +251,24 @@ def run_deep_pipeline(
     if plan:
         step_index = {s.step_id: s for s in plan.steps}
 
-    for sub in sub_tasks:
-        if aborted:
-            break
-
+    # Mutable queue so a replan can splice remaining steps; index-driven so the
+    # loop survives the queue growing/shrinking mid-execution.
+    queue       = list(sub_tasks)
+    replan_left = _replan_budget()
+    i           = 0
+    while i < len(queue) and not aborted:
+        sub      = queue[i]
         agent    = sub["agent"]
-        sub_task = sub["sub_task"]
         runner   = agent_runner_map.get(agent)
 
         if runner is None:
             print(f"[deep_pipeline] no runner for {agent} — skipping")
+            i += 1
             continue
+
+        # Observation threading: the step executes with the outputs of the steps
+        # it follows in view, so a pipeline is sequential, not a bare fan-out.
+        sub_task = _thread_observations(sub["sub_task"], agent_responses)
 
         sub_state = {
             **state,
@@ -211,6 +282,7 @@ def run_deep_pipeline(
         uncertainty = sub.get("uncertainty", 0.4)
         plan_step   = step_index.get(step_id)
         retries     = 1   # one retry per step
+        result      = {}  # guard: runner may raise before result is bound
 
         if plan_step is not None:
             plan_step.status = "running"
@@ -278,6 +350,22 @@ def run_deep_pipeline(
                         "recommendation": v.recommendation,
                     })
                     all_messages.extend(result.get("messages", []))
+
+                    # Real replan: a failed step re-decomposes the remaining work
+                    # once, threading the failure so the new steps adapt to it.
+                    if v.recommendation == "replan" and replan_left > 0:
+                        note = v.issues[0] if v.issues else f"{step_id} scored {v.raw_score:.2f}"
+                        tag  = f"r{_replan_budget() - replan_left + 1}"
+                        new_steps, new_subs = _replan_remaining(
+                            query, agents, action, complexity,
+                            done_count=i + 1, failure_note=note, tag=tag)
+                        if new_subs:
+                            for s in new_steps:
+                                step_index[s.step_id] = s
+                            queue = queue[:i + 1] + new_subs
+                            replan_left -= 1
+                            print(f"[deep_pipeline] replan → spliced {len(new_subs)} "
+                                  f"step(s) after {step_id} ({replan_left} replan(s) left)")
                     break
 
                 except Exception as e:
@@ -294,6 +382,8 @@ def run_deep_pipeline(
             })
             all_messages.extend(result.get("messages", []))
             break   # no retry logic without a plan_step
+
+        i += 1
 
     if aborted:
         print(f"[deep_pipeline] aborted: {abort_reason}")
