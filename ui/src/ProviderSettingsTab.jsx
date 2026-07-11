@@ -154,6 +154,7 @@ export default function ProviderSettingsTab() {
   return (
     <div style={{ color: T.text }}>
       <PageHeader
+        center
         title="Model & Provider"
         subtitle="Choose which model answers — a local model to stay private and offline, or a hosted API. Changes apply immediately and survive a restart."
       />

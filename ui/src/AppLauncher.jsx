@@ -107,7 +107,11 @@ function threadGroups(threads) {
       : d.toDateString() === yesterday ? "Yesterday" : "Earlier";
     groups[key].push(t);
   }
-  return Object.entries(groups).filter(([, items]) => items.length);
+  // "Earlier" history is intentionally dropped from the launcher — it reads as
+  // stale clutter; only recent (Today/Yesterday) threads stay surfaced here.
+  return Object.entries(groups)
+    .filter(([label]) => label !== "Earlier")
+    .filter(([, items]) => items.length);
 }
 
 function ThreadRow({ thread, onClick }) {
@@ -158,7 +162,7 @@ function RecentThreads({ threads, onSwitch }) {
 }
 
 export default function AppLauncher({
-  open, onClose, activeTab, onNav, apiStatus, coherence,
+  open, onClose, activeTab, onNav, apiStatus,
   searchSignal = 0,
 }) {
   const [threads, setThreads] = useState([]);
@@ -340,19 +344,6 @@ export default function AppLauncher({
           </button>
 
           <div style={{ flex: 1 }} />
-
-          {/* Connection */}
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12, color: T.muted, fontFamily: FONT_UI }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%",
-              background: online ? T.success : apiStatus === "checking" ? T.warn : T.error }} />
-            {online ? "Connected" : apiStatus === "checking" ? "Connecting…" : "Offline"}
-            {coherence && online && (
-              <span style={{ fontFamily: "monospace", fontSize: 11,
-                color: coherence.C >= 0.82 ? T.success : coherence.C >= 0.70 ? T.warn : T.error }}>
-                · C {coherence.C?.toFixed(2)}
-              </span>
-            )}
-          </div>
         </header>
 
         {/* Search — filters tabs & threads; Enter opens the top match */}

@@ -12,9 +12,9 @@ import { T, LUX, TYPE, DUR, FONT_DISPLAY } from "./theme";
  *  pass gold={false} to opt a title out. */
 // Consistent header rule: an elegant gold serif title, then everything else —
 // description, then any actions/buttons/forms — stacked on new lines below it.
-export function PageHeader({ title, subtitle, children, gold = true }) {
+export function PageHeader({ title, subtitle, children, gold = true, center = false }) {
   return (
-    <div style={{ marginBottom: 20 }}>
+    <div style={{ marginBottom: 20, ...(center ? { textAlign: "center" } : null) }}>
       <h1 style={{
         // Elegant serif display (Cormorant Garamond), gold gradient — the
         // AMAGRA / Memory wordmark treatment.
@@ -24,12 +24,14 @@ export function PageHeader({ title, subtitle, children, gold = true }) {
         {title}
       </h1>
       {subtitle && (
-        <div style={{ ...TYPE.caption, color: T.muted, marginTop: 6, maxWidth: 680 }}>
+        <div style={{ ...TYPE.caption, color: T.muted, marginTop: 6, maxWidth: 680,
+                      ...(center ? { marginLeft: "auto", marginRight: "auto" } : null) }}>
           {subtitle}
         </div>
       )}
       {children && (
-        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 13 }}>
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 13,
+                      ...(center ? { justifyContent: "center" } : null) }}>
           {children}
         </div>
       )}

@@ -45,10 +45,13 @@ import { T, GOLD, TYPE, FONT_UI, FONT_DISPLAY } from "./theme";
 
 // ── App-wide settings ─────────────────────────────────────────
 const DEFAULT_SETTINGS = {
-  defaultAgent:  "auto",   // "auto" | agent id
-  reflectMode:   "",       // "" | "light" | "deep"
-  temperature:   0.7,      // 0.1–1.0
-  maxMemories:   5,        // 1–15
+  defaultAgent:   "auto",  // "auto" | agent id
+  reflectMode:    "",      // "" | "light" | "deep"
+  temperature:    0.7,     // 0.1–1.0
+  maxMemories:    5,       // 1–15
+  enterToSend:    true,    // Enter sends (Shift+Enter newline) vs Ctrl+Enter sends
+  showTimestamps: true,    // show per-message timestamps in chat
+  reduceMotion:   false,   // near-instant animations/transitions app-wide
 };
 
 function loadSettings() {
@@ -95,6 +98,19 @@ export default function App() {
       return next;
     });
   }, []);
+
+  // Reduce-motion preference — inject a global stylesheet that collapses every
+  // animation/transition to near-zero. Isolated: no component needs to know.
+  useEffect(() => {
+    const id = "amagra-reduce-motion";
+    let el = document.getElementById(id);
+    if (settings.reduceMotion) {
+      if (!el) { el = document.createElement("style"); el.id = id; document.head.appendChild(el); }
+      el.textContent = "*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important;}";
+    } else if (el) {
+      el.remove();
+    }
+  }, [settings.reduceMotion]);
 
   const [forcedAgent, setForcedAgent] = useState(() => {
     const s = loadSettings();
@@ -203,6 +219,10 @@ export default function App() {
             case "h": e.preventDefault(); navTo("releases");  break;
             case "g": e.preventDefault(); navTo("goals");     break;
             case "q": e.preventDefault(); navTo("tasks");     break;
+            case "s": e.preventDefault(); navTo("skills");    break;
+            case "v": e.preventDefault(); navTo("consensus"); break;
+            case "p": e.preventDefault(); navTo("model");     break;
+            case "n": e.preventDefault(); navTo("chat"); window.dispatchEvent(new CustomEvent("amagra:new-thread")); break;
             default: break;
           }
         } else {
@@ -418,7 +438,7 @@ export default function App() {
             display: activeTab === "chat" || activeTab === "prompt" ? "flex" : "block",
             flexDirection: activeTab === "chat" || activeTab === "prompt" ? "column" : undefined,
           }}>
-            {activeTab === "chat"      && <ChatTab apiStatus={apiStatus} onLogAdd={addLog} onQueryComplete={() => setTotalQueries(q => q + 1)} onLitNode={setLitNode} onActivityChange={setActivityPct} onCoherenceUpdate={setCoherence} forcedAgent={forcedAgent} onForcedAgentChange={setForcedAgent} onInspect={handleInspect} defaultReflectMode={settings.reflectMode} seedPrompt={seedPrompt} onSeedConsumed={() => setSeedPrompt(null)} />}
+            {activeTab === "chat"      && <ChatTab apiStatus={apiStatus} onLogAdd={addLog} onQueryComplete={() => setTotalQueries(q => q + 1)} onLitNode={setLitNode} onActivityChange={setActivityPct} onCoherenceUpdate={setCoherence} forcedAgent={forcedAgent} onForcedAgentChange={setForcedAgent} onInspect={handleInspect} defaultReflectMode={settings.reflectMode} seedPrompt={seedPrompt} onSeedConsumed={() => setSeedPrompt(null)} enterToSend={settings.enterToSend} showTimestamps={settings.showTimestamps} />}
             {activeTab === "prompt"    && (
               <Suspense fallback={
                 <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
@@ -468,7 +488,7 @@ export default function App() {
               {activeTab === "releases"      && <VersionHistoryTab />}
               {activeTab === "prefs"         && <SettingsModal settings={settings} onUpdate={updateSetting} coherence={coherence} apiStatus={apiStatus} />}
               {activeTab === "shortcuts"     && <ShortcutsModal />}
-              {activeTab === "about"         && <AboutView coherence={coherence} />}
+              {activeTab === "about"         && <AboutView coherence={coherence} apiStatus={apiStatus} />}
               </Suspense>
             </div>
             )}
