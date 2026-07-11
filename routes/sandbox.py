@@ -28,8 +28,11 @@ class RunRequest(BaseModel):
 
 @router.get("/status")
 def status():
-    """Whether code execution is enabled, and the active limits."""
-    return {
+    """Whether code execution is enabled, the active limits, and how strong
+    the isolation actually is (#134)."""
+    isolation = sbx.isolation_mode() if os.name == "posix" else "unavailable"
+    jailed = isolation == "bwrap"
+    out = {
         "enabled": _enabled(),
         "limits": {
             "timeout_s": sbx.DEFAULT_TIMEOUT,
@@ -37,8 +40,18 @@ def status():
             "mem_bytes": sbx.DEFAULT_MEM_BYTES,
             "max_timeout_s": _MAX_TIMEOUT,
         },
-        "network_isolated": False,
+        "isolation": isolation,
+        "network_isolated": jailed,
+        "filesystem_isolated": jailed,
     }
+    if not jailed:
+        out["warning"] = (
+            "No OS-level jail: submitted code can read any file the server "
+            "user can read and make outbound network connections. Install "
+            "bubblewrap (bwrap) for real isolation; do not enable the sandbox "
+            "on a shared or internet-exposed host without it."
+        )
+    return out
 
 
 @router.post("/run")
