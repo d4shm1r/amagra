@@ -1,18 +1,19 @@
 import { useState, useEffect, useRef } from "react";
+import { T, SEM } from "./theme";
 import { AGENTS } from "./constants";
 import { PageHeader } from "./ObsShared";
 
 import { API } from "./api";
 
 const STATUS_COLOR = {
-  pending: "#9A7A60",
-  running: "#9A6C00",
-  done:    "#15803D",
-  failed:  "#B42318",
+  pending: T.muted,
+  running: T.accent2,
+  done:    T.success,
+  failed:  T.error,
 };
 
 const STATUS_BG = {
-  pending: "#E0D6C4",
+  pending: T.border,
   running: "#F5EDD6",
   done:    "#E7F2E6",
   failed:  "#F9E7E1",
@@ -154,7 +155,7 @@ export default function TaskQueue() {
 
       {/* ── SECTION 1 — New Task Form ── */}
       <div className="lux-card" style={{ padding: 18, marginBottom: 14 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#9A7A60", marginBottom: 12, letterSpacing: 1 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: T.muted, marginBottom: 12, letterSpacing: 1 }}>
           + NEW TASK
         </div>
 
@@ -162,9 +163,9 @@ export default function TaskQueue() {
           value={title}
           onChange={e => setTitle(e.target.value)}
           placeholder="Task title (e.g. Write a backup script)"
-          style={{ width: "100%", background: "#F4F0E8", border: "1.5px solid #E0D6C4", borderRadius: 4, color: "#2E2010", padding: "10px 14px", fontSize: 14, fontFamily: "inherit", outline: "none", marginBottom: 10 }}
-          onFocus={e => e.target.style.borderColor = "#15803D66"}
-          onBlur={e => e.target.style.borderColor = "#E0D6C4"}
+          style={{ width: "100%", background: T.surface2, border: `1.5px solid ${T.border}`, borderRadius: 8, color: T.text, padding: "10px 14px", fontSize: 14, fontFamily: "inherit", outline: "none", marginBottom: 10 }}
+          onFocus={e => e.target.style.borderColor = `${T.success}66`}
+          onBlur={e => e.target.style.borderColor = T.border}
         />
 
         <textarea
@@ -172,32 +173,32 @@ export default function TaskQueue() {
           onChange={e => setPrompt(e.target.value)}
           rows={4}
           placeholder="Full prompt — be specific. The agent will read exactly this."
-          style={{ width: "100%", background: "#F4F0E8", border: "1.5px solid #E0D6C4", borderRadius: 4, color: "#2E2010", padding: "10px 14px", fontSize: 14, fontFamily: "inherit", outline: "none", resize: "vertical", lineHeight: 1.6, marginBottom: 10 }}
-          onFocus={e => e.target.style.borderColor = "#15803D66"}
-          onBlur={e => e.target.style.borderColor = "#E0D6C4"}
+          style={{ width: "100%", background: T.surface2, border: `1.5px solid ${T.border}`, borderRadius: 8, color: T.text, padding: "10px 14px", fontSize: 14, fontFamily: "inherit", outline: "none", resize: "vertical", lineHeight: 1.6, marginBottom: 10 }}
+          onFocus={e => e.target.style.borderColor = `${T.success}66`}
+          onBlur={e => e.target.style.borderColor = T.border}
         />
 
         {/* Agent selector */}
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, color: "#9A7A60", marginBottom: 8 }}>Select agents (multi-select allowed):</div>
+          <div style={{ fontSize: 12, color: T.muted, marginBottom: 8 }}>Select agents (multi-select allowed):</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             <button
               onClick={() => setSelectedAgents(["coordinator"])}
               style={{
-                padding: "5px 12px", borderRadius: 3, fontSize: 12, fontFamily: "inherit", cursor: "pointer",
-                background: selectedAgents.length === 1 && selectedAgents[0] === "coordinator" ? "#9A6C00" : "#E0D6C4",
-                color:      selectedAgents.length === 1 && selectedAgents[0] === "coordinator" ? "#F4F0E8"  : "#9A7A60",
+                padding: "5px 12px", borderRadius: 99, fontSize: 12, fontFamily: "inherit", cursor: "pointer",
+                background: selectedAgents.length === 1 && selectedAgents[0] === "coordinator" ? T.accent2 : T.border,
+                color:      selectedAgents.length === 1 && selectedAgents[0] === "coordinator" ? T.surface2  : T.muted,
                 border: "none", fontWeight: 700,
               }}>
-              👑 Auto
+              ◈ Auto
             </button>
             {AGENTS.filter(a => a.id !== "coordinator").map(a => {
               const sel = selectedAgents.includes(a.id);
               return (
                 <button key={a.id} onClick={() => toggleAgent(a.id)} style={{
-                  padding: "5px 12px", borderRadius: 3, fontSize: 12, fontFamily: "inherit", cursor: "pointer",
-                  background: sel ? a.color : "#FAF7F2",
-                  color:      sel ? "#F4F0E8" : a.color,
+                  padding: "5px 12px", borderRadius: 99, fontSize: 12, fontFamily: "inherit", cursor: "pointer",
+                  background: sel ? a.color : T.surface,
+                  color:      sel ? T.surface2 : a.color,
                   border: `1px solid ${a.color}${sel ? "" : "55"}`,
                   fontWeight: 600, whiteSpace: "nowrap",
                 }}>
@@ -212,8 +213,8 @@ export default function TaskQueue() {
           onClick={addTask}
           disabled={!canAddTask || adding}
           style={{
-            background: canAddTask && !adding ? "#15803D" : "#E0D6C4",
-            border: "none", borderRadius: 4, color: canAddTask && !adding ? "#F4F0E8" : "#9A7A60",
+            background: canAddTask && !adding ? T.success : T.border,
+            border: "none", borderRadius: 99, color: canAddTask && !adding ? T.surface2 : T.muted,
             padding: "10px 24px", fontSize: 14, fontWeight: 800, cursor: canAddTask && !adding ? "pointer" : "not-allowed", fontFamily: "inherit",
           }}>
           {adding ? "Adding…" : "+ ADD TASK"}
@@ -230,7 +231,7 @@ export default function TaskQueue() {
             padding: "10px 22px", fontSize: 14, fontWeight: 800, fontFamily: "inherit",
             cursor: queueRunning || counts.pending === 0 ? "not-allowed" : "pointer",
             ...(queueRunning || counts.pending === 0
-              ? { background: "#E0D6C4", color: "#9A7A60", border: "none", borderRadius: 4 }
+              ? { background: T.border, color: T.muted, border: "none", borderRadius: 99 }
               : {}),
           }}>
           {queueRunning ? "⏳ Running…" : "▶ RUN ALL PENDING"}
@@ -238,18 +239,18 @@ export default function TaskQueue() {
 
         <div style={{ display: "flex", gap: 8 }}>
           {[
-            { label: "pending", count: counts.pending, c: "#9A7A60" },
-            { label: "running", count: counts.running, c: "#9A6C00" },
-            { label: "done",    count: counts.done,    c: "#15803D" },
-            { label: "failed",  count: counts.failed,  c: "#B42318" },
+            { label: "pending", count: counts.pending, c: T.muted },
+            { label: "running", count: counts.running, c: T.accent2 },
+            { label: "done",    count: counts.done,    c: T.success },
+            { label: "failed",  count: counts.failed,  c: T.error },
           ].map(x => (
-            <div key={x.label} style={{ background: STATUS_BG[x.label], border: `1.5px solid ${x.c}44`, borderRadius: 4, padding: "5px 12px", fontSize: 12, fontWeight: 700, color: x.c }}>
+            <div key={x.label} style={{ background: STATUS_BG[x.label], border: `1.5px solid ${x.c}44`, borderRadius: 99, padding: "5px 12px", fontSize: 12, fontWeight: 700, color: x.c }}>
               {x.count} {x.label}
             </div>
           ))}
         </div>
 
-        <button onClick={fetchStatus} style={{ marginLeft: "auto", background: "transparent", border: "1.5px solid #E0D6C4", borderRadius: 4, color: "#9A7A60", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
+        <button onClick={fetchStatus} style={{ marginLeft: "auto", background: "transparent", border: `1.5px solid ${T.border}`, borderRadius: 99, color: T.muted, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
           ↻ Refresh
         </button>
       </div>
@@ -257,22 +258,22 @@ export default function TaskQueue() {
       {/* ── SECTION 3 — Task List ── */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {tasks.length === 0 && (
-          <div style={{ textAlign: "center", color: "#9A7A60", padding: "40px 0", fontSize: 15 }}>
+          <div style={{ textAlign: "center", color: T.muted, padding: "40px 0", fontSize: 15 }}>
             No tasks yet — create one above
           </div>
         )}
 
         {tasks.map(task => {
           const agentIds  = parseAgents(task.agents);
-          const sc        = STATUS_COLOR[task.status] || "#9A7A60";
-          const sb        = STATUS_BG[task.status]    || "#E0D6C4";
+          const sc        = STATUS_COLOR[task.status] || T.muted;
+          const sb        = STATUS_BG[task.status]    || T.border;
           const isExpanded = expandedId === task.id;
           const data      = expandedData[task.id];
           const canExpand = task.status === "done" || task.status === "failed";
           const canDelete = task.status !== "running";
 
           return (
-            <div key={task.id} className="task-row" style={{ background: "#FAF7F2", border: `2px solid ${sc}33`, borderRadius: 3, overflow: "hidden", transition: "all .2s" }}>
+            <div key={task.id} className="task-row" style={{ background: T.surface, border: `2px solid ${sc}33`, borderRadius: 12, overflow: "hidden", transition: "all .2s" }}>
 
               {/* Task header row */}
               <div
@@ -280,13 +281,13 @@ export default function TaskQueue() {
                 style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, cursor: canExpand ? "pointer" : "default" }}>
 
                 {/* Status badge */}
-                <div style={{ background: sb, border: `1.5px solid ${sc}66`, borderRadius: 3, padding: "3px 10px", fontSize: 11, fontWeight: 700, color: sc, flexShrink: 0, animation: task.status === "running" ? "runningPulse 1.5s infinite" : "none" }}>
+                <div style={{ background: sb, border: `1.5px solid ${sc}66`, borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700, color: sc, flexShrink: 0, animation: task.status === "running" ? "runningPulse 1.5s infinite" : "none" }}>
                   {task.status === "running" ? "⏳ " : task.status === "done" ? "✓ " : task.status === "failed" ? "✗ " : "○ "}
                   {task.status.toUpperCase()}
                 </div>
 
                 {/* Title */}
-                <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "#2E2010" }}>{task.title}</div>
+                <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: T.text }}>{task.title}</div>
 
                 {/* Agent icons */}
                 <div style={{ display: "flex", gap: 4 }}>
@@ -300,14 +301,14 @@ export default function TaskQueue() {
 
                 {/* Timing */}
                 {task.finished && task.started && (
-                  <span style={{ fontSize: 11, color: "#9A7A60", flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, color: T.muted, flexShrink: 0 }}>
                     {Math.round((new Date(task.finished) - new Date(task.started)) / 1000)}s
                   </span>
                 )}
 
                 {/* Expand hint */}
                 {canExpand && (
-                  <span style={{ fontSize: 13, color: "#9A7A60", flexShrink: 0 }}>
+                  <span style={{ fontSize: 13, color: T.muted, flexShrink: 0 }}>
                     {isExpanded ? "▲" : "▼"}
                   </span>
                 )}
@@ -317,7 +318,7 @@ export default function TaskQueue() {
                   <button
                     onClick={e => { e.stopPropagation(); deleteTask(task.id, task.status); }}
                     title="Delete task"
-                    style={{ background: "transparent", border: "1px solid #B4231844", borderRadius: 3, color: "#B42318", padding: "3px 8px", cursor: "pointer", fontSize: 12, flexShrink: 0 }}>
+                    style={{ background: "transparent", border: `1px solid ${T.error}44`, borderRadius: 99, color: T.error, padding: "3px 8px", cursor: "pointer", fontSize: 12, flexShrink: 0 }}>
                     🗑
                   </button>
                 )}
@@ -325,14 +326,14 @@ export default function TaskQueue() {
 
               {/* Expanded result panel */}
               {isExpanded && data && (
-                <div style={{ borderTop: `2px solid ${sc}33`, padding: "14px 16px", background: task.status === "failed" ? "#F9E7E1" : "#F4F0E8" }}>
+                <div style={{ borderTop: `2px solid ${sc}33`, padding: "14px 16px", background: task.status === "failed" ? "#F9E7E1" : T.surface2 }}>
                   {task.status === "done" && data.result && (
-                    <div style={{ fontSize: 13, color: "#2E2010", lineHeight: 1.75, whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 400, overflowY: "auto" }}>
+                    <div style={{ fontSize: 13, color: T.text, lineHeight: 1.75, whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 400, overflowY: "auto" }}>
                       {data.result}
                     </div>
                   )}
                   {task.status === "failed" && data.error && (
-                    <div style={{ fontSize: 13, color: "#B42318", fontFamily: "monospace", whiteSpace: "pre-wrap" }}>
+                    <div style={{ fontSize: 13, color: T.error, fontFamily: "monospace", whiteSpace: "pre-wrap" }}>
                       {data.error}
                     </div>
                   )}

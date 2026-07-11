@@ -1,20 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
+import { T as THEME, SEM, FONT_UI as fUI, FONT_MONO as fMono } from "./theme";
 
-const T = {
-  bg:      "#F4F0E8",
-  surface: "#FAF7F2",
-  surface2:"#F4F0E8",
-  border:  "#E0D6C4",
-  text:    "#2E2010",
-  muted:   "#9A7A60",
-  mutedLt: "#5C4030",
-};
+// This tab used to carry its own shadow palette + font stacks; it now reads
+// from theme.js. `bg` here means an inset well, which is the theme's surface2.
+const T = { ...THEME, bg: THEME.surface2 };
 
-const fBody = "Georgia, Cambria, 'Times New Roman', serif";
-const fUI   = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-const fMono = "Consolas, 'Courier New', monospace";
+// Article prose reads in the same serif voice as chat messages (.msg-content).
+const fBody = "'Charter', 'Source Serif Pro', 'Iowan Old Style', Georgia, serif";
 const ARTICLE_MAX = 860;
 
 // ── KaTeX math rendering ───────────────────────────────────────
@@ -23,7 +17,7 @@ function KTex({ src, display = false }) {
     const html = katex.renderToString(src, { displayMode: display, throwOnError: false, strict: false });
     return <span dangerouslySetInnerHTML={{ __html: html }} />;
   } catch {
-    return <code style={{ color: "#B42318", fontSize: 12 }}>{src}</code>;
+    return <code style={{ color: T.error, fontSize: 12 }}>{src}</code>;
   }
 }
 function KTexBlock({ src, n }) {
@@ -39,18 +33,18 @@ function KTexBlock({ src, n }) {
 
 // ── Shared prose ───────────────────────────────────────────────
 function M({ children }) {
-  return <span style={{ fontFamily: fBody, fontStyle: "italic", color: "#1E5A8A" }}>{children}</span>;
+  return <span style={{ fontFamily: fBody, fontStyle: "italic", color: SEM.blue }}>{children}</span>;
 }
 function P({ children }) {
   return <p style={{ fontSize: 15, color: "#3A2A14", lineHeight: 1.92, marginBottom: 20, fontFamily: fBody }}>{children}</p>;
 }
 function Code({ children }) {
-  return <code style={{ fontFamily: fMono, fontSize: 12.5, background: T.surface2, color: "#1E5A8A", padding: "2px 7px", borderRadius: 3, border: `1px solid ${T.border}`, letterSpacing: "0.01em" }}>{children}</code>;
+  return <code style={{ fontFamily: fMono, fontSize: 12.5, background: T.surface2, color: SEM.blue, padding: "2px 7px", borderRadius: 4, border: `1px solid ${T.border}`, letterSpacing: "0.01em" }}>{children}</code>;
 }
-function H2({ children, color = "#0F766E" }) {
+function H2({ children, color = SEM.teal }) {
   return <h2 style={{ fontSize: 19, fontWeight: 700, color, marginTop: 42, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${T.border}`, fontFamily: fUI, letterSpacing: "-0.3px" }}>{children}</h2>;
 }
-function Callout({ label, value, color = "#0F766E", sub }) {
+function Callout({ label, value, color = SEM.teal, sub }) {
   return (
     <div style={{ background: T.bg, border: `1px solid ${color}25`, borderTop: `2px solid ${color}`, borderRadius: 6, padding: "14px 18px" }}>
       <span style={{ fontSize: 28, fontWeight: 800, color, fontFamily: fMono, display: "block", marginBottom: 6 }}>{value}</span>
@@ -62,9 +56,9 @@ function Callout({ label, value, color = "#0F766E", sub }) {
 function CalloutGrid({ children }) {
   return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 12, margin: "22px 0" }}>{children}</div>;
 }
-function Note({ children, color = "#9A6C00" }) {
+function Note({ children, color = T.accent2 }) {
   return (
-    <div style={{ background: `${color}08`, borderLeft: `3px solid ${color}`, padding: "12px 18px", fontSize: 14, color: "#5C4030", lineHeight: 1.8, margin: "22px 0", fontFamily: fBody, fontStyle: "italic" }}>
+    <div style={{ background: `${color}08`, borderLeft: `3px solid ${color}`, padding: "12px 18px", fontSize: 14, color: T.mutedLt, lineHeight: 1.8, margin: "22px 0", fontFamily: fBody, fontStyle: "italic" }}>
       {children}
     </div>
   );
@@ -79,7 +73,7 @@ function DataTable({ headers, rows, caption }) {
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={i}>{row.map((cell, j) => <td key={j} style={{ color: "#5C4030", padding: "8px 14px", borderBottom: `1px solid ${T.border}22`, background: i % 2 === 0 ? "transparent" : `${T.surface2}88`, fontFamily: fUI, fontSize: 12.5 }}>{cell}</td>)}</tr>
+              <tr key={i}>{row.map((cell, j) => <td key={j} style={{ color: T.mutedLt, padding: "8px 14px", borderBottom: `1px solid ${T.border}22`, background: i % 2 === 0 ? "transparent" : `${T.surface2}88`, fontFamily: fUI, fontSize: 12.5 }}>{cell}</td>)}</tr>
             ))}
           </tbody>
         </table>
@@ -92,13 +86,13 @@ function DataTable({ headers, rows, caption }) {
 // ── Paper structural elements ──────────────────────────────────
 function Abstract({ children }) {
   return (
-    <div style={{ borderLeft: "3px solid #0F766E", padding: "14px 22px", margin: "28px 0" }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: "#0F766E", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 10, fontFamily: fUI }}>Abstract</div>
-      <p style={{ fontSize: 14.5, color: "#5C4030", lineHeight: 1.9, margin: 0, fontStyle: "italic", fontFamily: fBody }}>{children}</p>
+    <div style={{ borderLeft: `3px solid ${SEM.teal}`, padding: "14px 22px", margin: "28px 0" }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: SEM.teal, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 10, fontFamily: fUI }}>Abstract</div>
+      <p style={{ fontSize: 14.5, color: T.mutedLt, lineHeight: 1.9, margin: 0, fontStyle: "italic", fontFamily: fBody }}>{children}</p>
     </div>
   );
 }
-function SectionNum({ id, n, children, color = "#0F766E" }) {
+function SectionNum({ id, n, children, color = SEM.teal }) {
   return (
     <h2 id={id} style={{ display: "flex", alignItems: "baseline", gap: 12, fontSize: 19, fontWeight: 700, color, marginTop: 52, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${T.border}`, scrollMarginTop: 16, fontFamily: fUI, letterSpacing: "-0.3px" }}>
       <span style={{ fontFamily: fMono, fontSize: 13, color: T.muted, fontWeight: 400 }}>{n}</span>
@@ -108,7 +102,7 @@ function SectionNum({ id, n, children, color = "#0F766E" }) {
 }
 function SubSection({ id, n, children }) {
   return (
-    <h3 id={id} style={{ display: "flex", alignItems: "baseline", gap: 9, fontSize: 15.5, fontWeight: 700, color: "#9A6C00", marginTop: 32, marginBottom: 10, scrollMarginTop: 16, fontFamily: fUI }}>
+    <h3 id={id} style={{ display: "flex", alignItems: "baseline", gap: 9, fontSize: 15.5, fontWeight: 700, color: T.accent2, marginTop: 32, marginBottom: 10, scrollMarginTop: 16, fontFamily: fUI }}>
       <span style={{ fontFamily: fMono, fontSize: 12, color: T.muted, fontWeight: 400 }}>{n}</span>
       {children}
     </h3>
@@ -116,11 +110,11 @@ function SubSection({ id, n, children }) {
 }
 function Definition({ n, title, children }) {
   return (
-    <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderLeft: "3px solid #0F766E", borderRadius: 6, padding: "16px 22px", margin: "22px 0" }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: "#0F766E", marginBottom: 12, fontFamily: fUI, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+    <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderLeft: `3px solid ${SEM.teal}`, borderRadius: 6, padding: "16px 22px", margin: "22px 0" }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: SEM.teal, marginBottom: 12, fontFamily: fUI, letterSpacing: "0.1em", textTransform: "uppercase" }}>
         Definition {n}{title ? ` — ${title}` : ""}
       </div>
-      <div style={{ fontSize: 14.5, color: "#5C4030", lineHeight: 1.85, fontFamily: fBody }}>{children}</div>
+      <div style={{ fontSize: 14.5, color: T.mutedLt, lineHeight: 1.85, fontFamily: fBody }}>{children}</div>
     </div>
   );
 }
@@ -132,15 +126,15 @@ function Figure({ n, caption, children }) {
       <div style={{ margin: "24px 0", border: `1px solid ${T.border}`, borderRadius: 8, overflow: "hidden" }}>
         <div style={{ background: T.surface2, padding: "16px 20px" }}>{children}</div>
         <div style={{ padding: "10px 20px", background: T.surface, borderTop: `1px solid ${T.border}`, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-          <span style={{ fontSize: 13, color: "#9A7A60", fontStyle: "italic", fontFamily: fBody, lineHeight: 1.6 }}>
-            <strong style={{ fontStyle: "normal", fontFamily: fUI, fontWeight: 700, fontSize: 11, color: "#8A7058", letterSpacing: "0.05em", textTransform: "uppercase", marginRight: 6 }}>Fig. {n}</strong>
+          <span style={{ fontSize: 13, color: T.muted, fontStyle: "italic", fontFamily: fBody, lineHeight: 1.6 }}>
+            <strong style={{ fontStyle: "normal", fontFamily: fUI, fontWeight: 700, fontSize: 11, color: T.muted, letterSpacing: "0.05em", textTransform: "uppercase", marginRight: 6 }}>Fig. {n}</strong>
             {caption}
           </span>
           <button
             onClick={() => setExpanded(true)}
-            onMouseEnter={e => e.currentTarget.style.background = "#C4880820"}
+            onMouseEnter={e => e.currentTarget.style.background = `${T.accent}20`}
             onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-            style={{ background: "transparent", border: "none", color: "#C48808", fontSize: 11, cursor: "pointer", flexShrink: 0, padding: "3px 8px", borderRadius: 3, fontFamily: fUI }}
+            style={{ background: "transparent", border: "none", color: T.accent, fontSize: 11, cursor: "pointer", flexShrink: 0, padding: "3px 8px", borderRadius: 99, fontFamily: fUI }}
           >↗ Expand</button>
         </div>
       </div>
@@ -149,7 +143,7 @@ function Figure({ n, caption, children }) {
           <div onClick={e => e.stopPropagation()} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 28, maxWidth: "92vw", maxHeight: "92vh", overflow: "auto", cursor: "auto", boxShadow: "0 24px 64px rgba(72,52,28,0.8)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: T.mutedLt }}>Figure {n}</span>
-              <button onClick={() => setExpanded(false)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.muted, cursor: "pointer", fontSize: 14, borderRadius: 4, width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              <button onClick={() => setExpanded(false)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.muted, cursor: "pointer", fontSize: 14, borderRadius: 8, width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
             </div>
             {children}
             <div style={{ fontSize: 12, color: T.muted, marginTop: 14, fontStyle: "italic", maxWidth: 640 }}>{caption}</div>
@@ -166,7 +160,7 @@ function Expandable({ title, children }) {
     <div style={{ border: `1px solid ${T.border}`, borderRadius: 6, margin: "18px 0", overflow: "hidden" }}>
       <button
         onClick={() => setOpen(o => !o)}
-        onMouseEnter={e => e.currentTarget.style.background = "#F4F0E8"}
+        onMouseEnter={e => e.currentTarget.style.background = T.surface2}
         onMouseLeave={e => e.currentTarget.style.background = T.surface2}
         style={{ width: "100%", textAlign: "left", padding: "10px 18px", background: T.surface2, border: "none", color: T.mutedLt, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontFamily: fUI, fontSize: 13 }}
       >
@@ -197,11 +191,11 @@ function Cite({ n }) {
     <span style={{ position: "relative", display: "inline" }}
           onMouseEnter={() => setShow(true)}
           onMouseLeave={() => setShow(false)}>
-      <span style={{ color: "#C48808", cursor: "pointer", fontFamily: "Consolas, monospace", fontSize: 12 }}>[{n}]</span>
+      <span style={{ color: T.accent, cursor: "pointer", fontFamily: "Consolas, monospace", fontSize: 12 }}>[{n}]</span>
       {show && ref && (
         <span style={{ position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)", width: 310, background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "12px 16px", zIndex: 2000, boxShadow: "0 6px 28px rgba(72,52,28,0.8)", pointerEvents: "none", display: "block" }}>
           <span style={{ fontSize: 12.5, fontWeight: 700, color: T.mutedLt, display: "block", marginBottom: 5, fontFamily: fUI }}>{ref.authors} ({ref.year})</span>
-          <span style={{ fontSize: 12, color: "#1E5A8A", fontStyle: "italic", display: "block", marginBottom: 5, fontFamily: fBody, lineHeight: 1.5 }}>{ref.title}</span>
+          <span style={{ fontSize: 12, color: SEM.blue, fontStyle: "italic", display: "block", marginBottom: 5, fontFamily: fBody, lineHeight: 1.5 }}>{ref.title}</span>
           <span style={{ fontSize: 11, color: T.muted, display: "block", fontFamily: fUI }}>{ref.venue}</span>
           {ref.note && <span style={{ fontSize: 10.5, color: T.muted, display: "block", marginTop: 5, opacity: 0.7, fontFamily: fUI }}>{ref.note}</span>}
         </span>
@@ -217,10 +211,10 @@ function References({ refs }) {
       <ol style={{ paddingLeft: 24, display: "flex", flexDirection: "column", gap: 14 }}>
         {refs.map((r, i) => (
           <li key={i} style={{ fontSize: 14, color: T.muted, lineHeight: 1.7, fontFamily: fBody }}>
-            <span style={{ color: "#5C4030", fontWeight: 600 }}>{r.authors}</span>{" "}
+            <span style={{ color: T.mutedLt, fontWeight: 600 }}>{r.authors}</span>{" "}
             ({r.year}).{" "}
-            <span style={{ fontStyle: "italic", color: "#1E5A8A" }}>{r.title}.</span>{" "}
-            <span style={{ color: "#9A7A60" }}>{r.venue}.</span>
+            <span style={{ fontStyle: "italic", color: SEM.blue }}>{r.title}.</span>{" "}
+            <span style={{ color: T.muted }}>{r.venue}.</span>
             {r.note && <span style={{ color: T.muted, fontSize: 12.5 }}> {r.note}</span>}
           </li>
         ))}
@@ -231,7 +225,7 @@ function References({ refs }) {
 
 // ── Visualizations ─────────────────────────────────────────────
 function PipelineDiagram() {
-  const Box = ({ label, sub, color = "#E0D6C4", accent = "#0F766E" }) => (
+  const Box = ({ label, sub, color = T.border, accent = SEM.teal }) => (
     <div style={{ background: T.bg, border: `1px solid ${color}`, borderTop: `2px solid ${accent}`, borderRadius: 5, padding: "10px 18px", textAlign: "center", minWidth: 140 }}>
       <div style={{ fontSize: 13, fontWeight: 600, color: T.mutedLt }}>{label}</div>
       {sub && <div style={{ fontSize: 10, color: T.muted, marginTop: 3, fontFamily: "Consolas, monospace" }}>{sub}</div>}
@@ -239,56 +233,56 @@ function PipelineDiagram() {
   );
   const Arrow = () => <div style={{ textAlign: "center", color: T.muted, fontSize: 16, lineHeight: 1 }}>↓</div>;
   const Diamond = ({ label }) => (
-    <div style={{ background: "#ECEAF6", border: "1px solid #9A6C0066", borderRadius: 5, padding: "10px 20px", textAlign: "center", fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 13, color: "#9A6C00" }}>
+    <div style={{ background: T.surface2, border: `1px solid ${T.accent2}66`, borderRadius: 5, padding: "10px 20px", textAlign: "center", fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 13, color: T.accent2 }}>
       {label}
     </div>
   );
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 0" }}>
-      <Box label="Raw Query" sub="q ∈ ℒ" accent="#9A7A60" color="#E0D6C4" />
+      <Box label="Raw Query" sub="q ∈ ℒ" accent={T.muted} color={T.border} />
       <Arrow />
       <Box label="Normalize & Tokenize" sub="query_normalizer.py" />
       <Arrow />
-      <Box label="Domain Scoring" sub="S(d, q)  for all  d ∈ 𝒟" accent="#9A6C00" />
+      <Box label="Domain Scoring" sub="S(d, q)  for all  d ∈ 𝒟" accent={T.accent2} />
       <Arrow />
       <Diamond label="conf(d *, q) ≥ θ = 0.33 ?" />
       <div style={{ display: "flex", width: "100%", justifyContent: "center", gap: 48, marginTop: 4 }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#15803D", letterSpacing: "0.06em" }}>YES · ~97 %</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.success, letterSpacing: "0.06em" }}>YES · ~97 %</div>
           <div style={{ color: T.muted, fontSize: 14 }}>↓</div>
-          <Box label="Signal Route" sub="deterministic, &lt; 1 ms" accent="#15803D" />
+          <Box label="Signal Route" sub="deterministic, &lt; 1 ms" accent={T.success} />
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#B42318", letterSpacing: "0.06em" }}>NO · ~3 %</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.error, letterSpacing: "0.06em" }}>NO · ~3 %</div>
           <div style={{ color: T.muted, fontSize: 14 }}>↓</div>
-          <Box label="LLM Fallback" sub="phi4-mini, 600–900 ms" accent="#B42318" />
+          <Box label="LLM Fallback" sub="phi4-mini, 600–900 ms" accent={T.error} />
         </div>
       </div>
       <div style={{ color: T.muted, fontSize: 14, marginTop: 2 }}>↓</div>
-      <Box label="Specialist Agent" sub="python_dev | it_networking | dotnet_dev | …" accent="#C48808" />
+      <Box label="Specialist Agent" sub="python_dev | it_networking | dotnet_dev | …" accent={T.accent} />
     </div>
   );
 }
 
 function AccuracyChart() {
   const rows = [
-    { label: "Baseline",    desc: "Keyword-only",            val: 70, color: "#B42318" },
-    { label: "Phase 12",    desc: "Confidence scoring added", val: 82, color: "#C2410C" },
-    { label: "Phase 15",    desc: "Signal-first path",        val: 92, color: "#9A6C00" },
-    { label: "Phase 22",    desc: "Terse factual shape",      val: 94, color: "#15803D" },
-    { label: "Phase 25",    desc: "Full ablation verified",   val: 97, color: "#0F766E" },
-    { label: "Signal-only", desc: "No LLM fallback (ablation)", val: 99, color: "#7E3F8F" },
+    { label: "Baseline",    desc: "Keyword-only",            val: 70, color: T.error },
+    { label: "Phase 12",    desc: "Confidence scoring added", val: 82, color: SEM.clay },
+    { label: "Phase 15",    desc: "Signal-first path",        val: 92, color: T.accent2 },
+    { label: "Phase 22",    desc: "Terse factual shape",      val: 94, color: T.success },
+    { label: "Phase 25",    desc: "Full ablation verified",   val: 97, color: SEM.teal },
+    { label: "Signal-only", desc: "No LLM fallback (ablation)", val: 99, color: SEM.purple },
   ];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
       {rows.map((r, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ width: 76, fontSize: 10, color: T.muted, textAlign: "right", fontFamily: "Consolas, monospace", flexShrink: 0 }}>{r.label}</div>
-          <div style={{ flex: 1, background: "#ECEAF6", borderRadius: 3, height: 24, overflow: "hidden", position: "relative" }}>
-            <div style={{ width: `${r.val}%`, height: "100%", background: `linear-gradient(90deg, ${r.color}99, ${r.color})`, borderRadius: 3, display: "flex", alignItems: "center", paddingLeft: 8 }}>
+          <div style={{ flex: 1, background: T.surface2, borderRadius: 99, height: 24, overflow: "hidden", position: "relative" }}>
+            <div style={{ width: `${r.val}%`, height: "100%", background: `linear-gradient(90deg, ${r.color}99, ${r.color})`, borderRadius: 99, display: "flex", alignItems: "center", paddingLeft: 8 }}>
               <span style={{ fontSize: 10, fontWeight: 800, color: "#1F1408", fontFamily: "Consolas, monospace" }}>{r.val}%</span>
             </div>
-            <div style={{ position: "absolute", top: 0, bottom: 0, left: "97%", width: 1, background: "#0F766E66" }} />
+            <div style={{ position: "absolute", top: 0, bottom: 0, left: "97%", width: 1, background: `${SEM.teal}66` }} />
           </div>
           <div style={{ width: 160, fontSize: 10, color: T.muted, flexShrink: 0 }}>{r.desc}</div>
         </div>
@@ -296,7 +290,7 @@ function AccuracyChart() {
       <div style={{ display: "flex", gap: 12 }}>
         <div style={{ width: 76, flexShrink: 0 }} />
         <div style={{ flex: 1, display: "flex", justifyContent: "flex-end", paddingRight: "3%" }}>
-          <span style={{ fontSize: 9, color: "#0F766E66" }}>▲ target 97%</span>
+          <span style={{ fontSize: 9, color: `${SEM.teal}66` }}>▲ target 97%</span>
         </div>
       </div>
     </div>
@@ -317,7 +311,7 @@ function DomainHeatmap() {
   const cell = (v) => {
     const alpha = Math.round(v * 220);
     const hex = alpha.toString(16).padStart(2, "0");
-    const color = v > 0.7 ? "#0F766E" : v > 0.3 ? "#9A6C00" : "#9A7A60";
+    const color = v > 0.7 ? SEM.teal : v > 0.3 ? T.accent2 : T.muted;
     return { bg: `${color}${hex}`, color: v > 0.5 ? T.mutedLt : T.muted };
   };
   return (
@@ -347,13 +341,13 @@ function DomainHeatmap() {
 
 function ConfidenceHistogram() {
   const buckets = [
-    { label: "0.00–0.11", val: 2,  note: "LLM", color: "#B42318" },
-    { label: "0.11–0.22", val: 4,  note: "LLM", color: "#C2410C" },
-    { label: "0.22–0.33", val: 6,  note: "LLM", color: "#9A6C00" },
-    { label: "0.33–0.50", val: 18, note: "signal", color: "#0F766E" },
-    { label: "0.50–0.67", val: 26, note: "signal", color: "#0F766E" },
-    { label: "0.67–0.84", val: 28, note: "signal", color: "#0F766E" },
-    { label: "0.84–1.00", val: 16, note: "signal", color: "#C48808" },
+    { label: "0.00–0.11", val: 2,  note: "LLM", color: T.error },
+    { label: "0.11–0.22", val: 4,  note: "LLM", color: SEM.clay },
+    { label: "0.22–0.33", val: 6,  note: "LLM", color: T.accent2 },
+    { label: "0.33–0.50", val: 18, note: "signal", color: SEM.teal },
+    { label: "0.50–0.67", val: 26, note: "signal", color: SEM.teal },
+    { label: "0.67–0.84", val: 28, note: "signal", color: SEM.teal },
+    { label: "0.84–1.00", val: 16, note: "signal", color: T.accent },
   ];
   const maxVal = Math.max(...buckets.map(b => b.val));
   return (
@@ -367,8 +361,8 @@ function ConfidenceHistogram() {
         ))}
       </div>
       <div style={{ position: "relative", height: 20, marginBottom: 4 }}>
-        <div style={{ position: "absolute", left: "calc(3 / 7 * 100%)", top: 0, bottom: 0, width: 1, background: "#9A6C00", opacity: 0.7 }} />
-        <div style={{ position: "absolute", left: "calc(3 / 7 * 100% + 4px)", top: 2, fontSize: 9, color: "#9A6C00", whiteSpace: "nowrap" }}>θ = 0.33</div>
+        <div style={{ position: "absolute", left: "calc(3 / 7 * 100%)", top: 0, bottom: 0, width: 1, background: T.accent2, opacity: 0.7 }} />
+        <div style={{ position: "absolute", left: "calc(3 / 7 * 100% + 4px)", top: 2, fontSize: 9, color: T.accent2, whiteSpace: "nowrap" }}>θ = 0.33</div>
       </div>
       <div style={{ display: "flex", gap: 6 }}>
         {buckets.map((b, i) => (
@@ -377,11 +371,11 @@ function ConfidenceHistogram() {
       </div>
       <div style={{ display: "flex", gap: 14, marginTop: 10, justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <div style={{ width: 10, height: 10, background: "#B42318", borderRadius: 2, opacity: 0.55 }} />
+          <div style={{ width: 10, height: 10, background: T.error, borderRadius: 2, opacity: 0.55 }} />
           <span style={{ fontSize: 10, color: T.muted }}>LLM fallback (~12%)</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <div style={{ width: 10, height: 10, background: "#0F766E", borderRadius: 2 }} />
+          <div style={{ width: 10, height: 10, background: SEM.teal, borderRadius: 2 }} />
           <span style={{ fontSize: 10, color: T.muted }}>Signal route (~88%)</span>
         </div>
       </div>
@@ -406,9 +400,9 @@ function TOC({ items, activeId }) {
               paddingLeft: indent + 8 + "px",
               fontSize: item.level === 1 ? 12 : 11,
               fontWeight: item.level === 1 ? 600 : 400,
-              color: active ? "#0F766E" : "#9A7A60",
+              color: active ? SEM.teal : T.muted,
               textDecoration: "none",
-              borderLeft: `2px solid ${active ? "#0F766E" : "transparent"}`,
+              borderLeft: `2px solid ${active ? SEM.teal : "transparent"}`,
               marginLeft: "-2px",
               lineHeight: 1.65,
               transition: "color .15s, border-color .15s",
@@ -447,7 +441,7 @@ function ArticleQuerySignal() {
     <article>
       {/* Byline */}
       <div style={{ display: "flex", gap: 0, flexWrap: "wrap", borderBottom: `1px solid ${T.border}`, paddingBottom: 18, marginBottom: 8, fontFamily: fUI, fontSize: 13, color: T.muted }}>
-        <span style={{ color: "#5C4030", fontWeight: 600, marginRight: 20 }}>Amagra Team</span>
+        <span style={{ color: T.mutedLt, fontWeight: 600, marginRight: 20 }}>Amagra Team</span>
         <span style={{ marginRight: 20 }}>7 June 2026</span>
         <span style={{ marginRight: 20 }}>Version 1.0</span>
         <span>phi4-mini · RTX 2050 4GB</span>
@@ -635,7 +629,7 @@ function ArticleQuerySignal() {
           ]}
         />
       </Expandable>
-      <Note color="#0F766E">
+      <Note color={SEM.teal}>
         Pattern gaps matter more than model capability at this scale. The LLM correctly handled these queries
         when they reached it — the bottleneck was the upstream classifier deciding they were unknown.
         Classification failures are infrastructure failures, not model failures.
@@ -777,10 +771,10 @@ function ArticleCoherence() {
         High conflict rate signals that the keyword registry needs updating, or that a query type is genuinely ambiguous.
       </P>
       <CalloutGrid>
-        <Callout label="Current C(t)" value="~0.82" color="#0F766E" sub="above 0.80 target" />
-        <Callout label="Conflict Rate" value="~6%" color="#15803D" sub="terse agent highest at 87%" />
-        <Callout label="Calibration Error" value="low" color="#9A6C00" sub="recovering from eval bias" />
-        <Callout label="Feedback Prior" value="0.75" color="#7E3F8F" sub="neutral — awaiting real ratings" />
+        <Callout label="Current C(t)" value="~0.82" color={SEM.teal} sub="above 0.80 target" />
+        <Callout label="Conflict Rate" value="~6%" color={T.success} sub="terse agent highest at 87%" />
+        <Callout label="Calibration Error" value="low" color={T.accent2} sub="recovering from eval bias" />
+        <Callout label="Feedback Prior" value="0.75" color={SEM.purple} sub="neutral — awaiting real ratings" />
       </CalloutGrid>
       <H2>The Calibration Problem</H2>
       <P>
@@ -788,7 +782,7 @@ function ArticleCoherence() {
         After the evaluation run, all agent weights dropped below 1.0 — 291 of 312 calibration samples were
         eval decisions, not real sessions. Weights recover with real usage.
       </P>
-      <Note color="#0F766E">
+      <Note color={SEM.teal}>
         Calibration is the most important signal in C(t). A system can have high routing accuracy but poor
         calibration — meaning it routes correctly but doesn't know when it's uncertain. That's fragile.
       </Note>
@@ -823,10 +817,10 @@ function ArticleMemory() {
         this takes ~10 ms. A 512-slot LRU cache wraps the query function; cache hit rate in real sessions: ~40%.
       </P>
       <CalloutGrid>
-        <Callout label="Total Entries" value="592"    color="#1E5A8A" sub="post-consolidation" />
-        <Callout label="Dedup Removed" value="236"    color="#15803D" sub="28.5% — cos > 0.93" />
-        <Callout label="LRU Speedup"   value="52×"    color="#9A6C00" sub="on cache hit" />
-        <Callout label="Prune at"      value="q < 0.55" color="#B42318" sub="quality + never recalled" />
+        <Callout label="Total Entries" value="592"    color={SEM.blue} sub="post-consolidation" />
+        <Callout label="Dedup Removed" value="236"    color={T.success} sub="28.5% — cos > 0.93" />
+        <Callout label="LRU Speedup"   value="52×"    color={T.accent2} sub="on cache hit" />
+        <Callout label="Prune at"      value="q < 0.55" color={T.error} sub="quality + never recalled" />
       </CalloutGrid>
       <H2>Quality Lifecycle</H2>
       <P>
@@ -858,10 +852,10 @@ function ArticleReflection() {
       />
       <H2>Impact</H2>
       <CalloutGrid>
-        <Callout label="Full Reflection Rate" value="15–20%" color="#0F766E" sub="was 58% before triage" />
-        <Callout label="Latency Saved"        value="~35 s"  color="#15803D" sub="per skipped reflection" />
-        <Callout label="Terse Agent"          value="0%"     color="#9A6C00" sub="reflection disabled entirely" />
-        <Callout label="Trigger"              value="build+debug" color="#7E3F8F" sub="+ conf < 0.70" />
+        <Callout label="Full Reflection Rate" value="15–20%" color={SEM.teal} sub="was 58% before triage" />
+        <Callout label="Latency Saved"        value="~35 s"  color={T.success} sub="per skipped reflection" />
+        <Callout label="Terse Agent"          value="0%"     color={T.accent2} sub="reflection disabled entirely" />
+        <Callout label="Trigger"              value="build+debug" color={SEM.purple} sub="+ conf < 0.70" />
       </CalloutGrid>
       <H2>The Rewrite Loop</H2>
       <P>
@@ -869,7 +863,7 @@ function ArticleReflection() {
         and a structured critique prompt. It identifies specific weaknesses; the agent rewrites using the critique
         as additional context. This loops up to 3 times or until the grounded eval score exceeds 0.80.
       </P>
-      <Note color="#15803D">
+      <Note color={T.success}>
         The biggest latency win was disabling reflection on the terse agent entirely. A 3-iteration rewrite
         loop on "what's the command to list open ports?" is waste by design.
       </Note>
@@ -880,25 +874,25 @@ function ArticleReflection() {
 // ── Proposition / Remark primitives ───────────────────────────
 function Proposition({ n, children }) {
   return (
-    <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderLeft: "3px solid #7E3F8F", borderRadius: 6, padding: "16px 22px", margin: "22px 0" }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: "#7E3F8F", marginBottom: 12, fontFamily: fUI, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+    <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderLeft: `3px solid ${SEM.purple}`, borderRadius: 6, padding: "16px 22px", margin: "22px 0" }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: SEM.purple, marginBottom: 12, fontFamily: fUI, letterSpacing: "0.1em", textTransform: "uppercase" }}>
         Proposition {n}
       </div>
-      <div style={{ fontSize: 14.5, color: "#5C4030", lineHeight: 1.85, fontFamily: fBody }}>{children}</div>
+      <div style={{ fontSize: 14.5, color: T.mutedLt, lineHeight: 1.85, fontFamily: fBody }}>{children}</div>
     </div>
   );
 }
 function Remark({ children }) {
   return (
-    <div style={{ background: `#9A6C0008`, borderLeft: "3px solid #9A6C00", padding: "12px 18px", fontSize: 14, color: "#5C4030", lineHeight: 1.8, margin: "22px 0", fontFamily: fBody }}>
-      <span style={{ fontSize: 10, fontWeight: 700, color: "#9A6C00", letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: fUI, marginRight: 8 }}>Example</span>
+    <div style={{ background: `${T.accent2}08`, borderLeft: `3px solid ${T.accent2}`, padding: "12px 18px", fontSize: 14, color: T.mutedLt, lineHeight: 1.8, margin: "22px 0", fontFamily: fBody }}>
+      <span style={{ fontSize: 10, fontWeight: 700, color: T.accent2, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: fUI, marginRight: 8 }}>Example</span>
       {children}
     </div>
   );
 }
 function Boxed({ children }) {
   return (
-    <div style={{ background: T.bg, border: `2px solid #0F766E66`, borderRadius: 8, padding: "20px 28px", margin: "24px 0", overflowX: "auto" }}>
+    <div style={{ background: T.bg, border: `2px solid ${SEM.teal}66`, borderRadius: 8, padding: "20px 28px", margin: "24px 0", overflowX: "auto" }}>
       {children}
     </div>
   );
@@ -942,7 +936,7 @@ function ArticleMethodology() {
       </div>
 
       {/* §1 Query Normalisation */}
-      <SectionNum id="m-norm" n="1." color="#0F766E">Query Normalisation</SectionNum>
+      <SectionNum id="m-norm" n="1." color={SEM.teal}>Query Normalisation</SectionNum>
       <P>
         The normalisation operator <M>𝒩</M> maps a raw query to a four-dimensional signal capturing
         domain, confidence, answer shape, and verbosity — a strictly richer space than the action verb alone.
@@ -994,7 +988,7 @@ function ArticleMethodology() {
       </Remark>
 
       {/* §2 Routing Decision */}
-      <SectionNum id="m-route" n="2." color="#9A6C00">Routing Decision</SectionNum>
+      <SectionNum id="m-route" n="2." color={T.accent2}>Routing Decision</SectionNum>
       <Definition n="5" title="Priority Routing Function">
         Given signal <KTex src="\sigma = (d, c, s, v)" /> and detected action <M>x</M>, first match wins:
         <KTexBlock n="4" src="\mathcal{R}(\sigma, x) = \begin{cases} a_{\text{terse}} & x = \textit{lookup} \\ a_{\text{terse}} & s = \textit{factual} \\ a_{\text{terse}} & v = \textit{terse} \land s = \textit{explanation} \land d = \textit{general} \\ \text{DOMAIN\_TO\_AGENT}(d) & c > 0.30 \\ \mathcal{R}_{\text{LLM}}(q) & \text{otherwise} \end{cases}" />
@@ -1025,7 +1019,7 @@ function ArticleMethodology() {
         <KTex src="\mathcal{R}'(q) \neq a_{\text{terse}}" /> unless <M>q</M> contains a lookup verb.
         Query length is not a dimension of <KTex src="\mathcal{R}'" />.
       </Proposition>
-      <Note color="#7E3F8F">
+      <Note color={SEM.purple}>
         Both propositions follow from the same root cause: <KTex src="\mathcal{R}'" /> is a function of one variable
         (the verb), so any information not in the verb is lost. <KTex src="\mathcal{R} \circ \mathcal{N}" /> is a
         function of four variables — the same information cannot be lost.
@@ -1046,7 +1040,7 @@ function ArticleMethodology() {
       </Remark>
 
       {/* §3 Learning Kernel */}
-      <SectionNum id="m-learn" n="3." color="#1E5A8A">Adaptive Learning Kernel</SectionNum>
+      <SectionNum id="m-learn" n="3." color={SEM.blue}>Adaptive Learning Kernel</SectionNum>
       <P>
         All weight changes flow through a single function <code style={{ fontFamily: fMono, fontSize: 12 }}>apply_learning_update</code> —
         no other code path modifies agent weights. Six steps, applied in order:
@@ -1076,14 +1070,14 @@ function ArticleMethodology() {
         <KTex src="w' = \mathrm{clip}(0.95 - 0.0089,\; 0.1,\; 3.0) = 0.9411" />.
         A good response with mild regret pulls the weight slightly down.
       </Remark>
-      <Note color="#1E5A8A">
+      <Note color={SEM.blue}>
         The double clipping serves different purposes. The ±0.02 clip on Δ prevents any single event from
         causing a large jump. The [0.1, 3.0] clip on w provides hard safety rails — no agent can be
         permanently disabled or receive unbounded priority. The system is Lyapunov-stable in the weight space.
       </Note>
 
       {/* §4 Memory Retrieval */}
-      <SectionNum id="m-mem" n="4." color="#0F766E">Memory Retrieval</SectionNum>
+      <SectionNum id="m-mem" n="4." color={SEM.teal}>Memory Retrieval</SectionNum>
       <Definition n="7" title="Retrieval Score">
         Every memory <M>m</M> and query <M>q</M> are embedded by nomic-embed-text into <KTex src="\mathbb{R}^{768}" />,
         L2-normalised (cosine → dot product). The composite score:
@@ -1120,7 +1114,7 @@ function ArticleMethodology() {
       </P>
 
       {/* §5 Reflection Triage */}
-      <SectionNum id="m-reflect" n="5." color="#15803D">Reflection Triage</SectionNum>
+      <SectionNum id="m-reflect" n="5." color={T.success}>Reflection Triage</SectionNum>
       <Definition n="8" title="Reflection Level">
         <KTexBlock n="8" src="\mathrm{level}(x, a, c, \xi) = \begin{cases} \mathrm{none} & x \in \{\textit{explain, compare, plan, lookup}\} \\ \mathrm{full} & x = \textit{debug} \land a \in \mathcal{A}_{\text{code}} \\ \mathrm{full} & \xi = \textit{compound} \land a \in \mathcal{A}_{\text{code}} \\ \mathrm{full} & c < 0.55 \land a \in \mathcal{A}_{\text{code}} \\ \mathrm{light} & x = \textit{build} \land c \geq 0.55 \land a \in \mathcal{A}_{\text{code}} \\ \mathrm{none} & \text{otherwise} \end{cases}" />
         where <KTex src="\mathcal{A}_{\text{code}} = \{a_{\text{py}}, a_{\text{blz}}\}" />.
@@ -1135,13 +1129,13 @@ function ArticleMethodology() {
         (<KTex src="\cos \geq 0.78" />, overlap ≥ 20%, and 22 negation patterns present), escalate to full.
         Zero LLM calls — purely heuristic, fires only when all three conditions hold simultaneously.
       </P>
-      <Note color="#15803D">
+      <Note color={T.success}>
         Before Phase 19 (triage), reflection fired on 58% of decisions (166/283), adding ~25–30 s per event.
         After triage, full-reflection rate dropped to ~15–20% with light reflection covering an additional ~10–15%.
       </Note>
 
       {/* §6 Coherence Functional */}
-      <SectionNum id="m-cohere" n="6." color="#7E3F8F">Coherence Functional</SectionNum>
+      <SectionNum id="m-cohere" n="6." color={SEM.purple}>Coherence Functional</SectionNum>
       <P>
         A routing accuracy metric is snapshot-in-time. The coherence functional <KTex src="C(t)" /> provides
         a continuous, composite measure of system self-consistency over the rolling 20-decision window <KTex src="W_t" />:
@@ -1161,7 +1155,7 @@ function ArticleMethodology() {
       </Remark>
 
       {/* §7 Dual-Trajectory Evaluation */}
-      <SectionNum id="m-dual" n="7." color="#C48808">Dual-Trajectory Evaluation</SectionNum>
+      <SectionNum id="m-dual" n="7." color={T.accent}>Dual-Trajectory Evaluation</SectionNum>
       <P>
         For code and debug tasks handled by <code style={{ fontFamily: fMono, fontSize: 12 }}>python_dev</code> or{" "}
         <code style={{ fontFamily: fMono, fontSize: 12 }}>dotnet_dev</code>, two candidates are generated and a
@@ -1181,14 +1175,14 @@ function ArticleMethodology() {
         ]}
         caption="Table 4. Dual-trajectory generation and critic selection."
       />
-      <Note color="#C48808">
+      <Note color={T.accent}>
         When B wins, memory still saves candidate A — it's a real agent attempt with valid training signal.
         Total overhead for a code task: one extra LLM call (B) + one short critic call, both smaller than a
         full reflection cycle. This is a width-1 instance of the GRAM framework.
       </Note>
 
       {/* Summary Table */}
-      <SectionNum id="m-summary" n="" color="#9A7A60">Formula Reference</SectionNum>
+      <SectionNum id="m-summary" n="" color={T.muted}>Formula Reference</SectionNum>
       <DataTable
         headers={["Component", "Formula"]}
         rows={[
@@ -1212,11 +1206,11 @@ function ArticleMethodology() {
 
 // ── Article registry ───────────────────────────────────────────
 const ARTICLES = [
-  { id: "querysignal",  title: "QuerySignal",   subtitle: "Deterministic intent routing for local agentic systems", tag: "Routing",      color: "#0F766E", icon: "◉", Content: ArticleQuerySignal,  toc: QS_TOC   },
-  { id: "methodology",  title: "Methodology",   subtitle: "Mathematical derivations, worked examples, and formal proofs",    tag: "Ch. 2",        color: "#7E3F8F", icon: "∂", Content: ArticleMethodology, toc: METH_TOC },
-  { id: "coherence",    title: "Coherence",     subtitle: "Measuring system stability over time",                   tag: "Intelligence", color: "#9A6C00", icon: "Ψ", Content: ArticleCoherence,    toc: null     },
-  { id: "memory",       title: "Memory",        subtitle: "FAISS, LRU cache, dedup, and quality lifecycle",         tag: "Memory",       color: "#1E5A8A", icon: "⊞", Content: ArticleMemory,       toc: null     },
-  { id: "reflection",   title: "Reflection",    subtitle: "Triage, self-critique, and rewrite loops",               tag: "Learning",     color: "#15803D", icon: "⊕", Content: ArticleReflection,   toc: null     },
+  { id: "querysignal",  title: "QuerySignal",   subtitle: "Deterministic intent routing for local agentic systems", tag: "Routing",      color: SEM.teal, icon: "◉", Content: ArticleQuerySignal,  toc: QS_TOC   },
+  { id: "methodology",  title: "Methodology",   subtitle: "Mathematical derivations, worked examples, and formal proofs",    tag: "Ch. 2",        color: SEM.purple, icon: "∂", Content: ArticleMethodology, toc: METH_TOC },
+  { id: "coherence",    title: "Coherence",     subtitle: "Measuring system stability over time",                   tag: "Intelligence", color: T.accent2, icon: "Ψ", Content: ArticleCoherence,    toc: null     },
+  { id: "memory",       title: "Memory",        subtitle: "FAISS, LRU cache, dedup, and quality lifecycle",         tag: "Memory",       color: SEM.blue, icon: "⊞", Content: ArticleMemory,       toc: null     },
+  { id: "reflection",   title: "Reflection",    subtitle: "Triage, self-critique, and rewrite loops",               tag: "Learning",     color: T.success, icon: "⊕", Content: ArticleReflection,   toc: null     },
 ];
 
 // ── Main component ─────────────────────────────────────────────
@@ -1254,7 +1248,7 @@ export default function ResearchTab({ activeDoc }) {
         <div style={{ borderBottom: `1px solid ${T.border}`, background: T.surface }}>
           <div style={{ maxWidth: ARTICLE_MAX, margin: "0 auto", padding: "28px 32px 24px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 3, background: `${article.color}16`, color: article.color, border: `1px solid ${article.color}38`, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: fUI }}>{article.tag}</span>
+              <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 99, background: `${article.color}16`, color: article.color, border: `1px solid ${article.color}38`, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: fUI }}>{article.tag}</span>
               <span style={{ fontSize: 11.5, color: T.muted, fontFamily: fUI }}>Agentic AI · Jun 2026</span>
             </div>
             <h1 style={{ fontSize: 33, fontWeight: 600, color: T.text, letterSpacing: "0.01em", marginBottom: 10, lineHeight: 1.18, fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{article.title}</h1>

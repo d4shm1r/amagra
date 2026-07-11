@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { API } from "./api";
+import { AGENTS } from "./constants";
 import { T } from "./theme";
 import { PageHeader, RefreshBtn } from "./ObsShared";
 
@@ -25,10 +26,8 @@ const AGENT_COLORS = {
   knowledge_learning: "#BE185D",
   terse:            "#9A7A60",
 };
-const AGENT_ICONS  = {
-  python_dev: "🐍", it_networking: "🌐", dotnet_dev: "⚡",
-  ai_ml: "🤖", knowledge_learning: "📚", terse: "🎯",
-};
+// Unicode marks from constants.js AGENTS — never emoji (palette rule).
+const AGENT_ICONS = Object.fromEntries(AGENTS.map(a => [a.id, a.icon]));
 const TYPE_COLORS  = {
   code: C.blue, lesson: C.green, reflection: C.yellow,
   chat: C.muted, failure: C.red, episodic: C.purple,

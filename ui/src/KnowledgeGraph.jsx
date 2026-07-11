@@ -3,16 +3,13 @@ import { PageHeader } from "./ObsShared";
 import { T, SEM, TYPE } from "./theme";
 
 import { API } from "./api";
+import { AGENTS } from "./constants";
 
-const AGENT_META = {
-  coordinator:        { label: "Coordinator",  icon: "👑", color: T.accent2 },
-  it_networking:      { label: "Networking",   icon: "🌐", color: T.success },
-  python_dev:         { label: "Python Dev",   icon: "🐍", color: T.accent },
-  dotnet_dev:         { label: ".NET / Blazor", icon: "⚡", color: SEM.violet },
-  ai_ml:              { label: "AI & ML",      icon: "🤖", color: SEM.magenta },
-  knowledge_learning: { label: "Knowledge",    icon: "📚", color: SEM.blue },
-  terse:              { label: "Terse",        icon: "🎯", color: T.accent2 },
-};
+// One source of truth for agent identity — constants.js AGENTS (unicode
+// symbols + palette colors, never emoji). A local emoji copy had drifted.
+const AGENT_META = Object.fromEntries(
+  AGENTS.map(a => [a.id, { label: a.label, icon: a.icon, color: a.color }])
+);
 
 const TYPE_COLORS = {
   reflection: SEM.purple,
@@ -186,7 +183,7 @@ function MemoryGraph({ records }) {
           {/* Agent hubs */}
           {agentIds.map(agent => {
             const hub  = hubs[agent];
-            const meta = AGENT_META[agent] || { label: agent, icon: "🤖", color: T.muted };
+            const meta = AGENT_META[agent] || { label: agent, icon: "◈", color: T.muted };
             const cnt  = byAgent[agent].length;
             return (
               <g key={`hub-${agent}`}>
@@ -472,7 +469,7 @@ export default function KnowledgeGraph() {
 
   if (loading) return (
     <div style={{ textAlign: "center", padding: "60px 0", color: T.muted }}>
-      <div style={{ fontSize: 32, marginBottom: 12 }}>📚</div>
+      <div style={{ fontSize: 32, marginBottom: 12, color: T.accent }}>❧</div>
       Loading memory records…
     </div>
   );
@@ -640,7 +637,7 @@ export default function KnowledgeGraph() {
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8 }}>
               {filtered.slice(0, 120).map(record => {
-                const meta      = AGENT_META[record.agent] || { label: record.agent, icon: "🤖", color: T.muted };
+                const meta      = AGENT_META[record.agent] || { label: record.agent, icon: "◈", color: T.muted };
                 const typeColor = TYPE_COLORS[record.type] || T.muted;
                 const isOpen    = expanded === record.id;
                 const qualPct   = Math.round((record.quality || 0) * 100);

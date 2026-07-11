@@ -1,0 +1,66 @@
+/* ─────────────────────────────────────────────────────────────────
+   AMAGRA · "Gilded Calm" — the ONE shared palette.
+   Loaded by BOTH surfaces so they can never drift apart:
+     · public/landing.html  (marketing page)
+     · index.html → src/index.css  (the desktop app)
+   ui/src/theme.js mirrors these values as JS constants (React inline
+   styles need raw hex for alpha-suffix templates like `${T.accent}44`).
+   If you change a value here, change theme.js in the same commit.
+   ───────────────────────────────────────────────────────────────── */
+:root {
+  /* Canvas — layered creams (dark → light) */
+  --l0: #EDE8DF;
+  --l1: #F4F0E8;   /* inset wells / chips        (T.surface2) */
+  --l2: #FAF7F2;   /* raised panels              (T.surface)  */
+  --l3: #FCFAF7;
+  --l4: #FEFCFA;
+
+  --app-bg:  #F0E9DF;   /* app + landing hero canvas (T.bg) */
+  --border:  #E0D6C4;   /* hairlines on cream        (T.border) */
+
+  /* Landing section washes */
+  --hero-bg:     #F0E9DF;
+  --features-bg: #EDE8DF;
+  --agents-bg:   #F3EDE6;
+  --how-bg:      #E9E3DA;
+  --pricing-bg:  #F1EBE3;
+  --cta-bg:      #EDE8DF;
+  --footer-bg:   #E5DFD6;
+  --cos-bg:      #EBE5DC;
+  --compare-bg:  #F0EAE1;
+  --trust-bg:    #E8E2D9;
+
+  /* Brand — the 5-step gold ramp */
+  --g1: #FFE880;
+  --g2: #DEB838;
+  --g3: #C48808;   /* gold core — fills, dots, borders (T.accent)  */
+  --g4: #9A6C00;   /* deep gold — hovers, links       (T.accent2) */
+  --g5: #6C4C00;
+
+  --gold-text: #8A5A00;   /* gold as TEXT on cream (~5:1 AA) (T.accentText) */
+
+  /* Text — warm umber ramp */
+  --t1: #2E2010;   /* primary                     (T.text)    */
+  --t2: #5C4030;   /* secondary                   (T.mutedLt)  */
+  --t3: #9A7A60;   /* decorative-only on landing — below AA as body text */
+  --t4: #BEA890;
+
+  --text-muted: #806044;   /* app tertiary text — AA-legible (T.muted) */
+
+  /* Semantic status */
+  --ok:    #15803D;   /* T.success */
+  --warn:  #A16207;   /* T.warn    */
+  --error: #B42318;   /* T.error   */
+
+  /* Warm shadows (never pure black) + paper highlights */
+  --sd1: rgba(72, 52, 28, 0.07);
+  --sd2: rgba(72, 52, 28, 0.11);
+  --sd3: rgba(62, 44, 20, 0.17);
+  --sl1: rgba(255, 255, 255, 0.80);
+  --sl2: rgba(255, 255, 255, 0.94);
+
+  /* Gold glows */
+  --gg1: rgba(196, 136, 8, 0.13);
+  --gg2: rgba(196, 136, 8, 0.28);
+  --gg3: rgba(154, 108, 0, 0.44);
+}

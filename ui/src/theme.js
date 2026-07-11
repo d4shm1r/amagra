@@ -1,8 +1,11 @@
 // Amagra design tokens — "Gilded Calm"
-// Warm-white + gold luxury palette, shared with public/landing.html.
-// Canvas is layered creams (landing --l0..--l4), brand is the 5-step gold
-// ramp (--g1..--g5), text is warm umber (--t1..--t4). Shadows are warm,
-// never pure black.
+// Warm-white + gold luxury palette. The CSS source of truth is
+// public/tokens.css (:root vars), loaded by BOTH the app and landing.html.
+// This file is its JS mirror — React inline styles need raw hex for
+// alpha-suffix templates like `${T.accent}44`, which CSS vars can't do.
+// If you change a value here, change tokens.css in the same commit.
+// Canvas is layered creams (--l0..--l4), brand is the 5-step gold ramp
+// (--g1..--g5), text is warm umber (--t1..--t4). Shadows warm, never black.
 
 export const T = {
   // Canvas (light → lighter)
