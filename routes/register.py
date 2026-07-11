@@ -40,6 +40,28 @@ def _init_reg_db():
 _init_reg_db()
 
 
+# Providers where dots in the local part are ignored (foo.bar@ == foobar@).
+# Only these get dot-stripping — most providers treat dots as significant,
+# so stripping them universally would conflate genuinely distinct addresses.
+_DOT_INSENSITIVE_DOMAINS = {"gmail.com", "googlemail.com"}
+
+
+def _canonicalize_email(email: str) -> str:
+    """
+    Collapse trivial aliases of one mailbox to a single canonical form so the
+    3-key cap can't be bypassed with plus-addressing (#132):
+      abuse+1@x.com, abuse+2@x.com  → abuse@x.com
+      f.o.o+tag@gmail.com           → foo@gmail.com
+    The cap check and the registration record both use the canonical form;
+    the welcome email still goes to the address as entered.
+    """
+    local, _, domain = email.partition("@")
+    local = local.split("+", 1)[0]
+    if domain in _DOT_INSENSITIVE_DOMAINS:
+        local = local.replace(".", "")
+    return f"{local}@{domain}"
+
+
 def _count_for_email(email: str) -> int:
     try:
         con = sqlite3.connect(_REG_DB, timeout=3)
@@ -85,7 +107,8 @@ def register_free(body: RegisterFreeRequest):
     Self-service free tier signup. Returns an API key immediately.
     Limit: 3 free keys per email address.
     """
-    if _count_for_email(body.email) >= 3:
+    canonical = _canonicalize_email(body.email)
+    if _count_for_email(canonical) >= 3:
         raise HTTPException(
             status_code=429,
             detail="Maximum 3 free keys per email address. Upgrade at /pricing.",
@@ -93,7 +116,7 @@ def register_free(body: RegisterFreeRequest):
 
     owner = body.name.strip() or body.email
     raw_key = _ak.create_key(owner=owner, tier="free")
-    _record_registration(body.email)
+    _record_registration(canonical)
 
     # Send welcome email if SendGrid is configured (best-effort, never blocks)
     try:
