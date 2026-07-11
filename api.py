@@ -284,6 +284,52 @@ async def auth_middleware(request: Request, call_next):
     return response
 
 
+# ── Security response headers (#133) ─────────────────────────────────────────
+# Registered last so it runs OUTERMOST: headers land on every response,
+# including early returns from the auth and body-size guards above.
+#
+# The CSP is strict same-origin because the bundled SPA is fully local:
+# scripts/fonts/styles ship in ui/build, Monaco is bundled (monacoSetup.js),
+# and external URLs in landing/faq are plain links, never loaded resources.
+# 'unsafe-inline' is styles-only (React style= attrs, landing/faq <style>
+# blocks). worker-src blob: covers Vite's `?worker` Monaco editor worker.
+# /docs and /redoc are the one exception — FastAPI's stock pages pull
+# swagger/redoc bundles from jsDelivr and boot via an inline script.
+_CSP_APP = (
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data:; font-src 'self'; connect-src 'self'; "
+    "worker-src 'self' blob:; object-src 'none'; base-uri 'self'; "
+    "frame-ancestors 'none'"
+)
+_CSP_DOCS = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+    "img-src 'self' data: https://fastapi.tiangolo.com https://cdn.redoc.ly; "
+    "font-src 'self' https://fonts.gstatic.com; connect-src 'self'; "
+    "worker-src 'self' blob:; object-src 'none'; base-uri 'self'; "
+    "frame-ancestors 'none'"
+)
+_CSP_APP  = os.getenv("SECURITY_CSP", _CSP_APP)  # escape hatch: custom deployments
+
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    h = response.headers
+    h.setdefault("X-Content-Type-Options", "nosniff")
+    h.setdefault("X-Frame-Options", "DENY")
+    h.setdefault("Referrer-Policy", "no-referrer")
+    path = request.url.path
+    is_docs = path == "/docs" or path == "/redoc" or path.startswith(("/docs/", "/redoc/"))
+    h.setdefault("Content-Security-Policy", _CSP_DOCS if is_docs else _CSP_APP)
+    # HSTS only makes sense (and is only honored) over HTTPS; also trust the
+    # standard proxy header so TLS-terminating reverse proxies get it too.
+    if request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https":
+        h.setdefault("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
+    return response
+
+
 from routes.core        import router as core_router
 from routes.register    import router as register_router
 from routes.cos         import router as cos_router
