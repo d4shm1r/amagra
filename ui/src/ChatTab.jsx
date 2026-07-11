@@ -95,6 +95,7 @@ export default function ChatTab({
   onActivityChange, onCoherenceUpdate, forcedAgent,
   onForcedAgentChange, onInspect, defaultReflectMode,
   seedPrompt, onSeedConsumed,
+  enterToSend = true, showTimestamps = true,
 }) {
   const [messages,      setMessages]      = useState([]);
   const [input,         setInput]         = useState("");
@@ -506,7 +507,12 @@ export default function ChatTab({
   }, [editingIndex, input, handleEditResend, sendMessage]);
 
   const handleKeyDown = e => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendClick(); }
+    // enterToSend: Enter sends, Shift+Enter = newline.
+    // Off: Enter = newline, Ctrl/Cmd+Enter sends.
+    const sendCombo = enterToSend
+      ? (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey)
+      : (e.key === "Enter" && (e.ctrlKey || e.metaKey));
+    if (sendCombo) { e.preventDefault(); handleSendClick(); }
     else if (e.key === "Escape" && editingIndex != null) { e.preventDefault(); cancelEdit(); }
   };
 
@@ -662,7 +668,7 @@ export default function ChatTab({
                     <div className="msg-content" style={{ wordBreak: "break-word" }}>
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
                     </div>
-                    <div style={{ marginTop: 4, fontSize: 10, color: T.muted, textAlign: "right" }}>{msg.ts}</div>
+                    {showTimestamps && <div style={{ marginTop: 4, fontSize: 10, color: T.muted, textAlign: "right" }}>{msg.ts}</div>}
                   </div>
                 </div>
               );
@@ -696,7 +702,7 @@ export default function ChatTab({
                         {isPipeline ? "PIPELINE" : (msg.agent || "agent").replace(/_/g, " ").toUpperCase()}
                       </span>
                       {msg.elapsed && <span style={{ fontSize: 11, color: T.muted }}>{msg.elapsed}s</span>}
-                      <span style={{ fontSize: 11, color: T.muted }}>{msg.ts}</span>
+                      {showTimestamps && <span style={{ fontSize: 11, color: T.muted }}>{msg.ts}</span>}
                       {msg.complexity === "compound" && !isPipeline && <Pill label="compound" color={T.warn} />}
                     </div>
 

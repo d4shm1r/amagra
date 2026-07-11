@@ -747,6 +747,125 @@ export const BUILD_PHASES = [
       "Monaco inline diagnostics + click-to-fix + side-by-side version-compare DiffEditor (#71)",
     ],
   },
+
+  // ── v1.6.3  Desktop App & Unified Launcher ────────────────────
+  {
+    id: 95, version: "v1.6.3", date: "Jul 1, 2026",
+    label: "Desktop App & Unified Launcher", title: "AMAGRA ships as a native desktop app", color: "#7E3F8F", status: "done",
+    summary: "Amagra becomes a real desktop application: an Electron shell wraps the local runtime, the nav collapses into a single phone-style ☰ launcher, and the wordmark branding lands across the app.",
+    steps: [
+      "AMAGRA desktop app (Electron) — native window over the local runtime (#96)",
+      "Unified ☰ AppLauncher — sidebar + sub-nav + chat rail collapse into one phone-style app grid (#96)",
+      "Wordmark branding across the app chrome (#96)",
+      "v1.6.2 — design tokens (TYPE/EASE/DUR), calm + legacy tab conversion, Cognition IA restraint (#95)",
+      "v1.6.1 — tab redesign pass (Introduction, Consensus, Explain, Goals) + calm hover system (#94)",
+    ],
+  },
+
+  // ── v1.6.4  System Alignment & Honesty Pass ───────────────────
+  {
+    id: 96, version: "v1.6.4", date: "Jul 4, 2026",
+    label: "System Alignment & Honesty Pass", title: "The UI tells the truth about the system", color: "#1E5A8A", status: "done",
+    summary: "A correctness-and-honesty release: the UI is realigned to what the system actually does, routing accuracy is measured rather than asserted, and the Identity contract plus the A←R skill-graph coupling land with the diagnostics that gate them.",
+    steps: [
+      "UI aligned with the system — live docs, verifier & identity surfaces, Guide accuracy pass (#104)",
+      "Identity as an architectural contract — snapshot, fingerprint, invariants (#100)",
+      "A←R reasoning coupling + the entropy diagnostic that gated it (#105)",
+      "OCAC §6 sync — A3′ correction, sharp certified rate, nested composition law, fractional depth (#107)",
+      "Honesty batch — measured routing accuracy, live figures, arena crash fix (#108)",
+      "Semantic fallback for the knowledge_learning sink, dark-launched (#112)",
+      "Branded frameless top bar on Win/Linux (#113); transparency #47/#48 + multilingual eval #18 (#99)",
+      "Deep clean — docs categorization, dead-code removal, /docs API rewire, test-isolation fix (#102)",
+    ],
+  },
+
+  // ── v1.7.0  Cross-Platform Desktop App ────────────────────────
+  {
+    id: 97, version: "v1.7.0", date: "Jul 5, 2026",
+    label: "Cross-Platform Desktop App", title: "One installable app for macOS, Windows & Linux", color: "#7E3F8F", status: "done",
+    summary: "The desktop app goes cross-platform: a PyInstaller sidecar bundles the backend, release CI builds signed macOS/Windows/Linux artifacts, and the UI is simplified to always show everything with lazily-loaded tabs.",
+    steps: [
+      "PyInstaller sidecar + cross-platform release CI — bundled backend, no separate Python (#122)",
+      "Hardened cross-platform builds — writable data dir, mac arch + signing, docs (#123)",
+      "Download section + refreshed social card on the site (#124)",
+      "Consolidated nav — merged duplicate tabs, fixed mislabeled surfaces (#121)",
+      "Removed the Simple/Advanced toggle — always show everything (#131)",
+      "Lazy-load tabs + startTransition — smoother tab navigation (#130)",
+    ],
+  },
+
+  // ── v1.7.1  Semantic Routing & Reasoning Gates ────────────────
+  {
+    id: 98, version: "v1.7.1", date: "Jul 7, 2026",
+    label: "Semantic Routing & Reasoning Gates", title: "Semantic fallback on by default; reasoning gains a confidence gate", color: "#1E5A8A", status: "done",
+    summary: "Routing gets smarter and reasoning gets a measured escalation gate: local embedding lands on the semantic fallback (held-out routing 30.8%→52.7%), and a vote-margin self-consistency gate captures most reasoning errors on a fraction of the volume.",
+    steps: [
+      "Semantic fallback enabled by default — held-out routing 30.8% → 52.7%",
+      "Local ONNX embedding backend for the semantic router (#137)",
+      "Self-consistency lever + GSM8K head-to-head harness (#139)",
+      "Vote-margin escalation gate + vote telemetry (#140)",
+      "Wired the dormant RunLog into the /ask path (#138)",
+      "Decluttered menu + lighter launcher (#136); Windows first-launch reliability + backend logs",
+    ],
+  },
+
+  // ── v1.7.2  Windows Sandbox Boot Fix ──────────────────────────
+  {
+    id: 99, version: "v1.7.2", date: "Jul 8, 2026",
+    label: "Windows Sandbox Boot Fix", title: "The sandbox boots on Windows", color: "#C2410C", status: "done",
+    summary: "A targeted fix so the tool sandbox no longer crashes at startup on Windows.",
+    steps: [
+      "Guard the POSIX-only `resource` import so the sandbox boots on Windows",
+    ],
+  },
+
+  // ── v1.7.3  Frozen-Backend Encoding & CI Smoke Test ───────────
+  {
+    id: 100, version: "v1.7.3", date: "Jul 8, 2026",
+    label: "Frozen-Backend Encoding & CI Smoke Test", title: "UTF-8 the frozen backend + prove the sidecar in CI", color: "#C48808", status: "done",
+    summary: "Reliability plumbing for the packaged desktop build: the frozen backend is forced to UTF-8, and CI now smoke-tests the PyInstaller sidecar so packaging regressions fail loudly.",
+    steps: [
+      "UTF-8 the frozen backend",
+      "Smoke-test the PyInstaller sidecar in CI",
+    ],
+  },
+
+  // ── v1.7.4  Single-Instance Desktop ───────────────────────────
+  {
+    id: 101, version: "v1.7.4", date: "Jul 8, 2026",
+    label: "Single-Instance Desktop", title: "One instance, no orphaned backend", color: "#0F766E", status: "done",
+    summary: "The desktop app enforces a single instance and cleans up its backend, ending the Windows port-8000 conflict from stale processes.",
+    steps: [
+      "Single-instance lock — a second launch focuses the existing window",
+      "Windows tree-kill on exit — clears the port 8000 conflict from orphaned backends",
+    ],
+  },
+
+  // ── v1.7.5  Windows Desktop Startup Reliability ───────────────
+  {
+    id: 102, version: "v1.7.5", date: "Jul 10, 2026",
+    label: "Windows Desktop Startup Reliability", title: "Reliable first launch + the agentic loop closes", color: "#1E5A8A", status: "done",
+    summary: "The Windows desktop startup path is hardened end-to-end, and the runtime closes its agentic execution loop with measured tool and browser use — plus local-first embedding and the distinctive neutral-mode signed-drift stability metric.",
+    steps: [
+      "Reliable startup on Windows + no orphaned backend (#143)",
+      "Closed the agentic execution loop — measured tool & browser use",
+      "Local-first embedding + measured self-consistency escalation gate end-to-end (#142)",
+      "Neutral-mode signed drift — the distinctive stability metric (#74) (#144)",
+      "Lazy-load bs4 + added it to requirements; dropped an unused import",
+    ],
+  },
+
+  // ── v1.7.6  Electron-First Unification & Sandbox Isolation ─────
+  {
+    id: 103, version: "v1.7.6", date: "Jul 11, 2026",
+    label: "Electron-First Unification & Sandbox Isolation", title: "One design system, OS-level isolation, hardened headers", color: "#7E3F8F", status: "next",
+    summary: "In progress on main: the UI unifies onto a shared token system (landing + app), the tool sandbox gains real OS-level isolation via bubblewrap with honest blast-radius reporting, and the server ships hardened security response headers.",
+    steps: [
+      "Electron-first unification — shared tokens.css, self-hosted fonts, same-origin API, six tabs onto the token system (#148)",
+      "OS-level isolation via bubblewrap + honest blast-radius reporting (#134/#149)",
+      "Security response headers — nosniff, X-Frame-Options, CSP, HSTS (#133/#146)",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -917,6 +1036,12 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.7.6", label: "Electron-First Unification & Sandbox Isolation", color: "#7E3F8F", phases: [103] },
+  { version: "v1.7.5", label: "Windows Desktop Startup Reliability", color: "#1E5A8A", phases: [102] },
+  { version: "v1.7.4", label: "Single-Instance Desktop", color: "#0F766E", phases: [101] },
+  { version: "v1.7.3", label: "Frozen-Backend Encoding & CI", color: "#C48808", phases: [100] },
+  { version: "v1.7.2", label: "Windows Sandbox Boot Fix", color: "#C2410C", phases: [99] },
+  { version: "v1.7.1", label: "Semantic Routing & Reasoning Gates", color: "#1E5A8A", phases: [98] },
   { version: "v1.7.0", label: "Cross-Platform Desktop App", color: "#7E3F8F", phases: [97] },
   { version: "v1.6.4", label: "System Alignment & Honesty Pass", color: "#1E5A8A", phases: [96] },
   { version: "v1.6.3", label: "Desktop App & Unified Launcher", color: "#7E3F8F", phases: [95] },

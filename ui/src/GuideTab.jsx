@@ -326,7 +326,7 @@ export default function GuideTab() {
   return (
     <div style={{ animation: "fadeIn .2s" }}>
 
-      <PageHeader title="Guide" subtitle="Commands, agents, and how to get the most out of Amagra." />
+      <PageHeader center title="Guide" subtitle="Commands, agents, and how to get the most out of Amagra." />
 
       {/* ── Quick start ── */}
       <Card mb={20} accent={`${T.success}33`}>

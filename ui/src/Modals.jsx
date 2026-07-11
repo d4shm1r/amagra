@@ -1,171 +1,245 @@
 import { useState, useEffect, useRef } from "react";
 import { API } from "./api";
 import { AGENTS, BUILD_PHASES, VERSION } from "./constants";
-import { T, LUX, FONT_DISPLAY } from "./theme";
+import { T, LUX, TYPE, EASE, DUR, RADIUS, FONT_DISPLAY, FONT_MONO } from "./theme";
+import { PageHeader } from "./ObsShared";
 
-// ── Settings modal ────────────────────────────────────────────
-export function SettingsModal({ settings, onUpdate, coherence, apiStatus }) {
-  const [status,   setStatus]   = useState(null);
+// ── Shared calm primitives (Settings + About) ─────────────────
+const GOLD    = T.accent;      // #C48808 — fills, thumbs, hairlines
+const GOLD_TX = T.accentText;  // #8A5A00 — legible gold for text
+
+// Gold-and-white slider + row dividers. The unfilled track is warm cream
+// (T.border), never black; the thumb is a white-ringed gold disc.
+const CALM_CSS = `
+.gold-range{-webkit-appearance:none;appearance:none;height:7px;border-radius:999px;outline:none;cursor:pointer;
+  background:linear-gradient(90deg, ${GOLD} 0 var(--pct,50%), ${GOLD}26 var(--pct,50%) 100%);
+  box-shadow:inset 0 0 0 1px ${GOLD}33;}
+.gold-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;
+  background:${GOLD};border:2.5px solid #fff;box-shadow:0 0 0 1.5px ${GOLD}, ${LUX.shadowMd};cursor:pointer;transition:transform ${DUR.fast} ${EASE.out};}
+.gold-range::-webkit-slider-thumb:hover{transform:scale(1.12);}
+.gold-range::-moz-range-thumb{width:18px;height:18px;border:2.5px solid #fff;border-radius:50%;background:${GOLD};box-shadow:0 0 0 1.5px ${GOLD}, ${LUX.shadowMd};cursor:pointer;}
+.gold-range::-moz-range-track{background:transparent;height:7px;border-radius:999px;}
+.set-row + .set-row{border-top:1px solid ${T.border}66;}
+.set-card{transition:box-shadow ${DUR.base} ${EASE.out};}
+.set-card:hover{box-shadow:${LUX.shadowSm};}
+`;
+
+function SectionCard({ sym, title, children }) {
+  return (
+    <div className="set-card" style={{
+      background: LUX.tileFace, border: `1px solid ${LUX.tileBorder}`,
+      borderRadius: RADIUS.lg, padding: "16px 20px", marginBottom: 16,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6,
+                    paddingBottom: 12, borderBottom: `1px solid ${GOLD}20` }}>
+        <span style={{
+          fontFamily: FONT_DISPLAY, fontSize: 15, lineHeight: 1, color: GOLD,
+          width: 26, height: 26, flexShrink: 0, display: "inline-flex",
+          alignItems: "center", justifyContent: "center",
+          background: `${GOLD}12`, border: `1px solid ${GOLD}30`, borderRadius: "50%",
+        }}>{sym}</span>
+        <span style={{ ...TYPE.eyebrow, fontSize: 10, color: GOLD_TX }}>{title}</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Row({ label, hint, children }) {
+  return (
+    <div className="set-row" style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 0" }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ ...TYPE.small, color: T.text }}>{label}</div>
+        {hint && <div style={{ ...TYPE.caption, fontSize: 11, color: T.muted, marginTop: 2 }}>{hint}</div>}
+      </div>
+      <div style={{ flexShrink: 0 }}>{children}</div>
+    </div>
+  );
+}
+
+function GoldSlider({ value, min, max, step }) {
+  const pct = ((value - min) / (max - min)) * 100;
+  return (
+    <input type="range" className="gold-range" min={min} max={max} step={step}
+      value={value.value} onChange={value.onChange}
+      style={{ width: 170, "--pct": `${pct}%` }} />
+  );
+}
+
+function Toggle({ checked, onChange }) {
+  return (
+    <button role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
+      style={{
+        width: 44, height: 25, borderRadius: 999, padding: 0, position: "relative", cursor: "pointer",
+        background: checked ? GOLD : "#D6C6A6",
+        border: `1px solid ${checked ? GOLD : "#C3B088"}`,
+        boxShadow: `inset 0 1px 2px ${checked ? "rgba(120,86,20,0.25)" : "rgba(120,86,20,0.14)"}`,
+        transition: `background ${DUR.base} ${EASE.out}, border-color ${DUR.base} ${EASE.out}`,
+      }}>
+      <span style={{
+        position: "absolute", top: 2, left: checked ? 21 : 2, width: 19, height: 19, borderRadius: "50%",
+        background: "#fff", border: "1px solid rgba(120,86,20,0.30)",
+        boxShadow: "0 1px 4px rgba(72,52,28,0.32)",
+        transition: `left ${DUR.base} ${EASE.out}`,
+      }} />
+    </button>
+  );
+}
+
+function SegGroup({ options, value, onChange }) {
+  return (
+    <div style={{ display: "inline-flex", gap: 2, padding: 2, background: T.surface2,
+                  border: `1px solid ${T.border}`, borderRadius: RADIUS.md }}>
+      {options.map(o => {
+        const on = value === o.val;
+        return (
+          <button key={o.val} onClick={() => onChange(o.val)} style={{
+            padding: "5px 13px", fontSize: 11, fontFamily: "inherit", fontWeight: on ? 700 : 500,
+            background: on ? `${GOLD}22` : "transparent", color: on ? GOLD_TX : T.muted,
+            border: "none", borderRadius: RADIUS.sm, cursor: "pointer",
+            transition: `background ${DUR.fast} ${EASE.out}, color ${DUR.fast} ${EASE.out}`,
+          }}>{o.label}</button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Settings ──────────────────────────────────────────────────
+export function SettingsModal({ settings, onUpdate }) {
   const [memStats, setMemStats] = useState(null);
   const [saved,    setSaved]    = useState(false);
   const saveTimer = useRef(null);
 
   useEffect(() => {
-    fetch(`${API}/status`)
-      .then(r => r.ok ? r.json() : null).then(setStatus).catch(() => {});
     fetch(`${API}/memory/stats`)
       .then(r => r.ok ? r.json() : null).then(setMemStats).catch(() => {});
   }, []);
 
-  function set(key, val) {
-    onUpdate(key, val);
+  const flash = () => {
     setSaved(true);
     clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => setSaved(false), 1800);
-  }
-
-  const SectionHead = ({ title }) => (
-    <div style={{ fontSize: 9, fontWeight: 700, color: T.muted, letterSpacing: "0.1em",
-                  textTransform: "uppercase", margin: "20px 0 10px", paddingBottom: 5,
-                  borderBottom: `1px solid ${T.border}` }}>
-      {title}
-    </div>
-  );
-
-  const Field = ({ label, hint, children }) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 12, color: T.text }}>{label}</div>
-        {hint && <div style={{ fontSize: 10, color: T.muted, marginTop: 1 }}>{hint}</div>}
-      </div>
-      <div style={{ flexShrink: 0 }}>{children}</div>
-    </div>
-  );
-
-  const ButtonGroup = ({ options, value, onChange }) => (
-    <div style={{ display: "flex", borderRadius: 8, overflow: "hidden", border: `1px solid ${T.border}` }}>
-      {options.map(({ val, label }) => (
-        <button key={val} onClick={() => onChange(val)}
-          style={{
-            padding: "4px 10px", fontSize: 11, fontFamily: "inherit", fontWeight: value === val ? 700 : 400,
-            background: value === val ? `${T.accent}33` : "transparent",
-            color: value === val ? T.accent : T.muted,
-            border: "none", borderLeft: val !== options[0].val ? `1px solid ${T.border}` : "none",
-            cursor: "pointer", transition: "background 0.1s, color 0.1s",
-          }}>{label}</button>
-      ))}
-    </div>
-  );
-
-  const online = apiStatus === "online";
+    saveTimer.current = setTimeout(() => setSaved(false), 1600);
+  };
+  const set = (key, val) => { onUpdate(key, val); flash(); };
+  const resetDefaults = () => {
+    Object.entries({
+      defaultAgent: "auto", reflectMode: "", temperature: 0.7, maxMemories: 5,
+      enterToSend: true, showTimestamps: true, reduceMotion: false,
+    }).forEach(([k, v]) => onUpdate(k, v));
+    flash();
+  };
 
   return (
-    <div style={{ minWidth: 400, maxHeight: "70vh", overflowY: "auto", paddingRight: 4 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
-        <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.text, flex: 1 }}>Settings</h2>
-        {saved && <span style={{ fontSize: 10, color: T.success, fontWeight: 600 }}>✓ Saved</span>}
-      </div>
+    <div style={{ animation: `fadeIn ${DUR.base} ${EASE.out}` }}>
+      <style>{CALM_CSS}</style>
 
-      <SectionHead title="Agent & Inference" />
-
-      <Field label="Default agent" hint="Pre-selects the agent for every new conversation">
-        <select value={settings.defaultAgent} onChange={e => set("defaultAgent", e.target.value)}
-          style={{
-            background: T.surface2, border: `1px solid ${T.border}`, color: T.text,
-            borderRadius: 8, padding: "4px 8px", fontSize: 11, fontFamily: "inherit", cursor: "pointer",
-            minWidth: 160,
-          }}>
-          <option value="auto">Auto (Coordinator routes)</option>
-          {AGENTS.filter(a => a.id !== "coordinator").map(a => (
-            <option key={a.id} value={a.id}>{a.label}</option>
-          ))}
-        </select>
-      </Field>
-
-      <Field label="Default reflect mode" hint="Depth of self-critique applied after each response">
-        <ButtonGroup
-          value={settings.reflectMode}
-          onChange={v => set("reflectMode", v)}
-          options={[
-            { val: "",      label: "Auto"  },
-            { val: "none",  label: "Fast"  },
-            { val: "light", label: "Check" },
-            { val: "full",  label: "Deep"  },
-          ]}
-        />
-      </Field>
-
-      <Field
-        label={`Temperature — ${settings.temperature.toFixed(1)}`}
-        hint="Higher = more creative, lower = more deterministic"
+      <PageHeader
+        center
+        title="Settings"
+        subtitle="Tune how Amagra reasons, remembers, and behaves. Every change saves instantly to this device."
       >
-        <input type="range" min="0.1" max="1.0" step="0.1"
-          value={settings.temperature}
-          onChange={e => set("temperature", parseFloat(e.target.value))}
-          style={{ width: 130, accentColor: T.accent, cursor: "pointer" }}
-        />
-      </Field>
+        <span style={{
+          fontSize: 10.5, fontWeight: 700, letterSpacing: "0.04em",
+          color: saved ? T.success : "transparent",
+          transition: `color ${DUR.base} ${EASE.out}`,
+        }}>✓ Saved</span>
+      </PageHeader>
 
-      <SectionHead title="Memory" />
+      <SectionCard sym="◇" title="Agent & Inference">
+        <Row label="Default agent" hint="Pre-selects the agent for every new conversation">
+          <select value={settings.defaultAgent} onChange={e => set("defaultAgent", e.target.value)}
+            style={{
+              background: T.surface2, border: `1px solid ${T.border}`, color: T.text,
+              borderRadius: RADIUS.md, padding: "6px 10px", fontSize: 11.5, fontFamily: "inherit",
+              cursor: "pointer", minWidth: 180,
+            }}>
+            <option value="auto">Auto (Coordinator routes)</option>
+            {AGENTS.filter(a => a.id !== "coordinator").map(a => (
+              <option key={a.id} value={a.id}>{a.label}</option>
+            ))}
+          </select>
+        </Row>
 
-      <Field
-        label={`Max memories per query — ${settings.maxMemories}`}
-        hint="How many relevant memories are retrieved and injected into each request"
-      >
-        <input type="range" min="1" max="15" step="1"
-          value={settings.maxMemories}
-          onChange={e => set("maxMemories", parseInt(e.target.value))}
-          style={{ width: 130, accentColor: T.accent, cursor: "pointer" }}
-        />
-      </Field>
+        <Row label="Default reflect mode" hint="Depth of self-critique applied after each response">
+          <SegGroup value={settings.reflectMode} onChange={v => set("reflectMode", v)}
+            options={[
+              { val: "",      label: "Auto"  },
+              { val: "none",  label: "Fast"  },
+              { val: "light", label: "Check" },
+              { val: "full",  label: "Deep"  },
+            ]}
+          />
+        </Row>
 
-      {memStats && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 4, marginBottom: 12 }}>
-          {[
-            ["Total",         memStats.total            ?? "—"],
-            ["Prune ready",   memStats.prune_candidates ?? "—"],
-            ["Never recalled",memStats.never_used       ?? "—"],
-          ].map(([k, v]) => (
-            <div key={k} style={{ background: T.surface2, borderRadius: 8, padding: "8px 10px", textAlign: "center" }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: T.text, fontVariantNumeric: "tabular-nums" }}>{v}</div>
-              <div style={{ fontSize: 9, color: T.muted, marginTop: 2 }}>{k}</div>
-            </div>
-          ))}
+        <Row label={`Temperature — ${settings.temperature.toFixed(1)}`}
+             hint="Higher = more creative · lower = more deterministic">
+          <GoldSlider min={0.1} max={1.0} step={0.1}
+            value={{ value: settings.temperature, onChange: e => set("temperature", parseFloat(e.target.value)) }} />
+        </Row>
+      </SectionCard>
+
+      <SectionCard sym="⊹" title="Memory">
+        <Row label={`Max memories per query — ${settings.maxMemories}`}
+             hint="How many relevant memories are retrieved and injected into each request">
+          <GoldSlider min={1} max={15} step={1}
+            value={{ value: settings.maxMemories, onChange: e => set("maxMemories", parseInt(e.target.value)) }} />
+        </Row>
+
+        {memStats && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 14 }}>
+            {[
+              ["Total",          memStats.total            ?? "—"],
+              ["Prune ready",    memStats.prune_candidates ?? "—"],
+              ["Never recalled", memStats.never_used       ?? "—"],
+            ].map(([k, v]) => (
+              <div key={k} style={{
+                background: T.surface2, border: `1px solid ${T.border}`,
+                borderRadius: RADIUS.md, padding: "12px 10px", textAlign: "center",
+              }}>
+                <div style={{ ...TYPE.metric, fontSize: 18, color: GOLD_TX }}>{v}</div>
+                <div style={{ ...TYPE.eyebrow, fontSize: 9, color: T.muted, marginTop: 4 }}>{k}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      <SectionCard sym="▢" title="Interface">
+        <Row label="Send on Enter" hint="On: Enter sends, Shift+Enter for a new line. Off: Ctrl+Enter sends.">
+          <Toggle checked={settings.enterToSend} onChange={v => set("enterToSend", v)} />
+        </Row>
+        <Row label="Message timestamps" hint="Show the time beside each chat message">
+          <Toggle checked={settings.showTimestamps} onChange={v => set("showTimestamps", v)} />
+        </Row>
+        <Row label="Reduce motion" hint="Collapse animations and transitions across the app">
+          <Toggle checked={settings.reduceMotion} onChange={v => set("reduceMotion", v)} />
+        </Row>
+      </SectionCard>
+
+      {/* Footer — persistence note + reset */}
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 4 }}>
+        <div style={{ ...TYPE.caption, fontSize: 11, color: T.muted, flex: 1 }}>
+          Settings persist in <code style={{ color: GOLD_TX, fontFamily: FONT_MONO }}>localStorage</code>.
+          Reflect mode and default agent apply on your next message.
         </div>
-      )}
-
-      <SectionHead title="System" />
-
-      {[
-        ["API",     `${API}`,                                     true ],
-        ["Status",  online ? "● Online" : "○ Offline",           false],
-        ["Model",   status?.model  ?? "phi4-mini",               false],
-        ["GPU",     status?.gpu    ?? "RTX 2050",                false],
-        ["Backend", memStats?.backend?.type ?? "FAISSBackend",   false],
-        ...(coherence ? [
-          ["C(t)",  coherence.C?.toFixed(4)                    , true],
-          ["Routing",  coherence.c_routing?.toFixed(3)         , true],
-        ] : []),
-      ].map(([k, v, mono]) => (
-        <div key={k} style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
-                              padding: "5px 0", borderBottom: `1px solid ${T.border}22`, fontSize: 11 }}>
-          <span style={{ color: T.muted }}>{k}</span>
-          <span style={{ color: T.text, fontFamily: mono ? "monospace" : "inherit", fontSize: mono ? 10 : 11 }}>{v}</span>
-        </div>
-      ))}
-
-      <div style={{ marginTop: 14, padding: "8px 10px", background: T.surface2,
-                    borderRadius: 8, fontSize: 10, color: T.muted }}>
-        Settings persist in <code style={{ color: T.accent2 }}>localStorage</code>.
-        Reflect mode and default agent apply on next message.
+        <button onClick={resetDefaults} style={{
+          flexShrink: 0, background: "transparent", border: `1px solid ${T.border}`,
+          color: T.mutedLt, padding: "6px 14px", borderRadius: RADIUS.md, fontSize: 11,
+          fontFamily: "inherit", fontWeight: 600, cursor: "pointer",
+          transition: `border-color ${DUR.base} ${EASE.out}, color ${DUR.base} ${EASE.out}`,
+        }}>Reset to defaults</button>
       </div>
     </div>
   );
 }
 
-// ── Keyboard shortcuts modal ──────────────────────────────────
+// ── Keyboard shortcuts ────────────────────────────────────────
+// Each group is an "infographic" card. Symbols are decorative gold glyphs,
+// not emoji. Every binding below is wired (App.jsx global handler + ChatTab
+// panel handler) — nothing aspirational.
 const SHORTCUT_GROUPS = [
-  { title: "Primary Navigation", rows: [
+  { sym: "◇", title: "Primary Navigation", rows: [
     ["Introduction",      "Ctrl+1"],
     ["Workspace",         "Ctrl+2"],
     ["Runs",              "Ctrl+3"],
@@ -173,33 +247,37 @@ const SHORTCUT_GROUPS = [
     ["Memory",            "Ctrl+5"],
     ["Research",          "Ctrl+6"],
     ["Setup",             "Ctrl+7"],
-    ["Search menu",       "Ctrl+K"],
+    ["Command menu",      "Ctrl+K"],
   ]},
-  { title: "Debug", rows: [
+  { sym: "⟡", title: "Debug & Decisions", rows: [
     ["Decisions",         "Ctrl+Shift+D"],
     ["Learning Timeline", "Ctrl+Shift+L"],
     ["Policy Gate",       "Ctrl+Shift+Y"],
     ["Decisions / Replay","Ctrl+Shift+R"],
   ]},
-  { title: "Observe & Explore", rows: [
+  { sym: "⊹", title: "Observe & Explore", rows: [
     ["Cognitive OS",      "Ctrl+Shift+X"],
     ["Memory Browser",    "Ctrl+Shift+M"],
     ["Knowledge Graph",   "Ctrl+Shift+K"],
     ["Data Analysis",     "Ctrl+Shift+A"],
+    ["Consensus",         "Ctrl+Shift+V"],
   ]},
-  { title: "Tools", rows: [
+  { sym: "⚙", title: "Tools & Surfaces", rows: [
     ["Prompt Editor",     "Ctrl+Shift+E"],
     ["Task Queue",        "Ctrl+Shift+Q"],
     ["Goals",             "Ctrl+Shift+G"],
-    ["Version History",   "Ctrl+Shift+H"],
+    ["Releases",          "Ctrl+Shift+H"],
+    ["Skills",            "Ctrl+Shift+S"],
+    ["Providers",         "Ctrl+Shift+P"],
   ]},
-  { title: "Interface", rows: [
+  { sym: "▢", title: "Interface", rows: [
     ["Toggle menu",       "Ctrl+B"],
     ["Open Settings",     "Ctrl+,"],
     ["Keyboard Shortcuts","Ctrl+/"],
-    ["Close modal",       "Escape"],
+    ["Close / dismiss",   "Escape"],
   ]},
-  { title: "Chat", rows: [
+  { sym: "∴", title: "Chat", rows: [
+    ["New chat",          "Ctrl+Shift+N"],
     ["Send message",      "Enter"],
     ["New line",          "Shift+Enter"],
     ["Threads panel",     "Ctrl+Shift+T"],
@@ -208,53 +286,85 @@ const SHORTCUT_GROUPS = [
   ]},
 ];
 
-export function ShortcutsModal() {
-  const groups = SHORTCUT_GROUPS;
-  // Pair groups into 2 columns: [0,1], [2,3], [4]
-  const pairs = [];
-  for (let i = 0; i < groups.length; i += 2)
-    pairs.push([groups[i], groups[i + 1]]);
+const SHORTCUT_COUNT = SHORTCUT_GROUPS.reduce((n, g) => n + g.rows.length, 0);
 
-  const KeyBadge = ({ k }) => (
-    <span style={{
-      display: "inline-block", fontFamily: "monospace", fontSize: 9, fontWeight: 700,
-      background: T.surface2, color: T.accent2,
-      border: `1px solid ${T.border}`,
-      borderRadius: 3, padding: "2px 6px", whiteSpace: "nowrap",
-    }}>{k}</span>
-  );
-
-  const GroupCol = ({ group }) => group ? (
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontSize: 8, fontWeight: 700, color: T.muted, letterSpacing: "0.12em",
-                    textTransform: "uppercase", marginBottom: 6 }}>
-        {group.title}
-      </div>
-      {group.rows.map(([action, key]) => (
-        <div key={action} style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "4px 0", gap: 8, borderBottom: `1px solid ${T.border}22`,
-        }}>
-          <span style={{ fontSize: 11, color: T.mutedLt, minWidth: 0, overflow: "hidden",
-                         textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{action}</span>
-          <KeyBadge k={key} />
-        </div>
-      ))}
-    </div>
-  ) : <div style={{ flex: 1 }} />;
-
+// A key chord like "Ctrl+Shift+D" → discrete gold key caps joined by a hair "+".
+function KeyChord({ combo }) {
+  const keys = combo.split("+");
   return (
-    <div style={{ minWidth: 560, maxWidth: 640 }}>
-      <h2 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700, color: T.text }}>
-        Keyboard Shortcuts
-      </h2>
-      <div style={{ maxHeight: 440, overflowY: "auto", paddingRight: 4, display: "flex",
-                    flexDirection: "column", gap: 18 }}>
-        {pairs.map((pair, i) => (
-          <div key={i} style={{ display: "flex", gap: 28 }}>
-            <GroupCol group={pair[0]} />
-            <div style={{ width: 1, background: T.border, flexShrink: 0 }} />
-            <GroupCol group={pair[1]} />
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+      {keys.map((k, i) => (
+        <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+          {i > 0 && <span style={{ fontSize: 9, color: T.muted }}>+</span>}
+          <kbd style={{
+            fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700, lineHeight: 1,
+            color: T.accentText, background: `${T.accent}12`,
+            border: `1px solid ${T.accent}38`, borderRadius: RADIUS.sm - 3,
+            padding: "3px 6px", whiteSpace: "nowrap", boxShadow: LUX.shadowSm,
+          }}>{k}</kbd>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+export function ShortcutsModal() {
+  return (
+    <div style={{ animation: `fadeIn ${DUR.base} ${EASE.out}` }}>
+      <style>{`
+        .kbd-group { transition: box-shadow ${DUR.base} ${EASE.out}, transform ${DUR.base} ${EASE.out}; }
+        .kbd-group:hover { box-shadow: ${LUX.shadowSm}; transform: translateY(-1px); }
+      `}</style>
+
+      <PageHeader
+        center
+        title="Shortcuts"
+        subtitle={`Every keyboard binding in Amagra — ${SHORTCUT_COUNT} shortcuts across ${SHORTCUT_GROUPS.length} groups. Chords work anywhere outside a text field; ⌘ substitutes for Ctrl on macOS.`}
+      />
+
+      {/* Infographic grid — cards reflow to fill the shared content column */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+        gap: 16,
+      }}>
+        {SHORTCUT_GROUPS.map((group) => (
+          <div key={group.title} className="kbd-group" style={{
+            background: LUX.tileFace, border: `1px solid ${LUX.tileBorder}`,
+            borderRadius: RADIUS.lg, padding: "16px 18px",
+          }}>
+            {/* Group header */}
+            <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 12,
+                          paddingBottom: 10, borderBottom: `1px solid ${T.accent}20` }}>
+              <span style={{
+                fontFamily: FONT_DISPLAY, fontSize: 16, lineHeight: 1, color: T.accent,
+                width: 26, height: 26, flexShrink: 0, display: "inline-flex",
+                alignItems: "center", justifyContent: "center",
+                background: `${T.accent}12`, border: `1px solid ${T.accent}30`, borderRadius: "50%",
+              }}>{group.sym}</span>
+              <span style={{ ...TYPE.eyebrow, fontSize: 10, color: T.accentText }}>
+                {group.title}
+              </span>
+              <div style={{ flex: 1 }} />
+              <span style={{ fontSize: 10, color: T.muted, fontFamily: FONT_MONO }}>
+                {group.rows.length}
+              </span>
+            </div>
+
+            {/* Rows */}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {group.rows.map(([action, key], i) => (
+                <div key={action} style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  gap: 12, padding: "7px 0",
+                  borderTop: i === 0 ? "none" : `1px solid ${T.border}55`,
+                }}>
+                  <span style={{ ...TYPE.small, color: T.mutedLt, minWidth: 0, overflow: "hidden",
+                                 textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{action}</span>
+                  <KeyChord combo={key} />
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>
@@ -262,45 +372,93 @@ export function ShortcutsModal() {
   );
 }
 
-// ── About (version & build) ───────────────────────────────────
-// Was inline in App.jsx's modal map; now a first-class surface (System › About).
-export function AboutView({ coherence }) {
+// ── About (identity, build & live engine state) ───────────────
+// A first-class surface (System › About). Now also home to the System
+// information that used to live under Settings — the live engine readout.
+export function AboutView({ coherence, apiStatus }) {
+  const [status,   setStatus]   = useState(null);
+  const [memStats, setMemStats] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API}/status`)
+      .then(r => r.ok ? r.json() : null).then(setStatus).catch(() => {});
+    fetch(`${API}/memory/stats`)
+      .then(r => r.ok ? r.json() : null).then(setMemStats).catch(() => {});
+  }, []);
+
+  const online = apiStatus === "online";
+  const latest = BUILD_PHASES[BUILD_PHASES.length - 1];
+
+  const InfoRow = ({ label, children }) => (
+    <div className="set-row" style={{ display: "flex", justifyContent: "space-between",
+                                      alignItems: "center", gap: 12, padding: "10px 0" }}>
+      <span style={{ ...TYPE.small, color: T.muted }}>{label}</span>
+      <span style={{ ...TYPE.small, color: T.text, textAlign: "right", minWidth: 0,
+                     overflow: "hidden", textOverflow: "ellipsis" }}>{children}</span>
+    </div>
+  );
+  const Mono = ({ children, color }) => (
+    <span style={{ fontFamily: FONT_MONO, fontSize: 11.5, color: color || GOLD_TX }}>{children}</span>
+  );
+
   return (
-    <div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, fontFamily: FONT_DISPLAY, letterSpacing: "0.06em", ...LUX.goldText }}>AMAGRA</h2>
-        <span style={{
-          fontSize: 11, fontWeight: 700, color: T.accent,
-          background: `${T.accent}18`, border: `1px solid ${T.accent}44`,
-          borderRadius: 4, padding: "2px 8px", fontFamily: "monospace",
-        }}>
-          v{VERSION}
-        </span>
-        <span style={{ fontSize: 10, color: T.muted }}>
-          Phase {BUILD_PHASES[BUILD_PHASES.length - 1].id} — {BUILD_PHASES[BUILD_PHASES.length - 1].title}
-        </span>
-      </div>
-      <p style={{ margin: "0 0 8px", fontSize: 12, color: T.mutedLt, lineHeight: 1.6 }}>
-        The AI you can trust with long-term work — it remembers what you've done, explains every
-        decision, and runs entirely on your hardware.
-      </p>
-      <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px", maxWidth: 460 }}>
-        {[["Architecture","Signal-first routing"],["Memory","FAISS + LRU cache"],
-          ["Agents","Specialist + Coordinator"],["Eval","Dual-trajectory critic"],
-          ["UI","React + Vite"],["API","FastAPI / Python"]].map(([k,v]) => (
-          <div key={k} style={{ fontSize: 11 }}>
-            <span style={{ color: T.muted }}>{k}: </span>
-            <span style={{ color: T.text }}>{v}</span>
-          </div>
-        ))}
-      </div>
-      {coherence && (
-        <div style={{ marginTop: 16, padding: "10px 12px", background: T.surface, borderRadius: 4, fontSize: 11, fontFamily: "monospace", color: T.muted, maxWidth: 460 }}>
-          C(t) = {coherence.C?.toFixed(4)} &nbsp;|&nbsp; mem = {coherence.mem_n} &nbsp;|&nbsp;
-          routing = {coherence.c_routing?.toFixed(3)} &nbsp;|&nbsp;
-          calib = {coherence.c_calib?.toFixed(3)}
+    <div style={{ animation: `fadeIn ${DUR.base} ${EASE.out}` }}>
+      <style>{CALM_CSS}</style>
+
+      <PageHeader center title="About" subtitle="What Amagra is — and the live state of the engine on this machine." />
+
+      {/* Identity hero */}
+      <div className="set-card" style={{
+        background: LUX.tileFace, border: `1px solid ${LUX.tileBorder}`,
+        borderRadius: RADIUS.lg, padding: "20px 22px", marginBottom: 16,
+      }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+          <h2 style={{ margin: 0, fontSize: 28, fontWeight: 600, fontFamily: FONT_DISPLAY,
+                       letterSpacing: "0.08em", ...LUX.goldText, display: "inline-block" }}>AMAGRA</h2>
+          <span style={{
+            fontSize: 11, fontWeight: 700, color: GOLD_TX,
+            background: `${GOLD}16`, border: `1px solid ${GOLD}40`,
+            borderRadius: RADIUS.sm, padding: "2px 9px", fontFamily: FONT_MONO,
+          }}>v{VERSION}</span>
+          <span style={{ ...TYPE.caption, color: T.muted }}>
+            Phase {latest.id} — {latest.title}
+          </span>
         </div>
-      )}
+        <p style={{ margin: "12px 0 0", ...TYPE.small, color: T.mutedLt, maxWidth: 620 }}>
+          The AI you can trust with long-term work — it remembers what you've done, explains every
+          decision, and runs entirely on your hardware.
+        </p>
+        <div style={{ marginTop: 16, display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "8px 24px" }}>
+          {[["Architecture","Signal-first routing"],["Memory","FAISS + LRU cache"],
+            ["Agents","Specialist + Coordinator"],["Eval","Dual-trajectory critic"],
+            ["UI","React + Vite"],["API","FastAPI / Python"]].map(([k,v]) => (
+            <div key={k} style={{ ...TYPE.caption, fontSize: 11.5 }}>
+              <span style={{ color: T.muted }}>{k}: </span>
+              <span style={{ color: T.text }}>{v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Live system information (moved from Settings) */}
+      <SectionCard sym="⚙" title="System">
+        <InfoRow label="API"><Mono>{API || "same-origin"}</Mono></InfoRow>
+        <InfoRow label="Status">
+          <span style={{ ...TYPE.small, color: online ? T.success : T.error, fontWeight: 600 }}>
+            {online ? "● Online" : "○ Offline"}
+          </span>
+        </InfoRow>
+        <InfoRow label="Model">{status?.model ?? "phi4-mini"}</InfoRow>
+        <InfoRow label="GPU">{status?.gpu ?? "RTX 2050"}</InfoRow>
+        <InfoRow label="Backend">{memStats?.backend?.type ?? "FAISSBackend"}</InfoRow>
+        {coherence && <>
+          <InfoRow label="Coherence C(t)"><Mono>{coherence.C?.toFixed(4)}</Mono></InfoRow>
+          <InfoRow label="Routing"><Mono>{coherence.c_routing?.toFixed(3)}</Mono></InfoRow>
+          <InfoRow label="Calibration"><Mono>{coherence.c_calib?.toFixed(3)}</Mono></InfoRow>
+          <InfoRow label="Memories active"><Mono>{coherence.mem_n}</Mono></InfoRow>
+        </>}
+      </SectionCard>
     </div>
   );
 }

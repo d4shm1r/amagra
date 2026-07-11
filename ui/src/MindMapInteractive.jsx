@@ -18,8 +18,9 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { T, SEM } from "./theme";
+import { T, SEM, RADIUS } from "./theme";
 import { AGENTS as BASE_AGENTS } from "./constants";
+import { PageHeader } from "./ObsShared";
 
 import { API } from "./api";
 
@@ -192,6 +193,12 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
         .mm-node:hover { filter: brightness(1.28) !important; cursor: pointer; }
       `}</style>
 
+      <PageHeader
+        center
+        title="Mind Map"
+        subtitle="The live agent routing network — the Coordinator and its specialists, lit as decisions flow through them."
+      />
+
       {/* ── Header bar ── */}
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14 }}>
         <div style={{ fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 99,
@@ -222,8 +229,8 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
         {/* ── Map canvas ── */}
         <div style={{
           flex: 1, position: "relative", height: 450,
-          background: "radial-gradient(ellipse at 50% 50%, #E7F2E6 0%, #F7F3EC 72%)",
-          border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden",
+          background: `radial-gradient(ellipse at 50% 50%, ${T.surface} 0%, ${T.bg} 78%)`,
+          border: `1px solid ${T.border}`, borderRadius: RADIUS.lg, overflow: "hidden",
         }}>
 
           {/* SVG: connection lines + animated routing line */}
