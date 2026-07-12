@@ -184,6 +184,7 @@ export default function RiskObservatoryTab({ embedded = false } = {}) {
       {/* Header (suppressed when embedded — the dashboard cell carries the title) */}
       {!embedded && (
       <PageHeader
+        sticky={false}
         title="Risk Observatory"
         subtitle="Reflection gate signals · risk score distribution · per-action breakdown"
       >

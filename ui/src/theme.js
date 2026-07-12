@@ -98,7 +98,7 @@ export const FONT_MONO    = "'JetBrains Mono', 'Cascadia Code', 'Consolas', 'Dro
 //
 // Override weight inline for one-off emphasis (e.g. ...TYPE.small, fontWeight: 700).
 export const TYPE = {
-  display:  { fontSize: 30,   lineHeight: 1.12, fontWeight: 600, letterSpacing: "0.01em",   fontFamily: FONT_DISPLAY }, // page hero (serif)
+  display:  { fontSize: 36,   lineHeight: 1.12, fontWeight: 600, letterSpacing: "0.01em",   fontFamily: FONT_DISPLAY }, // page hero (serif)
   title:    { fontSize: 22,   lineHeight: 1.25, fontWeight: 600, letterSpacing: "-0.01em" },                            // section / panel heading
   subtitle: { fontSize: 18,   lineHeight: 1.4,  fontWeight: 600, letterSpacing: "-0.005em" },                          // sub-section heading
   lead:     { fontSize: 15,   lineHeight: 1.66, fontWeight: 400 },                                                     // emphasized / readable body

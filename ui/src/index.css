@@ -33,11 +33,21 @@ code, pre, .mono {
   font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', 'Source Code Pro', Menlo, Monaco, monospace;
 }
 
-/* ── Scrollbars ──────────────────────────────────────────── */
-::-webkit-scrollbar        { width: 4px; height: 4px; }
+/* ── Scrollbars ──────────────────────────────────────────────
+   One scrollbar for the whole app — the gold floating pill from the
+   launcher (thin visible thumb via content-box padding), so menu and
+   tab scrolling read as the same surface. Single source of truth. */
+* { scrollbar-width: thin; scrollbar-color: rgba(196,136,8,0.35) transparent; }
+::-webkit-scrollbar        { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: #D6C9B2; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #C0B098; }
+::-webkit-scrollbar-thumb  {
+  background: rgba(196,136,8,0.26); border-radius: 10px;
+  border: 3px solid transparent; background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(196,136,8,0.48);
+  border: 3px solid transparent; background-clip: content-box;
+}
 
 /* ── Keyboard focus ring ─────────────────────────────────────
    Many interactive elements set `outline: none` inline for the calm look,

@@ -152,6 +152,7 @@ export default function PolicyTab() {
 
       {/* ── Header ── */}
       <PageHeader
+        sticky={false}
         title="Policy"
         subtitle="Critic-gate health · acceptance, uplift, calibration, marginal value"
       >

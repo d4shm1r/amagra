@@ -337,6 +337,7 @@ export default function PlanGraphTab({ embedded = false } = {}) {
       {/* ── Header (suppressed when embedded — the dashboard cell carries the title) ── */}
       {!embedded && (
       <PageHeader
+        sticky={false}
         title="Plan Graph"
         subtitle={hasGraph && data.meta
           ? `${data.meta.mode} · ${data.meta.steps} steps · u ${Math.round(data.meta.uncertainty * 100)}% · ${data.meta.elapsed_ms}ms`

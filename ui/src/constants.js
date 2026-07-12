@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.7.5";
+export const VERSION = "1.7.6";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -857,13 +857,17 @@ export const BUILD_PHASES = [
 
   // ── v1.7.6  Electron-First Unification & Sandbox Isolation ─────
   {
-    id: 103, version: "v1.7.6", date: "Jul 11, 2026",
-    label: "Electron-First Unification & Sandbox Isolation", title: "One design system, OS-level isolation, hardened headers", color: "#7E3F8F", status: "next",
-    summary: "In progress on main: the UI unifies onto a shared token system (landing + app), the tool sandbox gains real OS-level isolation via bubblewrap with honest blast-radius reporting, and the server ships hardened security response headers.",
+    id: 103, version: "v1.7.6", date: "Jul 12, 2026",
+    label: "Electron-First Unification & Sandbox Isolation", title: "One design system, OS-level isolation, hardened headers", color: "#7E3F8F", status: "done",
+    summary: "The UI unifies onto a shared token system (landing + app) and a calm redesign lands across twelve tabs — pinned heroes, one gold scrollbar, one pill button, a refined launcher. The tool sandbox gains real OS-level isolation via bubblewrap with honest blast-radius reporting, and the server ships hardened security response headers.",
     steps: [
       "Electron-first unification — shared tokens.css, self-hosted fonts, same-origin API, six tabs onto the token system (#148)",
       "OS-level isolation via bubblewrap + honest blast-radius reporting (#134/#149)",
       "Security response headers — nosniff, X-Frame-Options, CSP, HSTS (#133/#146)",
+      "Calm redesign batch 2 — twelve tabs with centered, unselectable, pinned serif heroes (content dissolves beneath)",
+      "Launcher refinement — per-tab descriptions, embossed tiles, gold sheen hover, halo-marked active tile",
+      "One gold scrollbar app-wide + the white-and-gold pill unified onto a single .btn-ghost",
+      "Runs › Overview folded into System › About as a live snapshot",
     ],
   },
 ];

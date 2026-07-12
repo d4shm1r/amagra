@@ -28,31 +28,42 @@ function Tile({ label, sym, sub, active, primary, onClick, ariaLabel }) {
       style={{
         display: "flex", flexDirection: primary ? "row" : "column",
         alignItems: primary ? "center" : undefined,
-        gap: primary ? 13 : 11, textAlign: "left",
+        gap: primary ? 13 : 11, textAlign: "left", userSelect: "none",
         gridColumn: primary ? "span 2" : undefined,
         padding: "15px 15px", minHeight: 96, cursor: "pointer",
+        position: "relative", overflow: "hidden",   // hosts the hover sheen sweep
         borderRadius: 14, fontFamily: FONT_UI,
         border: `1px solid ${gold ? T.accent : LUX.tileBorder}`,
-        background: active ? `${T.accent}0E` : primary ? T.surface : LUX.tileFace,
-        boxShadow: gold ? "none" : LUX.tileLift,
-        transition: `transform ${DUR.base} ${EASE.out}, border-color ${DUR.base} ${EASE.out}, background ${DUR.base} ${EASE.out}, box-shadow ${DUR.base} ${EASE.out}`,
+        // Active keeps the same white face as idle — "current" is marked by the
+        // gold border + soft halo + gold label, never a tinted fill.
+        background: primary ? T.surface
+          : "linear-gradient(172deg, #FFFEFB 0%, #FBF6EE 100%)",
+        boxShadow: active
+          ? `${LUX.tileLift}, 0 0 0 3px rgba(222,184,56,0.16), inset 0 1px 0 rgba(255,255,255,0.85)`
+          : primary ? "inset 0 1px 0 rgba(255,255,255,0.7)"
+          : `${LUX.tileLift}, inset 0 1px 0 rgba(255,255,255,0.85)`,
+        transition: `transform 260ms ${EASE.out}, border-color ${DUR.slow} ${EASE.out}, background ${DUR.slow} ${EASE.out}, box-shadow 260ms ${EASE.out}`,
       }}
     >
-      {/* app-icon-style chip */}
+      {/* app-icon-style chip — idle: cream face + gold hairline ring (the
+          menu-fab / app-icon language); active/primary: filled gold. */}
       <span aria-hidden className="tile-ico" style={{
         width: primary ? 38 : 30, height: primary ? 38 : 30, borderRadius: primary ? 11 : 9, flexShrink: 0,
         display: "inline-flex", alignItems: "center", justifyContent: "center",
         fontSize: primary ? 19 : 15, lineHeight: 1, fontFamily: FONT_DISPLAY,
-        color: gold ? "#6C4C00" : T.accent2,
-        background: gold ? "linear-gradient(135deg,#FFE880 0%,#DEB838 55%,#C48808 100%)" : `${T.accent}14`,
-        border: `1px solid ${gold ? "transparent" : "rgba(196,136,8,0.20)"}`,
-        boxShadow: gold ? "inset 0 1px 1px rgba(255,248,215,0.6)" : "none",
+        color: gold ? "#6C4C00" : "#8A5A00",
+        background: gold ? "linear-gradient(135deg,#FFE880 0%,#DEB838 55%,#C48808 100%)"
+                         : "linear-gradient(160deg,#FFFDF6 0%,#F6EEDC 100%)",
+        border: `1px solid ${gold ? "transparent" : "rgba(196,136,8,0.32)"}`,
+        boxShadow: gold ? "inset 0 1px 1px rgba(255,248,215,0.6)"
+                        : "inset 0 1px 1px rgba(255,255,255,0.9), 0 1px 3px rgba(95,75,20,0.08)",
       }}>{sym}</span>
       <div style={{ minWidth: 0, width: "100%" }}>
-        <div style={{
+        <div className="tile-label" style={{
           fontSize: primary ? 14.5 : 13, fontWeight: active || primary ? 700 : 600,
-          color: active || primary ? T.text : T.mutedLt, letterSpacing: "-0.01em",
+          color: active ? "#8A5A00" : primary ? T.text : "#4A3A22", letterSpacing: "-0.01em",
           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          transition: `color ${DUR.base} ${EASE.out}`,
         }}>{label}</div>
         {sub && <div style={{ fontSize: 10.5, color: T.muted, marginTop: 3, lineHeight: 1.3,
           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</div>}
@@ -64,11 +75,14 @@ function Tile({ label, sym, sub, active, primary, onClick, ariaLabel }) {
 function Section({ sym, title, desc, children, extra, delay = 0 }) {
   return (
     <section className="launch-sec" style={{ marginBottom: 48, animationDelay: `${delay}ms` }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginBottom: 12, paddingLeft: 2 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginBottom: 12, paddingLeft: 2, userSelect: "none" }}>
         <span aria-hidden style={{ fontSize: 14, color: T.accent, fontFamily: FONT_DISPLAY }}>{sym}</span>
         <h3 style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: "0.14em",
           textTransform: "uppercase", color: T.muted, fontFamily: FONT_UI }}>{title}</h3>
         {desc && <span style={{ fontSize: 11, color: T.mutedLt }}>· {desc}</span>}
+        {/* Gold hairline rule — the SectionLabel convention, carried into the menu. */}
+        <span aria-hidden style={{ flex: 1, alignSelf: "center", height: 1, marginLeft: 6,
+          background: `linear-gradient(90deg, ${T.accent}3D 0%, ${T.accent}14 45%, transparent 100%)` }} />
       </div>
       <div style={{
         display: "grid", gap: 12,
@@ -276,20 +290,39 @@ export default function AppLauncher({
         @keyframes tileIn { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
         .launch-sec { animation: tileIn ${DUR.slow} ${EASE.out} both; }
         .launch-tile:hover {
-          transform: translateY(-2px);
-          border-color: rgba(182,138,50,0.42) !important;
-          background: linear-gradient(165deg, rgba(255,255,255,0.86) 0%, rgba(253,247,236,0.78) 100%) !important;
+          z-index: 2;   /* lift above siblings so the spread shadow isn't cut in the grid gap */
+          transform: translateY(-3px) scale(1.012);
+          border-color: rgba(182,138,50,0.48) !important;
+          background: linear-gradient(165deg, rgba(255,255,255,0.92) 0%, rgba(253,247,236,0.82) 100%) !important;
           box-shadow:
-            0 16px 38px rgba(95,75,20,0.11),
-            0 3px 10px rgba(95,75,20,0.05);
+            0 18px 42px rgba(95,75,20,0.13),
+            0 4px 12px rgba(95,75,20,0.06),
+            0 0 0 1px rgba(222,184,56,0.10),
+            inset 0 1px 0 rgba(255,255,255,0.95);
         }
-        .tile-ico { transition: transform ${DUR.base} ${EASE.out}, background ${DUR.base} ${EASE.out}, box-shadow ${DUR.base} ${EASE.out}; }
+        /* Gold sheen — a soft gilded light band sweeps across the tile once on
+           hover-in, then rests off-canvas. Snaps back invisibly on hover-out. */
+        .launch-tile::after {
+          content: ''; position: absolute; top: -20%; bottom: -20%; left: 0; width: 55%;
+          background: linear-gradient(100deg,
+            transparent 0%, rgba(255,244,200,0.0) 18%,
+            rgba(255,240,190,0.38) 50%,
+            rgba(222,184,56,0.10) 66%, transparent 100%);
+          transform: translateX(-130%) skewX(-16deg);
+          pointer-events: none;
+        }
+        .launch-tile:hover::after {
+          transform: translateX(310%) skewX(-16deg);
+          transition: transform 780ms cubic-bezier(0.33, 0.7, 0.3, 1);
+        }
+        .tile-ico { transition: transform 300ms ${EASE.out}, background ${DUR.base} ${EASE.out}, box-shadow 300ms ${EASE.out}, color ${DUR.base} ${EASE.out}; }
         .launch-tile:hover .tile-ico {
-          transform: scale(1.08);
+          transform: translateY(-1px) scale(1.1) rotate(-3deg);
           background: linear-gradient(135deg,#FFF3C4,#EACB62) !important; color: #6C4C00 !important;
-          box-shadow: 0 3px 10px rgba(196,136,8,0.28), inset 0 1px 1px rgba(255,248,215,0.7);
+          box-shadow: 0 4px 12px rgba(196,136,8,0.30), 0 0 18px rgba(222,184,56,0.20), inset 0 1px 1px rgba(255,248,215,0.8);
         }
-        .launch-tile:active { transform: translateY(-1px) scale(0.985); }
+        .launch-tile:hover .tile-label { color: #6C4C00 !important; }
+        .launch-tile:active { transform: translateY(-1px) scale(0.99); transition-duration: 90ms; }
         .launch-tile:focus-visible { outline: 2px solid ${T.accent}; outline-offset: 2px; }
         .launch-row:hover {
           background: #FFFEFA !important; border-color: rgba(196,136,8,0.30) !important;
@@ -298,26 +331,17 @@ export default function AppLauncher({
         .launch-row:focus-visible { outline: 2px solid ${T.accent}; outline-offset: 1px; }
         .launch-search::placeholder { color: ${T.muted}; }
         .launch-search:focus { border-color: ${T.accent} !important; box-shadow: 0 0 0 4px ${T.accent}1F; }
-        /* Scroll surface — gold-tinted thin scrollbar + soft edge fades, so
-           content dissolves at the boundaries instead of clipping. */
+        /* Scroll surface — soft edge fades so content dissolves at the
+           boundaries instead of clipping. The gold scrollbar itself is the
+           app-wide one from index.css — menu and tabs scroll identically. */
         .launch-scroll {
-          scrollbar-width: thin;
-          scrollbar-color: rgba(196,136,8,0.35) transparent;
           overscroll-behavior: contain;
           -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 30px), transparent 100%);
           mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 30px), transparent 100%);
         }
-        .launch-scroll::-webkit-scrollbar { width: 10px; }
-        .launch-scroll::-webkit-scrollbar-track { background: transparent; }
-        .launch-scroll::-webkit-scrollbar-thumb {
-          background: rgba(196,136,8,0.26); border-radius: 10px;
-          border: 3px solid transparent; background-clip: content-box;
-        }
-        .launch-scroll::-webkit-scrollbar-thumb:hover {
-          background: rgba(196,136,8,0.48); border: 3px solid transparent; background-clip: content-box;
-        }
         @media (prefers-reduced-motion: reduce) {
           .launch-tile:hover, .launch-tile:active, .launch-row:hover, .launch-tile:hover .tile-ico { transform: none; }
+          .launch-tile::after, .launch-tile:hover::after { transition: none; transform: translateX(-130%) skewX(-16deg); }
           .launch-sec { animation: none; }
           [role=dialog] { animation: none !important; }
         }
@@ -389,7 +413,7 @@ export default function AppLauncher({
               (e.g. Cognition's Health/Advanced) get full-row sub-headers. */}
           {visibleSurfaces.map(([s, tabs], i) => {
             const tile = (t) => (
-              <Tile key={t.id} label={t.label} sym={t.sym || s.sym}
+              <Tile key={t.id} label={t.label} sym={t.sym || s.sym} sub={t.desc}
                 active={t.id === activeTab}
                 onClick={() => go(t.id)} />
             );

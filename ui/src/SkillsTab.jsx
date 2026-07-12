@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { T, FONT_MONO } from "./theme";
-import { PageHeader, RefreshBtn } from "./ObsShared";
+import { PageHeader } from "./ObsShared";
 
 import { API } from "./api";
 
@@ -97,9 +97,6 @@ export default function SkillsTab() {
   const [skills,  setSkills]  = useState([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
-  const [query,   setQuery]   = useState("");
-  const [agentF,  setAgentF]  = useState("all");
-  const [catF,    setCatF]    = useState("all");
 
   const load = () => {
     setLoading(true);
@@ -112,50 +109,28 @@ export default function SkillsTab() {
 
   useEffect(() => { load(); }, []);
 
-  const agents     = useMemo(() => ["all", ...new Set(skills.map(s => s.agent))],     [skills]);
-  const categories = useMemo(() => ["all", ...new Set(skills.map(s => s.category))],  [skills]);
-
-  const filtered = useMemo(() => {
-    const q = query.toLowerCase().trim();
-    return skills.filter(s => {
-      if (agentF !== "all" && s.agent    !== agentF) return false;
-      if (catF   !== "all" && s.category !== catF)   return false;
-      if (!q) return true;
-      return (
-        s.name.toLowerCase().includes(q)        ||
-        s.description?.toLowerCase().includes(q) ||
-        s.agent.toLowerCase().includes(q)        ||
-        s.category.toLowerCase().includes(q)
-      );
-    });
-  }, [skills, query, agentF, catF]);
-
-  const FilterBtn = ({ val, current, set, colorFn }) => {
-    const active = current === val;
-    const color  = val === "all" ? T.accent : (colorFn ? colorFn(val) : T.accent);
-    return (
-      <button onClick={() => set(val)} style={{
-        padding: "4px 13px", borderRadius: 99, fontSize: 11,
-        fontFamily: "inherit", cursor: "pointer", border: "none",
-        background: active ? `${color}22` : T.surface2,
-        color: active ? color : T.muted,
-        fontWeight: active ? 700 : 400,
-        whiteSpace: "nowrap",
-        transition: "background .1s, color .1s",
-      }}>
-        {val === "all" ? "All" : val.replace(/_/g, " ")}
-      </button>
-    );
-  };
-
   return (
     <div>
+      <style>{`
+        .skl-refresh{
+          position:relative; overflow:hidden; padding:7px 20px; border-radius:40px;
+          font-family:inherit; font-size:11.5px; font-weight:600; letter-spacing:-0.01em;
+          color:#5C4030; border:2px solid transparent; cursor:pointer;
+          background:linear-gradient(#FCFAF7,#FCFAF7) padding-box, linear-gradient(145deg,#FFE880,#DEB838,#C48808) border-box;
+          box-shadow:4px 4px 10px rgba(72,52,28,0.11),-2px -2px 7px rgba(255,255,255,0.80),inset 0 1px 1px rgba(255,255,255,0.94),inset 0 -1px 2px rgba(138,99,36,0.06);
+          transition:transform 200ms cubic-bezier(0.22,1,0.36,1), box-shadow 200ms ease-out, color 140ms ease;
+        }
+        .skl-refresh::before{content:'';position:absolute;top:0;left:0;right:0;bottom:50%;background:linear-gradient(180deg,rgba(255,255,255,0.46) 0%,rgba(255,255,255,0) 100%);border-radius:40px 40px 0 0;pointer-events:none;z-index:1;}
+        .skl-refresh:hover{color:#6C4C00;transform:translateY(-1px);box-shadow:6px 6px 16px rgba(62,44,20,0.17),-2px -2px 8px rgba(255,255,255,0.94),inset 0 1px 1px rgba(255,255,255,0.94),inset 0 -1px 2px rgba(138,99,36,0.10),0 0 24px rgba(196,136,8,0.13);}
+      `}</style>
+
       {/* Header */}
       <PageHeader
+        center
         title="Skills"
         subtitle={skills.length > 0 ? `${skills.length} skill nodes · phrase-weighted routing` : "Loading skill graph…"}
       >
-        <RefreshBtn onClick={load} />
+        <button className="skl-refresh" onClick={load}>↻ Refresh</button>
       </PageHeader>
 
       {error && (
@@ -165,73 +140,19 @@ export default function SkillsTab() {
         </div>
       )}
 
-      {/* Search + filters */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
-        <input
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Search skills…"
-          style={{
-            background: T.surface, border: `1px solid ${T.border}`,
-            borderRadius: 99, color: T.text, padding: "7px 16px",
-            fontSize: 12, fontFamily: "inherit", outline: "none",
-            width: 240, flex: "0 0 auto",
-            transition: "border-color .15s",
-          }}
-          onFocus={e  => { e.target.style.borderColor = `${T.accent}88`; }}
-          onBlur={e   => { e.target.style.borderColor = T.border; }}
-        />
-        {query && (
-          <button onClick={() => setQuery("")} style={{
-            background: "transparent", border: "none", color: T.error,
-            cursor: "pointer", fontSize: 13, padding: "2px 4px",
-          }}>✕</button>
-        )}
-      </div>
-
-      {/* Agent filter row */}
-      <div style={{ display: "flex", gap: 5, marginBottom: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: 9, color: T.muted, fontWeight: 700, letterSpacing: "0.1em",
-                       textTransform: "uppercase", flexShrink: 0, marginRight: 4 }}>Agent</span>
-        {agents.map(a => (
-          <FilterBtn key={a} val={a} current={agentF} set={setAgentF} colorFn={agentColor} />
-        ))}
-      </div>
-
-      {/* Category filter row */}
-      <div style={{ display: "flex", gap: 5, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: 9, color: T.muted, fontWeight: 700, letterSpacing: "0.1em",
-                       textTransform: "uppercase", flexShrink: 0, marginRight: 4 }}>Category</span>
-        {categories.map(c => (
-          <FilterBtn key={c} val={c} current={catF} set={setCatF} />
-        ))}
-      </div>
-
-      {/* Count row */}
-      <div style={{ fontSize: 11, color: T.muted, marginBottom: 12 }}>
-        {loading ? "Loading…" : `${filtered.length} / ${skills.length} skills`}
-        {(agentF !== "all" || catF !== "all" || query) && (
-          <button onClick={() => { setAgentF("all"); setCatF("all"); setQuery(""); }}
-            style={{ marginLeft: 8, background: "transparent", border: "none",
-                     color: T.accent, cursor: "pointer", fontSize: 11, fontFamily: "inherit" }}>
-            Clear filters
-          </button>
-        )}
-      </div>
-
       {/* Grid */}
-      {!loading && filtered.length === 0 && (
+      {!loading && skills.length === 0 && !error && (
         <div style={{ color: T.muted, fontSize: 13, textAlign: "center", padding: "40px 0" }}>
-          No skills match "{query}"
+          No skills yet.
         </div>
       )}
 
       <div style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-        gap: 12,
+        gridTemplateColumns: "repeat(2, 1fr)",
+        gap: 16,
       }}>
-        {filtered.map(skill => (
+        {skills.map(skill => (
           <SkillCard key={skill.name} skill={skill} />
         ))}
       </div>

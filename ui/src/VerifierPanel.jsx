@@ -53,6 +53,7 @@ export default function VerifierPanel() {
   return (
     <div style={{ animation: "fadeIn .2s" }}>
       <PageHeader
+        sticky={false}
         title="Step Verifier"
         subtitle="Every plan step is scored before the system moves on — pass, retry, replan, or abort."
       >

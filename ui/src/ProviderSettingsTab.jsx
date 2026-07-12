@@ -155,8 +155,7 @@ export default function ProviderSettingsTab() {
     <div style={{ color: T.text }}>
       <PageHeader
         center
-        title="Model & Provider"
-        subtitle="Choose which model answers — a local model to stay private and offline, or a hosted API. Changes apply immediately and survive a restart."
+        title="Model"
       />
 
       {current && (
@@ -218,34 +217,24 @@ export default function ProviderSettingsTab() {
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-        <button
-          onClick={runTest}
-          disabled={!!busy}
-          style={{
-            padding: "9px 18px", borderRadius: 8, border: `1px solid ${T.accent}`,
-            background: T.surface, color: T.accent, fontWeight: 700, fontSize: 14,
-            cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1,
-          }}
-        >
+      {/* Landing-page pill buttons — the shared .btn-ghost (App.jsx) */}
+      <div style={{ display: "flex", gap: 14, alignItems: "center", justifyContent: "center" }}>
+        <button className="btn-ghost" onClick={runTest} disabled={!!busy}
+          style={{ padding: "13px 30px", fontSize: 14, opacity: busy ? 0.6 : 1 }}>
           {busy === "test" ? "Testing…" : "Test connection"}
         </button>
-        <button
-          onClick={save}
-          disabled={!!busy}
-          style={{
-            padding: "9px 18px", borderRadius: 8, border: "none",
-            background: T.accent, color: "#fff", fontWeight: 700, fontSize: 14,
-            cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1,
-          }}
-        >
+        <button className="btn-ghost" onClick={save} disabled={!!busy}
+          style={{ padding: "13px 30px", fontSize: 14, opacity: busy ? 0.6 : 1 }}>
           {busy === "save" ? "Saving…" : "Save & apply"}
         </button>
-        <div style={{ marginLeft: 6 }}>
+      </div>
+
+      {(test || (saved && !test)) && (
+        <div style={{ marginTop: 12, textAlign: "center" }}>
           <StatusPill status={test} />
           {saved && !test && <span style={{ color: T.success, fontWeight: 700, fontSize: 13 }}>● saved</span>}
         </div>
-      </div>
+      )}
 
       {test?.error && (
         <pre style={{

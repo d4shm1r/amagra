@@ -26,7 +26,6 @@ const DiagnosticsTab     = lazy(() => import("./DiagnosticsTab"));
 const ProjectStateTab    = lazy(() => import("./ProjectStateTab"));
 const MemoryBrowserTab   = lazy(() => import("./MemoryBrowserTab"));
 const ContextInspectorTab = lazy(() => import("./ContextInspectorTab"));
-const InspectOverviewTab = lazy(() => import("./InspectOverviewTab"));
 const LibraryTab         = lazy(() => import("./LibraryTab"));
 const VersionHistoryTab  = lazy(() => import("./VersionHistoryTab"));
 const ResearchTab        = lazy(() => import("./ResearchTab"));
@@ -229,7 +228,7 @@ export default function App() {
           switch (e.key) {
             case "1": e.preventDefault(); navTo("home"); break;
             case "2": e.preventDefault(); navTo("chat"); break;
-            case "3": e.preventDefault(); navTo("overview"); break;
+            case "3": e.preventDefault(); navTo("runs"); break;
             case "4": e.preventDefault(); navTo("cog-dash"); break;
             case "5": e.preventDefault(); navTo("memory"); break;
             case "6": e.preventDefault(); navTo("data"); break;
@@ -270,10 +269,6 @@ export default function App() {
         @keyframes fbFadeOut   { 0%{opacity:1} 70%{opacity:1} 100%{opacity:0} }
 
         * { box-sizing: border-box; }
-
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #D6C9B2; border-radius: 2px; }
 
         @keyframes meshPulse { 0%,100%{opacity:1} 50%{opacity:.25} }
 
@@ -367,7 +362,7 @@ export default function App() {
           background: linear-gradient(180deg, rgba(255,255,255,0.46) 0%, rgba(255,255,255,0) 100%);
           border-radius: 40px 40px 0 0; pointer-events: none;
         }
-        .btn-ghost:hover {
+        .btn-ghost:not(:disabled):hover {
           color: #6C4C00;
           box-shadow:
             6px 6px 16px rgba(72,52,28,0.14),
@@ -377,6 +372,7 @@ export default function App() {
             0 0 24px rgba(196,136,8,0.13);
           transform: translateY(-1px);
         }
+        .btn-ghost:disabled { cursor: default; }
         .nav-btn:hover { background: rgba(72,52,28,0.05) !important; color: #2E2010 !important; }
         .copy-btn { opacity: 0; transition: opacity .15s; }
         .msg-wrap:hover .copy-btn { opacity: 1; }
@@ -467,7 +463,6 @@ export default function App() {
               {activeTab === "mindmap"       && <MindMapInteractive litNode={litNode} onForceAgent={(id) => { setForcedAgent(id); navTo("chat"); }} />}
               {activeTab === "library"       && <LibraryTab />}
               {activeTab === "memory"        && <MemoryBrowserTab />}
-              {activeTab === "overview"      && <InspectOverviewTab onNav={navTo} />}
               {activeTab === "brain"         && <DecisionTimeline />}
               {activeTab === "runs"          && <RunsTab />}
               {activeTab === "timeline"      && <TimelineTab />}
@@ -488,7 +483,7 @@ export default function App() {
               {activeTab === "releases"      && <VersionHistoryTab />}
               {activeTab === "prefs"         && <SettingsModal settings={settings} onUpdate={updateSetting} coherence={coherence} apiStatus={apiStatus} />}
               {activeTab === "shortcuts"     && <ShortcutsModal />}
-              {activeTab === "about"         && <AboutView coherence={coherence} apiStatus={apiStatus} />}
+              {activeTab === "about"         && <AboutView coherence={coherence} apiStatus={apiStatus} onNav={navTo} />}
               </Suspense>
             </div>
             )}
