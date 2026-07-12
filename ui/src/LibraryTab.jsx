@@ -174,7 +174,6 @@ function DocCard({ doc, collections, onMove, onRemove }) {
 // ── Library surface ───────────────────────────────────────────
 export default function LibraryTab() {
   const [docs,       setDocs]       = useState(null);   // null = loading
-  const [active,     setActive]     = useState("All");
   const [query,      setQuery]      = useState("");
   const [dragOver,   setDragOver]   = useState(false);
   const [notice,     setNotice]     = useState(null);
@@ -197,7 +196,7 @@ export default function LibraryTab() {
   useEffect(() => { load(); }, [load]);
 
   const uploadFiles = useCallback(async (files) => {
-    const target = active === "All" ? "Unsorted" : active;
+    const target = "Unsorted";
     for (const file of files) {
       setDocs(prev => [
         { filename: file.name, collection: target, status: "reading", chars: file.size, added: new Date().toISOString() },
@@ -222,7 +221,7 @@ export default function LibraryTab() {
         flash("Backend offline — couldn't add the document.");
       }
     }
-  }, [active]);
+  }, []);
 
   const moveDoc = async (doc, collection) => {
     setDocs(prev => prev.map(d => d.filename === doc.filename ? { ...d, collection } : d));
@@ -244,13 +243,10 @@ export default function LibraryTab() {
 
   // Collections present in data, plus defaults for the Move menu
   const present = [...new Set((docs || []).map(d => d.collection || "Unsorted"))];
-  const chipList = ["All", ...present.sort((a, b) =>
-    (a === "Unsorted") - (b === "Unsorted") || a.localeCompare(b))];
   const moveTargets = [...new Set([...DEFAULT_COLLECTIONS, ...present])].filter(c => c !== "Unsorted");
 
   const q = query.trim().toLowerCase();
   const visible = (docs || []).filter(d =>
-    (active === "All" || (d.collection || "Unsorted") === active) &&
     (!q || d.filename.toLowerCase().includes(q) || (d.collection || "").toLowerCase().includes(q))
   );
 
@@ -266,7 +262,7 @@ export default function LibraryTab() {
       `}</style>
 
       {/* ── Header ── */}
-      <PageHeader title="Library" subtitle="Your saved documents and references — searchable and collection-tagged.">
+      <PageHeader center title="Library" subtitle="Your saved documents and references — searchable and collection-tagged.">
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
@@ -280,7 +276,7 @@ export default function LibraryTab() {
         />
         <button
           onClick={() => fileRef.current?.click()}
-          className="btn-gold"
+          className="btn-ghost"
           style={{ padding: "9px 22px", fontSize: 13, whiteSpace: "nowrap" }}
         >＋ Add documents</button>
         <input ref={fileRef} type="file" multiple
@@ -288,27 +284,6 @@ export default function LibraryTab() {
           onChange={e => { uploadFiles([...e.target.files]); e.target.value = ""; }}
           style={{ display: "none" }} />
       </PageHeader>
-
-      {/* ── Collection chips ── */}
-      {(docs?.length > 0) && (
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 20 }}>
-          {chipList.map(c => {
-            const count = c === "All" ? docs.length : docs.filter(d => (d.collection || "Unsorted") === c).length;
-            const on = active === c;
-            return (
-              <button key={c} onClick={() => setActive(c)} className="nav-btn" style={{
-                padding: "5px 14px", borderRadius: 16, cursor: "pointer",
-                border: `1px solid ${on ? T.mutedLt : T.border}`,
-                background: on ? T.surface : "transparent",
-                color: on ? T.text : T.muted,
-                fontSize: 12, fontWeight: on ? 700 : 500, fontFamily: "inherit",
-              }}>
-                {c} <span style={{ opacity: 0.55, fontWeight: 400 }}>{count}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
 
       {/* ── Notice ── */}
       {notice && (
@@ -333,7 +308,7 @@ export default function LibraryTab() {
             Add documents and Amagra will read them, remember them,
             and draw on them in every conversation.
           </div>
-          <button onClick={() => fileRef.current?.click()} className="btn-gold"
+          <button onClick={() => fileRef.current?.click()} className="btn-ghost"
             style={{ padding: "13px 32px", fontSize: 14 }}>
             ＋ Add your first document
           </button>

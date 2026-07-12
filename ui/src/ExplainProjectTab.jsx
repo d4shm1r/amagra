@@ -38,19 +38,20 @@ export default function ExplainProjectTab() {
   return (
     <div style={{ fontFamily: FONT_UI, color: T.text }}>
       <PageHeader
-        title="Explain this project"
+        center
+        title="Explain"
         subtitle="A briefing built from the decisions you've recorded — what was chosen, and why."
         gold
       />
 
       {/* ── Composer ── */}
-      <div className="lux-card" style={{ padding: 16, marginBottom: 22, display: "flex", gap: 10, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", marginBottom: 22 }}>
         <input
           value={project}
           onChange={e => setProject(e.target.value)}
           onKeyDown={e => e.key === "Enter" && explain()}
           placeholder="Project name (blank = all decisions)"
-          style={{ ...TYPE.small, flex: 1, minWidth: 220, padding: "10px 13px", borderRadius: 10, fontFamily: FONT_UI,
+          style={{ ...TYPE.small, flex: 1, minWidth: 220, maxWidth: 420, padding: "10px 13px", borderRadius: 10, fontFamily: FONT_UI,
                    border: `1px solid ${T.border}`, background: T.surface2, color: T.text, outline: "none" }}
         />
         {/* Ghost button, no disabled dimming — stays visually constant. */}

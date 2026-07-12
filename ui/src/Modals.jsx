@@ -3,6 +3,7 @@ import { API } from "./api";
 import { AGENTS, BUILD_PHASES, VERSION } from "./constants";
 import { T, LUX, TYPE, EASE, DUR, RADIUS, FONT_DISPLAY, FONT_MONO } from "./theme";
 import { PageHeader } from "./ObsShared";
+import InspectOverviewTab from "./InspectOverviewTab";
 
 // ── Shared calm primitives (Settings + About) ─────────────────
 const GOLD    = T.accent;      // #C48808 — fills, thumbs, hairlines
@@ -32,12 +33,12 @@ function SectionCard({ sym, title, children }) {
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6,
                     paddingBottom: 12, borderBottom: `1px solid ${GOLD}20` }}>
-        <span style={{
+        {sym && <span style={{
           fontFamily: FONT_DISPLAY, fontSize: 15, lineHeight: 1, color: GOLD,
           width: 26, height: 26, flexShrink: 0, display: "inline-flex",
           alignItems: "center", justifyContent: "center",
           background: `${GOLD}12`, border: `1px solid ${GOLD}30`, borderRadius: "50%",
-        }}>{sym}</span>
+        }}>{sym}</span>}
         <span style={{ ...TYPE.eyebrow, fontSize: 10, color: GOLD_TX }}>{title}</span>
       </div>
       {children}
@@ -107,14 +108,8 @@ function SegGroup({ options, value, onChange }) {
 
 // ── Settings ──────────────────────────────────────────────────
 export function SettingsModal({ settings, onUpdate }) {
-  const [memStats, setMemStats] = useState(null);
   const [saved,    setSaved]    = useState(false);
   const saveTimer = useRef(null);
-
-  useEffect(() => {
-    fetch(`${API}/memory/stats`)
-      .then(r => r.ok ? r.json() : null).then(setMemStats).catch(() => {});
-  }, []);
 
   const flash = () => {
     setSaved(true);
@@ -146,7 +141,7 @@ export function SettingsModal({ settings, onUpdate }) {
         }}>✓ Saved</span>
       </PageHeader>
 
-      <SectionCard sym="◇" title="Agent & Inference">
+      <SectionCard title="Agent & Inference">
         <Row label="Default agent" hint="Pre-selects the agent for every new conversation">
           <select value={settings.defaultAgent} onChange={e => set("defaultAgent", e.target.value)}
             style={{
@@ -179,33 +174,15 @@ export function SettingsModal({ settings, onUpdate }) {
         </Row>
       </SectionCard>
 
-      <SectionCard sym="⊹" title="Memory">
+      <SectionCard title="Memory">
         <Row label={`Max memories per query — ${settings.maxMemories}`}
              hint="How many relevant memories are retrieved and injected into each request">
           <GoldSlider min={1} max={15} step={1}
             value={{ value: settings.maxMemories, onChange: e => set("maxMemories", parseInt(e.target.value)) }} />
         </Row>
-
-        {memStats && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 14 }}>
-            {[
-              ["Total",          memStats.total            ?? "—"],
-              ["Prune ready",    memStats.prune_candidates ?? "—"],
-              ["Never recalled", memStats.never_used       ?? "—"],
-            ].map(([k, v]) => (
-              <div key={k} style={{
-                background: T.surface2, border: `1px solid ${T.border}`,
-                borderRadius: RADIUS.md, padding: "12px 10px", textAlign: "center",
-              }}>
-                <div style={{ ...TYPE.metric, fontSize: 18, color: GOLD_TX }}>{v}</div>
-                <div style={{ ...TYPE.eyebrow, fontSize: 9, color: T.muted, marginTop: 4 }}>{k}</div>
-              </div>
-            ))}
-          </div>
-        )}
       </SectionCard>
 
-      <SectionCard sym="▢" title="Interface">
+      <SectionCard title="Interface">
         <Row label="Send on Enter" hint="On: Enter sends, Shift+Enter for a new line. Off: Ctrl+Enter sends.">
           <Toggle checked={settings.enterToSend} onChange={v => set("enterToSend", v)} />
         </Row>
@@ -223,12 +200,10 @@ export function SettingsModal({ settings, onUpdate }) {
           Settings persist in <code style={{ color: GOLD_TX, fontFamily: FONT_MONO }}>localStorage</code>.
           Reflect mode and default agent apply on your next message.
         </div>
-        <button onClick={resetDefaults} style={{
-          flexShrink: 0, background: "transparent", border: `1px solid ${T.border}`,
-          color: T.mutedLt, padding: "6px 14px", borderRadius: RADIUS.md, fontSize: 11,
-          fontFamily: "inherit", fontWeight: 600, cursor: "pointer",
-          transition: `border-color ${DUR.base} ${EASE.out}, color ${DUR.base} ${EASE.out}`,
-        }}>Reset to defaults</button>
+        <button className="btn-ghost" onClick={resetDefaults}
+          style={{ flexShrink: 0, padding: "9px 22px", fontSize: 12 }}>
+          Reset to defaults
+        </button>
       </div>
     </div>
   );
@@ -322,26 +297,21 @@ export function ShortcutsModal() {
         subtitle={`Every keyboard binding in Amagra — ${SHORTCUT_COUNT} shortcuts across ${SHORTCUT_GROUPS.length} groups. Chords work anywhere outside a text field; ⌘ substitutes for Ctrl on macOS.`}
       />
 
-      {/* Infographic grid — cards reflow to fill the shared content column */}
+      {/* Cards stacked inline — one full-width card per row for more room */}
       <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+        display: "flex",
+        flexDirection: "column",
         gap: 16,
       }}>
         {SHORTCUT_GROUPS.map((group) => (
           <div key={group.title} className="kbd-group" style={{
+            width: "100%",
             background: LUX.tileFace, border: `1px solid ${LUX.tileBorder}`,
-            borderRadius: RADIUS.lg, padding: "16px 18px",
+            borderRadius: RADIUS.lg, padding: "18px 22px",
           }}>
             {/* Group header */}
             <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 12,
                           paddingBottom: 10, borderBottom: `1px solid ${T.accent}20` }}>
-              <span style={{
-                fontFamily: FONT_DISPLAY, fontSize: 16, lineHeight: 1, color: T.accent,
-                width: 26, height: 26, flexShrink: 0, display: "inline-flex",
-                alignItems: "center", justifyContent: "center",
-                background: `${T.accent}12`, border: `1px solid ${T.accent}30`, borderRadius: "50%",
-              }}>{group.sym}</span>
               <span style={{ ...TYPE.eyebrow, fontSize: 10, color: T.accentText }}>
                 {group.title}
               </span>
@@ -351,19 +321,27 @@ export function ShortcutsModal() {
               </span>
             </div>
 
-            {/* Rows */}
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              {group.rows.map(([action, key], i) => (
-                <div key={action} style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  gap: 12, padding: "7px 0",
-                  borderTop: i === 0 ? "none" : `1px solid ${T.border}55`,
-                }}>
-                  <span style={{ ...TYPE.small, color: T.mutedLt, minWidth: 0, overflow: "hidden",
-                                 textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{action}</span>
-                  <KeyChord combo={key} />
-                </div>
-              ))}
+            {/* Rows — two per line, split by a gold divider */}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+            }}>
+              {group.rows.map(([action, key], i) => {
+                const rightCol = i % 2 === 1;
+                return (
+                  <div key={action} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    gap: 12, padding: "8px 0",
+                    paddingLeft: rightCol ? 26 : 0,
+                    paddingRight: rightCol ? 0 : 26,
+                    borderLeft: rightCol ? `1px solid ${T.accent}22` : "none",
+                  }}>
+                    <span style={{ ...TYPE.small, color: T.mutedLt, minWidth: 0, overflow: "hidden",
+                                   textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{action}</span>
+                    <KeyChord combo={key} />
+                  </div>
+                );
+              })}
             </div>
           </div>
         ))}
@@ -375,15 +353,22 @@ export function ShortcutsModal() {
 // ── About (identity, build & live engine state) ───────────────
 // A first-class surface (System › About). Now also home to the System
 // information that used to live under Settings — the live engine readout.
-export function AboutView({ coherence, apiStatus }) {
+export function AboutView({ coherence, apiStatus, onNav }) {
   const [status,   setStatus]   = useState(null);
   const [memStats, setMemStats] = useState(null);
+  const [decStats, setDecStats] = useState(null);
+  const [working,  setWorking]  = useState(null);
 
   useEffect(() => {
     fetch(`${API}/status`)
       .then(r => r.ok ? r.json() : null).then(setStatus).catch(() => {});
     fetch(`${API}/memory/stats`)
       .then(r => r.ok ? r.json() : null).then(setMemStats).catch(() => {});
+    fetch(`${API}/decisions?limit=1`)
+      .then(r => r.ok ? r.json() : null).then(d => d && setDecStats(d.stats || null)).catch(() => {});
+    fetch(`${API}/agents/status`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d?.agents && setWorking(d.agents.filter(a => a.status === "running").length)).catch(() => {});
   }, []);
 
   const online = apiStatus === "online";
@@ -441,7 +426,12 @@ export function AboutView({ coherence, apiStatus }) {
         </div>
       </div>
 
-      {/* Live system information (moved from Settings) */}
+      {/* Live snapshot — recent decisions + recent work, inline (no wrapper card) */}
+      <div style={{ marginBottom: 16 }}>
+        <InspectOverviewTab embedded onNav={onNav} />
+      </div>
+
+      {/* Live system information (moved from Settings) — also home to the live numbers */}
       <SectionCard sym="⚙" title="System">
         <InfoRow label="API"><Mono>{API || "same-origin"}</Mono></InfoRow>
         <InfoRow label="Status">
@@ -452,6 +442,16 @@ export function AboutView({ coherence, apiStatus }) {
         <InfoRow label="Model">{status?.model ?? "phi4-mini"}</InfoRow>
         <InfoRow label="GPU">{status?.gpu ?? "RTX 2050"}</InfoRow>
         <InfoRow label="Backend">{memStats?.backend?.type ?? "FAISSBackend"}</InfoRow>
+        <InfoRow label="Working now"><Mono>{working ?? "—"}</Mono></InfoRow>
+        <InfoRow label="Decisions"><Mono>{decStats?.total ?? "—"}</Mono></InfoRow>
+        <InfoRow label="Reflect rate"><Mono>{decStats ? `${Math.round((decStats.reflect_rate || 0) * 100)}%` : "—"}</Mono></InfoRow>
+        <InfoRow label="Conflicts"><Mono>{decStats?.conflicts ?? "—"}</Mono></InfoRow>
+        <InfoRow label="Tasks pending"><Mono>{status?.tasks?.pending ?? "—"}</Mono></InfoRow>
+        <InfoRow label="Tasks done"><Mono>{status?.tasks?.done ?? "—"}</Mono></InfoRow>
+        <InfoRow label="Tasks failed"><Mono>{status?.tasks?.failed ?? "—"}</Mono></InfoRow>
+        <InfoRow label="Memories total"><Mono>{memStats?.total ?? "—"}</Mono></InfoRow>
+        <InfoRow label="Prune ready"><Mono>{memStats?.prune_candidates ?? "—"}</Mono></InfoRow>
+        <InfoRow label="Never recalled"><Mono>{memStats?.never_used ?? "—"}</Mono></InfoRow>
         {coherence && <>
           <InfoRow label="Coherence C(t)"><Mono>{coherence.C?.toFixed(4)}</Mono></InfoRow>
           <InfoRow label="Routing"><Mono>{coherence.c_routing?.toFixed(3)}</Mono></InfoRow>

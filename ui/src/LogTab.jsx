@@ -13,8 +13,8 @@ export default function LogTab({ sessionLog, onClear }) {
           {sessionLog.length} event{sessionLog.length === 1 ? "" : "s"}
         </span>
         <button onClick={onClear} disabled={sessionLog.length === 0} style={{
-          background: "transparent", border: `1px solid ${sessionLog.length ? `${T.error}55` : T.border}`,
-          color: sessionLog.length ? T.error : T.muted,
+          background: "#fff", border: `1px solid ${sessionLog.length ? T.accent : T.border}`,
+          color: sessionLog.length ? T.accentText : T.muted,
           padding: "6px 14px", borderRadius: RADIUS.md, fontSize: 11, fontWeight: 600,
           cursor: sessionLog.length ? "pointer" : "default", fontFamily: "inherit",
           opacity: sessionLog.length ? 1 : 0.55,

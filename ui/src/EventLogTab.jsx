@@ -92,6 +92,7 @@ export default function EventLogTab({ embedded = false } = {}) {
       {/* Header (suppressed when embedded — the dashboard cell carries the title) */}
       {!embedded && (
       <PageHeader
+        sticky={false}
         title="Events"
         subtitle="Typed event stream from the cognitive runtime · auto-refresh 10s"
       >

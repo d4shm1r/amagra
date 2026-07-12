@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { AGENTS as AGENTS_LIST } from "./constants";
 import { T, GOLD, LUX, TYPE, EASE, DUR, FONT_DISPLAY, FONT_MONO } from "./theme";
-import { PageHeader, MetricCard, RefreshBtn } from "./ObsShared";
+import { PageHeader, MetricCard } from "./ObsShared";
 
 import { API } from "./api";
 
@@ -442,15 +442,18 @@ export default function GoalTracker() {
     <div style={{ animation: "fadeIn .2s" }}>
 
       {/* Header */}
-      <PageHeader title="Goals" subtitle="Multi-step goals — each step runs a specialist agent in sequence.">
+      <PageHeader center title="Goals" subtitle="Multi-step goals — each step runs a specialist agent in sequence.">
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => setShow(s => !s)} className={show ? undefined : "btn-ghost"} style={{
-            ...TYPE.small, fontWeight: 700, padding: "9px 18px", borderRadius: 99, cursor: "pointer", fontFamily: "inherit",
-            ...(show ? { background: "transparent", color: T.muted, border: `1px solid ${T.border}` } : {}),
+          <button onClick={() => setShow(s => !s)} className="btn-ghost" style={{
+            ...TYPE.small, fontWeight: 700, padding: "9px 18px",
           }}>
             {show ? "✕ Cancel" : "+ New goal"}
           </button>
-          <RefreshBtn onClick={fetchGoals} />
+          <button onClick={fetchGoals} className="btn-ghost" style={{
+            ...TYPE.small, fontWeight: 700, padding: "9px 18px",
+          }}>
+            ↻ Refresh
+          </button>
         </div>
       </PageHeader>
 

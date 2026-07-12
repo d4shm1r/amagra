@@ -27,13 +27,13 @@ import { API } from "./api";
 // Layout positions for the hexagonal mind map (unique to this component).
 // icon/color come from constants.js; only x/y/size/center/shortLabel live here.
 const LAYOUT = {
-  coordinator:        { x: 50, y: 50, size: 80, center: true,  label: "Coordinator" },
-  it_networking:      { x: 50, y: 7,  size: 64, label: "Networking"  },
-  python_dev:         { x: 84, y: 29, size: 64, label: "Python"      },
-  dotnet_dev:         { x: 84, y: 71, size: 64, label: ".NET"        },
-  knowledge_learning: { x: 50, y: 93, size: 64, label: "Knowledge"   },
-  ai_ml:              { x: 16, y: 71, size: 64, label: "AI / ML"     },
-  terse:              { x: 16, y: 29, size: 64, label: "Terse"       },
+  coordinator:        { x: 50, y: 50, size: 96, center: true,  label: "Coordinator" },
+  it_networking:      { x: 50, y: 9,  size: 76, label: "Networking"  },
+  python_dev:         { x: 84, y: 30, size: 76, label: "Python"      },
+  dotnet_dev:         { x: 84, y: 70, size: 76, label: ".NET"        },
+  knowledge_learning: { x: 50, y: 91, size: 76, label: "Knowledge"   },
+  ai_ml:              { x: 16, y: 70, size: 76, label: "AI / ML"     },
+  terse:              { x: 16, y: 30, size: 76, label: "Terse"       },
 };
 
 const AGENTS = BASE_AGENTS
@@ -178,19 +178,34 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
     <div>
       <style>{`
         @keyframes nodePulse {
-          0%,100% { transform: translate(-50%,-50%) scale(1);   opacity: 1 }
-          50%      { transform: translate(-50%,-50%) scale(1.1); opacity: .75 }
+          0%,100% { transform: translate(-50%,-50%) scale(1);   }
+          50%      { transform: translate(-50%,-50%) scale(1.09); }
         }
         @keyframes lineFlow {
-          from { stroke-dashoffset: 20 }
+          from { stroke-dashoffset: 32 }
           to   { stroke-dashoffset: 0  }
         }
         @keyframes mmFadeIn {
           from { opacity: 0; transform: translateX(10px) }
           to   { opacity: 1; transform: none }
         }
-        .mm-node { transition: box-shadow 0.25s, background 0.25s, border-color 0.25s; }
-        .mm-node:hover { filter: brightness(1.28) !important; cursor: pointer; }
+        @keyframes mmHalo {
+          0%,100% { transform: translate(-50%,-50%) scale(1);    opacity: .55 }
+          50%      { transform: translate(-50%,-50%) scale(1.22); opacity: .08 }
+        }
+        @keyframes mmOrbit { to { transform: translate(-50%,-50%) rotate(360deg); } }
+        .mm-node { transition: box-shadow .3s ease, background .3s ease, border-color .3s ease, transform .3s cubic-bezier(.22,1,.36,1); }
+        .mm-node:hover { transform: translate(-50%,-50%) scale(1.07) !important; cursor: pointer; filter: brightness(1.05); }
+        .mm-refresh{
+          position:relative; overflow:hidden; margin-left:auto; padding:7px 20px; border-radius:40px;
+          font-family:inherit; font-size:11.5px; font-weight:600; letter-spacing:-0.01em;
+          color:#5C4030; border:2px solid transparent; cursor:pointer;
+          background:linear-gradient(#FCFAF7,#FCFAF7) padding-box, linear-gradient(145deg,#FFE880,#DEB838,#C48808) border-box;
+          box-shadow:4px 4px 10px rgba(72,52,28,0.11),-2px -2px 7px rgba(255,255,255,0.80),inset 0 1px 1px rgba(255,255,255,0.94),inset 0 -1px 2px rgba(138,99,36,0.06);
+          transition:transform 200ms cubic-bezier(0.22,1,0.36,1), box-shadow 200ms ease-out, color 140ms ease;
+        }
+        .mm-refresh::before{content:'';position:absolute;top:0;left:0;right:0;bottom:50%;background:linear-gradient(180deg,rgba(255,255,255,0.46) 0%,rgba(255,255,255,0) 100%);border-radius:40px 40px 0 0;pointer-events:none;z-index:1;}
+        .mm-refresh:hover{color:#6C4C00;transform:translateY(-1px);box-shadow:6px 6px 16px rgba(62,44,20,0.17),-2px -2px 8px rgba(255,255,255,0.94),inset 0 1px 1px rgba(255,255,255,0.94),inset 0 -1px 2px rgba(138,99,36,0.10),0 0 24px rgba(196,136,8,0.13);}
       `}</style>
 
       <PageHeader
@@ -216,34 +231,51 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
         {selected && (
           <span style={{ fontSize: 11, color: T.accent2 }}>· replay paused</span>
         )}
-        <button onClick={() => { setSelected(null); loadData(); }}
-          style={{ marginLeft: "auto", background: "transparent", border: `1px solid ${T.border}`,
-            borderRadius: 99, color: T.muted, padding: "5px 12px",
-            fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>
+        <button className="mm-refresh" onClick={() => { setSelected(null); loadData(); }}>
           ↻ Refresh
         </button>
       </div>
 
-      <div style={{ display: "flex", gap: 14 }}>
+      <div style={{ display: "flex", gap: 14, alignItems: "stretch", height: 600 }}>
 
         {/* ── Map canvas ── */}
         <div style={{
-          flex: 1, position: "relative", height: 450,
-          background: `radial-gradient(ellipse at 50% 50%, ${T.surface} 0%, ${T.bg} 78%)`,
+          flex: 1, position: "relative", height: "100%",
+          background: `
+            radial-gradient(circle at 1px 1px, ${T.border}44 1px, transparent 0) 0 0 / 24px 24px,
+            radial-gradient(ellipse at 50% 44%, ${T.surface} 0%, ${T.bg} 82%)`,
           border: `1px solid ${T.border}`, borderRadius: RADIUS.lg, overflow: "hidden",
+          boxShadow: `inset 0 1px 3px ${T.border}66, inset 0 0 60px ${T.accent}0a`,
         }}>
+
+          {/* Decorative orbital rings behind the network */}
+          {[420, 300, 190].map((d, i) => (
+            <div key={d} style={{
+              position: "absolute", left: "50%", top: "50%", width: d, height: d,
+              transform: "translate(-50%,-50%)", borderRadius: "50%",
+              border: `1px solid ${T.accent}${["10", "16", "1e"][i]}`, pointerEvents: "none",
+            }} />
+          ))}
 
           {/* SVG: connection lines + animated routing line */}
           <svg width="100%" height="100%" style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none" }}>
+            <defs>
+              <filter id="mmGlow" x="-60%" y="-60%" width="220%" height="220%">
+                <feGaussianBlur stdDeviation="3" result="b" />
+                <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+            </defs>
+
             {AGENTS.filter(a => !a.center).map(a => {
               const isHighlighted = selected?.id === a.id || litNode === a.id;
               return (
                 <line key={a.id}
                   x1="50%" y1="50%"
                   x2={`${a.x}%`} y2={`${a.y}%`}
-                  stroke={isHighlighted ? `${a.color}55` : T.surface}
-                  strokeWidth={isHighlighted ? 2 : 1.5}
-                  strokeDasharray="6,5"
+                  stroke={isHighlighted ? `${a.color}66` : `${T.accent}1c`}
+                  strokeWidth={isHighlighted ? 2 : 1.25}
+                  strokeDasharray="5,6"
+                  filter={isHighlighted ? "url(#mmGlow)" : undefined}
                   style={{ transition: "stroke 0.3s, stroke-width 0.3s" }}
                 />
               );
@@ -252,19 +284,39 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
             {animLine && (() => {
               const c = getCoords(animLine.from, animLine.to);
               if (!c) return null;
+              const col = animLine.conflict ? SEM.clay : animLine.color;
               return (
-                <line
-                  x1={`${c.x1}%`} y1={`${c.y1}%`}
-                  x2={`${c.x2}%`} y2={`${c.y2}%`}
-                  stroke={animLine.conflict ? SEM.clay : animLine.color}
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeDasharray="10,6"
-                  style={{ animation: "lineFlow 0.45s linear infinite", opacity: 0.9 }}
-                />
+                <g>
+                  {/* soft halo underlay */}
+                  <line
+                    x1={`${c.x1}%`} y1={`${c.y1}%`} x2={`${c.x2}%`} y2={`${c.y2}%`}
+                    stroke={col} strokeWidth="7" strokeLinecap="round"
+                    style={{ opacity: 0.16 }}
+                  />
+                  {/* flowing dashed core */}
+                  <line
+                    x1={`${c.x1}%`} y1={`${c.y1}%`} x2={`${c.x2}%`} y2={`${c.y2}%`}
+                    stroke={col} strokeWidth="2.5" strokeLinecap="round" strokeDasharray="11,7"
+                    filter="url(#mmGlow)"
+                    style={{ animation: "lineFlow 0.5s linear infinite", opacity: 0.95 }}
+                  />
+                  {/* traveling pulse */}
+                  <circle r="4.5" fill={col} filter="url(#mmGlow)">
+                    <animate attributeName="cx" values={`${c.x1}%;${c.x2}%`} dur="0.85s" repeatCount="indefinite" />
+                    <animate attributeName="cy" values={`${c.y1}%;${c.y2}%`} dur="0.85s" repeatCount="indefinite" />
+                  </circle>
+                </g>
               );
             })()}
           </svg>
+
+          {/* Coordinator core halo */}
+          <div style={{
+            position: "absolute", left: "50%", top: "50%", width: 160, height: 160,
+            transform: "translate(-50%,-50%)", borderRadius: "50%", pointerEvents: "none",
+            background: `radial-gradient(circle, ${T.accent}26 0%, transparent 68%)`,
+            animation: "mmHalo 3.4s ease-in-out infinite",
+          }} />
 
           {/* Agent nodes */}
           {AGENTS.map(agent => {
@@ -284,34 +336,40 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
                   left: `${agent.x}%`, top: `${agent.y}%`,
                   transform: "translate(-50%,-50%)",
                   width: agent.size, height: agent.size,
-                  background: isLit || isSelected ? `${agent.color}25` : `${agent.color}0e`,
-                  border: `2px solid ${isSelected ? agent.color : isLit ? agent.color + "cc" : agent.color + "55"}`,
-                  borderRadius: agent.center ? 16 : 10,
+                  background: isLit || isSelected
+                    ? `radial-gradient(circle at 34% 27%, ${agent.color}42, ${agent.color}16)`
+                    : `radial-gradient(circle at 34% 27%, ${agent.color}1e, ${agent.color}08)`,
+                  border: `2px solid ${isSelected ? agent.color : isLit ? agent.color + "cc" : agent.color + "4d"}`,
+                  borderRadius: agent.center ? 22 : 16,
+                  backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexDirection: "column", textAlign: "center",
                   color: agent.color,
-                  boxShadow: isLit
-                    ? `0 0 28px ${agent.color}cc`
+                  boxShadow: (isLit
+                    ? `0 0 30px ${agent.color}cc, 0 4px 14px ${agent.color}55`
                     : isSelected
-                      ? `0 0 18px ${agent.color}88`
+                      ? `0 0 20px ${agent.color}88, 0 4px 12px ${agent.color}44`
                       : highConflict
                         ? `0 0 16px ${SEM.clay}77`
                         : s.count > 0
                           ? `0 0 ${8 + usageFrac * 24}px ${agent.color}44`
-                          : "none",
-                  animation: isLit ? "nodePulse .65s ease-in-out infinite" : "none",
+                          : `0 2px 8px ${T.border}66`)
+                    + `, inset 0 1px 2px rgba(255,255,255,0.55)`,
+                  animation: isLit ? "nodePulse .7s ease-in-out infinite" : "none",
                   zIndex: isSelected ? 10 : 2,
                 }}>
-                <div style={{ fontSize: agent.center ? 20 : 15 }}>{agent.icon}</div>
-                <div style={{ fontSize: agent.center ? 8.5 : 7.5, fontWeight: 700, lineHeight: 1.3,
-                  padding: "0 4px", color: isLit || isSelected ? agent.color : agent.color + "bb" }}>
+                <div style={{ fontSize: agent.center ? 24 : 18, filter: `drop-shadow(0 1px 2px ${agent.color}55)` }}>{agent.icon}</div>
+                <div style={{ fontSize: agent.center ? 9.5 : 8.5, fontWeight: 800, lineHeight: 1.3,
+                  letterSpacing: "0.02em", padding: "0 4px",
+                  color: isLit || isSelected ? agent.color : agent.color + "cc" }}>
                   {agent.label}
                 </div>
                 {s.count > 0 && (
-                  <div style={{ fontSize: 8, marginTop: 2,
-                    background: highConflict ? `${SEM.clay}22` : `${agent.color}22`,
+                  <div style={{ fontSize: 8.5, marginTop: 3,
+                    background: highConflict ? `${SEM.clay}26` : `${agent.color}22`,
                     color: highConflict ? SEM.clay : agent.color,
-                    borderRadius: 99, padding: "1px 5px", fontWeight: 700 }}>
+                    border: `1px solid ${highConflict ? SEM.clay : agent.color}33`,
+                    borderRadius: 99, padding: "1px 6px", fontWeight: 800 }}>
                     {s.count}{highConflict ? " ⚡" : ""}
                   </div>
                 )}
@@ -321,8 +379,10 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
 
           {/* Replay badge */}
           {!selected && decisions.length > 0 && (
-            <div style={{ position: "absolute", bottom: 10, left: 12, fontSize: 10,
-              color: T.muted, background: `${T.surface2}99`, padding: "3px 8px", borderRadius: 99 }}>
+            <div style={{ position: "absolute", bottom: 12, left: 14, fontSize: 10, fontWeight: 600,
+              color: T.accent2, background: `${T.surface}cc`, border: `1px solid ${T.accent}33`,
+              padding: "4px 10px", borderRadius: 99, backdropFilter: "blur(4px)",
+              boxShadow: `0 2px 8px ${T.border}66` }}>
               ↻ replaying recent decisions
             </div>
           )}
@@ -438,8 +498,8 @@ export default function MindMapInteractive({ onForceAgent, litNode: litNodeProp 
 
           ) : (
             /* Recent decisions feed */
-            <div style={{ background: T.surface, border: `1px solid ${T.border}`,
-              borderRadius: 12, padding: 12, flex: 1, display: "flex", flexDirection: "column" }}>
+            <div className="lux-card" style={{
+              padding: 14, flex: 1, display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 9, fontWeight: 700, color: T.muted,
                 letterSpacing: "0.1em", marginBottom: 8 }}>RECENT DECISIONS</div>
               <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 5 }}>

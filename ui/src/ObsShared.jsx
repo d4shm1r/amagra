@@ -12,19 +12,36 @@ import { T, LUX, TYPE, DUR, FONT_DISPLAY } from "./theme";
  *  pass gold={false} to opt a title out. */
 // Consistent header rule: an elegant gold serif title, then everything else —
 // description, then any actions/buttons/forms — stacked on new lines below it.
-export function PageHeader({ title, subtitle, children, gold = true, center = false }) {
+export function PageHeader({ title, subtitle, children, gold = true, center = false, sticky = true }) {
   return (
-    <div style={{ marginBottom: 20, ...(center ? { textAlign: "center" } : null) }}>
+    // Pinned to the top of the tab's scroll surface (like the launcher's fixed
+    // header + search): the hero stays put while content scrolls beneath and
+    // dissolves into a soft canvas fade at the header's lower edge.
+    // `sticky={false}` opts out for headers rendered mid-page (e.g. the
+    // Diagnostics sections below their segmented nav), where the pinned
+    // treatment's negative margin would overlap the content above.
+    <div style={sticky ? {
+      position: "sticky", top: -24, zIndex: 30,
+      margin: "-24px 0 6px", padding: "24px 0 22px",
+      // Solid canvas behind the whole header; only a fixed 16px tail dissolves,
+      // so scrolling content never shows through the title/controls themselves.
+      background: `linear-gradient(180deg, ${T.bg} calc(100% - 16px), rgba(240,233,223,0) 100%)`,
+      ...(center ? { textAlign: "center" } : null),
+    } : {
+      marginBottom: 20,
+      ...(center ? { textAlign: "center" } : null),
+    }}>
       <h1 style={{
         // Elegant serif display (Cormorant Garamond), gold gradient — the
-        // AMAGRA / Memory wordmark treatment.
-        ...TYPE.display, margin: 0,
+        // AMAGRA / Memory wordmark treatment. Unselectable: the hero is
+        // identity, not content.
+        ...TYPE.display, margin: 0, userSelect: "none",
         ...(gold ? { ...LUX.goldText, display: "inline-block" } : { color: T.text }),
       }}>
         {title}
       </h1>
       {subtitle && (
-        <div style={{ ...TYPE.caption, color: T.muted, marginTop: 6, maxWidth: 680,
+        <div style={{ ...TYPE.caption, color: T.muted, marginTop: 6, maxWidth: 680, userSelect: "none",
                       ...(center ? { marginLeft: "auto", marginRight: "auto" } : null) }}>
           {subtitle}
         </div>

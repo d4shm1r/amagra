@@ -65,7 +65,7 @@ const Empty = ({ children }) => (
   <div style={{ fontSize: 12.5, color: T.muted, padding: "14px 0 8px", fontStyle: "italic" }}>{children}</div>
 );
 
-export default function InspectOverviewTab({ onNav }) {
+export default function InspectOverviewTab({ onNav, embedded = false }) {
   const [status,    setStatus]    = useState(null);
   const [decisions, setDecisions] = useState(null);
   const [decStats,  setDecStats]  = useState(null);
@@ -94,17 +94,21 @@ export default function InspectOverviewTab({ onNav }) {
   return (
     <div>
 
-      <PageHeader title="Overview" subtitle="A live snapshot of working agents, recent decisions, and memory." />
+      {!embedded && (
+        <PageHeader title="Overview" subtitle="A live snapshot of working agents, recent decisions, and memory." />
+      )}
 
-      {/* ── Key numbers ── */}
-      <div style={{ display: "flex", gap: 14, marginBottom: 14 }}>
-        <Stat value={working || (agents.length ? 0 : "—")} label="Working now" live={working > 0} />
-        <Stat value={status?.tasks?.pending}               label="Tasks pending" />
-        <Stat value={decStats?.total}                      label="Decisions" />
-        <Stat value={status?.memories}                     label="Memories" />
-      </div>
+      {/* ── Key numbers (standalone only — embedded, these live in About › System) ── */}
+      {!embedded && (
+        <div style={{ display: "flex", gap: 14, marginBottom: 14 }}>
+          <Stat value={working || (agents.length ? 0 : "—")} label="Working now" live={working > 0} />
+          <Stat value={status?.tasks?.pending}               label="Tasks pending" />
+          <Stat value={decStats?.total}                      label="Decisions" />
+          <Stat value={status?.memories}                     label="Memories" />
+        </div>
+      )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
         {/* ── Recent decisions ── */}
         <Section title="Recent decisions" onMore={() => onNav("brain")}>
@@ -166,26 +170,28 @@ export default function InspectOverviewTab({ onNav }) {
         </Section>
       </div>
 
-      {/* ── Current context ── */}
-      <div style={{ marginTop: 14 }}>
-        <Section title="Current context">
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 28px", padding: "4px 0" }}>
-            {[
-              ["Model",        status?.model],
-              ["GPU",          status?.gpu],
-              ["Reflect rate", decStats ? `${Math.round((decStats.reflect_rate || 0) * 100)}%` : null],
-              ["Conflicts",    decStats?.conflicts],
-              ["Tasks done",   status?.tasks?.done],
-              ["Tasks failed", status?.tasks?.failed],
-            ].map(([k, v]) => (
-              <div key={k} style={{ fontSize: 12 }}>
-                <span style={{ color: T.muted }}>{k}&ensp;</span>
-                <span style={{ color: T.text, fontWeight: 600 }}>{v ?? "—"}</span>
-              </div>
-            ))}
-          </div>
-        </Section>
-      </div>
+      {/* ── Current context (standalone only — embedded, these live in About › System) ── */}
+      {!embedded && (
+        <div style={{ marginTop: 14 }}>
+          <Section title="Current context">
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 28px", padding: "4px 0" }}>
+              {[
+                ["Model",        status?.model],
+                ["GPU",          status?.gpu],
+                ["Reflect rate", decStats ? `${Math.round((decStats.reflect_rate || 0) * 100)}%` : null],
+                ["Conflicts",    decStats?.conflicts],
+                ["Tasks done",   status?.tasks?.done],
+                ["Tasks failed", status?.tasks?.failed],
+              ].map(([k, v]) => (
+                <div key={k} style={{ fontSize: 12 }}>
+                  <span style={{ color: T.muted }}>{k}&ensp;</span>
+                  <span style={{ color: T.text, fontWeight: 600 }}>{v ?? "—"}</span>
+                </div>
+              ))}
+            </div>
+          </Section>
+        </div>
+      )}
     </div>
   );
 }

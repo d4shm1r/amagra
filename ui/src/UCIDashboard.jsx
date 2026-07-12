@@ -373,6 +373,7 @@ export default function UCIDashboard({ embedded = false } = {}) {
       {/* Header (suppressed when embedded — the dashboard cell carries the title) */}
       {!embedded && (
       <PageHeader
+        sticky={false}
         title="Cognitive Index"
         subtitle="Unified Cognitive Index · 30% Reliability · 30% Intelligence · 25% Adaptation · 15% Productivity"
       >

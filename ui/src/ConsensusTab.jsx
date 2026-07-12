@@ -52,10 +52,14 @@ export default function ConsensusTab() {
 
   return (
     <div style={{ animation: "fadeIn .2s" }}>
-      {/* ── Header ── */}
-      <div style={{ marginBottom: 20 }}>
+      {/* ── Header — pinned like PageHeader: hero stays, content scrolls under ── */}
+      <div style={{
+        position: "sticky", top: -24, zIndex: 30, textAlign: "center",
+        margin: "-24px 0 6px", padding: "24px 0 22px",
+        background: `linear-gradient(180deg, ${T.bg} calc(100% - 16px), rgba(240,233,223,0) 100%)`,
+      }}>
         <h1 style={{
-          ...TYPE.display, margin: 0,
+          ...TYPE.display, margin: 0, display: "inline-block", userSelect: "none",
           // Brighter gold than LUX.goldText — ends at deep gold g4, never the
           // dark-brown g5, so a short word reads luminous, not muddy.
           background: `linear-gradient(135deg, ${GOLD.g4} 0%, ${GOLD.g3} 28%, ${GOLD.g2} 50%, ${GOLD.g3} 72%, ${GOLD.g4} 100%)`,
@@ -64,7 +68,7 @@ export default function ConsensusTab() {
         }}>
           Consensus
         </h1>
-        <p style={{ ...TYPE.small, margin: "7px 0 0", color: T.mutedLt, maxWidth: 660 }}>
+        <p style={{ ...TYPE.small, margin: "7px auto 0", color: T.mutedLt, maxWidth: 660, userSelect: "none" }}>
           Ask several models the same question and see how much they agree — the full
           agreement shown, not hidden. When it matters, verify before you trust.
         </p>

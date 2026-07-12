@@ -15,14 +15,13 @@ export const SURFACES = [
     // sit under a "Plan" sub-header — all adv, so Simple mode shows no header.
     { id: "chat",          label: "Chat",          sym: "⟡" },
     { id: "prompt",        label: "Prompt IDE",    sym: "✎" },
-    { id: "consensus",     label: "Consensus",     sym: "⁂" },
-    { id: "explain",       label: "Explain",       sym: "∵", adv: true },
-    { id: "goals",         label: "Goals",         sym: "◎", adv: true, group: "Plan" },
+    { id: "consensus",     label: "Consensus",     sym: "⁂", desc: "where models agree" },
+    { id: "explain",       label: "Explain",       sym: "∵", desc: "a briefing from your decisions", adv: true },
+    { id: "goals",         label: "Goals",         sym: "◎", desc: "multi-step agent plans", adv: true, group: "Plan" },
     { id: "tasks",         label: "Tasks",         sym: "≣", adv: true, group: "Plan" },
     { id: "project-state", label: "Project State", sym: "⊡", adv: true, group: "Plan" },
   ]},
   { id: "runs", label: "Runs", sym: "⊙", desc: "Inspect agent executions", adv: true, tabs: [
-    { id: "overview",  label: "Overview",  sym: "◉" },
     { id: "runs",      label: "All runs",  sym: "⊙" },  // "Runs" tile inside the Runs section read as a duplicate
     { id: "brain",     label: "Decisions", sym: "◬" },   // absorbs Trace (Live view) + Replay (inspector action)
     { id: "inspector", label: "Inspector", sym: "⊚" },
@@ -33,7 +32,7 @@ export const SURFACES = [
     { id: "cog-dash",    label: "Dashboard",   sym: "▦", group: "Health" },
     { id: "diagnostics", label: "Diagnostics", sym: "✳", group: "Health" },
     { id: "cognitive",   label: "CogOS",       sym: "∞", group: "Advanced" },
-    { id: "skills",      label: "Skills",      sym: "✦", group: "Advanced" },
+    { id: "skills",      label: "Skills",      sym: "✦", desc: "the routing skill graph", group: "Advanced" },
     { id: "timeline",    label: "Timeline",    sym: "↺", group: "Advanced" },
   ]},
   { id: "memory", label: "Memory", sym: "◈", desc: "Explore stored knowledge and context", tabs: [
@@ -42,7 +41,7 @@ export const SURFACES = [
     // Browser now hosts the old "Memory Map" as a Table|Map toggle (same
     // /memory/stats data — no reason to be two tabs). "Mind Map" was a live
     // agent-routing view, not memory — it moved to Analytics.
-    { id: "library",   label: "Library",    sym: "❧" },
+    { id: "library",   label: "Library",    sym: "❧", desc: "documents Amagra has read" },
     { id: "memory",    label: "Browser",    sym: "◈", adv: true, group: "Under the hood" },
     { id: "knowledge", label: "Knowledge",  sym: "⊛", adv: true, group: "Under the hood" },
   ]},
@@ -51,7 +50,7 @@ export const SURFACES = [
   // Setup › Concepts. Mind Map (live routing network) joins Analysis here.
   { id: "research", label: "Analytics", sym: "⊹", desc: "Analyze routing, memory, and agent behavior", adv: true, tabs: [
     { id: "data",    label: "Analysis", sym: "∑" },
-    { id: "mindmap", label: "Mind Map", sym: "✧" },
+    { id: "mindmap", label: "Mind Map", sym: "✧", desc: "the live routing network" },
   ]},
   // "Setup" (was "Settings") — renamed so the surface stops colliding with the
   // Settings *modal* in the launcher's System section. Essentials (Guide, Model,
@@ -59,17 +58,17 @@ export const SURFACES = [
   { id: "settings", label: "Setup", sym: "⚙", desc: "Configure Amagra", tabs: [
     { id: "guide",    label: "Guide",    sym: "§" },
     { id: "concepts", label: "Concepts", sym: "◇", adv: true },  // ex-"Research Lab" explainer prose (C(t), calibration, memory types…)
-    { id: "model",    label: "Model",    sym: "⬡" },
-    { id: "releases", label: "Releases", sym: "❖" },  // absorbs the old Promises/Progress roadmap: ROADMAP upcoming + BUILD_PHASES history
-    { id: "log",      label: "Log",      sym: "▤", adv: true },
+    { id: "model",    label: "Model",    sym: "⬡", desc: "choose which model answers" },
+    { id: "releases", label: "Releases", sym: "❖", desc: "the full build history" },  // absorbs the old Promises/Progress roadmap: ROADMAP upcoming + BUILD_PHASES history
+    { id: "log",      label: "Log",      sym: "▤", desc: "this session's activity", adv: true },
   ]},
   // App chrome as first-class surfaces (v1.7.1) — Settings/Shortcuts/About used
   // to pop modals from a hardcoded launcher section; they're now normal
   // destinations so everything in the menu behaves the same way.
   { id: "system", label: "System", sym: "✻", desc: "Preferences & app info", tabs: [
-    { id: "prefs",     label: "Settings",  sym: "⚙" },
-    { id: "shortcuts", label: "Shortcuts", sym: "⌘" },
-    { id: "about",     label: "About",     sym: "❋" },
+    { id: "prefs",     label: "Settings",  sym: "⚙", desc: "tune behavior & interface" },
+    { id: "shortcuts", label: "Shortcuts", sym: "⌘", desc: "every keyboard binding" },
+    { id: "about",     label: "About",     sym: "❋", desc: "identity & live engine state" },
   ]},
 ];
 
@@ -80,6 +79,8 @@ export const SURFACE_BY_TAB  = Object.fromEntries(SURFACES.flatMap(s => s.tabs.m
 export const DEFAULT_TAB     = Object.fromEntries(SURFACES.map(s => [s.id, s.tabs[0].id]));
 export const TAB_ALIASES     = {
   agents: "skills", history: "releases", traces: "brain", replay: "brain",
+  // v1.7.x consolidation: the Runs › Overview live snapshot folded into System › About.
+  overview: "about",
   // v1.6.4 consolidation: Memory Map folded into Browser; Research Lab → Setup › Concepts.
   map: "memory", research: "concepts",
   // Cognition consolidation (v1.6.2): the five focus tabs now live as sections
