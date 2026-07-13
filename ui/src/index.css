@@ -85,23 +85,18 @@ select:focus-visible { outline-offset: 1px; }
   }
 }
 
-/* ── Luxe cards — landing.html card system applied to the dashboard ──
-   Warm neumorphic depth (soft shadow bottom-right, paper highlight
-   top-left), a top gloss baked into the background gradient so card
-   content always paints above it, and a near-white hairline border on
-   cream. Match public/landing.html .for-card / .metric — keep in sync. */
+/* ── Luxe cards — the single card recipe for the whole app ──────────
+   Depth comes from one warm elevation shadow plus an inset paper highlight;
+   the edge is a quiet gold hairline, not a white one. Every value lives in
+   public/tokens.css (--card-*) so cards cannot drift apart again. */
 .lux-card {
   position: relative;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 42%),
     var(--l2);
-  border: 1px solid rgba(255, 255, 255, 0.45);
+  border: 1px solid var(--card-border);
   border-radius: 16px;
-  box-shadow:
-    7px 7px 20px rgba(72, 52, 28, 0.10),
-    -3px -3px 11px rgba(255, 255, 255, 0.75),
-    inset 0 1px 1px rgba(255, 255, 255, 0.92),
-    inset 0 -1px 1px rgba(138, 99, 36, 0.04);
+  box-shadow: var(--card-shadow);
   transition: box-shadow 280ms ease-out;
 }
 
@@ -129,12 +124,7 @@ select:focus-visible { outline-offset: 1px; }
 /* Gold glow on hover — pairs with the border so the whole card lights up like
    the landing .feature-card (which adds a 0 0 36px gold glow on hover). */
 .lux-card:hover {
-  box-shadow:
-    7px 7px 20px rgba(72, 52, 28, 0.10),
-    -3px -3px 11px rgba(255, 255, 255, 0.75),
-    inset 0 1px 1px rgba(255, 255, 255, 0.92),
-    inset 0 -1px 1px rgba(138, 99, 36, 0.04),
-    0 0 32px var(--gg1);
+  box-shadow: var(--card-shadow-hover);
 }
 
 /* ── Cognition dashboard: the cell IS the card ──────────────────
@@ -160,11 +150,7 @@ select:focus-visible { outline-offset: 1px; }
 }
 .lux-card-i:hover {
   transform: translateY(-2px);
-  box-shadow:
-    10px 10px 26px rgba(62, 44, 20, 0.15),
-    -3px -3px 13px rgba(255, 255, 255, 0.92),
-    inset 0 1px 1px rgba(255, 255, 255, 0.92),
-    0 0 24px rgba(196, 136, 8, 0.12);
+  box-shadow: var(--card-shadow-lift);
 }
 
 /* ── Chat message content ─────────────────────────────────── */

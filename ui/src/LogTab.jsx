@@ -1,4 +1,4 @@
-import { T, LUX, TYPE, EASE, DUR, RADIUS, FONT_MONO } from "./theme";
+import { T, TYPE, EASE, DUR, RADIUS, FONT_MONO } from "./theme";
 import { PageHeader } from "./ObsShared";
 
 export default function LogTab({ sessionLog, onClear }) {
@@ -33,11 +33,11 @@ export default function LogTab({ sessionLog, onClear }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
           {[...sessionLog].reverse().map((e, i) => (
-            <div key={i} style={{
+            <div key={i} className="lux-card" style={{
               display: "flex", gap: 14, alignItems: "center",
               padding: "10px 15px",
-              background: LUX.tileFace, border: `1px solid ${LUX.tileBorder}`,
-              borderLeft: `3px solid ${e.color}`, borderRadius: RADIUS.md,
+              // Card chrome from the shared recipe; the status rule stays.
+              borderLeft: `3px solid ${e.color}`,
             }}>
               <span style={{ ...TYPE.caption, fontFamily: FONT_MONO, color: T.muted,
                              minWidth: 76, flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>

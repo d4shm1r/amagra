@@ -159,10 +159,7 @@ export default function ProviderSettingsTab() {
       />
 
       {current && (
-        <div style={{
-          background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10,
-          padding: "12px 16px", marginBottom: 22, fontSize: 13.5,
-        }}>
+        <div className="lux-card" style={{ padding: "12px 16px", marginBottom: 22, fontSize: 13.5 }}>
           <span style={{ color: T.muted }}>Active now: </span>
           <strong style={{ color: T.accent }}>{current.provider}</strong>
           <span style={{ color: T.muted }}> · </span>
@@ -179,11 +176,13 @@ export default function ProviderSettingsTab() {
             <button
               key={f.id}
               onClick={() => pickProvider(f.id)}
+              className="lux-card lux-card-i"
               style={{
-                textAlign: "left", cursor: "pointer",
-                background: active ? `${T.accent}10` : T.surface,
-                border: `1.5px solid ${active ? T.accent : T.border}`,
-                borderRadius: 10, padding: "12px 16px", color: T.text, fontFamily: "inherit",
+                textAlign: "left", cursor: "pointer", padding: "12px 16px",
+                color: T.text, fontFamily: "inherit",
+                // Selected = the gold edge held on, instead of only on hover.
+                borderColor: active ? T.accent : undefined,
+                background: active ? `${T.accent}10` : undefined,
               }}
             >
               <div style={{ fontWeight: 700, fontSize: 14.5, marginBottom: 2 }}>

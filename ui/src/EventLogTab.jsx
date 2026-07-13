@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { T, FONT_MONO } from "./theme";
-import { ObsPanel, EventRow, RefreshBtn, EmptyState, eventMeta, PageHeader } from "./ObsShared";
+import { ObsPanel, EventRow, RefreshBtn, EmptyState, eventMeta, PageHeader, Pill } from "./ObsShared";
 
 import { API } from "./api";
 
@@ -19,25 +19,18 @@ function CountPills({ counts }) {
   const total = Object.values(counts).reduce((s, n) => s + n, 0);
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 14 }}>
-      <span style={{
-        background: T.accent + "22", border: `1px solid ${T.accent}44`,
-        color: T.accent, borderRadius: 99, padding: "3px 11px", fontSize: 11, fontFamily: FONT_MONO,
-      }}>{total} total</span>
+      <Pill color={T.accentText} strong>{total} total</Pill>
       {Object.entries(counts)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10)
         .map(([type, n]) => {
           const meta = eventMeta(type);
           return (
-            <span key={type} style={{
-              background: T.surface2, border: `1px solid ${T.border}`,
-              borderRadius: 99, padding: "3px 10px", fontSize: 10, color: T.muted,
-              display: "inline-flex", alignItems: "center", gap: 4,
-            }}>
-              <span style={{ color: meta.color }}>{meta.icon}</span>
+            <Pill key={type} color={T.muted}>
+              <span style={{ color: meta.color, marginRight: 4 }}>{meta.icon}</span>
               {type.replace(/\./g, " ")}
-              <span style={{ color: T.mutedLt, fontFamily: FONT_MONO }}>{n}</span>
-            </span>
+              <span style={{ color: T.mutedLt, marginLeft: 4, fontVariantNumeric: "tabular-nums" }}>{n}</span>
+            </Pill>
           );
         })}
     </div>

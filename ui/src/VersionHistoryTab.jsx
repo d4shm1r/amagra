@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { BUILD_PHASES, VERSION_EPOCHS } from "./constants";
-import { T, LUX, TYPE, EASE, DUR, RADIUS, FONT_MONO } from "./theme";
+import { T, TYPE, EASE, DUR, RADIUS, FONT_MONO } from "./theme";
 import { PageHeader } from "./ObsShared";
 
 // Single-color system: one gold for decoration, a deeper gold for text on cream.
@@ -17,16 +17,15 @@ function PhaseCard({ phase }) {
 
   return (
     <div
-      className="rel-card"
+      // The app-wide card. Clickable, so it takes the interactive variant (lift
+      // + gold ring on hover); the current phase holds the gold edge on.
+      className="lux-card lux-card-i"
       onClick={() => setOpen(o => !o)}
       style={{
         display: "flex", flexDirection: "column",
-        background: LUX.tileFace,
-        border: `1px solid ${isNow ? GOLD + "4A" : LUX.tileBorder}`,
-        borderRadius: RADIUS.md,
+        ...(isNow ? { borderColor: GOLD + "4A" } : null),
         padding: "12px 15px",
         cursor: "pointer",
-        transition: `box-shadow ${DUR.base} ${EASE.out}, transform ${DUR.base} ${EASE.out}`,
         marginBottom: 7,
       }}
     >
@@ -103,8 +102,6 @@ export default function VersionHistoryTab() {
 
   return (
     <div style={{ animation: `fadeIn ${DUR.base} ${EASE.out}` }}>
-      <style>{`.rel-card:hover { box-shadow: ${LUX.shadowSm}; transform: translateY(-1px); }`}</style>
-
       <PageHeader center title="Releases" subtitle="Every shipped phase and version epoch — the full build history." />
 
       {/* ── Stats bar ── */}

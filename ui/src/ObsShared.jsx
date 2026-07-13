@@ -71,25 +71,99 @@ export function hProb(v) {
 }
 
 // ── Layout ────────────────────────────────────────────────────
+// The component layer of the design system. The stack is:
+//   public/tokens.css  → CSS vars (colors, --card-* elevation recipe)
+//   src/theme.js       → JS mirror of the vars for inline styles
+//   src/index.css      → .lux-card / .lux-card-i / .btn-ghost classes
+//   src/ObsShared.jsx  → THIS file: the shared components built on those
+// Tabs must not re-derive these locally — import them. If a primitive is
+// missing here, add it here, not in the tab.
 
-/** Standard section container used by every observability tab — landing card style */
-export function ObsPanel({ title, icon, children, action, style = {} }) {
+/** THE section card — gold eyebrow title, optional inline hint, optional
+ *  right-aligned actions, on the app-wide .lux-card chrome. Every titled
+ *  body panel in every tab is one of these. `onMore` is sugar for the common
+ *  "View all →" navigation action. */
+export function Section({ title, icon, hint, action, onMore, moreLabel, children, style = {} }) {
+  const more = onMore && (
+    <button onClick={onMore} className="nav-btn" style={{
+      ...TYPE.caption, fontWeight: 600, color: T.muted, fontFamily: "inherit",
+      border: "none", background: "transparent", cursor: "pointer",
+      padding: "2px 8px", borderRadius: 5,
+    }}>
+      {moreLabel || "View all"} →
+    </button>
+  );
   return (
     <div className="lux-card" style={{ padding: "16px 20px", ...style }}>
-      {(title || action) && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+      {(title || action || more) && (
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}>
           {title && (
-            <div style={{
-              ...TYPE.eyebrow, fontWeight: 700, color: T.mutedLt, letterSpacing: "0.1em",
-            }}>
+            <div style={{ ...TYPE.eyebrow, color: T.accentText }}>
               {icon && <span style={{ marginRight: 6, opacity: 0.7 }}>{icon}</span>}
               {title}
             </div>
           )}
-          {action}
+          {hint && (
+            <div style={{ ...TYPE.caption, color: T.muted, flex: 1, minWidth: 0 }}>{hint}</div>
+          )}
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>{action}{more}</div>
         </div>
       )}
       {children}
+    </div>
+  );
+}
+
+/** Back-compat alias — older observability tabs import ObsPanel. Same thing. */
+export const ObsPanel = Section;
+
+/** Inset well — the recessed T.surface2 surface that rows/readouts sit on
+ *  INSIDE a Section. Never nest a card in a card; nest a Well. */
+export function Well({ children, tone = T.border, style = {} }) {
+  return (
+    <div style={{
+      background: T.surface2, border: `1px solid ${tone}`,
+      borderRadius: 12, padding: "12px 16px", ...style,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+/** Pill badge — the single badge shape (verdicts, statuses, tags). */
+export function Pill({ color = T.muted, children, strong = false }) {
+  return (
+    <span style={{
+      ...TYPE.micro, fontWeight: 700, whiteSpace: "nowrap",
+      padding: "3px 10px", borderRadius: 999,
+      background: `${color}${strong ? "1F" : "14"}`,
+      color, border: `1px solid ${color}3D`,
+    }}>
+      {children}
+    </span>
+  );
+}
+
+/** Inline stat strip — headline numbers as one hairline-divided row (the
+ *  Releases/Analysis treatment), not floating mini-cards. Items:
+ *  { label, value, sub?, color? }. Wraps cleanly: every cell carries a left
+ *  divider and the row is nudged 1px out of a clipping wrapper, so no row
+ *  ever starts with a dangling line. */
+export function StatStrip({ items }) {
+  return (
+    <div style={{ overflow: "hidden" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", marginLeft: -1, rowGap: 18 }}>
+        {items.map(({ label, value, sub, color = T.accentText }) => (
+          <div key={label} style={{
+            flex: "1 1 130px", padding: "2px 20px",
+            borderLeft: `1px solid ${T.border}`,
+          }}>
+            <div style={{ ...TYPE.metric, color, fontVariantNumeric: "tabular-nums" }}>{value ?? "—"}</div>
+            <div style={{ ...TYPE.eyebrow, fontWeight: 600, letterSpacing: "0.08em", color: T.muted, marginTop: 6 }}>{label}</div>
+            {sub && <div style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, marginTop: 3 }}>{sub}</div>}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

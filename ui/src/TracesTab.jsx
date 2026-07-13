@@ -57,12 +57,7 @@ function AgentUsageSummary({ traces }) {
   if (sorted.length === 0) return null;
 
   return (
-    <div style={{
-      background: T.surface,
-      border: `1px solid ${T.border}`,
-      borderRadius: 4, padding: "12px 16px",
-      marginBottom: 16,
-    }}>
+    <div className="lux-card" style={{ padding: "12px 16px", marginBottom: 16 }}>
       <div style={{
         fontSize: 10, fontWeight: 700, color: T.muted,
         letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10,
