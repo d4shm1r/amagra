@@ -3,7 +3,7 @@ import { T, SEM } from "./theme";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AGENTS } from "./constants";
-import { PageHeader } from "./ObsShared";
+import { PageHeader, Section } from "./ObsShared";
 import { API } from "./api";
 
 // ── Metric glossary ────────────────────────────────────────────
@@ -246,8 +246,7 @@ function DocsSection() {
   if (docs !== null && docs.length === 0) return null;   // API unavailable — stay quiet
 
   return (
-    <Card mb={20}>
-      <SectionHead title="Documentation" sub="The project's own docs, served live by the backend — always current" />
+    <Section title="Documentation" hint="The project's own docs, served live by the backend — always current" style={{ marginBottom: 20 }}>
       {docs === null ? (
         <div style={{ fontSize: 12, color: T.muted, fontStyle: "italic", padding: "6px 0" }}>Loading documentation…</div>
       ) : (
@@ -281,23 +280,19 @@ function DocsSection() {
           })}
         </div>
       )}
-    </Card>
+    </Section>
   );
 }
 
 // ── Shared helpers ────────────────────────────────────────────
-function SectionHead({ title, sub }) {
-  return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, letterSpacing: "0.1em", textTransform: "uppercase" }}>{title}</div>
-      {sub && <div style={{ fontSize: 12, color: T.muted, marginTop: 3 }}>{sub}</div>}
-    </div>
-  );
-}
-
 function Card({ children, mb = 20, accent }) {
   return (
-    <div style={{ background: T.surface, border: `2px solid ${accent || T.border}`, borderRadius: 14, padding: "18px 22px", marginBottom: mb }}>
+    // The app-wide card. `accent` holds the gold edge on permanently for the
+    // few call-outs that need it; every other card gets it on hover.
+    <div className="lux-card" style={{
+      padding: "18px 22px", marginBottom: mb,
+      ...(accent ? { borderColor: accent } : null),
+    }}>
       {children}
     </div>
   );
@@ -329,9 +324,9 @@ export default function GuideTab() {
       <PageHeader center title="Guide" subtitle="Commands, agents, and how to get the most out of Amagra." />
 
       {/* ── Quick start ── */}
-      <Card mb={20} accent={`${T.success}33`}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: T.success, marginBottom: 14 }}>Quick Start</div>
-        <div style={{ fontFamily: "monospace", fontSize: 12, background: "#E7F2E6", borderRadius: 8, padding: "12px 16px", marginBottom: 14 }}>
+      <Card mb={20} accent={`${T.accent}44`}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: T.accentText, marginBottom: 14 }}>Quick Start</div>
+        <div style={{ fontFamily: "monospace", fontSize: 12, background: T.surface2, borderRadius: 8, padding: "12px 16px", marginBottom: 14 }}>
           {[
             { cmd: "ai-ui",    desc: "starts React dashboard on localhost:3000", color: T.accent2 },
             { cmd: "ai-start", desc: "starts FastAPI backend on port 8000",       color: T.accent2 },
@@ -352,28 +347,27 @@ export default function GuideTab() {
             { label: "Health",    value: "localhost:8000/health" },
             { label: "Model",     value: "phi4-mini · Setup → Model" },
           ].map(item => (
-            <div key={item.label} style={{ background: T.surface2, borderRadius: 10, padding: "8px 12px", border: `1px solid ${T.success}20` }}>
+            <div key={item.label} style={{ background: T.surface2, borderRadius: 10, padding: "8px 12px", border: `1px solid ${T.border}` }}>
               <div style={{ fontSize: 10, color: T.muted, marginBottom: 2 }}>{item.label}</div>
-              <div style={{ fontSize: 11, color: T.success, fontFamily: "monospace" }}>{item.value}</div>
+              <div style={{ fontSize: 11, color: T.accentText, fontFamily: "monospace" }}>{item.value}</div>
             </div>
           ))}
         </div>
       </Card>
 
       {/* ── How to use ── */}
-      <Card mb={20}>
-        <SectionHead title="How to Use" sub="Click any feature to expand its guide" />
+      <Section title="How to Use" hint="Click any feature to expand its guide" style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {HOW_TO.map(section => {
             const isOpen = openHowTo === section.title;
             return (
               <div key={section.title} className="hoverable"
                 onClick={() => setOpenHowTo(isOpen ? null : section.title)}
-                style={{ background: T.surface2, border: `1.5px solid ${section.color}${isOpen ? "66" : "22"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", transition: "all .2s" }}>
+                style={{ background: T.surface2, border: `1px solid ${isOpen ? `${T.accent}66` : T.border}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", transition: "all .2s" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: section.color, flex: 1 }}>{section.title}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: T.text, flex: 1 }}>{section.title}</span>
                   <span style={{ fontSize: 11, color: T.muted }}>{section.items.length} tips</span>
-                  <span style={{ color: section.color, opacity: .5, fontSize: 11 }}>{isOpen ? "▲" : "▼"}</span>
+                  <span style={{ color: T.accent, opacity: .7, fontSize: 11 }}>{isOpen ? "▲" : "▼"}</span>
                 </div>
                 {isOpen && (
                   <ul style={{ margin: "10px 0 0", padding: "0 0 0 18px" }}>
@@ -386,11 +380,10 @@ export default function GuideTab() {
             );
           })}
         </div>
-      </Card>
+      </Section>
 
       {/* ── Agent reference ── */}
-      <Card mb={20}>
-        <SectionHead title="Agent Reference" sub={`All ${AGENTS.length - 1} specialist agents + coordinator`} />
+      <Section title="Agent Reference" hint={`All ${AGENTS.length - 1} specialist agents + coordinator`} style={{ marginBottom: 20 }}>
 
         {/* Coordinator special card */}
         <div style={{ background: `linear-gradient(135deg,#F5EDD6,${T.surface2})`, border: `2px solid ${T.accent2}66`, borderRadius: 12, padding: "14px 18px", marginBottom: 10 }}>
@@ -416,49 +409,48 @@ export default function GuideTab() {
             return (
               <div key={agent.id} className="hoverable"
                 onClick={() => setOpenAgent(isOpen ? null : agent.id)}
-                style={{ background: T.surface2, border: `1.5px solid ${agent.color}${isOpen ? "88" : "33"}`, borderRadius: 12, padding: "12px 14px", cursor: "pointer", transition: "all .2s" }}>
+                style={{ background: T.surface2, border: `1px solid ${isOpen ? `${T.accent}66` : T.border}`, borderRadius: 12, padding: "12px 14px", cursor: "pointer", transition: "all .2s" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                  <span style={{ fontSize: 20 }}>{agent.icon}</span>
+                  <span style={{ fontSize: 20, color: T.accent }}>{agent.icon}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: agent.color, marginBottom: 2 }}>{agent.label}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 2 }}>{agent.label}</div>
                     <div style={{ fontSize: 11, color: T.muted, lineHeight: 1.5 }}>{agent.focus}</div>
                     {isOpen && (
-                      <div style={{ marginTop: 10, fontSize: 12, color: T.text, lineHeight: 1.65, padding: "10px 12px", background: T.surface, borderRadius: 7, border: `1px solid ${agent.color}22` }}>
+                      <div style={{ marginTop: 10, fontSize: 12, color: T.text, lineHeight: 1.65, padding: "10px 12px", background: T.surface, borderRadius: 7, border: `1px solid ${T.border}` }}>
                         <div style={{ marginBottom: 8 }}>{agent.role}</div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                           {agent.keywords.map(kw => (
-                            <span key={kw} style={{ fontSize: 10, color: agent.color, background: `${agent.color}12`, padding: "2px 8px", borderRadius: 99, border: `1px solid ${agent.color}30`, fontFamily: "monospace" }}>{kw}</span>
+                            <span key={kw} style={{ fontSize: 10, color: T.accentText, background: `${T.accent}12`, padding: "2px 8px", borderRadius: 99, border: `1px solid ${T.accent}30`, fontFamily: "monospace" }}>{kw}</span>
                           ))}
                         </div>
                       </div>
                     )}
                   </div>
-                  <span style={{ color: agent.color, opacity: .5, fontSize: 11 }}>{isOpen ? "▲" : "▼"}</span>
+                  <span style={{ color: T.accent, opacity: .7, fontSize: 11 }}>{isOpen ? "▲" : "▼"}</span>
                 </div>
               </div>
             );
           })}
         </div>
-      </Card>
+      </Section>
 
       {/* ── Metric glossary ── */}
-      <Card mb={20}>
-        <SectionHead title="Metric Glossary" sub="Every number the system produces — what it means and when it matters" />
+      <Section title="Metric Glossary" hint="Every number the system produces — what it means and when it matters" style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {METRICS.map(m => {
             const isOpen = openMetric === m.id;
             return (
               <div key={m.id} className="hoverable"
                 onClick={() => setOpenMetric(isOpen ? null : m.id)}
-                style={{ background: T.surface2, border: `1.5px solid ${m.color}${isOpen ? "66" : "22"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", transition: "all .2s" }}>
+                style={{ background: T.surface2, border: `1px solid ${isOpen ? `${T.accent}66` : T.border}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", transition: "all .2s" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: m.color, flex: 1 }}>{m.name}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: T.text, flex: 1 }}>{m.name}</span>
                   <code style={{ fontSize: 11, color: T.muted, background: T.border, padding: "2px 8px", borderRadius: 4, fontFamily: "monospace", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.formula}</code>
-                  <span style={{ color: m.color, opacity: .5, fontSize: 11 }}>{isOpen ? "▲" : "▼"}</span>
+                  <span style={{ color: T.accent, opacity: .7, fontSize: 11 }}>{isOpen ? "▲" : "▼"}</span>
                 </div>
                 {isOpen && (
-                  <div style={{ marginTop: 10, padding: "10px 12px", background: T.surface, borderRadius: 7, border: `1px solid ${m.color}22` }}>
-                    <code style={{ display: "block", fontSize: 12, color: m.color, background: T.surface2, padding: "6px 10px", borderRadius: 8, fontFamily: "monospace", marginBottom: 10 }}>{m.formula}</code>
+                  <div style={{ marginTop: 10, padding: "10px 12px", background: T.surface, borderRadius: 7, border: `1px solid ${T.border}` }}>
+                    <code style={{ display: "block", fontSize: 12, color: T.accentText, background: T.surface2, padding: "6px 10px", borderRadius: 8, fontFamily: "monospace", marginBottom: 10 }}>{m.formula}</code>
                     <div style={{ fontSize: 12, color: T.text, lineHeight: 1.7, marginBottom: 8 }}>{m.desc}</div>
                     <Threshold items={m.thresholds} />
                   </div>
@@ -467,22 +459,21 @@ export default function GuideTab() {
             );
           })}
         </div>
-      </Card>
+      </Section>
 
       {/* ── Architecture ── */}
-      <Card mb={20}>
-        <SectionHead title="System Architecture" sub="How the three main pipelines work" />
+      <Section title="System Architecture" hint="How the three main pipelines work" style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {ARCH.map(section => {
             const isOpen = openArch === section.title;
             return (
               <div key={section.title} className="hoverable"
                 onClick={() => setOpenArch(isOpen ? null : section.title)}
-                style={{ background: T.surface2, border: `1.5px solid ${section.color}${isOpen ? "66" : "22"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", transition: "all .2s" }}>
+                style={{ background: T.surface2, border: `1px solid ${isOpen ? `${T.accent}66` : T.border}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", transition: "all .2s" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: section.color, flex: 1 }}>{section.title}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: T.text, flex: 1 }}>{section.title}</span>
                   <span style={{ fontSize: 11, color: T.muted }}>{section.steps.length} steps</span>
-                  <span style={{ color: section.color, opacity: .5, fontSize: 11 }}>{isOpen ? "▲" : "▼"}</span>
+                  <span style={{ color: T.accent, opacity: .7, fontSize: 11 }}>{isOpen ? "▲" : "▼"}</span>
                 </div>
                 {isOpen && (
                   <ol style={{ margin: "10px 0 0", padding: "0 0 0 20px" }}>
@@ -495,7 +486,7 @@ export default function GuideTab() {
             );
           })}
         </div>
-      </Card>
+      </Section>
 
       {/* ── Live documentation ── */}
       <style>{`
@@ -511,8 +502,7 @@ export default function GuideTab() {
       <DocsSection />
 
       {/* ── Tech stack ── */}
-      <Card mb={0}>
-        <SectionHead title="Tech Stack" />
+      <Section title="Tech Stack">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
           {TECH.map(group => (
             <div key={group.group} style={{ background: T.surface2, borderRadius: 10, padding: "10px 12px", border: `1px solid ${T.border}` }}>
@@ -523,7 +513,7 @@ export default function GuideTab() {
             </div>
           ))}
         </div>
-      </Card>
+      </Section>
 
     </div>
   );

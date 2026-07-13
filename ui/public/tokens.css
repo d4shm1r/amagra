@@ -63,4 +63,33 @@
   --gg1: rgba(196, 136, 8, 0.13);
   --gg2: rgba(196, 136, 8, 0.28);
   --gg3: rgba(154, 108, 0, 0.44);
+
+  /* ── Card elevation — ONE recipe for every card in the app ──────────────
+     Cards used to carry a neumorphic OUTER white glow (-3px -3px 11px white):
+     it fringed each border with a pale halo, and because it paints outside the
+     card box it kept smudging through the sticky page header's fade as content
+     scrolled under it. The paper highlight now lives INSIDE the card (an inset
+     top edge), so depth reads the same but nothing bleeds past the border.
+     Elevation is one warm, centered shadow instead of a bottom-right offset —
+     it stays symmetrical without a light source on the opposite corner.
+     `theme.js` LUX.cardShadow mirrors these; change both together. */
+  --card-border: rgba(182, 138, 50, 0.16);
+  --card-shadow:
+    0 1px 2px rgba(72, 52, 28, 0.05),
+    0 10px 30px -12px rgba(72, 52, 28, 0.18),
+    inset 0 1px 1px var(--sl2),
+    inset 0 -1px 1px rgba(138, 99, 36, 0.04);
+  /* Container hover: the gold whisper, no geometry change. */
+  --card-shadow-hover:
+    0 1px 2px rgba(72, 52, 28, 0.05),
+    0 10px 30px -12px rgba(72, 52, 28, 0.18),
+    inset 0 1px 1px var(--sl2),
+    inset 0 -1px 1px rgba(138, 99, 36, 0.04),
+    0 0 28px var(--gg1);
+  /* Interactive tiles only — a discrete object that lifts toward the cursor. */
+  --card-shadow-lift:
+    0 2px 4px rgba(72, 52, 28, 0.06),
+    0 18px 40px -16px rgba(62, 44, 20, 0.28),
+    inset 0 1px 1px var(--sl2),
+    0 0 24px var(--gg1);
 }

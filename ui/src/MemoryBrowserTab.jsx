@@ -82,9 +82,8 @@ function MemoryCard({ item, expanded, onToggle }) {
         cursor: "pointer",
         marginBottom: 10,
         borderColor: expanded ? GOLD.g2 + "66" : undefined,
-        boxShadow: expanded
-          ? "7px 7px 20px rgba(72,52,28,0.12), -3px -3px 11px rgba(255,255,255,0.75), inset 0 1px 1px rgba(255,255,255,0.92), 0 0 22px rgba(196,136,8,0.14)"
-          : undefined,
+        // Expanded = the card's own hover elevation, held. One recipe (theme.js).
+        boxShadow: expanded ? LUX.cardShadowHover : undefined,
       }}
     >
       {/* ── Header row ── */}

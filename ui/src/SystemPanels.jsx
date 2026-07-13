@@ -9,15 +9,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { API } from "./api";
 import { T } from "./theme";
-
-function SectionHead({ title }) {
-  return (
-    <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, letterSpacing: "0.1em",
-                  textTransform: "uppercase", marginBottom: 12 }}>
-      {title}
-    </div>
-  );
-}
+import { Section } from "./ObsShared";
 
 function StatCard({ label, value, color, sub }) {
   return (
@@ -67,30 +59,28 @@ export function MemoryAdminPanel({ stats, onChanged }) {
   };
 
   return (
-    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 14,
-                  padding: "16px 18px", marginBottom: 16 }}>
+    <Section title="Memory Health" style={{ marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <SectionHead title="Memory Health" />
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
           {[["csv", "memories.csv"], ["json", "memories.json"], ["md", "memories.md"]].map(([fmt, fname]) => (
-            <a key={fmt} href={`${API}/memory/export.${fmt}`} download={fname}
-              style={{ padding: "4px 12px", borderRadius: 3, fontSize: 11, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", background: "#0F766E18", color: "#0F766E", border: "1px solid #0F766E40", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>
-              ⬇ {fmt.toUpperCase()}
+            <a key={fmt} href={`${API}/memory/export.${fmt}`} download={fname} className="btn-ghost"
+              style={{ padding: "5px 14px", fontSize: 11, textDecoration: "none" }}>
+              {fmt.toUpperCase()}
             </a>
           ))}
-          <button onClick={runConsolidate} disabled={consolidating}
-            style={{ padding: "4px 12px", borderRadius: 3, fontSize: 11, fontWeight: 700, fontFamily: "inherit", cursor: consolidating ? "not-allowed" : "pointer", background: "#1E5A8A18", color: "#1E5A8A", border: "1px solid #1E5A8A40" }}>
-            {consolidating ? "Running…" : "⊕ Consolidate"}
+          <button onClick={runConsolidate} disabled={consolidating} className="btn-ghost"
+            style={{ padding: "5px 14px", fontSize: 11, cursor: consolidating ? "not-allowed" : "pointer" }}>
+            {consolidating ? "Running…" : "Consolidate"}
           </button>
           <button onClick={runPrune} disabled={pruning || prunable === 0}
-            style={{ padding: "4px 12px", borderRadius: 3, fontSize: 11, fontWeight: 700, fontFamily: "inherit", cursor: pruning || prunable === 0 ? "not-allowed" : "pointer", background: prunable > 0 ? "#B4231818" : "#E0D6C4", color: prunable > 0 ? "#B42318" : "#9A7A60", border: `1px solid ${prunable > 0 ? "#B4231840" : "#E0D6C4"}` }}>
-            {pruning ? "Pruning…" : `✂ Prune${prunable > 0 ? ` (${prunable})` : ""}`}
+            style={{ padding: "5px 14px", borderRadius: 40, fontSize: 11, fontWeight: 700, fontFamily: "inherit", cursor: pruning || prunable === 0 ? "not-allowed" : "pointer", background: prunable > 0 ? `${T.error}14` : T.surface2, color: prunable > 0 ? T.error : T.muted, border: `1px solid ${prunable > 0 ? `${T.error}3D` : T.border}` }}>
+            {pruning ? "Pruning…" : `Prune${prunable > 0 ? ` (${prunable})` : ""}`}
           </button>
         </div>
       </div>
 
       {consolidateResult && (
-        <div style={{ marginBottom: 10, padding: "7px 12px", borderRadius: 4, background: consolidateResult.error ? "#F9E7E1" : "#F0EDF6", border: `1px solid ${consolidateResult.error ? "#B4231855" : "#1E5A8A44"}`, fontSize: 12, color: consolidateResult.error ? "#B42318" : "#1E5A8A" }}>
+        <div style={{ marginBottom: 10, padding: "7px 12px", borderRadius: 4, background: consolidateResult.error ? "#F9E7E1" : T.surface2, border: `1px solid ${consolidateResult.error ? "#B4231855" : T.border}`, fontSize: 12, color: consolidateResult.error ? T.error : T.mutedLt }}>
           {consolidateResult.error ? `Error: ${consolidateResult.error}` : `Removed ${consolidateResult.removed} near-duplicates · ${consolidateResult.remaining} memories remaining`}
         </div>
       )}
@@ -129,7 +119,7 @@ export function MemoryAdminPanel({ stats, onChanged }) {
           </div>
         )}
       </div>
-    </div>
+    </Section>
   );
 }
 
@@ -159,8 +149,7 @@ export function FeedbackLoopPanel() {
   const agentRows = Object.entries(byAgent).sort((a, b) => (b[1].up + b[1].down) - (a[1].up + a[1].down));
 
   return (
-    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 18px" }}>
-      <SectionHead title="Feedback Loop" />
+    <Section title="Feedback Loop">
       {total === 0 ? (
         <div style={{ padding: "20px 0", textAlign: "center" }}>
           <div style={{ fontSize: 28, marginBottom: 8 }}>👍 👎</div>
@@ -172,7 +161,7 @@ export function FeedbackLoopPanel() {
       ) : (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 14 }}>
-            <StatCard label="Total Ratings" value={total}     color="#1E5A8A" />
+            <StatCard label="Total Ratings" value={total}     color={T.accentText} />
             <StatCard label="Positive 👍"   value={totalUp}   color="#15803D" sub={total > 0 ? `${Math.round((totalUp/total)*100)}%` : ""} />
             <StatCard label="Negative 👎"   value={totalDown} color="#B42318" sub={total > 0 ? `${Math.round((totalDown/total)*100)}%` : ""} />
           </div>
@@ -198,6 +187,6 @@ export function FeedbackLoopPanel() {
           )}
         </>
       )}
-    </div>
+    </Section>
   );
 }

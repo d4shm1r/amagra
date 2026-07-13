@@ -1,44 +1,55 @@
 import { useState, useEffect, useCallback } from "react";
-import { PageHeader } from "./ObsShared";
-import { T, SEM, TYPE } from "./theme";
+import { PageHeader, Section, Well, Pill, StatStrip } from "./ObsShared";
+import { T, GOLD, TYPE } from "./theme";
 
 import { API } from "./api";
 import { AGENTS } from "./constants";
 
+// Color carries STATUS here, never category. Series (coverage signals, agent
+// share, node/edge types, causal stages) are told apart by their labels — they
+// all read in one gold voice, graded by rank so the eye still gets a hierarchy.
+// The only saturated colors left are good/warn/bad, so when something IS red it
+// actually means something.
+const RAMP = [GOLD.g4, GOLD.g3, GOLD.g2, "#D9C89A", "#E3D6B4", "#EADFC6"];
+const rank = i => RAMP[Math.min(i, RAMP.length - 1)];
+
+// Status ink for bare numerals. The theme's amber `warn` is the same hue as the
+// brand gold on this cream canvas — as a number's only signal it reads as
+// decoration, not caution. So the middle tier is neutral ink: green = good,
+// ink = unremarkable, red = look here. (Warning *sentences* still use T.warn:
+// their words carry the meaning, the color only tints it.)
+const OK = T.success, MID = T.mutedLt, BAD = T.error;
+
 const VERDICT_META = {
-  core:       { color: T.success,   label: "CORE",       desc: "Essential — high volume, reliable routing" },
-  narrow:     { color: T.accent2,   label: "NARROW",     desc: "Specialized but low volume — survives if domain is real" },
-  struggling: { color: T.error,     label: "STRUGGLING", desc: "High conflict + regret — routing unreliable" },
-  redundant:  { color: SEM.magenta, label: "REDUNDANT",  desc: "Domain overlaps with higher-quality agent" },
+  core:       { color: T.success, label: "CORE",       desc: "Essential — high volume, reliable routing" },
+  narrow:     { color: T.accent2, label: "NARROW",     desc: "Specialized but low volume — survives if domain is real" },
+  struggling: { color: T.error,   label: "STRUGGLING", desc: "High conflict + regret — routing unreliable" },
+  redundant:  { color: T.muted,   label: "REDUNDANT",  desc: "Domain overlaps with higher-quality agent" },
 };
 
-// Unicode marks + colors from constants.js AGENTS — never emoji (palette rule).
+// Unicode marks from constants.js AGENTS — never emoji (palette rule). The
+// per-agent colors are deliberately dropped: in this tab an agent is a row
+// label, not a series, so it stays in text ink with a gold mark.
 const AGENT_META = Object.fromEntries(
-  AGENTS.map(a => [a.id, { icon: a.icon, color: a.color }])
+  AGENTS.map(a => [a.id, { icon: a.icon }])
 );
 
-function StatCard({ label, value, sub, color = T.muted, wide = false }) {
-  return (
-    <div className="lux-card lux-card-i" style={{
-      padding: "14px 16px", flex: wide ? "1 1 220px" : "1 1 120px",
-    }}>
-      <div style={{ ...TYPE.metric, color }}>{value}</div>
-      <div style={{ ...TYPE.eyebrow, fontWeight: 600, letterSpacing: "0.08em", color: T.muted, marginTop: 5 }}>{label}</div>
-      {sub && <div style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, marginTop: 3 }}>{sub}</div>}
-    </div>
-  );
-}
+// Luxury numerals: the UI typeface with tabular figures — never a code font.
+const NUM = { fontVariantNumeric: "tabular-nums" };
 
-function CovBar({ label, pct, color = SEM.teal }) {
+// Section / Well / Pill / StatStrip come from ObsShared — the shared component
+// layer. Only what is genuinely Analysis-specific stays local below.
+
+function CovBar({ label, pct, color = T.accent }) {
   const p = Math.round((pct || 0) * 100);
   return (
-    <div style={{ marginBottom: 6 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
-        <span style={{ ...TYPE.caption, color: T.muted }}>{label}</span>
-        <span style={{ ...TYPE.caption, color, fontFamily: "monospace", fontWeight: 700 }}>{p}%</span>
+    <div style={{ marginBottom: 9 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+        <span style={{ ...TYPE.caption, color: T.mutedLt }}>{label}</span>
+        <span style={{ ...TYPE.caption, ...NUM, color: T.accentText, fontWeight: 700 }}>{p}%</span>
       </div>
-      <div style={{ height: 4, background: T.border, borderRadius: 2, overflow: "hidden" }}>
-        <div style={{ width: `${p}%`, height: "100%", background: color, borderRadius: 2 }} />
+      <div style={{ height: 5, background: T.border, borderRadius: 999, overflow: "hidden" }}>
+        <div style={{ width: `${p}%`, height: "100%", background: color, borderRadius: 999, transition: "width .4s" }} />
       </div>
     </div>
   );
@@ -46,13 +57,16 @@ function CovBar({ label, pct, color = SEM.teal }) {
 
 function VerdictBadge({ verdict }) {
   const m = VERDICT_META[verdict] || { color: T.muted, label: verdict?.toUpperCase() || "?" };
+  return <Pill color={m.color} strong>{m.label}</Pill>;
+}
+
+/** Agent name + mark, one chip shape wherever an agent is named. */
+function AgentChip({ id, bold = true }) {
+  const m = AGENT_META[id] || { icon: "·" };
   return (
-    <span style={{
-      ...TYPE.micro, fontWeight: 700, padding: "2px 8px", borderRadius: 3,
-      background: m.color + "22", color: m.color, border: `1px solid ${m.color}55`,
-      whiteSpace: "nowrap",
-    }}>
-      {m.label}
+    <span style={{ ...TYPE.caption, display: "inline-flex", alignItems: "center", gap: 7, color: T.text, fontWeight: bold ? 700 : 400 }}>
+      <span style={{ color: T.accent }}>{m.icon}</span>
+      <span>{id?.replace(/_/g, " ")}</span>
     </span>
   );
 }
@@ -60,113 +74,115 @@ function VerdictBadge({ verdict }) {
 function SpecializationTable({ data }) {
   if (!data) return null;
   const agents = Object.entries(data).sort((a, b) => b[1].total_decisions - a[1].total_decisions);
+  const maxN   = Math.max(...agents.map(([, r]) => r.total_decisions), 1);
+
+  /** One metric: label above, value below. Reads without a header row. */
+  const Metric = ({ label, value, color = T.text, sub }) => (
+    <div style={{ minWidth: 74 }}>
+      <div style={{ ...TYPE.micro, color: T.muted, marginBottom: 3 }}>{label}</div>
+      <div style={{ ...TYPE.small, ...NUM, color, fontWeight: 700 }}>
+        {value}{sub && <span style={{ color: T.muted, fontWeight: 400 }}> {sub}</span>}
+      </div>
+    </div>
+  );
+
   return (
-    <div>
-      <div style={{ ...TYPE.eyebrow, fontWeight: 700, letterSpacing: "0.08em", color: T.muted, marginBottom: 10 }}>
-        Agent Specialization Index
+    <>
+      {/* An agent is a card, not a table row. Eight columns could never fit —
+          the Note always pushed the row into a horizontal scroll and got
+          truncated anyway. Now the identity + verdict sit on the top line, the
+          numbers wrap as label/value pairs, and the note gets a full line of its
+          own where it can actually be read. Nothing scrolls sideways.
+          Static on purpose: a readout, not a control — so no hover. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {agents.map(([id, r], i) => {
+          const crc = r.conflict_rate >= 0.40 ? BAD : r.conflict_rate >= 0.20 ? MID : OK;
+          const qc  = r.avg_quality_proxy >= 0.78 ? OK : r.avg_quality_proxy >= 0.70 ? MID : BAD;
+          return (
+            <Well key={id} style={{ padding: "14px 18px" }}>
+              {/* Identity line: who, how much, and the verdict */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+                <span style={{ ...TYPE.small, display: "inline-flex", alignItems: "center", gap: 7, color: T.text, fontWeight: 700 }}>
+                  <span style={{ color: T.accent }}>{(AGENT_META[id] || { icon: "·" }).icon}</span>
+                  {id.replace(/_/g, " ")}
+                </span>
+                <span style={{ ...TYPE.caption, ...NUM, color: T.accentText, fontWeight: 700 }}>
+                  {r.total_decisions} <span style={{ color: T.muted, fontWeight: 400 }}>decisions</span>
+                </span>
+                {/* Share of total volume — ranking without a column */}
+                <span style={{ flex: "1 1 90px", maxWidth: 220, height: 4, background: T.border, borderRadius: 999, overflow: "hidden" }}>
+                  <span style={{ display: "block", width: `${(r.total_decisions / maxN) * 100}%`, height: "100%", background: rank(i), borderRadius: 999 }} />
+                </span>
+                <span style={{ marginLeft: "auto" }}><VerdictBadge verdict={r.verdict} /></span>
+              </div>
+
+              {/* Metrics — wrap instead of scroll */}
+              <div style={{ display: "flex", gap: 28, flexWrap: "wrap", rowGap: 12 }}>
+                <Metric label="Conflict"   value={`${(r.conflict_rate * 100).toFixed(0)}%`} color={crc} />
+                <Metric label="Quality"    value={r.avg_quality_proxy.toFixed(3)} color={qc} />
+                <Metric label="Regret"     value={r.avg_regret.toFixed(4)} color={T.mutedLt} />
+                <Metric label="Top domain" value={r.top_domain} color={T.mutedLt}
+                  sub={`(${(r.top_domain_pct * 100).toFixed(0)}%)`} />
+              </div>
+
+              {/* The note, in full — no ellipsis */}
+              {r.verdict_reason && (
+                <div style={{ ...TYPE.caption, color: T.muted, marginTop: 12, paddingTop: 10, borderTop: `1px solid ${T.border}` }}>
+                  {r.verdict_reason}
+                </div>
+              )}
+            </Well>
+          );
+        })}
       </div>
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ ...TYPE.caption, width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ ...TYPE.eyebrow, fontWeight: 600, letterSpacing: "0.06em", borderBottom: `1px solid ${T.border}`, color: T.muted }}>
-              {["Agent", "N", "Conflict", "Regret", "Quality", "Top Domain", "Verdict", "Note"].map(h => (
-                <th key={h} style={{ padding: "4px 8px", textAlign: "left", fontWeight: 600 }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {agents.map(([id, r]) => {
-              const m   = AGENT_META[id] || { icon: "?", color: T.muted };
-              const vm  = VERDICT_META[r.verdict] || { color: T.muted };
-              const crc = r.conflict_rate >= 0.40 ? T.error : r.conflict_rate >= 0.20 ? T.accent2 : T.success;
-              const qc  = r.avg_quality_proxy >= 0.78 ? T.success : r.avg_quality_proxy >= 0.70 ? T.accent2 : T.error;
-              return (
-                <tr key={id} style={{ borderBottom: `1px solid ${T.border}11` }}>
-                  <td style={{ padding: "7px 8px" }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                      <span>{m.icon}</span>
-                      <span style={{ color: m.color, fontWeight: 700 }}>{id.replace(/_/g, " ")}</span>
-                    </span>
-                  </td>
-                  <td style={{ padding: "7px 8px", color: T.text, fontFamily: "monospace" }}>{r.total_decisions}</td>
-                  <td style={{ padding: "7px 8px", color: crc, fontFamily: "monospace" }}>
-                    {(r.conflict_rate * 100).toFixed(0)}%
-                  </td>
-                  <td style={{ padding: "7px 8px", color: T.muted, fontFamily: "monospace" }}>
-                    {r.avg_regret.toFixed(4)}
-                  </td>
-                  <td style={{ padding: "7px 8px", color: qc, fontFamily: "monospace" }}>
-                    {r.avg_quality_proxy.toFixed(3)}
-                  </td>
-                  <td style={{ padding: "7px 8px", color: SEM.teal, fontFamily: "monospace", fontSize: 11 }}>
-                    {r.top_domain} ({(r.top_domain_pct * 100).toFixed(0)}%)
-                  </td>
-                  <td style={{ padding: "7px 8px" }}><VerdictBadge verdict={r.verdict} /></td>
-                  <td style={{ ...TYPE.micro, fontWeight: 400, padding: "7px 8px", color: T.muted, maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {r.verdict_reason}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      {/* Legend */}
-      <div style={{ display: "flex", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
+
+      {/* Legend — one verdict per line so the pill and its meaning stay paired */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(430px, 1fr))", gap: "10px 24px", marginTop: 16 }}>
         {Object.entries(VERDICT_META).map(([k, m]) => (
-          <span key={k} style={{ ...TYPE.micro, fontWeight: 400, color: T.muted }}>
-            <span style={{ color: m.color, fontWeight: 700 }}>{m.label}</span> — {m.desc}
+          <span key={k} style={{ display: "inline-flex", alignItems: "baseline", gap: 10 }}>
+            <span style={{ minWidth: 88, flexShrink: 0 }}><Pill color={m.color}>{m.label}</Pill></span>
+            <span style={{ ...TYPE.caption, color: T.muted }}>{m.desc}</span>
           </span>
         ))}
       </div>
-    </div>
+    </>
   );
 }
 
 function CounterfactualPanel({ candidates }) {
   if (!candidates?.length) return (
-    <div style={{ ...TYPE.caption, color: T.muted, padding: "16px 0" }}>
+    <div style={{ ...TYPE.small, color: T.muted, fontStyle: "italic", padding: "10px 0" }}>
       No high-priority counterfactual candidates yet.
     </div>
   );
   return (
-    <div>
-      <div style={{ ...TYPE.eyebrow, fontWeight: 700, letterSpacing: "0.08em", color: T.muted, marginBottom: 10 }}>
-        Counterfactual Candidates
-        <span style={{ ...TYPE.micro, fontWeight: 400, marginLeft: 8, color: T.muted, textTransform: "none", letterSpacing: 0 }}>
-          high-regret and conflict decisions worth re-running with the alternative agent
-        </span>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+    <>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {candidates.map(c => {
-          const pColor = c.priority === "high" ? T.error : T.accent2;
-          const origM = AGENT_META[c.original_agent] || { icon: "?", color: T.muted };
-          const altM  = AGENT_META[c.suggested_alt]  || { icon: "?", color: T.muted };
+          const pColor = c.priority === "high" ? BAD : MID;
           return (
-            <div key={c.decision_id} style={{ background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 3, padding: "8px 13px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, fontFamily: "monospace", minWidth: 28 }}>#{c.decision_id}</span>
-              <span style={{ ...TYPE.micro, fontWeight: 700, background: pColor + "22", color: pColor, border: `1px solid ${pColor}44`, borderRadius: 4, padding: "1px 6px" }}>
-                {c.priority}
-              </span>
-              <span style={{ ...TYPE.caption, color: origM.color, fontWeight: 700 }}>{origM.icon} {c.original_agent?.replace(/_/g, " ")}</span>
-              <span style={{ color: T.muted }}>→</span>
+            <Well key={c.decision_id} style={{ padding: "9px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ ...TYPE.micro, ...NUM, color: T.muted, minWidth: 30 }}>#{c.decision_id}</span>
+              <Pill color={pColor}>{c.priority}</Pill>
+              <AgentChip id={c.original_agent} />
+              <span style={{ color: T.accent }}>→</span>
               {c.suggested_alt
-                ? <span style={{ ...TYPE.caption, color: altM.color, fontWeight: 700 }}>{altM.icon} {c.suggested_alt?.replace(/_/g, " ")}</span>
+                ? <AgentChip id={c.suggested_alt} />
                 : <span style={{ ...TYPE.caption, color: T.muted }}>no alt</span>}
-              <span style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, fontFamily: "monospace" }}>regret={c.regret?.toFixed(4)}</span>
-              {c.conflict && <span style={{ ...TYPE.micro, fontWeight: 400, color: T.error }}>⚡ conflict</span>}
-              <span style={{ ...TYPE.caption, flex: 1, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <span style={{ ...TYPE.micro, ...NUM, color: T.muted }}>regret {c.regret?.toFixed(4)}</span>
+              {c.conflict && <Pill color={T.error}>conflict</Pill>}
+              <span style={{ ...TYPE.caption, flex: 1, minWidth: 120, color: T.mutedLt, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {c.query}
               </span>
-            </div>
+            </Well>
           );
         })}
       </div>
-      <div style={{ ...TYPE.caption, marginTop: 10, color: T.muted, fontStyle: "italic" }}>
-        Run: <code style={{ color: T.muted }}>POST /analysis/counterfactual/&#123;id&#125;?alt_agent=X&dry_run=false</code> to invoke.
+      <div style={{ ...TYPE.caption, marginTop: 12, color: T.muted }}>
+        Invoke with <code style={{ ...NUM, color: T.accentText }}>POST /analysis/counterfactual/&#123;id&#125;?alt_agent=X&dry_run=false</code>.
         Statistical claims require 400+ real sessions.
       </div>
-    </div>
+    </>
   );
 }
 
@@ -175,36 +191,58 @@ function GraphStatsPanel({ graph }) {
   const s = graph.stats || {};
   const nodeTypes = s.by_node_type || {};
   const edgeTypes = s.by_edge_type || {};
-  const NODE_COLORS = { query: SEM.teal, agent: T.success, memory: SEM.blue, reflection: SEM.magenta, outcome: T.accent2 };
-  const EDGE_COLORS = { SELECTED: T.success, REJECTED: T.error, RETRIEVED: SEM.blue, INFLUENCED: SEM.violet, PRODUCED: T.accent2, REFLECTED: SEM.magenta };
+
+  // Tallies are counts, not categories: one gold voice, share bar for weight.
+  const Tally = ({ heading, entries }) => {
+    const rows = Object.entries(entries).sort((a, b) => b[1] - a[1]);
+    const max  = Math.max(...rows.map(([, n]) => n), 1);
+    return (
+      <div style={{ flex: "1 1 220px" }}>
+        <div style={{ ...TYPE.eyebrow, fontWeight: 600, letterSpacing: "0.1em", color: T.muted, marginBottom: 8 }}>{heading}</div>
+        <Well style={{ padding: "4px 14px" }}>
+          {rows.map(([t, n], i, arr) => (
+            <div key={t} style={{
+              padding: "8px 0",
+              borderBottom: i < arr.length - 1 ? `1px solid ${T.border}66` : "none",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                <span style={{ ...TYPE.caption, color: T.mutedLt, fontWeight: 700 }}>{t}</span>
+                <span style={{ ...TYPE.caption, ...NUM, color: T.text }}>{n}</span>
+              </div>
+              <div style={{ height: 3, background: T.border, borderRadius: 999, overflow: "hidden" }}>
+                <div style={{ width: `${(n / max) * 100}%`, height: "100%", background: rank(i), borderRadius: 999 }} />
+              </div>
+            </div>
+          ))}
+        </Well>
+      </div>
+    );
+  };
+
   return (
-    <div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
-        <div style={{ ...TYPE.eyebrow, fontWeight: 700, letterSpacing: "0.08em", color: T.muted }}>Decision Graph</div>
-        <span style={{ ...TYPE.micro, fontWeight: 400, fontFamily: "monospace", color: T.muted }}>{graph.version}</span>
-        <span style={{ ...TYPE.micro, fontWeight: 400, color: T.muted }}>· {graph.trace_count} traces · {s.node_count} nodes · {s.edge_count} edges · deg {s.avg_degree}</span>
+    <>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+        <Pill color={T.accent}>{graph.version}</Pill>
+        {[
+          [graph.trace_count, "traces"], [s.node_count, "nodes"],
+          [s.edge_count, "edges"], [s.avg_degree, "avg degree"],
+        ].map(([v, l]) => (
+          <span key={l} style={{ ...TYPE.caption, color: T.muted }}>
+            <span style={{ ...NUM, color: T.text, fontWeight: 700 }}>{v}</span> {l}
+          </span>
+        ))}
       </div>
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-        <div style={{ flex: "1 1 200px" }}>
-          <div style={{ ...TYPE.eyebrow, fontWeight: 400, letterSpacing: "0.08em", color: T.muted, marginBottom: 6 }}>Nodes</div>
-          {Object.entries(nodeTypes).map(([t, n]) => (
-            <div key={t} style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-              <span style={{ ...TYPE.caption, color: NODE_COLORS[t] || T.muted, fontWeight: 700 }}>{t}</span>
-              <span style={{ ...TYPE.caption, fontFamily: "monospace", color: T.text }}>{n}</span>
-            </div>
-          ))}
+      {s.node_count ? (
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+          <Tally heading="Nodes" entries={nodeTypes} />
+          <Tally heading="Edges" entries={edgeTypes} />
         </div>
-        <div style={{ flex: "1 1 200px" }}>
-          <div style={{ ...TYPE.eyebrow, fontWeight: 400, letterSpacing: "0.08em", color: T.muted, marginBottom: 6 }}>Edges</div>
-          {Object.entries(edgeTypes).map(([t, n]) => (
-            <div key={t} style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-              <span style={{ ...TYPE.caption, color: EDGE_COLORS[t] || T.muted, fontWeight: 700 }}>{t}</span>
-              <span style={{ ...TYPE.caption, fontFamily: "monospace", color: T.text }}>{n}</span>
-            </div>
-          ))}
+      ) : (
+        <div style={{ ...TYPE.small, color: T.muted, fontStyle: "italic" }}>
+          Graph is empty — Rebuild to construct it from the current traces.
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
 
@@ -221,73 +259,93 @@ function CausalPathPanel() {
     try {
       const r = await fetch(`${API}/data/causal/${id}`);
       if (!r.ok) { setError(`Not found: decision ${id}`); setLoading(false); return; }
-      setPath(await r.json());
+      // The endpoint answers 200 with an {error} body when the decision isn't in
+      // the graph — surface that instead of silently rendering nothing.
+      const d = await r.json();
+      if (d.error) setError(d.error);
+      else setPath(d);
     } catch { setError("Request failed"); }
     setLoading(false);
   };
 
-  const FLAG_COLORS = { routing_conflict: T.error, high_regret: T.accent2, low_quality: T.error, low_relevance_memory: SEM.magenta };
+  const FLAG_COLORS = { routing_conflict: BAD, high_regret: BAD, low_quality: BAD, low_relevance_memory: MID };
 
   return (
-    <div>
-      <div style={{ ...TYPE.eyebrow, fontWeight: 700, letterSpacing: "0.08em", color: T.muted, marginBottom: 10 }}>
-        Causal Path Explorer
-        <span style={{ ...TYPE.micro, fontWeight: 400, marginLeft: 8, color: T.muted, textTransform: "none", letterSpacing: 0 }}>
-          inspect why a specific decision was made — routing, memory, outcome
-        </span>
-      </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+    <>
+      {/* Input and button are one control: same 38px height, same pill radius,
+          baseline-aligned — the button no longer floats above a taller field. */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>
         <input value={decisionId} onChange={e => setDecisionId(e.target.value)}
           onKeyDown={e => e.key === "Enter" && query()}
+          onFocus={e => { e.target.style.borderColor = T.accent; }}
+          onBlur={e => { e.target.style.borderColor = T.border; }}
           placeholder="Decision ID (e.g. 172)" type="number"
-          style={{ ...TYPE.caption, width: 160, background: T.surface2, border: `1.5px solid ${T.border}`, borderRadius: 3, color: T.text, padding: "5px 10px", fontFamily: "monospace", outline: "none" }} />
-        <button onClick={query} disabled={loading}
-          style={{ ...TYPE.caption, fontWeight: 700, padding: "5px 14px", borderRadius: 3, fontFamily: "inherit", background: SEM.teal + "22", color: SEM.teal, border: `1px solid ${SEM.teal}44`, cursor: "pointer" }}>
-          {loading ? "…" : "Trace"}
+          style={{
+            ...TYPE.small, ...NUM, width: 180, height: 38, padding: "0 16px", borderRadius: 999,
+            background: T.surface2, border: `1px solid ${T.border}`, color: T.text,
+            fontFamily: "inherit", outline: "none", transition: "border-color 140ms ease",
+          }} />
+        <button className="btn-ghost" onClick={query} disabled={loading || !decisionId}
+          style={{ ...TYPE.caption, fontWeight: 700, height: 38, padding: "0 24px", opacity: decisionId ? 1 : 0.55 }}>
+          {loading ? "Tracing…" : "Trace"}
         </button>
       </div>
-      {error && <div style={{ ...TYPE.caption, color: T.error, marginBottom: 8 }}>{error}</div>}
+      {error && <div style={{ ...TYPE.small, color: T.error, marginBottom: 10 }}>{error}</div>}
       {path && !path.error && (
-        <div style={{ background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 3, padding: "14px 16px" }}>
+        <Well style={{ padding: "16px 18px" }}>
           {/* Causal flags */}
           {path.causal_flags?.length > 0 && (
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
               {path.causal_flags.map((f, i) => (
-                <span key={i} style={{ ...TYPE.micro, fontWeight: 700, background: (FLAG_COLORS[f.type] || T.muted) + "22", color: FLAG_COLORS[f.type] || T.muted, border: `1px solid ${FLAG_COLORS[f.type] || T.muted}44`, borderRadius: 3, padding: "2px 8px" }}>
-                  ⚠ {f.type.replace(/_/g, " ")}
-                </span>
+                <Pill key={i} color={FLAG_COLORS[f.type] || T.muted} strong>
+                  {f.type.replace(/_/g, " ")}
+                </Pill>
               ))}
             </div>
           )}
-          {/* Path steps */}
+          {/* Path steps — the stages are a sequence, not eight categories, so the
+              rail runs in one gold voice. Only a REJECTED that actually rejected
+              someone earns a status color: the red then means "a conflict happened
+              here", instead of being permanent decoration. */}
           {[
-            { label: "QUERY",      color: SEM.teal,    content: `"${(path.query || "").slice(0,100)}"` },
-            { label: "SIGNAL",     color: SEM.cyan,    content: `domain=${path.signal?.domain} shape=${path.signal?.shape} conf=${path.signal?.conf?.toFixed(2)}` },
-            { label: "ACTION",     color: SEM.blue,    content: `${path.action} / ${path.complexity}` },
-            { label: "SELECTED",   color: T.success,   content: path.selected_agent || "—" },
-            { label: "REJECTED",   color: T.error,     content: path.rejected_agents?.length ? path.rejected_agents.join(", ") : "none (no conflict)" },
-            { label: "MEMORY",     color: SEM.violet,  content: `${path.memories_retrieved} records retrieved` + (path.top_memories?.length ? ` (top: ${path.top_memories.slice(0,2).map(m => `${m.mem_type}@${m.agent} score=${m.score?.toFixed(2)}`).join(", ")})` : "") },
-            { label: "OUTCOME",    color: T.accent2,   content: `quality=${path.outcome?.quality_proxy?.toFixed(3)}  regret=${path.outcome?.regret?.toFixed(4)}  conf=${path.outcome?.confidence?.toFixed(2)}  ${path.outcome?.duration_ms}ms` },
-            { label: "REFLECTION", color: SEM.magenta, content: path.reflection?.triggered ? `YES (${path.reflection?.reflect_type})` : "none" },
-          ].map(step => (
-            <div key={step.label} style={{ display: "flex", gap: 10, marginBottom: 5, alignItems: "flex-start" }}>
-              <span style={{ fontSize: 9, fontFamily: "monospace", color: step.color, fontWeight: 700, minWidth: 70, paddingTop: 1, textAlign: "right" }}>{step.label}</span>
-              <span style={{ ...TYPE.caption, color: T.text, lineHeight: 1.5 }}>{step.content}</span>
-            </div>
-          ))}
+            { label: "QUERY",      content: `"${(path.query || "").slice(0,100)}"` },
+            { label: "SIGNAL",     content: `domain=${path.signal?.domain} shape=${path.signal?.shape} conf=${path.signal?.conf?.toFixed(2)}` },
+            { label: "ACTION",     content: `${path.action} / ${path.complexity}` },
+            { label: "SELECTED",   content: path.selected_agent || "—" },
+            { label: "REJECTED",   tone: path.rejected_agents?.length ? T.error : null,
+              content: path.rejected_agents?.length ? path.rejected_agents.join(", ") : "none (no conflict)" },
+            { label: "MEMORY",     content: `${path.memories_retrieved} records retrieved` + (path.top_memories?.length ? ` (top: ${path.top_memories.slice(0,2).map(m => `${m.mem_type}@${m.agent} score=${m.score?.toFixed(2)}`).join(", ")})` : "") },
+            { label: "OUTCOME",    content: `quality=${path.outcome?.quality_proxy?.toFixed(3)}  regret=${path.outcome?.regret?.toFixed(4)}  conf=${path.outcome?.confidence?.toFixed(2)}  ${path.outcome?.duration_ms}ms` },
+            { label: "REFLECTION", content: path.reflection?.triggered ? `YES (${path.reflection?.reflect_type})` : "none" },
+          ].map((step, i, arr) => {
+            const tone = step.tone || T.accent;
+            return (
+              <div key={step.label} style={{ display: "flex", gap: 14, alignItems: "flex-start", paddingBottom: i < arr.length - 1 ? 10 : 0 }}>
+                {/* Gold rail: stage label, then a connector dot threading the path */}
+                <span style={{ ...TYPE.eyebrow, fontWeight: 700, letterSpacing: "0.08em", color: step.tone || T.accentText, minWidth: 74, textAlign: "right", paddingTop: 3 }}>
+                  {step.label}
+                </span>
+                <span style={{ display: "flex", flexDirection: "column", alignItems: "center", alignSelf: "stretch", paddingTop: 5 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: tone, flexShrink: 0 }} />
+                  {i < arr.length - 1 && <span style={{ flex: 1, width: 1, background: T.border, marginTop: 3 }} />}
+                </span>
+                <span style={{ ...TYPE.small, ...NUM, color: T.text, lineHeight: 1.5, flex: 1, minWidth: 0 }}>{step.content}</span>
+              </div>
+            );
+          })}
           {/* Causal flag detail */}
           {path.causal_flags?.length > 0 && (
-            <div style={{ marginTop: 10, borderTop: `1px solid ${T.border}`, paddingTop: 8 }}>
+            <div style={{ marginTop: 12, borderTop: `1px solid ${T.border}`, paddingTop: 10 }}>
               {path.causal_flags.map((f, i) => (
-                <div key={i} style={{ ...TYPE.caption, color: FLAG_COLORS[f.type] || T.muted, marginBottom: 3 }}>
+                <div key={i} style={{ ...TYPE.caption, color: FLAG_COLORS[f.type] || T.muted, marginBottom: 4 }}>
                   ↳ {f.detail}
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </Well>
       )}
-    </div>
+    </>
   );
 }
 
@@ -332,98 +390,76 @@ function MemoryBackendPanel({ backend, onRefresh }) {
   const threshold = backend.promote_threshold || 800;
   const total     = backend.total || 0;
   const progress  = Math.min(100, Math.round((total / threshold) * 100));
-  const typeColor = isFaiss ? T.success : isSqlite ? T.accent2 : SEM.blue;
+  const typeColor = isFaiss ? OK : T.accentText;
   const driftOk   = (backend.drift_pct ?? 0) <= 5;
 
   const searchPassing = bench?.search_passing || bench?.raw_vector_ok;
-  const searchColor   = bench
-    ? (searchPassing ? T.success : T.accent2)
-    : T.muted;
-  const totalColor    = bench
-    ? (bench.total_p50_ms < 200 ? T.success : T.accent2)
-    : T.muted;
+  const searchColor   = bench ? (searchPassing ? OK : BAD) : T.muted;
+  const totalColor    = bench ? (bench.total_p50_ms < 200 ? OK : MID) : T.muted;
 
-  // Smaller stat numeral — sits below the 22px metric tier (StatCard) used above.
-  const statNum = { ...TYPE.subtitle, fontWeight: 800, fontFamily: "monospace", fontVariantNumeric: "tabular-nums" };
+  // Sub-tile numeral — sits below the 22px metric tier (StatCard) used above.
+  const statNum = { ...TYPE.subtitle, ...NUM, fontWeight: 800 };
+
+  const Tile = ({ value, label, sub, color = T.text, tone = T.border }) => (
+    <div style={{ background: T.surface2, borderRadius: 12, padding: "12px 16px", border: `1px solid ${tone}` }}>
+      <div style={{ ...statNum, color }}>{value}</div>
+      <div style={{ ...TYPE.caption, color: T.muted, marginTop: 3 }}>{label}</div>
+      {sub && <div style={{ ...TYPE.micro, color, marginTop: 3 }}>{sub}</div>}
+    </div>
+  );
 
   return (
-    <div style={{
-      background: T.surface,
-      border: `1.5px solid ${backend.fan_out_warning ? T.error : typeColor}28`,
-      borderRadius: 3, padding: "16px 20px", marginBottom: 16,
-    }}>
-      {/* Header row */}
-      <div style={{ display: "flex", alignItems: "center", marginBottom: 14, gap: 10 }}>
-        <div style={{ ...TYPE.eyebrow, fontWeight: 700, letterSpacing: "0.08em", color: T.muted, flex: 1 }}>
-          Memory Backend
-        </div>
-        <span style={{
-          ...TYPE.micro, fontWeight: 700, color: typeColor,
-          background: `${typeColor}18`, border: `1px solid ${typeColor}44`,
-          borderRadius: 3, padding: "2px 8px", fontFamily: "monospace",
-        }}>
-          {backend.type}
-        </span>
-        <button onClick={runBench} disabled={benching}
-          style={{ ...TYPE.micro, fontWeight: 600, padding: "4px 10px", borderRadius: 3, fontFamily: "inherit", background: SEM.blue + "18", color: SEM.blue, border: `1px solid ${SEM.blue}44`, cursor: benching ? "wait" : "pointer" }}>
-          {benching ? "Running…" : "⏱ Benchmark"}
+    <Section
+      title="Memory Backend"
+      action={<>
+        <Pill color={backend.fan_out_warning ? T.error : typeColor} strong>{backend.type}</Pill>
+        <button className="btn-ghost" onClick={runBench} disabled={benching}
+          style={{ ...TYPE.caption, fontWeight: 700, padding: "6px 16px" }}>
+          {benching ? "Running…" : "Benchmark"}
         </button>
         {isSqlite && (
-          <button onClick={promote} disabled={promoting}
-            style={{ ...TYPE.micro, fontWeight: 600, padding: "4px 10px", borderRadius: 3, fontFamily: "inherit", background: T.success + "18", color: T.success, border: `1px solid ${T.success}44`, cursor: promoting ? "wait" : "pointer" }}>
-            {promoting ? "Promoting…" : "⚡ Promote to FAISS"}
+          <button className="btn-ghost" onClick={promote} disabled={promoting}
+            style={{ ...TYPE.caption, fontWeight: 700, padding: "6px 16px" }}>
+            {promoting ? "Promoting…" : "Promote to FAISS"}
           </button>
         )}
-      </div>
-
+      </>}
+    >
       {/* Info grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12, marginBottom: 14 }}>
-        <div style={{ background: T.surface2, borderRadius: 3, padding: "10px 14px", border: `1px solid ${T.border}22` }}>
-          <div style={{ ...statNum, color: T.text }}>{total.toLocaleString()}</div>
-          <div style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, marginTop: 2 }}>Total entries</div>
-        </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 12, marginBottom: 14 }}>
+        <Tile value={total.toLocaleString()} label="Total entries" />
         {isFaiss && backend.index_ntotal != null && (
-          <div style={{ background: T.surface2, borderRadius: 3, padding: "10px 14px", border: `1px solid ${driftOk ? `${T.border}22` : `${T.accent2}44`}` }}>
-            <div style={{ ...statNum, color: driftOk ? T.success : T.accent2 }}>{backend.index_ntotal.toLocaleString()}</div>
-            <div style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, marginTop: 2 }}>FAISS index vectors</div>
-            <div style={{ fontSize: 9, color: driftOk ? T.success : T.accent2, marginTop: 2 }}>{backend.drift_pct}% drift {driftOk ? "✓" : "⚠"}</div>
-          </div>
+          <Tile value={backend.index_ntotal.toLocaleString()} label="FAISS index vectors"
+            color={driftOk ? OK : BAD} tone={driftOk ? T.border : `${BAD}44`}
+            sub={`${backend.drift_pct}% drift`} />
         )}
         {isFaiss && backend.index_size_mb != null && (
-          <div style={{ background: T.surface2, borderRadius: 3, padding: "10px 14px", border: `1px solid ${T.border}22` }}>
-            <div style={{ ...statNum, color: SEM.blue }}>{backend.index_size_mb} MB</div>
-            <div style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, marginTop: 2 }}>Index file size</div>
-          </div>
+          <Tile value={`${backend.index_size_mb} MB`} label="Index file size" />
         )}
         {bench && bench.search_p50_ms != null && (
-          <div style={{ background: T.surface2, borderRadius: 3, padding: "10px 14px", border: `1px solid ${searchColor}33` }}>
-            <div style={{ ...statNum, color: searchColor }}>{bench.search_p50_ms} ms</div>
-            <div style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, marginTop: 2 }}>Vector search P50 (target ≤{bench.search_target_ms}ms)</div>
-            <div style={{ fontSize: 9, color: searchColor, marginTop: 2 }}>{searchPassing ? "✓ Passing" : "⚠ Above target"} · P95: {bench.search_p95_ms}ms</div>
-          </div>
+          <Tile value={`${bench.search_p50_ms} ms`} label={`Vector search P50 (target ≤${bench.search_target_ms}ms)`}
+            color={searchColor} tone={`${searchColor}33`}
+            sub={`${searchPassing ? "Passing" : "Above target"} · P95 ${bench.search_p95_ms}ms`} />
         )}
         {bench && bench.total_p50_ms != null && (
-          <div style={{ background: T.surface2, borderRadius: 3, padding: "10px 14px", border: `1px solid ${totalColor}33` }}>
-            <div style={{ ...statNum, color: totalColor }}>{bench.total_p50_ms} ms</div>
-            <div style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, marginTop: 2 }}>Full pipeline P50</div>
-            <div style={{ ...TYPE.micro, fontWeight: 400, color: T.muted, marginTop: 2 }}>embed + search + re-rank</div>
-          </div>
+          <Tile value={`${bench.total_p50_ms} ms`} label="Full pipeline P50"
+            color={totalColor} tone={`${totalColor}33`} sub="embed + search + re-rank" />
         )}
       </div>
 
       {/* Promotion threshold bar (SQLite only) */}
       {isSqlite && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-            <span style={{ ...TYPE.caption, color: T.muted }}>Fan-out threshold ({total} / {threshold} entries)</span>
-            <span style={{ ...TYPE.caption, color: progress >= 100 ? T.error : T.accent2, fontFamily: "monospace" }}>{progress}%</span>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+            <span style={{ ...TYPE.caption, color: T.mutedLt }}>Fan-out threshold ({total} / {threshold} entries)</span>
+            <span style={{ ...TYPE.caption, ...NUM, color: progress >= 100 ? BAD : T.accentText, fontWeight: 700 }}>{progress}%</span>
           </div>
-          <div style={{ height: 5, background: T.border, borderRadius: 3, overflow: "hidden" }}>
-            <div style={{ width: `${progress}%`, height: "100%", background: progress >= 100 ? T.error : T.accent2, borderRadius: 3, transition: "width 0.4s" }} />
+          <div style={{ height: 5, background: T.border, borderRadius: 999, overflow: "hidden" }}>
+            <div style={{ width: `${progress}%`, height: "100%", background: progress >= 100 ? T.error : T.accent, borderRadius: 999, transition: "width .4s" }} />
           </div>
           {progress >= 80 && (
-            <div style={{ ...TYPE.micro, fontWeight: 400, color: T.accent2, marginTop: 5 }}>
-              ⚠ Approaching FAISS threshold — auto-promote triggers at {threshold} entries
+            <div style={{ ...TYPE.caption, color: T.warn, marginTop: 6 }}>
+              Approaching FAISS threshold — auto-promote triggers at {threshold} entries
             </div>
           )}
         </div>
@@ -431,28 +467,28 @@ function MemoryBackendPanel({ backend, onRefresh }) {
 
       {/* Engine detail */}
       <div style={{ ...TYPE.caption, color: T.muted, lineHeight: 1.6 }}>
-        Engine: <span style={{ color: SEM.teal }}>{backend.engine || "—"}</span>
-        {isFaiss && <span style={{ color: T.success, marginLeft: 12 }}>✓ O(log n) ANN · thread-safe · incremental updates</span>}
-        {isSqlite && <span style={{ color: T.accent2, marginLeft: 12 }}>O(n) cosine scan · auto-promotes at {threshold} entries</span>}
+        Engine: <span style={{ color: T.accentText, fontWeight: 700 }}>{backend.engine || "—"}</span>
+        {isFaiss && <span style={{ color: T.success, marginLeft: 12 }}>O(log n) ANN · thread-safe · incremental updates</span>}
+        {isSqlite && <span style={{ color: T.mutedLt, marginLeft: 12 }}>O(n) cosine scan · auto-promotes at {threshold} entries</span>}
       </div>
 
       {/* Benchmark summary */}
       {bench && (
-        <div style={{ ...TYPE.caption, marginTop: 10, padding: "8px 12px", background: `${searchColor}0D`, border: `1px solid ${searchColor}33`, borderRadius: 3 }}>
-          <span style={{ color: searchColor, fontWeight: 700 }}>
-            {searchPassing ? "✓ Vector search passing" : "⚠ Vector search above target"}
+        <Well tone={`${searchColor}33`} style={{ marginTop: 12, padding: "10px 14px", background: `${searchColor}0D` }}>
+          <span style={{ ...TYPE.caption, color: searchColor, fontWeight: 700 }}>
+            {searchPassing ? "Vector search passing" : "Vector search above target"}
           </span>
-          <span style={{ color: T.muted, marginLeft: 10 }}>
+          <span style={{ ...TYPE.caption, color: T.muted, marginLeft: 10 }}>
             {bench.n_queries} queries · {bench.entry_count} entries · {bench.embed_note}
           </span>
-        </div>
+        </Well>
       )}
       {promoteMsg && (
-        <div style={{ ...TYPE.caption, marginTop: 10, padding: "7px 12px", background: `${T.success}10`, border: `1px solid ${T.success}33`, borderRadius: 3, color: T.success }}>
-          {promoteMsg}
-        </div>
+        <Well tone={`${T.success}33`} style={{ marginTop: 12, padding: "10px 14px", background: `${T.success}10` }}>
+          <span style={{ ...TYPE.caption, color: T.success }}>{promoteMsg}</span>
+        </Well>
       )}
-    </div>
+    </Section>
   );
 }
 
@@ -506,107 +542,117 @@ export default function DataTab() {
 
   useEffect(() => { load(); }, [load]);
 
+  const btn = { ...TYPE.caption, fontWeight: 700, padding: "8px 20px", textDecoration: "none" };
+
   return (
     <div style={{ animation: "fadeIn .2s" }}>
 
       {/* Header */}
       <PageHeader
-        title="Decision Trace Dataset"
-        subtitle="Every routing decision joined with memory, reflection, and session data — structured for training and analysis."
+        center
+        title="Analysis"
+        subtitle="Every routing decision joined with memory, reflection, and session data — where agents specialize, where routing goes wrong, and why a given answer came out the way it did."
       >
-        <div style={{ display: "flex", gap: 8 }}>
-          <a href={`${API}/data/traces.jsonl`} download="trace_dataset.jsonl"
-            style={{ ...TYPE.caption, fontWeight: 700, padding: "7px 14px", borderRadius: 4, background: SEM.blue + "22", color: SEM.blue, border: `1px solid ${SEM.blue}44`, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
-            ⬇ JSONL
-          </a>
-          <button onClick={rebuild} disabled={rebuilding}
-            style={{ ...TYPE.caption, fontWeight: 700, padding: "7px 14px", borderRadius: 4, fontFamily: "inherit", background: T.accent2 + "22", color: T.accent2, border: `1px solid ${T.accent2}44`, cursor: rebuilding ? "wait" : "pointer" }}>
-            {rebuilding ? "Rebuilding…" : "⟳ Rebuild"}
-          </button>
-          <button onClick={load} disabled={loading}
-            style={{ ...TYPE.caption, fontWeight: 700, padding: "7px 14px", borderRadius: 4, fontFamily: "inherit", background: T.success + "22", color: T.success, border: `1px solid ${T.success}44`, cursor: "pointer" }}>
-            {loading ? "…" : "↻ Refresh"}
-          </button>
-        </div>
+        <a href={`${API}/data/traces.jsonl`} download="trace_dataset.jsonl" className="btn-ghost" style={btn}>
+          Export JSONL
+        </a>
+        <button className="btn-ghost" onClick={rebuild} disabled={rebuilding} style={btn}>
+          {rebuilding ? "Rebuilding…" : "Rebuild"}
+        </button>
+        <button className="btn-ghost" onClick={load} disabled={loading} style={btn}>
+          {loading ? "Refreshing…" : "Refresh"}
+        </button>
       </PageHeader>
 
-      {/* Coverage stats */}
+      {/* Section stack — spacing comes from the gap, not per-card margins */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+      {/* Dataset headline numbers — one inline strip, nothing else in this card */}
       {stats && (
-        <div className="lux-card" style={{ padding: "16px 20px", marginBottom: 16 }}>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
-            <StatCard label="Total traces"    value={stats.total}            color={SEM.blue} />
-            <StatCard label="Real sessions"   value={stats.real_sessions}    color={T.success} />
-            <StatCard label="Eval decisions"  value={stats.eval_decisions}   color={T.muted} />
-            <StatCard label="Avg quality"     value={stats.avg_quality_proxy?.toFixed(3)} color={T.accent2} />
-            <StatCard label="Avg memories/q"  value={stats.avg_memories_per_query?.toFixed(1)} color={SEM.teal} sub="fan-out signal" />
-            <StatCard label="Avg regret"      value={stats.avg_regret?.toFixed(4)} color={stats.avg_regret > 0.1 ? T.error : T.muted} />
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <Section title="Dataset" hint="traces joined across routing, memory, reflection and feedback">
+          {/* One gold voice across the strip, like the Releases stat bar. Regret
+              is the lone exception: it goes red once it crosses the threshold,
+              because that's the number you're supposed to notice. */}
+          <StatStrip items={[
+            { label: "Total traces",   value: stats.total },
+            { label: "Real sessions",  value: stats.real_sessions },
+            { label: "Eval decisions", value: stats.eval_decisions },
+            { label: "Avg quality",    value: stats.avg_quality_proxy?.toFixed(3) },
+            { label: "Avg memories/q", value: stats.avg_memories_per_query?.toFixed(1), sub: "fan-out signal" },
+            { label: "Avg regret",     value: stats.avg_regret?.toFixed(4), color: stats.avg_regret > 0.1 ? BAD : undefined },
+          ]} />
+        </Section>
+      )}
+
+      {/* Coverage + distribution — the two breakdowns, side by side */}
+      {stats && (
+        <Section title="Composition" hint="what the traces carry, and who they were routed to">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 28 }}>
             <div>
-              <div style={{ ...TYPE.eyebrow, fontWeight: 700, letterSpacing: "0.08em", color: T.muted, marginBottom: 8 }}>Signal Coverage</div>
-              {stats.coverage && Object.entries({
-                "Has response":   [stats.coverage.response_pct,   T.success],
-                "Has memory":     [stats.coverage.memory_pct,     SEM.teal],
-                "Has reflection": [stats.coverage.reflection_pct, SEM.magenta],
-                "Has conflict":   [stats.coverage.conflict_pct,   T.error],
-                "Has feedback":   [stats.coverage.feedback_pct,   T.accent2],
-              }).map(([lbl, [pct, col]]) => (
-                <CovBar key={lbl} label={lbl} pct={pct} color={col} />
+              <div style={{ ...TYPE.eyebrow, fontWeight: 600, letterSpacing: "0.1em", color: T.muted, marginBottom: 12 }}>Signal Coverage</div>
+              {stats.coverage && [
+                ["Has response",   stats.coverage.response_pct],
+                ["Has memory",     stats.coverage.memory_pct],
+                ["Has reflection", stats.coverage.reflection_pct],
+                ["Has conflict",   stats.coverage.conflict_pct],
+                ["Has feedback",   stats.coverage.feedback_pct],
+              ].map(([lbl, pct]) => (
+                <CovBar key={lbl} label={lbl} pct={pct} />
               ))}
             </div>
             <div>
-              <div style={{ ...TYPE.eyebrow, fontWeight: 700, letterSpacing: "0.08em", color: T.muted, marginBottom: 8 }}>Agent Distribution</div>
+              <div style={{ ...TYPE.eyebrow, fontWeight: 600, letterSpacing: "0.1em", color: T.muted, marginBottom: 12 }}>Agent Distribution</div>
               {stats.agent_distribution && Object.entries(stats.agent_distribution)
                 .sort((a, b) => b[1] - a[1])
-                .map(([agent, n]) => {
+                .map(([agent, n], i) => {
                   const pct = n / stats.total;
-                  const m = AGENT_META[agent] || { color: T.muted };
                   return (
-                    <div key={agent} style={{ marginBottom: 5 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
-                        <span style={{ ...TYPE.caption, color: T.muted }}>{agent.replace(/_/g, " ")}</span>
-                        <span style={{ ...TYPE.caption, color: m.color, fontFamily: "monospace" }}>{n} ({(pct*100).toFixed(0)}%)</span>
+                    <div key={agent} style={{ marginBottom: 9 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ ...TYPE.caption, color: T.mutedLt }}>{agent.replace(/_/g, " ")}</span>
+                        <span style={{ ...TYPE.caption, ...NUM, color: T.text, fontWeight: 700 }}>{n} <span style={{ color: T.muted, fontWeight: 400 }}>({(pct*100).toFixed(0)}%)</span></span>
                       </div>
-                      <div style={{ height: 3, background: T.border, borderRadius: 2, overflow: "hidden" }}>
-                        <div style={{ width: `${pct*100}%`, height: "100%", background: m.color, borderRadius: 2 }} />
+                      <div style={{ height: 5, background: T.border, borderRadius: 999, overflow: "hidden" }}>
+                        <div style={{ width: `${pct*100}%`, height: "100%", background: rank(i), borderRadius: 999 }} />
                       </div>
                     </div>
                   );
                 })}
             </div>
           </div>
-        </div>
+        </Section>
       )}
 
       {/* Specialization table */}
       {spec && (
-        <div className="lux-card" style={{ padding: "16px 20px", marginBottom: 16 }}>
+        <Section title="Agent Specialization Index" hint="who is carrying real volume, and who is only surviving on overlap">
           <SpecializationTable data={spec} />
-        </div>
+        </Section>
       )}
 
       {/* Counterfactual candidates */}
       {cands !== null && (
-        <div className="lux-card" style={{ padding: "16px 20px", marginBottom: 16 }}>
+        <Section title="Counterfactual Candidates" hint="high-regret and conflict decisions worth re-running with the alternative agent">
           <CounterfactualPanel candidates={cands} />
-        </div>
+        </Section>
       )}
 
       {/* Decision graph stats */}
       {graphStats && (
-        <div className="lux-card" style={{ padding: "16px 20px", marginBottom: 16 }}>
+        <Section title="Decision Graph" hint="the trace store as a graph — what links to what">
           <GraphStatsPanel graph={graphStats} />
-        </div>
+        </Section>
       )}
 
       {/* Causal path explorer */}
-      <div className="lux-card" style={{ padding: "16px 20px", marginBottom: 16 }}>
+      <Section title="Causal Path Explorer" hint="inspect why a specific decision was made — routing, memory, outcome">
         <CausalPathPanel />
-      </div>
+      </Section>
 
       {/* Memory backend status */}
       <MemoryBackendPanel backend={backend} onRefresh={load} />
 
+      </div>
     </div>
   );
 }

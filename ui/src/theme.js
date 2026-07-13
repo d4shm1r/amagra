@@ -75,12 +75,15 @@ export const LUX = {
   shadowLg:   "0 18px 48px rgba(62, 44, 20, 0.20)",
   glass:      "rgba(250, 247, 242, 0.88)", // frosted bars (pair with backdropFilter)
 
-  // Landing-style "luxe card" recipe (mirrors public/landing.html .for-card).
-  // Prefer className="lux-card" / "lux-card-i" (index.css) — it adds the top
-  // gloss + hover. These tokens are for surfaces that must stay inline-styled.
+  // The one card recipe — JS mirror of --card-* in public/tokens.css. Prefer
+  // className="lux-card" / "lux-card-i"; these are for surfaces that must stay
+  // inline-styled. No outer white glow: the paper highlight is inset, so a card
+  // never fringes its own border or bleeds through the sticky header's fade.
+  // Keep in sync with tokens.css.
   cardBg:     "linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 42%), #FAF7F2",
-  cardBorder: "rgba(255, 255, 255, 0.45)",
-  cardShadow: "7px 7px 20px rgba(72,52,28,0.10), -3px -3px 11px rgba(255,255,255,0.75), inset 0 1px 1px rgba(255,255,255,0.92), inset 0 -1px 1px rgba(138,99,36,0.04)",
+  cardBorder: "rgba(182, 138, 50, 0.16)",
+  cardShadow: "0 1px 2px rgba(72,52,28,0.05), 0 10px 30px -12px rgba(72,52,28,0.18), inset 0 1px 1px rgba(255,255,255,0.94), inset 0 -1px 1px rgba(138,99,36,0.04)",
+  cardShadowHover: "0 1px 2px rgba(72,52,28,0.05), 0 10px 30px -12px rgba(72,52,28,0.18), inset 0 1px 1px rgba(255,255,255,0.94), inset 0 -1px 1px rgba(138,99,36,0.04), 0 0 28px rgba(196,136,8,0.13)",
 };
 
 // Font stacks

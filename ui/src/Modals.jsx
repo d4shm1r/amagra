@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { API } from "./api";
 import { AGENTS, BUILD_PHASES, VERSION } from "./constants";
 import { T, LUX, TYPE, EASE, DUR, RADIUS, FONT_DISPLAY, FONT_MONO } from "./theme";
-import { PageHeader } from "./ObsShared";
+import { PageHeader, Section } from "./ObsShared";
 import InspectOverviewTab from "./InspectOverviewTab";
 
 // ── Shared calm primitives (Settings + About) ─────────────────
@@ -21,28 +21,15 @@ const CALM_CSS = `
 .gold-range::-moz-range-thumb{width:18px;height:18px;border:2.5px solid #fff;border-radius:50%;background:${GOLD};box-shadow:0 0 0 1.5px ${GOLD}, ${LUX.shadowMd};cursor:pointer;}
 .gold-range::-moz-range-track{background:transparent;height:7px;border-radius:999px;}
 .set-row + .set-row{border-top:1px solid ${T.border}66;}
-.set-card{transition:box-shadow ${DUR.base} ${EASE.out};}
-.set-card:hover{box-shadow:${LUX.shadowSm};}
 `;
 
+// Delegates to the kit Section so Settings/About section headers read exactly
+// like every other tab's (gold eyebrow + optional glyph, no bespoke chrome).
 function SectionCard({ sym, title, children }) {
   return (
-    <div className="set-card" style={{
-      background: LUX.tileFace, border: `1px solid ${LUX.tileBorder}`,
-      borderRadius: RADIUS.lg, padding: "16px 20px", marginBottom: 16,
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6,
-                    paddingBottom: 12, borderBottom: `1px solid ${GOLD}20` }}>
-        {sym && <span style={{
-          fontFamily: FONT_DISPLAY, fontSize: 15, lineHeight: 1, color: GOLD,
-          width: 26, height: 26, flexShrink: 0, display: "inline-flex",
-          alignItems: "center", justifyContent: "center",
-          background: `${GOLD}12`, border: `1px solid ${GOLD}30`, borderRadius: "50%",
-        }}>{sym}</span>}
-        <span style={{ ...TYPE.eyebrow, fontSize: 10, color: GOLD_TX }}>{title}</span>
-      </div>
+    <Section title={title} icon={sym} style={{ marginBottom: 16 }}>
       {children}
-    </div>
+    </Section>
   );
 }
 
@@ -286,11 +273,6 @@ function KeyChord({ combo }) {
 export function ShortcutsModal() {
   return (
     <div style={{ animation: `fadeIn ${DUR.base} ${EASE.out}` }}>
-      <style>{`
-        .kbd-group { transition: box-shadow ${DUR.base} ${EASE.out}, transform ${DUR.base} ${EASE.out}; }
-        .kbd-group:hover { box-shadow: ${LUX.shadowSm}; transform: translateY(-1px); }
-      `}</style>
-
       <PageHeader
         center
         title="Shortcuts"
@@ -304,10 +286,8 @@ export function ShortcutsModal() {
         gap: 16,
       }}>
         {SHORTCUT_GROUPS.map((group) => (
-          <div key={group.title} className="kbd-group" style={{
-            width: "100%",
-            background: LUX.tileFace, border: `1px solid ${LUX.tileBorder}`,
-            borderRadius: RADIUS.lg, padding: "18px 22px",
+          <div key={group.title} className="lux-card" style={{
+            width: "100%", padding: "18px 22px",
           }}>
             {/* Group header */}
             <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 12,
@@ -393,10 +373,7 @@ export function AboutView({ coherence, apiStatus, onNav }) {
       <PageHeader center title="About" subtitle="What Amagra is — and the live state of the engine on this machine." />
 
       {/* Identity hero */}
-      <div className="set-card" style={{
-        background: LUX.tileFace, border: `1px solid ${LUX.tileBorder}`,
-        borderRadius: RADIUS.lg, padding: "20px 22px", marginBottom: 16,
-      }}>
+      <div className="lux-card" style={{ padding: "20px 22px", marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
           <h2 style={{ margin: 0, fontSize: 28, fontWeight: 600, fontFamily: FONT_DISPLAY,
                        letterSpacing: "0.08em", ...LUX.goldText, display: "inline-block" }}>AMAGRA</h2>

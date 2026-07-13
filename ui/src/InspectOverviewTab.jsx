@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { T } from "./theme";
-import { PageHeader } from "./ObsShared";
+import { PageHeader, Section } from "./ObsShared";
 
 import { API } from "./api";
 
@@ -9,9 +9,16 @@ import { API } from "./api";
 // Developer groups in the view selector). Hierarchy comes from scale
 // and spacing; gold is reserved for the single live-activity signal.
 
+// Accepts an ISO string (what /decisions actually sends), epoch seconds, or
+// epoch millis. The old version assumed epoch seconds only, so an ISO string
+// made every branch NaN and fell through to a literal "NaNd ago".
 function timeAgo(ts) {
   if (!ts) return "";
-  const s = Math.max(0, (Date.now() / 1000) - ts);
+  const ms = typeof ts === "number"
+    ? (ts < 1e11 ? ts * 1000 : ts)   // seconds vs millis
+    : Date.parse(ts);
+  if (Number.isNaN(ms)) return "";
+  const s = Math.max(0, (Date.now() - ms) / 1000);
   if (s < 60)    return `${Math.round(s)}s ago`;
   if (s < 3600)  return `${Math.floor(s / 60)}m ago`;
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
@@ -39,27 +46,7 @@ function Stat({ value, label, live }) {
   );
 }
 
-function Section({ title, onMore, moreLabel, children }) {
-  return (
-    <div className="lux-card" style={{ padding: "16px 20px", minWidth: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: T.mutedLt, letterSpacing: "0.1em", textTransform: "uppercase", flex: 1 }}>
-          {title}
-        </span>
-        {onMore && (
-          <button onClick={onMore} className="nav-btn" style={{
-            border: "none", background: "transparent", cursor: "pointer",
-            fontSize: 11, fontWeight: 600, color: T.muted, fontFamily: "inherit",
-            padding: "2px 8px", borderRadius: 5,
-          }}>
-            {moreLabel || "View all"} →
-          </button>
-        )}
-      </div>
-      {children}
-    </div>
-  );
-}
+// Section comes from ObsShared (the shared kit) — see the layering note there.
 
 const Empty = ({ children }) => (
   <div style={{ fontSize: 12.5, color: T.muted, padding: "14px 0 8px", fontStyle: "italic" }}>{children}</div>

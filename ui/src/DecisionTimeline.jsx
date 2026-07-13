@@ -105,10 +105,10 @@ function DriftMonitorPanel({ drift }) {
   const labelColor  = healthy ? T.success : instability >= 0.8 ? T.error : T.accent2;
 
   return (
-    <div style={{
-      background: T.surface,
-      border: `1.5px solid ${labelColor}44`,
-      borderRadius: 3, padding: "12px 18px", marginBottom: 16,
+    <div className="lux-card" style={{
+      // Health state keeps its colored edge; everything else is the shared card.
+      borderColor: `${labelColor}44`,
+      padding: "12px 18px", marginBottom: 16,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
         <div style={{ ...TYPE.caption, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: 1 }}>
