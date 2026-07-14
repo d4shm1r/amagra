@@ -1,7 +1,7 @@
 // Feedback.jsx — the states that aren't content: loading, empty, transient
 // notices, and the engine-offline banner. A tab should never hand-write
 // "Loading…" in an italic div again.
-import { T, LUX, TYPE, FONT_DISPLAY, SPACE } from "@/styles/theme";
+import { T, LUX, TYPE, FONT_DISPLAY, SPACE, LAYOUT } from "@/styles/theme";
 import { toneColor } from "./tone";
 import { Button } from "./Button";
 
@@ -60,13 +60,38 @@ export function Notice({ tone = "error", children }) {
   );
 }
 
+/** The floating alert layer — an overlay pinned over the top of the content.
+ *
+ *  An alert is not part of the page. It must not take a row in the layout and
+ *  shove every card down by its own height; it appears *over* the work, like a
+ *  popup, and when it goes the page doesn't jump. So: absolutely positioned (it
+ *  anchors to the shell's relative container), the layer itself is
+ *  pointer-transparent so it never steals a click meant for the content beneath,
+ *  and only the alert inside it is clickable.
+ *
+ *  z-index sits above the sticky PageHeader (30) but below the ☰ launcher (50),
+ *  so the menu button stays reachable while an alert is up. */
+export function Toast({ children }) {
+  return (
+    <div style={{
+      position: "absolute", top: 12, left: LAYOUT.gutter, right: LAYOUT.gutter,
+      zIndex: 40, display: "flex", justifyContent: "center",
+      pointerEvents: "none",
+    }}>
+      <div style={{ pointerEvents: "auto", width: "100%", maxWidth: LAYOUT.content }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 /** Shown app-wide when the local backend is unreachable. Non-blocking (static
- *  tabs still render), with the exact fix spelled out. */
+ *  tabs still render), with the exact fix spelled out. Carries no outer margin:
+ *  where it sits is the caller's business (it rides in a <Toast>). */
 export function ApiOfflineBanner({ onRetry, checking = false }) {
   const dot = toneColor(checking ? "warn" : "error");
   return (
     <div style={{
-      margin: "0 0 18px",
       display: "flex", alignItems: "center", gap: 16,
       padding: "15px 20px", borderRadius: 14,
       background: LUX.cardBg,
