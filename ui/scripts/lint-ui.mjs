@@ -162,6 +162,39 @@ if (violations.length) {
     console.error("\nFix: draw it in components/ui/Icon.jsx, on the same 24×24 grid.\n");
     process.exit(1);
   }
+
+  // ── Every entry carries an icon AND a description ──────────────────────────
+  // A tile with no description is a shorter tile, and one short tile in a grid
+  // row makes the whole row look broken. All-or-nothing is the only stable rule.
+  const entries = (nav.match(/\{\s*id:\s*"/g) || []).length;
+  const descs   = [...nav.matchAll(/\bdesc:\s*"([^"]*)"/g)].map(m => m[1]);
+  if (entries !== asked.length || entries !== descs.length) {
+    console.error(`\n✗ navConfig: ${entries} entries but ${asked.length} icons and ${descs.length} descriptions.`);
+    console.error("  Every surface and every tab needs both.\n");
+    process.exit(1);
+  }
+
+  // ── One voice ─────────────────────────────────────────────────────────────
+  // The menu used to speak in three at once: Title-Case imperatives on the
+  // surfaces ("Monitor system health"), lower-case verbs on some tabs ("talk to
+  // your agents"), lower-case nouns on the rest ("the routing skill graph"). No
+  // two tiles scanned the same way. One voice: a noun phrase, lower case, no
+  // full stop, "and" not "&", short enough for one line.
+  const VERBS = /^(talk|write|choose|tune|browse|open|view|see|run|manage|explore|inspect|monitor|analyz|configur|work|set|start|make|show)/i;
+  const bad = [];
+  for (const d of descs) {
+    if (/^[A-Z]/.test(d) && !/^Amagra/.test(d)) bad.push([d, "starts upper case — it's a subtitle, not a sentence"]);
+    else if (/\.$/.test(d))                     bad.push([d, "ends in a full stop"]);
+    else if (/&/.test(d))                       bad.push([d, `uses "&" — write "and"`]);
+    else if (VERBS.test(d))                     bad.push([d, "starts with a verb — name what the thing IS, not what you do there"]);
+    else if (d.length > 34)                     bad.push([d, `${d.length} chars — too long for one line (max 34)`]);
+  }
+  if (bad.length) {
+    console.error("\n✗ navConfig descriptions break the one-voice rule:\n");
+    for (const [d, why] of bad) console.error(`    "${d}"\n        ${why}`);
+    console.error("");
+    process.exit(1);
+  }
 }
 
 const totalDebt = debtFiles.reduce((n, d) => n + d.count, 0);
