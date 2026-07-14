@@ -28,7 +28,7 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 import models.llm as _llm  # late-bound: a runtime provider switch must be seen
 from agents.spec import AgentSpec
-from core.contract import Context, Result, Msg, trim_history
+from core.contract import Context, Result, trim_history
 from core.context_tools import trim_messages
 from core.user_profile import get_profile_context
 from memory_core.context import get_memory_context, save_to_memory

@@ -16,26 +16,33 @@ recalled a memory.
 import pytest
 
 import agents.runner as runner
+from agents.ai_ml import ai_ml_agent
+from agents.data_analyst import data_analyst_agent
+from agents.devops import devops_agent
+from agents.dotnet_dev import dotnet_agent
+from agents.it_networking import it_agent
+from agents.knowledge_learning import knowledge_agent
+from agents.python_dev import python_agent
 from agents.registry import AGENT_IDS
 from agents.runner import Agent, _compose, _probe_results, _prompt_for
 from agents.spec import AgentSpec, Probe
+from agents.terse import terse_agent
+from agents.web_dev import web_dev_agent
+from agents.writer import writer_agent
 
 
 def _all_agents():
-    import agents.python_dev, agents.dotnet_dev, agents.it_networking, agents.ai_ml
-    import agents.web_dev, agents.devops, agents.data_analyst, agents.writer
-    import agents.knowledge_learning, agents.terse
     return {
-        "python_dev":         agents.python_dev.python_agent,
-        "dotnet_dev":         agents.dotnet_dev.dotnet_agent,
-        "it_networking":      agents.it_networking.it_agent,
-        "ai_ml":              agents.ai_ml.ai_ml_agent,
-        "web_dev":            agents.web_dev.web_dev_agent,
-        "devops":             agents.devops.devops_agent,
-        "data_analyst":       agents.data_analyst.data_analyst_agent,
-        "writer":             agents.writer.writer_agent,
-        "knowledge_learning": agents.knowledge_learning.knowledge_agent,
-        "terse":              agents.terse.terse_agent,
+        "python_dev":         python_agent,
+        "dotnet_dev":         dotnet_agent,
+        "it_networking":      it_agent,
+        "ai_ml":              ai_ml_agent,
+        "web_dev":            web_dev_agent,
+        "devops":             devops_agent,
+        "data_analyst":       data_analyst_agent,
+        "writer":             writer_agent,
+        "knowledge_learning": knowledge_agent,
+        "terse":              terse_agent,
     }
 
 
