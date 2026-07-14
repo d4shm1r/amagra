@@ -1,46 +1,24 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense, startTransition } from "react";
-import { API } from "./api";
-// Eager: the landing tabs (Chat is the default view, Home the pre-nav landing)
-// plus first-run onboarding — these must paint immediately with no chunk fetch.
-import Onboarding         from "./Onboarding";
-import HomeTab            from "./HomeTab";
-import ChatTab            from "./ChatTab";
-// Lazy: every other tab is its own chunk, fetched on first visit. This keeps the
-// initial bundle to Chat/Home instead of parsing ~30 heavy tab trees (charts,
-// graphs, Monaco) up front, and — with startTransition in navTo + the Suspense
-// boundary below — makes tab switches non-blocking instead of janking on a big
-// synchronous mount. Monaco (~3.7 MB) rides in PromptEditorTab.
-const LogTab             = lazy(() => import("./LogTab"));
-const RunsTab            = lazy(() => import("./RunsTab"));
-const CognitionView      = lazy(() => import("./CognitionView"));
-const GuideTab           = lazy(() => import("./GuideTab"));
-const TaskQueue          = lazy(() => import("./TaskQueue"));
-const GoalTracker        = lazy(() => import("./GoalTracker"));
-const MindMapInteractive = lazy(() => import("./MindMapInteractive"));
-const KnowledgeGraph     = lazy(() => import("./KnowledgeGraph"));
-const DecisionTimeline   = lazy(() => import("./DecisionTimeline"));
-const TimelineTab        = lazy(() => import("./TimelineTab"));
-const DataTab            = lazy(() => import("./DataTab"));
-const CognitiveOSTab     = lazy(() => import("./CognitiveOSTab"));
-const DiagnosticsTab     = lazy(() => import("./DiagnosticsTab"));
-const ProjectStateTab    = lazy(() => import("./ProjectStateTab"));
-const MemoryBrowserTab   = lazy(() => import("./MemoryBrowserTab"));
-const ContextInspectorTab = lazy(() => import("./ContextInspectorTab"));
-const LibraryTab         = lazy(() => import("./LibraryTab"));
-const VersionHistoryTab  = lazy(() => import("./VersionHistoryTab"));
-const ResearchTab        = lazy(() => import("./ResearchTab"));
-const PromptEditorTab    = lazy(() => import("./PromptEditorTab"));
-const ConsensusTab       = lazy(() => import("./ConsensusTab"));
-const ExplainProjectTab  = lazy(() => import("./ExplainProjectTab"));
-const SkillsTab          = lazy(() => import("./SkillsTab"));
-const ProviderSettingsTab = lazy(() => import("./ProviderSettingsTab"));
-import { ApiOfflineBanner } from "./ObsShared";
-import { SettingsModal, ShortcutsModal, AboutView } from "./Modals";
-import AppLauncher from "./AppLauncher";
+import { useState, useEffect, useCallback, Suspense, startTransition } from "react";
+import { API } from "@/lib/api";
+import { ApiOfflineBanner } from "@/components/ui";
+import Onboarding  from "@/components/layout/Onboarding";
+import AppLauncher from "@/components/layout/AppLauncher";
+// Every routed view, registered in tabs/index.js. Chat + Home are eager (they
+// must paint with no chunk fetch); the rest are lazy() chunks, one per tab.
+// Paired with startTransition in navTo + the Suspense boundary below, a tab
+// switch stays non-blocking instead of janking on a big synchronous mount.
+import {
+  ChatTab, HomeTab, AboutTab, CognitionTab, CognitiveOSTab, ConsensusTab,
+  ContextInspectorTab, DataTab, DecisionTimelineTab, DiagnosticsTab,
+  ExplainProjectTab, GoalsTab, GuideTab, KnowledgeGraphTab, LibraryTab, LogTab,
+  MemoryBrowserTab, MindMapTab, PreferencesTab, ProjectStateTab, PromptEditorTab,
+  ProviderSettingsTab, ResearchTab, RunsTab, ShortcutsTab, SkillsTab, TasksTab,
+  TimelineTab, VersionHistoryTab,
+} from "@/tabs";
 import {
   SURFACE_BY_TAB, DEFAULT_TAB, TAB_ALIASES, VALID_TABS,
-} from "./navConfig";
-import { T, GOLD, TYPE, FONT_UI, FONT_DISPLAY } from "./theme";
+} from "@/config/navConfig";
+import { T, TYPE, FONT_UI, FONT_DISPLAY } from "@/styles/theme";
 
 // ── App-wide settings ─────────────────────────────────────────
 const DEFAULT_SETTINGS = {
@@ -459,15 +437,15 @@ export default function App() {
               }>
               {activeTab === "home"          && <HomeTab apiStatus={apiStatus} coherence={coherence} totalQueries={totalQueries} onNav={navTo} mode={mode} />}
               {activeTab === "concepts"      && <ResearchTab activeDoc={researchDoc} />}
-              {activeTab === "knowledge"     && <KnowledgeGraph />}
-              {activeTab === "mindmap"       && <MindMapInteractive litNode={litNode} onForceAgent={(id) => { setForcedAgent(id); navTo("chat"); }} />}
+              {activeTab === "knowledge"     && <KnowledgeGraphTab />}
+              {activeTab === "mindmap"       && <MindMapTab litNode={litNode} onForceAgent={(id) => { setForcedAgent(id); navTo("chat"); }} />}
               {activeTab === "library"       && <LibraryTab />}
               {activeTab === "memory"        && <MemoryBrowserTab />}
-              {activeTab === "brain"         && <DecisionTimeline />}
+              {activeTab === "brain"         && <DecisionTimelineTab />}
               {activeTab === "runs"          && <RunsTab />}
               {activeTab === "timeline"      && <TimelineTab />}
               {activeTab === "data"          && <DataTab />}
-              {activeTab === "cog-dash"      && <CognitionView />}
+              {activeTab === "cog-dash"      && <CognitionTab />}
               {activeTab === "diagnostics"   && <DiagnosticsTab />}
               {activeTab === "cognitive"     && <CognitiveOSTab coherence={coherence} />}
               {activeTab === "inspector"     && <ContextInspectorTab contextId={inspectContextId} />}
@@ -477,13 +455,13 @@ export default function App() {
               {activeTab === "skills"        && <SkillsTab />}
               {activeTab === "guide"         && <GuideTab />}
               {activeTab === "model"         && <ProviderSettingsTab />}
-              {activeTab === "goals"         && <GoalTracker />}
-              {activeTab === "tasks"         && <TaskQueue />}
+              {activeTab === "goals"         && <GoalsTab />}
+              {activeTab === "tasks"         && <TasksTab />}
               {activeTab === "log"           && <LogTab sessionLog={sessionLog} onClear={() => setSessionLog([])} />}
               {activeTab === "releases"      && <VersionHistoryTab />}
-              {activeTab === "prefs"         && <SettingsModal settings={settings} onUpdate={updateSetting} coherence={coherence} apiStatus={apiStatus} />}
-              {activeTab === "shortcuts"     && <ShortcutsModal />}
-              {activeTab === "about"         && <AboutView coherence={coherence} apiStatus={apiStatus} onNav={navTo} />}
+              {activeTab === "prefs"         && <PreferencesTab settings={settings} onUpdate={updateSetting} />}
+              {activeTab === "shortcuts"     && <ShortcutsTab />}
+              {activeTab === "about"         && <AboutTab coherence={coherence} apiStatus={apiStatus} onNav={navTo} />}
               </Suspense>
             </div>
             )}

@@ -1,0 +1,29 @@
+// DropZone.jsx — drag-and-drop onto a whole surface.
+// Owns the dragenter/leave bookkeeping (the "did I leave for a child element?"
+// trap) and the overlay, so a tab only says what to do with the files.
+import { useState } from "react";
+import { T, TYPE, FONT_DISPLAY } from "@/styles/theme";
+
+export function DropZone({ onDrop, label = "Drop to add", children }) {
+  const [over, setOver] = useState(false);
+  return (
+    <div
+      style={{ position: "relative" }}
+      onDragOver={e => { e.preventDefault(); setOver(true); }}
+      onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(false); }}
+      onDrop={e => { e.preventDefault(); setOver(false); onDrop([...e.dataTransfer.files]); }}
+    >
+      {children}
+      {over && (
+        <div style={{
+          position: "absolute", inset: -12, borderRadius: 18, zIndex: 50,
+          border: `2px dashed ${T.accent}`, background: `${T.accent}0D`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          pointerEvents: "none",
+        }}>
+          <span style={{ ...TYPE.title, fontFamily: FONT_DISPLAY, color: T.accent2 }}>{label}</span>
+        </div>
+      )}
+    </div>
+  );
+}
