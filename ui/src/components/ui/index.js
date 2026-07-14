@@ -25,7 +25,7 @@ export { KeyChord } from "./KeyChord";
 export { DataRow } from "./DataRow";
 export { PageHeader } from "./PageHeader";
 export { StatStrip, MetricCard, ScoreBar } from "./Stat";
-export { Loading, EmptyState, EmptyPage, Notice, ApiOfflineBanner } from "./Feedback";
+export { Loading, EmptyState, EmptyPage, Notice, Toast, ApiOfflineBanner } from "./Feedback";
 export { EventRow, eventMeta } from "./EventRow";
 export { FileEmblem } from "./FileEmblem";
 export { DropZone } from "./DropZone";

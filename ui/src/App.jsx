@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, Suspense, startTransition } from "react";
 import { API } from "@/lib/api";
-import { ApiOfflineBanner, Column } from "@/components/ui";
+import { ApiOfflineBanner, Column, Toast } from "@/components/ui";
 import Onboarding  from "@/components/layout/Onboarding";
 import AppLauncher from "@/components/layout/AppLauncher";
 // Every routed view, registered in tabs/index.js. Chat + Home are eager (they
@@ -399,15 +399,13 @@ export default function App() {
             }} />
           </div>
 
+          {/* The offline alert floats OVER the workspace — it takes no row in the
+              layout, so the page doesn't lurch down when the engine drops and
+              doesn't jump back up when it returns. <Toast> owns that. */}
           {apiStatus !== "online" && (
-            // The banner is a body element, so it gets the body's measure — it
-            // used to run the full width of the window while every card beneath
-            // it stopped at the column, which read as two different pages.
-            <div style={{ padding: `${LAYOUT.gutterY}px ${LAYOUT.gutter}px 0`, flexShrink: 0 }}>
-              <Column>
-                <ApiOfflineBanner onRetry={checkHealth} checking={apiStatus === "checking"} />
-              </Column>
-            </div>
+            <Toast>
+              <ApiOfflineBanner onRetry={checkHealth} checking={apiStatus === "checking"} />
+            </Toast>
           )}
 
           <div style={{
