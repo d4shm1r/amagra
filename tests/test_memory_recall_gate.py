@@ -20,8 +20,8 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evaluation import memory_recall_bench as bench
-from evaluation import memory_gate
+from workbench.evaluation import memory_recall_bench as bench
+from memory_core import memory_gate
 
 
 # ── benchmark invariants ──────────────────────────────────────────────────────

@@ -34,7 +34,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from orchestration.query_normalizer import normalize, DOMAIN_TO_AGENT
 from orchestration.router import KEYWORD_MAP
-from training.auto_train import PROMPTS
+from workbench.auto_train import PROMPTS
 
 
 # ── Core routing utilities ────────────────────────────────────

@@ -1,12 +1,9 @@
-from langchain_core.messages import SystemMessage
-from langgraph.graph import StateGraph, START, END
-import sys
-import os  # path resolution
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from models.state import AgentState
-import models.llm as _llm  # reference _llm.llm live so a runtime provider switch is picked up
+from agents.runner import Agent
+from agents.spec import AgentSpec
 
 # ── System Prompt ─────────────────────────────────────────────
+# Note there is no {user_profile} slot here, unlike every other agent: terse
+# takes no shared context at all. See the spec below.
 TERSE_SYSTEM_PROMPT = """You answer in the fewest words possible.
 
 Rules:
@@ -33,47 +30,16 @@ Q: python list comprehension syntax
 A: [expression for item in iterable if condition]
 """
 
-# ── Agent Node ────────────────────────────────────────────────
-def terse_agent_node(state: AgentState):
-    """Terse agent — one-line answers, no fluff."""
-    task = state.get("task", "")
+# ── Spec ──────────────────────────────────────────────────────
+# The one agent that opts out of everything: no profile, no recalled memory, no
+# tool loop, a shorter window. Brevity is the product.
+SPEC = AgentSpec(
+    name="terse",
+    prompt=TERSE_SYSTEM_PROMPT,
+    max_messages=4,
+    remembers=False,
+    uses_profile=False,
+    uses_tools=False,
+)
 
-    from core.context_tools import trim_messages
-    trimmed = trim_messages(state["messages"], max_messages=4)
-
-    messages = [
-        SystemMessage(content=TERSE_SYSTEM_PROMPT),
-        *trimmed,
-    ]
-
-    response = _llm.llm.invoke(messages)
-
-    return {
-        "messages":     [response],
-        "active_agent": "terse",
-        "result":       response.content,
-    }
-
-# ── Build Subgraph ────────────────────────────────────────────
-def build_terse_agent():
-    graph = StateGraph(AgentState)
-    graph.add_node("terse_agent", terse_agent_node)
-    graph.add_edge(START, "terse_agent")
-    graph.add_edge("terse_agent", END)
-    return graph.compile()
-
-terse_agent = build_terse_agent()
-
-# ── Standalone Test ───────────────────────────────────────────
-if __name__ == "__main__":
-    print("⚡ Testing Terse Agent...\n")
-    result = terse_agent.invoke({
-        "messages":     [{"role": "user", "content": "give me the command for new dotnet blazor project"}],
-        "active_agent": "",
-        "task":         "give me the command for new dotnet blazor project",
-        "result":       "",
-        "next_agent":   "",
-        "memory":       {},
-    })
-    print("── TERSE AGENT RESPONSE ──")
-    print(result["messages"][-1].content)
+terse_agent = Agent(SPEC)

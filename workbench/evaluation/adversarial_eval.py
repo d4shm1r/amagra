@@ -41,7 +41,7 @@ import math
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evaluation.ablation_eval import hybrid_route  # production-faithful: keyword baseline + semantic rescue (flag-gated)
+from workbench.evaluation.ablation_eval import hybrid_route  # production-faithful: keyword baseline + semantic rescue (flag-gated)
 
 # ---------------------------------------------------------------------------
 # Held-out adversarial prompts.  (pid, expected_agent, category, prompt)

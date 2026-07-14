@@ -27,7 +27,7 @@ import os  # path resolution
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from orchestration.query_normalizer import normalize, DOMAIN_TO_AGENT
-from training.auto_train import PROMPTS
+from workbench.auto_train import PROMPTS
 
 # Terse prompts route differently — expected agent is "terse", domain detection
 # alone can't produce "terse" (no domain keyword → "general" → knowledge_learning).

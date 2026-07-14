@@ -1,12 +1,8 @@
-from langchain_core.messages import SystemMessage, HumanMessage
-from langgraph.graph import StateGraph, START, END
 import subprocess
 import sys
-from memory_core.context import get_memory_context, save_to_memory
-import os  # path resolution
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from models.state import AgentState
-from core.context_tools import trim_messages
+
+from agents.runner import Agent
+from agents.spec import AgentSpec, Probe
 
 # ── System Prompt ─────────────────────────────────────────────
 AI_ML_SYSTEM_PROMPT = """
@@ -104,75 +100,28 @@ def suggest_model_for_task(task_description: str) -> str:
         result += f"  • {task:<20} → {model}\n"
     return result
 
-# ── Agent Node ────────────────────────────────────────────────
-def ai_ml_agent_node(state: AgentState):
-    """Main AI & ML agent node."""
-    task = state.get("task", "")
+# ── Spec ──────────────────────────────────────────────────────
+SPEC = AgentSpec(
+    name="ai_ml",
+    prompt=AI_ML_SYSTEM_PROMPT,
+    probe_intro="System tool results:",
+    probes=(
+        Probe(
+            triggers=("installed", "packages", "framework", "torch", "tensorflow"),
+            label="ML PACKAGES",
+            run=lambda _task: check_ml_packages(),
+        ),
+        Probe(
+            triggers=("gpu", "cuda", "hardware", "device", "accelerat"),
+            label="GPU STATUS",
+            run=lambda _task: check_gpu(),
+        ),
+        Probe(
+            triggers=("which model", "recommend", "suggest", "best model", "what model"),
+            label="MODEL RECOMMENDATIONS",
+            run=suggest_model_for_task,
+        ),
+    ),
+)
 
-    # -- Memory: search before responding --
-    _mem_ctx = get_memory_context(task, "ai_ml")
-    from core.user_profile import get_profile_context
-    _effective_prompt = AI_ML_SYSTEM_PROMPT.format(user_profile=get_profile_context(task))
-    if _mem_ctx:
-        _effective_prompt += "\n\n" + _mem_ctx
-    # ----------------------------------------
-
-    tool_context = ""
-
-    if any(w in task.lower() for w in ["installed", "packages", "framework", "torch", "tensorflow"]):
-        tool_context += f"\n[ML PACKAGES]\n{check_ml_packages()}"
-
-    if any(w in task.lower() for w in ["gpu", "cuda", "hardware", "device", "accelerat"]):
-        tool_context += f"\n[GPU STATUS]\n{check_gpu()}"
-
-    if any(w in task.lower() for w in ["which model", "recommend", "suggest", "best model", "what model"]):
-        tool_context += f"\n[MODEL RECOMMENDATIONS]\n{suggest_model_for_task(task)}"
-
-    messages = [
-        SystemMessage(content=_effective_prompt),
-        *trim_messages(state["messages"], max_messages=10),
-    ]
-
-    if tool_context:
-        messages.append(HumanMessage(
-            content=f"System tool results:\n{tool_context}\n\nUse these in your response."
-        ))
-
-    from tools.agent_runtime import respond_with_optional_tools
-    response = respond_with_optional_tools(messages, _effective_prompt, task)
-
-    # -- Memory: save after responding --
-    save_to_memory("ai_ml", "chat", response.content,
-                   {"task": task[:120] if task else ""})
-    # ------------------------------------
-
-
-    return {
-        "messages":     [response],
-        "active_agent": "ai_ml",
-        "result":       response.content,
-    }
-
-# ── Build Subgraph ────────────────────────────────────────────
-def build_ai_ml_agent():
-    graph = StateGraph(AgentState)
-    graph.add_node("ai_ml_agent", ai_ml_agent_node)
-    graph.add_edge(START, "ai_ml_agent")
-    graph.add_edge("ai_ml_agent", END)
-    return graph.compile()
-
-ai_ml_agent = build_ai_ml_agent()
-
-# ── Standalone Test ───────────────────────────────────────────
-if __name__ == "__main__":
-    print("🤖 Testing AI & ML Agent...\n")
-    result = ai_ml_agent.invoke({
-        "messages": [{"role": "user", "content": "What ML packages do I have installed, and what model would you recommend for building a text classification system on my hardware?"}],
-        "active_agent": "",
-        "task":         "check installed ml packages and recommend model for text classification",
-        "result":       "",
-        "next_agent":   "",
-        "memory":       {},
-    })
-    print("── AI & ML AGENT RESPONSE ──")
-    print(result["messages"][-1].content)
+ai_ml_agent = Agent(SPEC)

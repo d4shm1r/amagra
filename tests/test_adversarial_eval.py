@@ -12,7 +12,7 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evaluation.adversarial_eval import PROMPTS, wilson_interval, run_adversarial
+from workbench.evaluation.adversarial_eval import PROMPTS, wilson_interval, run_adversarial
 
 
 def test_wilson_interval_matches_known_values():
@@ -31,7 +31,7 @@ def test_wilson_interval_matches_known_values():
 def test_prompts_are_held_out_from_training():
     # The adversarial prompts must NOT leak back into the rule-authoring set,
     # or the benchmark stops measuring generalisation.
-    from training.auto_train import PROMPTS as TRAIN
+    from workbench.auto_train import PROMPTS as TRAIN
     train_texts = {p[3].strip().lower() for p in TRAIN}
     adv_texts = {p[3].strip().lower() for p in PROMPTS}
     assert train_texts.isdisjoint(adv_texts)

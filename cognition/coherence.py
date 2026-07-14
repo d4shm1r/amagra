@@ -42,7 +42,7 @@ from dataclasses import dataclass, asdict
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from infrastructure.db import path as _dbpath
-from evaluation.math_metrics import (
+from infrastructure.math_metrics import (
     series_curvature, max_abs_curvature, curvature_leading_indicator,
 )
 _DECISIONS_DB = _dbpath("decisions")

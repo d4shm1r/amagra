@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 os.environ.setdefault("AGENTIC_SEMANTIC_FALLBACK", "1")   # enable for the bench
 
-from evaluation.adversarial_eval import PROMPTS as ADV
+from workbench.evaluation.adversarial_eval import PROMPTS as ADV
 import orchestration.semantic_fallback as sf
 
 

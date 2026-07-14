@@ -11,7 +11,7 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evaluation.compound_eval import evaluate, is_compound
+from workbench.evaluation.compound_eval import evaluate, is_compound
 
 
 def test_false_positive_rate_within_budget():

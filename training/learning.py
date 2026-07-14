@@ -34,7 +34,7 @@ from decision.weights import (
     get_calibration,
     KNOWN_AGENTS, BOUNDS,
 )
-from evaluation.math_metrics import instability_conjunctive
+from infrastructure.math_metrics import instability_conjunctive
 
 BASE_ALPHA      = 0.05
 SLOW_THRESHOLD  = 0.60   # log threshold: alpha has dropped below ~40% of BASE_ALPHA

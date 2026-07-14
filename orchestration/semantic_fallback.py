@@ -84,7 +84,7 @@ def _exemplar_signature(pairs: list[tuple[str, str]], model: str) -> str:
 
 def _exemplars() -> list[tuple[str, str]]:
     """(agent_label, text) from the training distribution — never the eval set."""
-    from training.auto_train import PROMPTS
+    from workbench.auto_train import PROMPTS
     return [(p[1], p[3]) for p in PROMPTS]
 
 

@@ -42,7 +42,7 @@ services:
       # Single-file DB mode (optional): set AMAGRA_DB=/app/data/amagra.db to
       # collapse every SQLite store into the ./data volume above. Empty/unset
       # keeps the default separate-file layout under ./memory + ./logs. Migrate
-      # existing data first with scripts/migrate_to_single_db.py.
+      # existing data first with workbench/scripts/migrate_to_single_db.py.
       - AMAGRA_DB=${AMAGRA_DB:-}
     depends_on:
       ollama:

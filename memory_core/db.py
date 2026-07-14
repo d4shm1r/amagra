@@ -386,7 +386,7 @@ def _advise_quality_basin(mid: int, new_q: float, delta: float) -> None:
     can't *silently* push a memory's quality into a non-recoverable corner.
     Best-effort: any failure here must never affect the quality write."""
     try:
-        from evaluation.math_metrics import quality_update_basin
+        from infrastructure.math_metrics import quality_update_basin
         basin = quality_update_basin(new_q, gamma=_QUALITY_GAMMA, delta_f=delta)
         if basin["warn"]:
             from infrastructure.event_bus import emit, EventType

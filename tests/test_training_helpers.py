@@ -13,7 +13,7 @@ import json
 from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import training.auto_train as at
+import workbench.auto_train as at
 import training.report_generator as rg
 
 
