@@ -143,6 +143,27 @@ if (violations.length) {
   process.exit(1);
 }
 
+// ── The nav must only name icons that exist ──────────────────────────────────
+// navConfig names its marks ("icon: chat") instead of pasting a glyph, which is
+// what makes the menu one set. The cost of a name is that a typo renders
+// nothing at all — a silently empty chip. So check it here: every icon the nav
+// asks for must be in the set, and every icon in the set should be used.
+{
+  const nav = readFileSync(join(SRC, "config/navConfig.js"), "utf8");
+  const set = readFileSync(join(SRC, "components/ui/Icon.jsx"), "utf8");
+
+  const asked = [...nav.matchAll(/\bicon:\s*"([\w-]+)"/g)].map(m => m[1]);
+  const drawn = new Set([...set.matchAll(/^\s{2}([\w-]+):\s*</gm)].map(m => m[1]));
+
+  const missing = [...new Set(asked)].filter(n => !drawn.has(n));
+  if (missing.length) {
+    console.error("\n✗ navConfig names icons that components/ui/Icon.jsx doesn't draw:\n");
+    for (const n of missing) console.error(`    icon: "${n}"  → not in the set (renders an empty chip)`);
+    console.error("\nFix: draw it in components/ui/Icon.jsx, on the same 24×24 grid.\n");
+    process.exit(1);
+  }
+}
+
 const totalDebt = debtFiles.reduce((n, d) => n + d.count, 0);
 console.log(`✓ ui: ${clean} file(s) clean · ${debtFiles.length} file(s) awaiting conversion (${totalDebt} violations)`);
 

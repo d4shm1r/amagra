@@ -1,79 +1,82 @@
 // ── 6-view navigation config (v1.4 Unified Workspace UI) ──────────────────────
 // A single source of truth: each surface owns its sub-tabs. Everything else
-// (the sidebar NAV, the SubNav dropdown, surface lookup, last-tab memory) is
-// derived from this. `adv: true` hides a surface/sub-tab in Simple mode.
+// (the launcher grid, surface lookup, last-tab memory) is derived from this.
+// `adv: true` hides a surface/sub-tab in Simple mode.
 //
-//   Workspace  = do work        Memory   = manage knowledge
-//   Runs       = inspect runs    Research = experiment
-//   Cognition  = monitor system  Setup    = configure
-// Per-tab `sym` gives each tile its own mark for recognition; the surface `sym`
-// stays the section signature (and the fallback). Glyphs stay in the geometric /
-// serif language of the theme — never emoji, which ignore the palette.
+//   Workspace  = do work         Memory   = manage knowledge
+//   Runs       = inspect runs     Research = experiment
+//   Cognition  = monitor system   Setup    = configure
+//
+// Two rules, so the menu reads as one set instead of a bag of parts:
+//
+//   `icon` — a name from components/ui/Icon.jsx. NEVER a character. The glyphs
+//     this replaced (⟡ ✎ ⁂ ∵ ◎ ≣ ⊡ ⊙ ◬ ▦ ✳ ∞ ✦ ❧ ⊛ ∑ § ⬡ ❖ ▤ ✻ ⌘ ❋) each came
+//     from whatever font on the machine happened to contain them, so every tile
+//     had its own weight, size and baseline. Drawn icons share one grid and one
+//     line weight, so they cannot drift.
+//
+//   `desc` — EVERY destination has one. Sixteen of them used to be blank, so the
+//     grid was a mix of two-line and one-line tiles that never settled. It says
+//     what the thing is FOR: lower case, no full stop — a subtitle, not a
+//     sentence.
 export const SURFACES = [
-  { id: "workspace", label: "Workspace", sym: "▸", desc: "Work with your project", tabs: [
+  { id: "workspace", label: "Workspace", icon: "workspace", desc: "Work with your project", tabs: [
     // Create tools stay ungrouped (the section's front door); planning tools
     // sit under a "Plan" sub-header — all adv, so Simple mode shows no header.
-    { id: "chat",          label: "Chat",          sym: "⟡" },
-    { id: "prompt",        label: "Prompt IDE",    sym: "✎" },
-    { id: "consensus",     label: "Consensus",     sym: "⁂", desc: "where models agree" },
-    { id: "explain",       label: "Explain",       sym: "∵", desc: "a briefing from your decisions", adv: true },
-    { id: "goals",         label: "Goals",         sym: "◎", desc: "multi-step agent plans", adv: true, group: "Plan" },
-    { id: "tasks",         label: "Tasks",         sym: "≣", adv: true, group: "Plan" },
-    { id: "project-state", label: "Project State", sym: "⊡", adv: true, group: "Plan" },
+    { id: "chat",          label: "Chat",          icon: "chat",      desc: "talk to your agents" },
+    { id: "prompt",        label: "Prompt IDE",    icon: "prompt",    desc: "write and test prompts" },
+    { id: "consensus",     label: "Consensus",     icon: "consensus", desc: "where models agree" },
+    { id: "explain",       label: "Explain",       icon: "explain",   desc: "a briefing from your decisions", adv: true },
+    { id: "goals",         label: "Goals",         icon: "goals",     desc: "multi-step agent plans", adv: true, group: "Plan" },
+    { id: "tasks",         label: "Tasks",         icon: "tasks",     desc: "the background work queue", adv: true, group: "Plan" },
+    { id: "project-state", label: "Project State", icon: "project",   desc: "what Amagra knows about the repo", adv: true, group: "Plan" },
   ]},
-  { id: "runs", label: "Runs", sym: "⊙", desc: "Inspect agent executions", adv: true, tabs: [
-    { id: "runs",      label: "All runs",  sym: "⊙" },  // "Runs" tile inside the Runs section read as a duplicate
-    { id: "brain",     label: "Decisions", sym: "◬" },   // absorbs Trace (Live view) + Replay (inspector action)
-    { id: "inspector", label: "Inspector", sym: "⊚" },
+  { id: "runs", label: "Runs", icon: "runs", desc: "Inspect agent executions", adv: true, tabs: [
+    { id: "runs",      label: "All runs",  icon: "runs",      desc: "every execution, newest first" },
+    { id: "brain",     label: "Decisions", icon: "decisions", desc: "why each agent was chosen" },   // absorbs Trace + Replay
+    { id: "inspector", label: "Inspector", icon: "inspector", desc: "the context behind one answer" },
   ]},
-  { id: "cognition", label: "Cognition", sym: "∴", desc: "Monitor system health and reasoning", adv: true, tabs: [
+  { id: "cognition", label: "Cognition", icon: "cognition", desc: "Monitor system health and reasoning", adv: true, tabs: [
     // Dashboard = the at-a-glance health grid; Diagnostics folds the six focus
-    // views (UCI/Risk/Verifier/Events/Plan/Policy) into one tab with internal sections.
-    { id: "cog-dash",    label: "Dashboard",   sym: "▦", group: "Health" },
-    { id: "diagnostics", label: "Diagnostics", sym: "✳", group: "Health" },
-    { id: "cognitive",   label: "CogOS",       sym: "∞", group: "Advanced" },
-    { id: "skills",      label: "Skills",      sym: "✦", desc: "the routing skill graph", group: "Advanced" },
-    { id: "timeline",    label: "Timeline",    sym: "↺", group: "Advanced" },
+    // views (UCI/Risk/Verifier/Events/Plan/Policy) into one tab with sections.
+    { id: "cog-dash",    label: "Dashboard",   icon: "dashboard",   desc: "system health at a glance", group: "Health" },
+    { id: "diagnostics", label: "Diagnostics", icon: "diagnostics", desc: "risk, events, plans, policy", group: "Health" },
+    { id: "cognitive",   label: "CogOS",       icon: "cogos",       desc: "the cognitive runtime", group: "Advanced" },
+    { id: "skills",      label: "Skills",      icon: "skills",      desc: "the routing skill graph", group: "Advanced" },
+    { id: "timeline",    label: "Timeline",    icon: "timeline",    desc: "how the system learned", group: "Advanced" },
   ]},
-  { id: "memory", label: "Memory", sym: "◈", desc: "Explore stored knowledge and context", tabs: [
+  { id: "memory", label: "Memory", icon: "memory", desc: "Explore stored knowledge and context", tabs: [
     // Library is the friendly front door; the technical views live under one
     // sub-header so the section leads with what most users came for.
-    // Browser now hosts the old "Memory Map" as a Table|Map toggle (same
-    // /memory/stats data — no reason to be two tabs). "Mind Map" was a live
-    // agent-routing view, not memory — it moved to Analytics.
-    { id: "library",   label: "Library",    sym: "❧", desc: "documents Amagra has read" },
-    { id: "memory",    label: "Browser",    sym: "◈", adv: true, group: "Under the hood" },
-    { id: "knowledge", label: "Knowledge",  sym: "⊛", adv: true, group: "Under the hood" },
+    { id: "library",   label: "Library",   icon: "library",   desc: "documents Amagra has read" },
+    { id: "memory",    label: "Browser",   icon: "browser",   desc: "every memory it has kept", adv: true, group: "Under the hood" },
+    { id: "knowledge", label: "Knowledge", icon: "knowledge", desc: "how the memories connect", adv: true, group: "Under the hood" },
   ]},
   // "Analytics" (was "Research") — the surface now holds only live-data views.
-  // The old "Lab" was static explainer prose, not an experiment; it moved to
-  // Setup › Concepts. Mind Map (live routing network) joins Analysis here.
-  { id: "research", label: "Analytics", sym: "⊹", desc: "Analyze routing, memory, and agent behavior", adv: true, tabs: [
-    { id: "data",    label: "Analysis", sym: "∑" },
-    { id: "mindmap", label: "Mind Map", sym: "✧", desc: "the live routing network" },
+  { id: "research", label: "Analytics", icon: "analytics", desc: "Analyze routing, memory, and agent behavior", adv: true, tabs: [
+    { id: "data",    label: "Analysis", icon: "analysis", desc: "routing and memory in numbers" },
+    { id: "mindmap", label: "Mind Map", icon: "mindmap",  desc: "the live routing network" },
   ]},
   // "Setup" (was "Settings") — renamed so the surface stops colliding with the
-  // Settings *modal* in the launcher's System section. Essentials (Guide, Model,
-  // Releases) stay ungrouped; project-meta tabs sit under a "Project" sub-header.
-  { id: "settings", label: "Setup", sym: "⚙", desc: "Configure Amagra", tabs: [
-    { id: "guide",    label: "Guide",    sym: "§" },
-    { id: "concepts", label: "Concepts", sym: "◇", adv: true },  // ex-"Research Lab" explainer prose (C(t), calibration, memory types…)
-    { id: "model",    label: "Model",    sym: "⬡", desc: "choose which model answers" },
-    { id: "releases", label: "Releases", sym: "❖", desc: "the full build history" },  // absorbs the old Promises/Progress roadmap: ROADMAP upcoming + BUILD_PHASES history
-    { id: "log",      label: "Log",      sym: "▤", desc: "this session's activity", adv: true },
+  // Settings destination in the System section.
+  { id: "settings", label: "Setup", icon: "setup", desc: "Configure Amagra", tabs: [
+    { id: "guide",    label: "Guide",    icon: "guide",    desc: "how to use Amagra" },
+    { id: "concepts", label: "Concepts", icon: "concepts", desc: "the ideas behind the engine", adv: true },
+    { id: "model",    label: "Model",    icon: "model",    desc: "choose which model answers" },
+    { id: "releases", label: "Releases", icon: "releases", desc: "the full build history" },
+    { id: "log",      label: "Log",      icon: "log",      desc: "this session's activity", adv: true },
   ]},
-  // App chrome as first-class surfaces (v1.7.1) — Settings/Shortcuts/About used
-  // to pop modals from a hardcoded launcher section; they're now normal
-  // destinations so everything in the menu behaves the same way.
-  { id: "system", label: "System", sym: "✻", desc: "Preferences & app info", tabs: [
-    { id: "prefs",     label: "Settings",  sym: "⚙", desc: "tune behavior & interface" },
-    { id: "shortcuts", label: "Shortcuts", sym: "⌘", desc: "every keyboard binding" },
-    { id: "about",     label: "About",     sym: "❋", desc: "identity & live engine state" },
+  // App chrome as first-class surfaces (v1.7.1) — Settings/Shortcuts/About are
+  // normal destinations, so everything in the menu behaves the same way.
+  { id: "system", label: "System", icon: "system", desc: "Preferences & app info", tabs: [
+    { id: "prefs",     label: "Settings",  icon: "settings",  desc: "tune behavior & interface" },
+    { id: "shortcuts", label: "Shortcuts", icon: "shortcuts", desc: "every keyboard binding" },
+    { id: "about",     label: "About",     icon: "about",     desc: "identity & live engine state" },
   ]},
 ];
 
 // Derived lookups
-export const NAV = SURFACES.map(({ id, label, sym, desc, adv }) => ({ id, label, sym, desc, adv }));
+export const NAV = SURFACES.map(({ id, label, icon, desc, adv }) => ({ id, label, icon, desc, adv }));
 export const TABS_BY_SURFACE = Object.fromEntries(SURFACES.map(s => [s.id, s.tabs]));
 export const SURFACE_BY_TAB  = Object.fromEntries(SURFACES.flatMap(s => s.tabs.map(t => [t.id, s.id])));
 export const DEFAULT_TAB     = Object.fromEntries(SURFACES.map(s => [s.id, s.tabs[0].id]));

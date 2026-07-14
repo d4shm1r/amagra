@@ -9,6 +9,7 @@
 import { Fragment, useEffect, useState, useCallback, useRef } from "react";
 import { API } from "@/lib/api";
 import { SURFACES, NAV, surfaceOf } from "@/config/navConfig";
+import { Icon } from "@/components/ui";
 import { T, LUX, FONT_UI, FONT_DISPLAY, EASE, DUR } from "@/styles/theme";
 
 // Drive ChatTab (which owns the conversation state) from here via window events.
@@ -18,7 +19,7 @@ export const chatEvent = (name, detail) =>
 // `primary` marks the menu's one visual anchor (New chat): a double-width tile
 // with icon-beside-text and the gold chip worn permanently — everything else
 // stays a quiet square, so the eye has a landing point.
-function Tile({ label, sym, sub, active, primary, onClick, ariaLabel }) {
+function Tile({ label, icon, sub, active, primary, onClick, ariaLabel }) {
   const gold = active || primary;
   return (
     <button
@@ -30,7 +31,11 @@ function Tile({ label, sym, sub, active, primary, onClick, ariaLabel }) {
         alignItems: primary ? "center" : undefined,
         gap: primary ? 13 : 11, textAlign: "left", userSelect: "none",
         gridColumn: primary ? "span 2" : undefined,
-        padding: "15px 15px", minHeight: 96, cursor: "pointer",
+        // Fixed height, not min-height: every tile now carries an icon, a label
+        // and a description, so they all want the same box. minHeight let a tile
+        // grow if its text wrapped, and one tall tile drags its whole grid row
+        // with it — the ragged look.
+        padding: "15px 15px", height: 104, cursor: "pointer",
         position: "relative", overflow: "hidden",   // hosts the hover sheen sweep
         borderRadius: 14, fontFamily: FONT_UI,
         border: `1px solid ${gold ? T.accent : LUX.tileBorder}`,
@@ -45,19 +50,23 @@ function Tile({ label, sym, sub, active, primary, onClick, ariaLabel }) {
         transition: `transform 260ms ${EASE.out}, border-color ${DUR.slow} ${EASE.out}, background ${DUR.slow} ${EASE.out}, box-shadow 260ms ${EASE.out}`,
       }}
     >
-      {/* app-icon-style chip — idle: cream face + gold hairline ring (the
-          menu-fab / app-icon language); active/primary: filled gold. */}
+      {/* The app-icon chip — idle: cream face + gold hairline ring (the menu-fab
+          language); active/primary: filled gold. The mark inside is drawn (see
+          components/ui/Icon.jsx), so every chip carries the same line weight and
+          the same optical size — which is the whole point. */}
       <span aria-hidden className="tile-ico" style={{
-        width: primary ? 38 : 30, height: primary ? 38 : 30, borderRadius: primary ? 11 : 9, flexShrink: 0,
+        width: primary ? 38 : 32, height: primary ? 38 : 32, borderRadius: primary ? 11 : 10, flexShrink: 0,
         display: "inline-flex", alignItems: "center", justifyContent: "center",
-        fontSize: primary ? 19 : 15, lineHeight: 1, fontFamily: FONT_DISPLAY,
         color: gold ? "#6C4C00" : "#8A5A00",
         background: gold ? "linear-gradient(135deg,#FFE880 0%,#DEB838 55%,#C48808 100%)"
                          : "linear-gradient(160deg,#FFFDF6 0%,#F6EEDC 100%)",
         border: `1px solid ${gold ? "transparent" : "rgba(196,136,8,0.32)"}`,
         boxShadow: gold ? "inset 0 1px 1px rgba(255,248,215,0.6)"
                         : "inset 0 1px 1px rgba(255,255,255,0.9), 0 1px 3px rgba(95,75,20,0.08)",
-      }}>{sym}</span>
+        transition: `color ${DUR.base} ${EASE.out}, background ${DUR.slow} ${EASE.out}, border-color ${DUR.slow} ${EASE.out}`,
+      }}>
+        <Icon name={icon} size={primary ? 20 : 17} />
+      </span>
       <div style={{ minWidth: 0, width: "100%" }}>
         <div className="tile-label" style={{
           fontSize: primary ? 14.5 : 13, fontWeight: active || primary ? 700 : 600,
@@ -65,18 +74,28 @@ function Tile({ label, sym, sub, active, primary, onClick, ariaLabel }) {
           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           transition: `color ${DUR.base} ${EASE.out}`,
         }}>{label}</div>
-        {sub && <div style={{ fontSize: 10.5, color: T.muted, marginTop: 3, lineHeight: 1.3,
-          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</div>}
+        {/* Every destination has a description now, so this line is never empty
+            and the tiles all sit on the same baseline. Two lines maximum: a long
+            one wraps and clamps rather than being cut mid-word by an ellipsis. */}
+        {sub && <div style={{
+          fontSize: 10.5, color: T.muted, marginTop: 3, lineHeight: 1.35,
+          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+        }}>{sub}</div>}
       </div>
     </button>
   );
 }
 
-function Section({ sym, title, desc, children, extra, delay = 0 }) {
+function Section({ icon, title, desc, children, extra, delay = 0 }) {
   return (
     <section className="launch-sec" style={{ marginBottom: 48, animationDelay: `${delay}ms` }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginBottom: 12, paddingLeft: 2, userSelect: "none" }}>
-        <span aria-hidden style={{ fontSize: 14, color: T.accent, fontFamily: FONT_DISPLAY }}>{sym}</span>
+      {/* alignItems: center, not baseline — an SVG has no baseline to sit on, so
+          `baseline` dropped the section mark a couple of pixels below its label. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 12, paddingLeft: 2, userSelect: "none" }}>
+        <span aria-hidden style={{ color: T.accent, display: "inline-flex" }}>
+          <Icon name={icon} size={15} />
+        </span>
         <h3 style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: "0.14em",
           textTransform: "uppercase", color: T.muted, fontFamily: FONT_UI }}>{title}</h3>
         {desc && <span style={{ fontSize: 11, color: T.mutedLt }}>· {desc}</span>}
@@ -144,7 +163,11 @@ function ThreadRow({ thread, onClick }) {
         transition: `background ${DUR.base} ${EASE.out}, border-color ${DUR.base} ${EASE.out}, transform ${DUR.base} ${EASE.out}, box-shadow ${DUR.base} ${EASE.out}`,
       }}
     >
-      <span aria-hidden style={{ fontSize: 12, lineHeight: 1, color: T.accent2, fontFamily: FONT_DISPLAY, flexShrink: 0 }}>✎</span>
+      {/* The last glyph in the menu, now drawn like the rest — a thread row used
+          a bare ✎ that sat a pixel high and a shade heavier than the tile marks. */}
+      <span aria-hidden style={{ color: T.accent2, display: "inline-flex", flexShrink: 0 }}>
+        <Icon name="chat" size={13} />
+      </span>
       <span style={{
         flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 600, color: T.mutedLt,
         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
@@ -247,9 +270,9 @@ export default function AppLauncher({
   const hit = (label) => label.toLowerCase().includes(q);
 
   const actions = [
-    { label: "New chat", sym: "＋", sub: "start a fresh thread",  run: newChat, primary: true },
-    { label: "Context",  sym: "◈", sub: "what the model sees",   run: () => openChatPanel("context") },
-    { label: "Advanced", sym: "⚙", sub: "agent · reflect · pin", run: () => openChatPanel("advanced") },
+    { label: "New chat", icon: "plus",     sub: "start a fresh thread",  run: newChat, primary: true },
+    { label: "Context",  icon: "context",  sub: "what the model sees",   run: () => openChatPanel("context") },
+    { label: "Advanced", icon: "advanced", sub: "agent · reflect · pin", run: () => openChatPanel("advanced") },
   ].filter(a => !q || hit(a.label));
 
   const visibleSurfaces = (q
@@ -316,8 +339,12 @@ export default function AppLauncher({
           transition: transform 780ms cubic-bezier(0.33, 0.7, 0.3, 1);
         }
         .tile-ico { transition: transform 300ms ${EASE.out}, background ${DUR.base} ${EASE.out}, box-shadow 300ms ${EASE.out}, color ${DUR.base} ${EASE.out}; }
+        /* Hover lights the chip gold and lifts it a touch. It used to also
+           rotate(-3deg): with a glyph that read as a wink, but a drawn icon on a
+           1.6px grid just goes soft and crooked — a rotated stroke lands between
+           pixels. The lift is the affordance; the tilt was noise. */
         .launch-tile:hover .tile-ico {
-          transform: translateY(-1px) scale(1.1) rotate(-3deg);
+          transform: translateY(-1px) scale(1.06);
           background: linear-gradient(135deg,#FFF3C4,#EACB62) !important; color: #6C4C00 !important;
           box-shadow: 0 4px 12px rgba(196,136,8,0.30), 0 0 18px rgba(222,184,56,0.20), inset 0 1px 1px rgba(255,248,215,0.8);
         }
@@ -400,10 +427,10 @@ export default function AppLauncher({
         <div className="launch-scroll" style={{ flex: 1, overflowY: "auto", paddingTop: 4, paddingBottom: 34 }}>
           {/* Conversation — the rehomed chat side rail (Threads / Context / Advanced) */}
           {(actions.length > 0 || shownThreads.length > 0) && (
-            <Section sym="⟡" title="Conversation" desc="your chat, threads & controls"
+            <Section icon="chat" title="Conversation" desc="your chat, threads & controls"
               extra={<RecentThreads threads={shownThreads} onSwitch={switchThread} />}>
               {actions.map(a => (
-                <Tile key={a.label} label={a.label} sym={a.sym} sub={a.sub}
+                <Tile key={a.label} label={a.label} icon={a.icon} sub={a.sub}
                   primary={a.primary} onClick={a.run} />
               ))}
             </Section>
@@ -413,13 +440,13 @@ export default function AppLauncher({
               (e.g. Cognition's Health/Advanced) get full-row sub-headers. */}
           {visibleSurfaces.map(([s, tabs], i) => {
             const tile = (t) => (
-              <Tile key={t.id} label={t.label} sym={t.sym || s.sym} sub={t.desc}
+              <Tile key={t.id} label={t.label} icon={t.icon || s.icon} sub={t.desc}
                 active={t.id === activeTab}
                 onClick={() => go(t.id)} />
             );
             const groups = [...new Set(tabs.map(t => t.group).filter(Boolean))];
             return (
-              <Section key={s.id} sym={s.sym} title={s.label} desc={s.desc} delay={(i + 1) * 45}>
+              <Section key={s.id} icon={s.icon} title={s.label} desc={s.desc} delay={(i + 1) * 45}>
                 {tabs.filter(t => !t.group).map(tile)}
                 {groups.map(g => (
                   <Fragment key={g}>
