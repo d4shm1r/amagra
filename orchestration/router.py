@@ -6,8 +6,12 @@ hybrid_router() for a diagnostic comparison and then discard it (core_brain alwa
 won), so it has been removed from the hot path. core_brain is the sole routing
 authority. This module is kept as a library — its score()/decide() seam has
 dedicated tests (test_routing_seam, test_orchestration_router) and KEYWORD_MAP is
-still consumed by evaluation/acm_rg_eval. Do not re-wire hybrid_router into the
-coordinator without revisiting #20.
+still consumed by workbench/evaluation/acm_rg_eval. Do not re-wire hybrid_router
+into the coordinator without revisiting #20.
+
+Being off the hot path does NOT make this module dead — it is the only importer of
+infrastructure/dispatch.py (the delta-algebra reducer), and providers/manifest.py
+is written to eventually replace KEYWORD_MAP here. Deleting it costs both.
 """
 
 import re

@@ -400,14 +400,22 @@ export default function App() {
           </div>
 
           {apiStatus !== "online" && (
-            <div style={{ padding: "16px 28px 0", flexShrink: 0 }}>
-              <ApiOfflineBanner onRetry={checkHealth} checking={apiStatus === "checking"} />
+            // The banner is a body element, so it gets the body's measure — it
+            // used to run the full width of the window while every card beneath
+            // it stopped at the column, which read as two different pages.
+            <div style={{ padding: `${LAYOUT.gutterY}px ${LAYOUT.gutter}px 0`, flexShrink: 0 }}>
+              <Column>
+                <ApiOfflineBanner onRetry={checkHealth} checking={apiStatus === "checking"} />
+              </Column>
             </div>
           )}
 
           <div style={{
             flex: 1,
-            overflow: activeTab === "chat" || activeTab === "prompt" ? "hidden" : "auto",
+            overflowY: activeTab === "chat" || activeTab === "prompt" ? "hidden" : "auto",
+            // The full-bleed PageHeader is 100vw wide inside this padded box;
+            // clipping X stops that from producing a horizontal scrollbar.
+            overflowX: "hidden",
             padding: activeTab === "chat" || activeTab === "prompt" ? 0 : `${LAYOUT.gutterY}px ${LAYOUT.gutter}px`,
             display: activeTab === "chat" || activeTab === "prompt" ? "flex" : "block",
             flexDirection: activeTab === "chat" || activeTab === "prompt" ? "column" : undefined,
