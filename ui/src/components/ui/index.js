@@ -11,7 +11,7 @@
 // If a view needs something this kit doesn't have, the fix is to add it here,
 // not to hand-roll it at the call site. `npm run lint:ui` enforces this.
 
-export { Page, Stack, Row, Grid, GridSpan, Spacer, Divider } from "./Layout";
+export { Page, Column, Stack, Row, Grid, GridSpan, Spacer, Divider } from "./Layout";
 export { Display, Title, Subtitle, Lead, Body, Small, Caption, Micro, Eyebrow, Inline, Code, CodeBlock } from "./Text";
 export { Button, IconButton, RefreshButton } from "./Button";
 export { Card, CardHeader, Section, ObsPanel, Well, Tile, ListTile } from "./Card";

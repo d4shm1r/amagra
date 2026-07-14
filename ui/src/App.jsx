@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, Suspense, startTransition } from "react";
 import { API } from "@/lib/api";
-import { ApiOfflineBanner } from "@/components/ui";
+import { ApiOfflineBanner, Column } from "@/components/ui";
 import Onboarding  from "@/components/layout/Onboarding";
 import AppLauncher from "@/components/layout/AppLauncher";
 // Every routed view, registered in tabs/index.js. Chat + Home are eager (they
@@ -18,7 +18,7 @@ import {
 import {
   SURFACE_BY_TAB, DEFAULT_TAB, TAB_ALIASES, VALID_TABS,
 } from "@/config/navConfig";
-import { T, TYPE, FONT_UI, FONT_DISPLAY } from "@/styles/theme";
+import { T, TYPE, LAYOUT, FONT_UI, FONT_DISPLAY } from "@/styles/theme";
 
 // ── App-wide settings ─────────────────────────────────────────
 const DEFAULT_SETTINGS = {
@@ -408,7 +408,7 @@ export default function App() {
           <div style={{
             flex: 1,
             overflow: activeTab === "chat" || activeTab === "prompt" ? "hidden" : "auto",
-            padding: activeTab === "chat" || activeTab === "prompt" ? 0 : "24px 28px",
+            padding: activeTab === "chat" || activeTab === "prompt" ? 0 : `${LAYOUT.gutterY}px ${LAYOUT.gutter}px`,
             display: activeTab === "chat" || activeTab === "prompt" ? "flex" : "block",
             flexDirection: activeTab === "chat" || activeTab === "prompt" ? "column" : undefined,
           }}>
@@ -424,11 +424,12 @@ export default function App() {
               </Suspense>
             )}
 
-            {/* All other tabs share one centered content column. One Suspense
-                boundary covers every lazy tab chunk (Home stays eager, so no
-                fallback flash on the landing view). */}
+            {/* All other tabs share one centered content column — <Column>, whose
+                width is LAYOUT.content in styles/theme.js and nowhere else. One
+                Suspense boundary covers every lazy tab chunk (Home stays eager,
+                so no fallback flash on the landing view). */}
             {activeTab !== "chat" && activeTab !== "prompt" && (
-            <div style={{ maxWidth: 1020, margin: "0 auto", width: "100%" }}>
+            <Column>
               <Suspense fallback={
                 <div style={{ padding: "48px 0", textAlign: "center",
                               color: T.muted, fontSize: 13, fontFamily: FONT_DISPLAY, letterSpacing: "0.04em" }}>
@@ -463,7 +464,7 @@ export default function App() {
               {activeTab === "shortcuts"     && <ShortcutsTab />}
               {activeTab === "about"         && <AboutTab coherence={coherence} apiStatus={apiStatus} onNav={navTo} />}
               </Suspense>
-            </div>
+            </Column>
             )}
           </div>
         </div>

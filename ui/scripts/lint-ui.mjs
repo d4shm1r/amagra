@@ -85,6 +85,12 @@ const RULES = [
     msg: "<style> block — CSS belongs in styles/index.css" },
   { id: "token-import", re: /from\s+["']@\/styles\/theme["']/,
     msg: "imports raw design tokens — a view should only import from @/components/ui|forms" },
+  // The app has already lost this fight once: a past phase stripped `maxWidth +
+  // margin: 0 auto` from 16 tab roots to make App the sole layout authority, and
+  // four files had quietly grown it back by the time the kit landed. The width of
+  // the page is LAYOUT.content, rendered by <Column>. Nothing else centers.
+  { id: "self-centering", re: /margin(Left|Right)?:\s*["'`][^"'`]*\bauto\b/,
+    msg: "a view must not center itself — the shell owns the column (<Column>, LAYOUT in theme.js)" },
 ];
 
 function walk(dir) {

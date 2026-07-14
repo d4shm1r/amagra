@@ -4,10 +4,27 @@
 // geometry. Every gap here lands on the 4px SPACE scale, so vertical rhythm is
 // a property of the system instead of a per-tab guess.
 import { Children } from "react";
-import { SPACE, DUR, EASE, T } from "@/styles/theme";
+import { SPACE, DUR, EASE, T, LAYOUT } from "@/styles/theme";
 
 const GAP = { none: 0, xs: SPACE[1], sm: SPACE[2], md: SPACE[3], lg: SPACE[4], xl: SPACE[6], xxl: SPACE[7] };
 const gapOf = (g) => (typeof g === "number" ? g : GAP[g] ?? GAP.md);
+
+/** The centered content column — the ONE thing that decides how wide the body
+ *  of a tab is. Both widths come from LAYOUT in styles/theme.js:
+ *
+ *    <Column>                  the dashboard measure (LAYOUT.content)
+ *    <Column measure="reading">  the prose measure   (LAYOUT.reading)
+ *
+ *  A view must never center itself with its own maxWidth + `margin: 0 auto`.
+ *  That is how the app ended up with five competing widths the last time. The
+ *  shell owns the column; the view fills whatever it is given. */
+export function Column({ measure = "content", children }) {
+  return (
+    <div style={{ maxWidth: LAYOUT[measure] ?? measure, margin: "0 auto", width: "100%" }}>
+      {children}
+    </div>
+  );
+}
 
 /** The tab shell. Every routed view is wrapped in exactly one of these — it
  *  owns the enter animation so no tab hand-rolls `animation: fadeIn`. */

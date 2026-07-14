@@ -127,3 +127,25 @@ export const SPACE = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 7: 32, 8: 40, 10:
 
 // Border radius scale — rounder than the old VS Code look
 export const RADIUS = { sm: 6, md: 9, lg: 14, xl: 20 };
+
+// ── Page measure — THE width knobs ───────────────────────────────
+// How wide the body of a tab is. Change `content` here and every tab in the
+// app moves together; nothing else decides its own width. Accepts anything
+// `max-width` accepts, so "85%" or "72rem" work as well as a pixel number.
+//
+// There are exactly two measures, because there are exactly two kinds of
+// surface, and a third would just be a place for drift to hide:
+//
+//   content — the dashboard column. Tables, cards, graphs, stat strips.
+//   reading — the prose measure. Chat thread, Research article. Narrower on
+//             purpose: long lines of text are hard to track back to the left
+//             margin, and no amount of screen width changes that.
+//
+// Rendered by <Column> (components/ui/Layout.jsx). A view must never center
+// itself — the shell owns the column, the view fills it.
+export const LAYOUT = {
+  content: 1020,
+  reading: 860,
+  gutter:  28,   // horizontal padding of the scroll surface
+  gutterY: 24,   // vertical padding of the scroll surface
+};

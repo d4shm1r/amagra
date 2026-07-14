@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AGENTS, PROGRESS_STEPS, AGENT_ID_REVERSE } from "@/config/constants";
 import AgentContextPanel from "@/components/panels/AgentContextPanel";
-import { T, FONT_DISPLAY } from "@/styles/theme";
+import { T, LAYOUT, FONT_DISPLAY } from "@/styles/theme";
 
 // ── Signal Pill ────────────────────────────────────────────────
 function Pill({ label, color, title }) {
@@ -597,7 +597,10 @@ export default function ChatTab({
         {/* ── Message list ── */}
         <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
           <div style={{
-            maxWidth: 820, margin: "0 auto", padding: "24px 24px 14px",
+            // The thread and the composer below must share one measure, or the
+            // input visibly disagrees with the messages above it. Both read
+            // LAYOUT.reading — the app's prose measure. Never a local number.
+            maxWidth: LAYOUT.reading, margin: "0 auto", padding: "24px 24px 14px",
             display: "flex", flexDirection: "column", gap: 14,
           }}>
 
@@ -838,7 +841,7 @@ export default function ChatTab({
         </div>
 
         {/* ── Pill input ── */}
-        <div style={{ flexShrink: 0, padding: "0 20px 18px", maxWidth: 820, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+        <div style={{ flexShrink: 0, padding: "0 20px 18px", maxWidth: LAYOUT.reading, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
           {editingIndex != null && (
             <div style={{
               display: "flex", alignItems: "center", gap: 8, marginBottom: 8,

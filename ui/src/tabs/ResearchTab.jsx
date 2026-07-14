@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
-import { T as THEME, SEM, FONT_UI as fUI, FONT_MONO as fMono } from "@/styles/theme";
+import { T as THEME, SEM, LAYOUT, FONT_UI as fUI, FONT_MONO as fMono } from "@/styles/theme";
 
 // This tab used to carry its own shadow palette + font stacks; it now reads
 // from theme.js. `bg` here means an inset well, which is the theme's surface2.
@@ -9,7 +9,9 @@ const T = { ...THEME, bg: THEME.surface2 };
 
 // Article prose reads in the same serif voice as chat messages (.msg-content).
 const fBody = "'Charter', 'Source Serif Pro', 'Iowan Old Style', Georgia, serif";
-const ARTICLE_MAX = 860;
+// The article column is the app's prose measure — the same one the chat thread
+// uses. Owned by LAYOUT.reading in styles/theme.js, never a number here.
+const ARTICLE_MAX = LAYOUT.reading;
 
 // ── KaTeX math rendering ───────────────────────────────────────
 function KTex({ src, display = false }) {
