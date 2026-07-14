@@ -18,6 +18,7 @@ export { Card, CardHeader, Section, ObsPanel, Well, Tile, ListTile } from "./Car
 export { Disclosure, DisclosureBody, BulletList } from "./Disclosure";
 export { CommandList } from "./CommandList";
 export { Menu, MenuItem, MenuLabel, MenuDivider } from "./Menu";
+export { Icon, ICON_NAMES } from "./Icon";
 export { Pill, Tag, Dot } from "./Pill";
 export { Wordmark } from "./Wordmark";
 export { SegmentedControl } from "./SegmentedControl";
