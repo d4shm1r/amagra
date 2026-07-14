@@ -144,7 +144,7 @@ export const RADIUS = { sm: 6, md: 9, lg: 14, xl: 20 };
 // Rendered by <Column> (components/ui/Layout.jsx). A view must never center
 // itself — the shell owns the column, the view fills it.
 export const LAYOUT = {
-  content: 1020,
+  content: 1060,
   reading: 860,
   gutter:  28,   // horizontal padding of the scroll surface
   gutterY: 24,   // vertical padding of the scroll surface
