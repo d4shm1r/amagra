@@ -9,8 +9,16 @@ behind a swappable interface — mirroring ``MemoryBackend`` and ``ModelProvider
 
 `BrainRouter` is a thin, behavior-preserving adapter over ``core_brain.think``.
 `get_router()` returns the default; `set_router()` swaps it (tests / future
-extension loading). Wiring the coordinator onto ``get_router()`` is a deliberate
-follow-up — nothing imports this module yet, so it is risk-free to add.
+extension loading).
+
+STATUS: wired. ``orchestration/coordinator.py`` routes through ``get_router()``,
+so this module is on the live path — it is loaded at boot and every request goes
+through it. (It once said "nothing imports this module yet"; that stopped being
+true when the coordinator was moved onto the seam, and the stale note survived
+long enough to convince a reader the whole routing layer was dead code. It is
+not: ``learned_router`` and ``semantic_fallback`` are both imported lazily inside
+``core_brain.think`` and run per request. Only ``router.py`` is off the hot path,
+and it says so itself.)
 """
 from __future__ import annotations
 
