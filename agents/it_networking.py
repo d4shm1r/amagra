@@ -1,11 +1,7 @@
-from langchain_core.messages import SystemMessage
-from langgraph.graph import StateGraph, START, END
 import subprocess
-import sys
-from memory_core.context import get_memory_context, save_to_memory
-import os  # path resolution
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from models.state import AgentState
+
+from agents.runner import Agent
+from agents.spec import AgentSpec, Probe
 
 # ── System Prompt ─────────────────────────────────────────────
 IT_SYSTEM_PROMPT = """
@@ -68,85 +64,34 @@ def check_open_ports(host: str = "localhost") -> str:
     except Exception as e:
         return f"Port check failed: {str(e)}"
 
-# ── Agent Node ────────────────────────────────────────────────
-def it_agent_node(state: AgentState):
-    """Main IT & Networking agent node."""
-    task = state.get("task", "")
+# ── Spec ──────────────────────────────────────────────────────
+SPEC = AgentSpec(
+    name="it_networking",
+    prompt=IT_SYSTEM_PROMPT,
+    probe_intro="Here are the live diagnostic results from this system:",
+    probe_outro="Now answer the user's question using these real results.",
+    probes=(
+        Probe(
+            triggers=("ping", "latency", "slow", "speed", "connection"),
+            label="PING google.com",
+            run=lambda _task: ping_host("google.com"),
+        ),
+        Probe(
+            triggers=("interface", "ip", "wifi", "ethernet", "network"),
+            label="NETWORK INTERFACES",
+            run=lambda _task: check_network_interfaces(),
+        ),
+        Probe(
+            triggers=("dns", "domain", "resolve", "website"),
+            label="DNS CHECK",
+            run=lambda _task: check_dns(),
+        ),
+        Probe(
+            triggers=("port", "service", "listening", "firewall"),
+            label="OPEN PORTS",
+            run=lambda _task: check_open_ports(),
+        ),
+    ),
+)
 
-    # -- Memory: search before responding --
-    _mem_ctx = get_memory_context(task, "it_networking")
-    from core.user_profile import get_profile_context
-    _effective_prompt = IT_SYSTEM_PROMPT.format(user_profile=get_profile_context(task))
-    if _mem_ctx:
-        _effective_prompt += "\n\n" + _mem_ctx
-    # ----------------------------------------
-
-
-    # Auto-run relevant tools based on task keywords
-    tool_context = ""
-
-    if any(word in task.lower() for word in ["ping", "latency", "slow", "speed", "connection"]):
-        tool_context += f"\n[PING google.com]\n{ping_host('google.com')}"
-
-    if any(word in task.lower() for word in ["interface", "ip", "wifi", "ethernet", "network"]):
-        tool_context += f"\n[NETWORK INTERFACES]\n{check_network_interfaces()}"
-
-    if any(word in task.lower() for word in ["dns", "domain", "resolve", "website"]):
-        tool_context += f"\n[DNS CHECK]\n{check_dns()}"
-
-    if any(word in task.lower() for word in ["port", "service", "listening", "firewall"]):
-        tool_context += f"\n[OPEN PORTS]\n{check_open_ports()}"
-
-    # Build messages for LLM
-    from core.context_tools import trim_messages
-    trimmed = trim_messages(state["messages"], max_messages=10)
-    messages = [
-        SystemMessage(content=_effective_prompt),
-        *trimmed,
-    ]
-
-    # Inject tool results if any were collected
-    if tool_context:
-        from langchain_core.messages import HumanMessage
-        messages.append(HumanMessage(
-            content=f"Here are the live diagnostic results from this system:\n{tool_context}\n\nNow answer the user's question using these real results."
-        ))
-
-    from tools.agent_runtime import respond_with_optional_tools
-    response = respond_with_optional_tools(messages, _effective_prompt, task)
-
-    # -- Memory: save after responding --
-    save_to_memory("it_networking", "chat", response.content,
-                   {"task": task[:120] if task else ""})
-    # ------------------------------------
-
-
-    return {
-        "messages":     [response],
-        "active_agent": "it_networking",
-        "result":       response.content,
-    }
-
-# ── Build Subgraph ────────────────────────────────────────────
-def build_it_agent():
-    graph = StateGraph(AgentState)
-    graph.add_node("it_agent", it_agent_node)
-    graph.add_edge(START, "it_agent")
-    graph.add_edge("it_agent", END)
-    return graph.compile()
-
-it_agent = build_it_agent()
-
-# ── Standalone Test ───────────────────────────────────────────
-if __name__ == "__main__":
-    print("🌐 Testing IT & Networking Agent...\n")
-    result = it_agent.invoke({
-        "messages":     [{"role": "user", "content": "Check my network connection and DNS, is everything working?"}],
-        "active_agent": "",
-        "task":         "Check my network connection and DNS, is everything working?",
-        "result":       "",
-        "next_agent":   "",
-        "memory":       {},
-    })
-    print("── IT AGENT RESPONSE ──")
-    print(result["messages"][-1].content)
+it_agent = Agent(SPEC)

@@ -1,12 +1,7 @@
-from langchain_core.messages import SystemMessage, HumanMessage
-from langgraph.graph import StateGraph, START, END
 import subprocess
-import sys
-from memory_core.context import get_memory_context, save_to_memory
-import os  # path resolution
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from models.state import AgentState
-from core.context_tools import trim_messages
+
+from agents.runner import Agent
+from agents.spec import AgentSpec, Probe
 
 # ── System Prompt ─────────────────────────────────────────────
 WEB_DEV_SYSTEM_PROMPT = """
@@ -36,6 +31,7 @@ When writing React components always include:
 - Dependency arrays in useEffect / useMemo / useCallback
 - Loading and error states for data fetching"""
 
+
 # ── Tools ─────────────────────────────────────────────────────
 def check_node_version() -> str:
     """Check Node.js and npm versions."""
@@ -49,56 +45,19 @@ def check_node_version() -> str:
             results.append(f"  {cmd[0]}: not installed")
     return "Node.js environment:\n" + "\n".join(results)
 
-# ── Agent Node ────────────────────────────────────────────────
-def web_dev_agent_node(state: AgentState):
-    task = state.get("task", "")
 
-    _mem_ctx = get_memory_context(task, "web_dev")
-    from core.user_profile import get_profile_context
-    _effective_prompt = WEB_DEV_SYSTEM_PROMPT.format(user_profile=get_profile_context(task))
-    if _mem_ctx:
-        _effective_prompt += f"\n\n{_mem_ctx}"
+# ── Spec ──────────────────────────────────────────────────────
+SPEC = AgentSpec(
+    name="web_dev",
+    prompt=WEB_DEV_SYSTEM_PROMPT,
+    probe_intro="System tool results:",
+    probes=(
+        Probe(
+            triggers=("node", "npm", "version", "installed"),
+            label="NODE ENV",
+            run=lambda _task: check_node_version(),
+        ),
+    ),
+)
 
-    tool_context = ""
-
-    if any(w in task.lower() for w in ["node", "npm", "version", "installed"]):
-        tool_context += f"\n[NODE ENV]\n{check_node_version()}"
-
-    messages = [
-        SystemMessage(content=_effective_prompt),
-        *trim_messages(state["messages"], max_messages=10),
-    ]
-
-    if tool_context:
-        messages.append(HumanMessage(
-            content=f"System tool results:\n{tool_context}\n\nUse these in your response."
-        ))
-
-    from tools.agent_runtime import respond_with_optional_tools
-    response = respond_with_optional_tools(messages, _effective_prompt, task)
-
-    save_to_memory("web_dev", "chat", response.content,
-                   {"task": task[:120] if task else ""})
-
-    return {
-        "messages":     [response],
-        "active_agent": "web_dev",
-        "result":       response.content,
-    }
-
-# ── Build Subgraph ────────────────────────────────────────────
-def build_web_dev_agent():
-    graph = StateGraph(AgentState)
-    graph.add_node("web_dev_agent", web_dev_agent_node)
-    graph.add_edge(START, "web_dev_agent")
-    graph.add_edge("web_dev_agent", END)
-    return graph.compile()
-
-web_dev_agent = build_web_dev_agent()
-
-if __name__ == "__main__":
-    result = web_dev_agent.invoke({
-        "messages": [{"role": "user", "content": "Write a React hook that debounces a search input value."}],
-        "active_agent": "", "task": "react debounce hook", "result": "", "next_agent": "", "memory": {},
-    })
-    print(result["messages"][-1].content)
+web_dev_agent = Agent(SPEC)

@@ -1,14 +1,11 @@
-from langchain_core.messages import SystemMessage, HumanMessage
-from langgraph.graph import StateGraph, START, END
 import os
-import sys
 import json
 from datetime import datetime
-from memory_core.context import get_memory_context, save_to_memory
+
+from agents.runner import Agent
+from agents.spec import AgentSpec, Probe
+
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, _ROOT)
-from models.state import AgentState
-from core.context_tools import trim_messages
 
 # ── System Prompt ─────────────────────────────────────────────
 KNOWLEDGE_SYSTEM_PROMPT = """
@@ -172,83 +169,50 @@ def list_completed_lessons() -> str:
         lines.append(f"  ✅ {topic}")
     return "\n".join(lines)
 
-# ── Agent Node ────────────────────────────────────────────────
-def knowledge_agent_node(state: AgentState):
-    """Main Knowledge & Learning agent node."""
-    task = state.get("task", "")
+# ── Probes ────────────────────────────────────────────────────
+def _roadmap_probe(task: str) -> str:
+    """A roadmap only fires when the task names a subject we have one for —
+    mentioning "learn" alone contributes nothing."""
+    lowered = task.lower()
+    for subject in ["networking", "python", "ai", "linux"]:
+        if subject in lowered:
+            return get_learning_roadmap(subject)
+    return ""
 
-    # -- Memory: search before responding --
-    _mem_ctx = get_memory_context(task, "knowledge_learning")
-    from core.user_profile import get_profile_context
-    _effective_prompt = KNOWLEDGE_SYSTEM_PROMPT.format(user_profile=get_profile_context(task))
-    if _mem_ctx:
-        _effective_prompt = KNOWLEDGE_SYSTEM_PROMPT + chr(10) + chr(10) + _mem_ctx
-    # ----------------------------------------
 
-    tool_context = ""
-
-    # Load progress only when user asks about it
+def _progress_probe(_task: str) -> str:
     progress = load_learning_progress()
-
-    if any(w in task.lower() for w in ["roadmap", "path", "where to start", "learn", "study plan"]):
-        for subject in ["networking", "python", "ai", "linux"]:
-            if subject in task.lower():
-                tool_context += f"\n[ROADMAP]\n{get_learning_roadmap(subject)}"
-                break
-
-    if any(w in task.lower() for w in ["progress", "history", "what have i", "lessons"]):
-        tool_context += f"\n[STUDENT PROGRESS]\nLessons completed: {progress['lessons_completed']}\nTopics: {', '.join(progress['topics_covered']) or 'none yet'}"
-
-    messages = [
-        SystemMessage(content=_effective_prompt),
-        *trim_messages(state["messages"], max_messages=10),
-    ]
-
-    if tool_context:
-        messages.append(HumanMessage(
-            content=f"Student context:\n{tool_context}\n\nTeach accordingly."
-        ))
-
-    from tools.agent_runtime import respond_with_optional_tools
-    response = respond_with_optional_tools(messages, _effective_prompt, task)
-
-    # -- Memory: save after responding --
-    save_to_memory("knowledge_learning", "lesson", response.content,
-                   {"task": task[:120] if task else ""})
-    # ------------------------------------
+    topics = ", ".join(progress["topics_covered"]) or "none yet"
+    return f"Lessons completed: {progress['lessons_completed']}\nTopics: {topics}"
 
 
-    # Auto-save lesson and update progress
-    save_lesson(task[:60], response.content)
-    progress_result = save_learning_progress(task[:60])
-    print(f"\n💾 {progress_result}")
+def _record_lesson(task: str, answer: str) -> None:
+    """The one agent with side effects past memory: it files the lesson and
+    advances the student's progress."""
+    save_lesson(task[:60], answer)
+    print(f"\n💾 {save_learning_progress(task[:60])}")
 
-    return {
-        "messages":     [response],
-        "active_agent": "knowledge_learning",
-        "result":       response.content,
-    }
 
-# ── Build Subgraph ────────────────────────────────────────────
-def build_knowledge_agent():
-    graph = StateGraph(AgentState)
-    graph.add_node("knowledge_agent", knowledge_agent_node)
-    graph.add_edge(START, "knowledge_agent")
-    graph.add_edge("knowledge_agent", END)
-    return graph.compile()
+# ── Spec ──────────────────────────────────────────────────────
+SPEC = AgentSpec(
+    name="knowledge_learning",
+    prompt=KNOWLEDGE_SYSTEM_PROMPT,
+    memory_kind="lesson",
+    probe_intro="Student context:",
+    probe_outro="Teach accordingly.",
+    probes=(
+        Probe(
+            triggers=("roadmap", "path", "where to start", "learn", "study plan"),
+            label="ROADMAP",
+            run=_roadmap_probe,
+        ),
+        Probe(
+            triggers=("progress", "history", "what have i", "lessons"),
+            label="STUDENT PROGRESS",
+            run=_progress_probe,
+        ),
+    ),
+    after=_record_lesson,
+)
 
-knowledge_agent = build_knowledge_agent()
-
-# ── Standalone Test ───────────────────────────────────────────
-if __name__ == "__main__":
-    print("📚 Testing Knowledge & Learning Agent...\n")
-    result = knowledge_agent.invoke({
-        "messages": [{"role": "user", "content": "Explain how LangGraph StateGraph works. I understand basic Python but I'm new to agent frameworks. Use an analogy to make it click."}],
-        "active_agent": "",
-        "task":         "Explain LangGraph StateGraph for Python developer new to agents",
-        "result":       "",
-        "next_agent":   "",
-        "memory":       {},
-    })
-    print("\n── KNOWLEDGE AGENT RESPONSE ──")
-    print(result["messages"][-1].content)
+knowledge_agent = Agent(SPEC)
