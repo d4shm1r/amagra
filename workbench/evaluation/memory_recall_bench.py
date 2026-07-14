@@ -44,7 +44,7 @@ import numpy as np
 sys.path.insert(0, __import__("os").path.dirname(__import__("os").path.dirname(__import__("os").path.abspath(__file__))))
 
 import memory_core.db as memory_db
-from evaluation import memory_gate
+from memory_core import memory_gate
 
 # ── Thresholds — the gate. Currency safety is strictest: a stale memory winning
 #    is an active falsehood, far worse than a recall miss (which is just silence).

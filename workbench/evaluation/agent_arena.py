@@ -33,7 +33,7 @@ from typing import Any
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from training.auto_train import PROMPTS
+from workbench.auto_train import PROMPTS
 from orchestration.query_normalizer import normalize, DOMAIN_TO_AGENT, detect_domain
 
 from infrastructure.db import path as _dbpath

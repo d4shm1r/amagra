@@ -33,8 +33,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ["AGENTIC_SEMANTIC_FALLBACK"] = "1"
 os.environ["AGENTIC_SEMANTIC_MIN_SIM"] = "0.0"    # study applies the floor itself
 
-from evaluation.ablation_eval import signal_route
-from evaluation.adversarial_eval import PROMPTS as ADV
+from workbench.evaluation.ablation_eval import signal_route
+from workbench.evaluation.adversarial_eval import PROMPTS as ADV
 import orchestration.semantic_fallback as sf
 
 

@@ -40,7 +40,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evaluation.math_metrics import neutral_mode_drift
+from infrastructure.math_metrics import neutral_mode_drift
 from decision.weights import _neutral_mode
 
 

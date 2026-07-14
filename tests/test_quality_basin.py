@@ -9,7 +9,7 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from evaluation.math_metrics import quality_update_basin
+from infrastructure.math_metrics import quality_update_basin
 from infrastructure.event_bus import subscribe, unsubscribe, EventType
 import memory_core.db as mdb
 

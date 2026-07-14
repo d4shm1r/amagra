@@ -481,7 +481,7 @@ def _signed_drift_status(n: int = 200) -> dict:
     Best-effort: if the event log is unavailable or empty, returns the benign
     'self_correcting' verdict so callers always get a well-formed dict.
     """
-    from evaluation.math_metrics import drift_status_v2
+    from infrastructure.math_metrics import drift_status_v2
     try:
         from infrastructure.event_bus import recent_events, EventType
         events = recent_events(n, EventType.ROUTING_WEIGHT_CHANGED.value)
@@ -516,7 +516,7 @@ def _neutral_mode(n: int = 200) -> dict:
     Best-effort: an unavailable/empty log or a payload predating the α field
     yields the benign 'flat' verdict so callers always get a well-formed dict.
     """
-    from evaluation.math_metrics import neutral_mode_drift
+    from infrastructure.math_metrics import neutral_mode_drift
     try:
         from infrastructure.event_bus import recent_events, EventType
         events = recent_events(n, EventType.ROUTING_WEIGHT_CHANGED.value)

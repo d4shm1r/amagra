@@ -26,7 +26,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from decision import model_choices
-from evaluation import memory_gate
+from memory_core import memory_gate
 from infrastructure import provider_config as pc
 
 router = APIRouter()

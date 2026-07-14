@@ -573,7 +573,7 @@ def uci_curvature(n: int = 100) -> dict:
     folds away the sign, so a downturn and a rebound look identical. ``regime``
     and ``warn`` keep the sign the OCAC cubic finding says is load-bearing.
     """
-    from evaluation.math_metrics import (
+    from infrastructure.math_metrics import (
         series_curvature, max_abs_curvature, curvature_leading_indicator,
     )
     series = [h["uci"] for h in uci_history(n)]

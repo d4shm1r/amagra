@@ -53,7 +53,7 @@ import argparse
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evaluation.adversarial_eval import PROMPTS
+from workbench.evaluation.adversarial_eval import PROMPTS
 
 RATINGS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ratings")
 

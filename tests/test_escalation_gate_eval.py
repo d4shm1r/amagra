@@ -8,7 +8,7 @@ import math
 
 import pytest
 
-from evaluation.escalation_gate_eval import escalates, analyze_gate
+from workbench.evaluation.escalation_gate_eval import escalates, analyze_gate
 
 
 def _rec(correct, votes, valid):

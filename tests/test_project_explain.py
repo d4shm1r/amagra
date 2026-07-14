@@ -27,7 +27,7 @@ os.environ["AMAGRA_DATA_DIR"] = _tmpdir
 from decision import model_choices
 model_choices.init()
 
-from evaluation import memory_gate
+from memory_core import memory_gate
 from fastapi.testclient import TestClient
 from api import app
 import core.api_keys as _ak

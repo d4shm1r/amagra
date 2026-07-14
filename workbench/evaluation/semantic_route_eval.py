@@ -45,9 +45,9 @@ import argparse
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evaluation.ablation_eval import signal_route          # keyword baseline
-from evaluation.adversarial_eval import PROMPTS as ADV_PROMPTS
-from training.auto_train import PROMPTS as TRAIN_PROMPTS    # labelled exemplars
+from workbench.evaluation.ablation_eval import signal_route          # keyword baseline
+from workbench.evaluation.adversarial_eval import PROMPTS as ADV_PROMPTS
+from workbench.auto_train import PROMPTS as TRAIN_PROMPTS    # labelled exemplars
 from providers.ollama import OllamaEmbeddingProvider
 
 _CACHE = os.path.join(
