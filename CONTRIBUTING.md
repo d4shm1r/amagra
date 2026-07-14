@@ -64,14 +64,45 @@ PYTHONPATH=. python3 -m pytest tests/ -q   # or: make test [PYTHON=path/to/your/
 
 ## Adding a new agent
 
-Amagra is structured so that adding a specialist agent touches **exactly two files**:
+An agent is **data, not a pipeline**. You declare what makes it different; the shared
+runner ([`agents/runner.py`](agents/runner.py)) does the rest — profile, memory recall,
+probes, history trimming, the model call, and saving the answer. Adding one touches
+**exactly two files**:
 
-1. **`agents/<name>.py`** — the agent itself. Use [`agents/python_dev.py`](agents/python_dev.py) as the reference: it injects the user profile via `_effective_prompt()` and gets memory, the critic gate, and step verification from the runtime for free.
-2. **`agents/registry.py`** — register the agent so routing, telemetry, and observability pick it up automatically.
+1. **`agents/<name>.py`** — a prompt, any tools it needs, and an `AgentSpec`. Use
+   [`agents/python_dev.py`](agents/python_dev.py) as the reference:
 
-Then add the agent's domain keywords to the signal router so `QuerySignal` can route to it, and add a couple of representative queries to the evaluation set (`evaluation/`) so routing accuracy stays measured.
+   ```python
+   SPEC = AgentSpec(
+       name="python_dev",
+       prompt=PYTHON_SYSTEM_PROMPT,      # may contain a {user_profile} slot
+       memory_kind="code",               # how its memories are tagged
+       probes=(                          # self-checks it runs when the task asks
+           Probe(triggers=("environment", "packages", "installed", "version"),
+                 label="PYTHON ENVIRONMENT",
+                 run=lambda _task: check_python_env()),
+       ),
+   )
+   python_agent = Agent(SPEC)
+   ```
 
-A registered agent automatically participates in routing, the skill graph, FAISS memory retrieval, the critic gate, and the step verifier — you don't wire those up by hand.
+2. **`agents/registry.py`** — register it so routing, telemetry, and observability pick
+   it up automatically. A boot assertion in the coordinator fails loudly if the two
+   disagree.
+
+Do **not** write your own message-building or memory code. If your agent genuinely needs
+to opt out of part of the pipeline, that is a flag on the spec (`remembers`,
+`uses_profile`, `uses_tools`, `max_messages`) or an `after` hook — see
+[`agents/terse.py`](agents/terse.py) and [`agents/knowledge_learning.py`](agents/knowledge_learning.py),
+the only two that are not uniform. Ten hand-written copies of the pipeline is exactly how
+`knowledge_learning` came to ship a literal `{user_profile}` to the model for months.
+
+Then add the agent's domain keywords to the signal router so `QuerySignal` can route to
+it, and a couple of representative queries to the evaluation set
+(`workbench/evaluation/`) so routing accuracy stays measured.
+
+A registered agent automatically participates in routing, the skill graph, FAISS memory
+retrieval, the critic gate, and the step verifier — you don't wire those up by hand.
 
 ---
 

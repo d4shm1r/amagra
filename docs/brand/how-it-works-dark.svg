@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 530" width="800" height="530" role="img" aria-label="How Amagra answers a question. A signal classifier takes about one millisecond and sends most questions straight to a specialist agent; ambiguous ones go to the LLM coordinator first. The specialist retrieves relevant memory, generates the answer, and a critic scores it — regenerating if the answer is weak. Every step emits an event.">
+<rect x="300" y="24" width="200" height="44" rx="22" fill="#241D08" stroke="#DEB838" stroke-width="1.5"/>
+<text x="400" y="52" text-anchor="middle" fill="#EDEAE4" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="15" font-weight="600" letter-spacing="0">Your question</text>
+<path d="M 400 68 V 90" stroke="#44403C" stroke-width="1.5" fill="none" stroke-linecap="round" />
+<polygon points="400,96 395,88.0 405,88.0" fill="#44403C"/>
+<rect x="205" y="96" width="390" height="74" rx="10" fill="#17161A" stroke="#DEB838" stroke-width="2"/>
+<text x="400" y="125" text-anchor="middle" fill="#EDEAE4" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="16" font-weight="650" letter-spacing="0">Signal classifier</text>
+<text x="400" y="148" text-anchor="middle" fill="#9A9590" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="13" font-weight="400" letter-spacing="0">~1 ms  ·  domain &amp; shape heuristics</text>
+<path d="M 400 170 V 196" stroke="#44403C" stroke-width="1.5" fill="none" stroke-linecap="round" />
+<path d="M 400 196 H 280 Q 270 196 270 206 V 218" stroke="#44403C" stroke-width="1.5" fill="none" stroke-linecap="round" />
+<polygon points="270,224 265,216.0 275,216.0" fill="#44403C"/>
+<path d="M 400 196 H 520 Q 530 196 530 206 V 218" stroke="#44403C" stroke-width="1.5" fill="none" stroke-linecap="round" />
+<polygon points="530,224 525,216.0 535,216.0" fill="#44403C"/>
+<rect x="150" y="224" width="240" height="62" rx="10" fill="#17161A" stroke="#2E2C29" stroke-width="1.5"/>
+<text x="270" y="248" text-anchor="middle" fill="#EDEAE4" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="15" font-weight="600" letter-spacing="0">Direct route</text>
+<text x="270" y="269" text-anchor="middle" fill="#9A9590" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0">straight to the specialist</text>
+<rect x="410" y="224" width="240" height="62" rx="10" fill="#17161A" stroke="#2E2C29" stroke-width="1.5"/>
+<text x="530" y="248" text-anchor="middle" fill="#EDEAE4" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="15" font-weight="600" letter-spacing="0">Coordinator</text>
+<text x="530" y="269" text-anchor="middle" fill="#9A9590" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0">reasons out the ambiguous ones</text>
+<path d="M 270 286 V 302 Q 270 312 280 312 H 400" stroke="#44403C" stroke-width="1.5" fill="none" stroke-linecap="round" />
+<path d="M 530 286 V 302 Q 530 312 520 312 H 400" stroke="#44403C" stroke-width="1.5" fill="none" stroke-linecap="round" />
+<path d="M 400 312 V 332" stroke="#44403C" stroke-width="1.5" fill="none" stroke-linecap="round" />
+<polygon points="400,338 395,330.0 405,330.0" fill="#44403C"/>
+<rect x="165" y="338" width="470" height="166" rx="10" fill="#17161A" stroke="#DEB838" stroke-width="2"/>
+<text x="400" y="368" text-anchor="middle" fill="#EDEAE4" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="16" font-weight="650" letter-spacing="0">Specialist agent</text>
+<circle cx="200" cy="397" r="3.5" fill="#DEB838"/>
+<text x="216" y="402" text-anchor="start" fill="#EDEAE4" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="13.5" font-weight="450" letter-spacing="0">Retrieves relevant memory</text>
+<circle cx="200" cy="429" r="3.5" fill="#DEB838"/>
+<text x="216" y="434" text-anchor="start" fill="#EDEAE4" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="13.5" font-weight="450" letter-spacing="0">Generates the answer</text>
+<circle cx="200" cy="461" r="3.5" fill="#DEB838"/>
+<text x="216" y="466" text-anchor="start" fill="#EDEAE4" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="13.5" font-weight="450" letter-spacing="0">A critic scores it</text>
+<path d="M 336 461 H 574 Q 590 461 590 445 Q 590 429 574 429 H 378" stroke="#DEB838" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.9"/>
+<polygon points="372,429 379.2,424.5 379.2,433.5" fill="#DEB838"/>
+<text x="590" y="489" text-anchor="end" fill="#DEB838" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11.5" font-weight="500" letter-spacing="0">regenerate if weak</text>
+<path d="M 700 40 V 504" stroke="#DEB838" stroke-width="1.25" fill="none" stroke-linecap="round" stroke-dasharray="3 5" opacity="0.5"/>
+<circle cx="700" cy="46" r="3" fill="#DEB838"/>
+<circle cx="700" cy="133" r="3" fill="#DEB838"/>
+<circle cx="700" cy="255" r="3" fill="#DEB838"/>
+<circle cx="700" cy="421" r="3" fill="#DEB838"/>
+<text transform="translate(724,272) rotate(-90)" text-anchor="middle" fill="#9A9590" font-family="ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11.5" font-weight="500" letter-spacing="0.1em">EVERY STEP EMITS AN EVENT</text>
+</svg>

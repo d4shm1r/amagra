@@ -1,4 +1,4 @@
-.PHONY: dev stop test benchmark benchmark-memory routing-eval logs clean
+.PHONY: dev stop test benchmark benchmark-memory routing-eval diagram logs clean
 
 # Python interpreter for local (non-Docker) targets. Override for your venv:
 #   make test PYTHON=~/.venvs/langgraph-env/bin/python
@@ -33,6 +33,11 @@ benchmark:
 # Exit code 0 = PASS (synthesis allowed), 1 = FAIL (stays gated).
 benchmark-memory:
 	PYTHONPATH=. $(PYTHON) workbench/evaluation/memory_recall_bench.py
+
+# Regenerate the README "How it works" diagram (light + dark SVG).
+# Run after changing the routing flow so the picture stops lying.
+diagram:
+	$(PYTHON) workbench/brand/gen_architecture_diagram.py
 
 # Tail API logs
 logs:

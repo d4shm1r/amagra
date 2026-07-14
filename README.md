@@ -136,19 +136,13 @@ the full API are covered in **[packaging/README.md](packaging/README.md)**,
 A fast signal classifier routes most questions instantly; only ambiguous ones go to the
 LLM coordinator. Every step emits an event you can watch live.
 
-```
-Your question
-    │
-    ▼
-Signal classifier  (~1 ms — domain & shape heuristics)
-    ├─► Direct route   → the obvious specialist
-    └─► Coordinator    → reasons it out for ambiguous cases
-            │
-            └─► Specialist agent
-                    ├─ retrieves relevant memory
-                    ├─ generates the answer
-                    └─ a critic scores it (regenerate if weak)
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/how-it-works-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/brand/how-it-works-light.svg" />
+    <img src="docs/brand/how-it-works-light.svg" alt="A question enters a signal classifier (~1 ms, domain and shape heuristics). Most questions take the direct route straight to a specialist agent; ambiguous ones go to the coordinator first. The specialist retrieves relevant memory, generates the answer, and a critic scores it — regenerating if the answer is weak. Every step emits an event." width="760" />
+  </picture>
+</p>
 
 Memory lives in a local vector store with sub-millisecond warm retrieval, and a quiet
 learning loop nudges routing toward the paths that score well — no model weights are touched.
