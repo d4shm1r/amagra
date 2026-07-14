@@ -80,7 +80,10 @@ export default function EventLogPanel({ embedded = false } = {}) {
   });
 
   return (
-    <div style={{ maxWidth: embedded ? "none" : 860, margin: embedded ? 0 : "0 auto", padding: embedded ? "10px 14px 14px" : 0 }}>
+    // A panel never decides its own width: standalone it fills the shell's
+    // <Column>, embedded it fills its dashboard cell. It used to self-center at
+    // 860px, which quietly overrode LAYOUT.content inside Diagnostics.
+    <div style={{ padding: embedded ? "10px 14px 14px" : 0 }}>
 
       {/* Header (suppressed when embedded — the dashboard cell carries the title) */}
       {!embedded && (

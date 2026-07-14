@@ -19,7 +19,8 @@ import os
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# repo root: this file lives at workbench/brand/, so three levels up.
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PUB  = os.path.join(ROOT, "ui", "public")
 BRAND = os.path.join(ROOT, "docs", "brand")
 FONT_PATH = "/usr/share/texlive/texmf-dist/fonts/truetype/catharsis/cormorantgaramond/CormorantGaramond-SemiBold.ttf"

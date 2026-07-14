@@ -34,6 +34,34 @@ src/
 default-exported, registered in `tabs/index.js`. If it renders *inside* another
 view, it is a panel: `components/panels/`. There is no third category.
 
+## Which knob do I turn?
+
+A change to how the app *looks* should be one edit, in one file, and land on
+every tab at once. If it isn't, that's a bug in the architecture, not a task for
+your afternoon. The knobs:
+
+| To change | Edit | File |
+|---|---|---|
+| **Width of a tab's body** | `LAYOUT.content` | `styles/theme.js` |
+| Width of prose (chat thread, articles) | `LAYOUT.reading` | `styles/theme.js` |
+| Page margins | `LAYOUT.gutter` / `gutterY` | `styles/theme.js` |
+| Any color | `T`, `SEM`, `GOLD` | `styles/theme.js` (+ `public/tokens.css`) |
+| What a tone *means* | `TONES` | `components/ui/tone.js` |
+| Font sizes / vertical rhythm | `TYPE` | `styles/theme.js` |
+| Spacing scale, corner radii | `SPACE`, `RADIUS` | `styles/theme.js` |
+| Animation speed / easing | `DUR`, `EASE` | `styles/theme.js` |
+| How a card / button / pill looks | that component | `components/ui/` |
+
+`LAYOUT.content` takes anything `max-width` takes, so `1020`, `"85%"` and
+`"72rem"` all work.
+
+**A view never centers itself.** The shell wraps every tab in `<Column>`, which
+is the only thing that reads `LAYOUT.content`. This is not a style preference —
+the app lost this fight once already (a past phase stripped `maxWidth + margin:
+0 auto` from 16 tab roots to make App the sole layout authority, and by the time
+the kit landed, four files had grown it back and were silently overriding the
+page width). `lint:ui` now fails on `margin: 0 auto` in a view.
+
 ## Imports
 
 Every cross-directory import uses the `@/` root (aliased to `src/` in

@@ -26,7 +26,8 @@ from tools.gen_brand_assets import (  # noqa: E402
 )
 from infrastructure.version import __version__  # noqa: E402
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# repo root: this file lives at workbench/brand/, so three levels up.
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PUB = os.path.join(ROOT, "ui", "public")
 BRAND = os.path.join(ROOT, "docs", "brand")
 CORMORANT = "/usr/share/texlive/texmf-dist/fonts/truetype/catharsis/cormorantgaramond"
