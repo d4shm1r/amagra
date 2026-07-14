@@ -20,6 +20,8 @@
     "start": "vite",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint:ui": "node scripts/lint-ui.mjs",
+    "lint:ui:debt": "node scripts/lint-ui.mjs --debt"
   }
 }
