@@ -18,6 +18,21 @@ import pytest
 # ── Ensure project root is importable ────────────────────────────────────────
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# ── Isolate all durable-data writes into a throwaway dir ─────────────────────
+# Every registry-backed database (infrastructure.db → base_dir()) — the event
+# bus (logs/events.db), decisions, runs, memory, … — resolves under
+# AMAGRA_DATA_DIR when it is set. Pointing it at a per-session temp dir *before*
+# any of those modules import means test telemetry (e.g. a /feedback POST that
+# runs a learning update and emits ROUTING_WEIGHT_CHANGED) can never leak into
+# the real logs/ tree. Without this, synthetic test agents pollute the live
+# event log and break data-dependent checks (see test_neutral_mode_validation).
+# Must run before the core.api_keys / memory_core.db imports below, which pull
+# in modules that cache their DB path at import time.
+os.environ.setdefault(
+    "AMAGRA_DATA_DIR",
+    tempfile.mkdtemp(prefix="amagra_test_data_"),
+)
+
 # ── Stub heavy deps before any api import ────────────────────────────────────
 _STUB_MODS = (
     "langchain_ollama",
