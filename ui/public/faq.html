@@ -104,6 +104,18 @@
   }
   </script>
 
+  <!-- Structured data: BreadcrumbList — Home › FAQ, for rich results + AI context -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://amagra.dev/" },
+      { "@type": "ListItem", "position": 2, "name": "FAQ", "item": "https://amagra.dev/faq.html" }
+    ]
+  }
+  </script>
+
   <!-- Self-hosted brand fonts + the shared Gilded Calm palette (tokens.css is
        the single palette source for landing, FAQ, and the app). -->
   <link rel="stylesheet" href="/fonts.css" />
@@ -198,6 +210,7 @@
       <a class="brand" href="/"><span>A</span>magra</a>
       <nav class="nav">
         <a href="/">Home</a>
+        <a href="/compare.html">Compare</a>
         <a href="https://github.com/d4shm1r/amagra">GitHub</a>
       </nav>
     </div>
@@ -262,7 +275,7 @@
   <footer class="site">
     <div class="wrap">
       Amagra — the local cross-model prompt debugger · MIT licensed ·
-      <a href="/">amagra.dev</a> · <a href="https://github.com/d4shm1r/amagra">GitHub</a>
+      <a href="/">amagra.dev</a> · <a href="/compare.html">Compare</a> · <a href="https://github.com/d4shm1r/amagra">GitHub</a>
     </div>
   </footer>
 </body>
