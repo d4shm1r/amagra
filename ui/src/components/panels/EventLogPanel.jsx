@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { T, FONT_MONO } from "@/styles/theme";
-import { ObsPanel, EventRow, RefreshButton, EmptyState, eventMeta, PageHeader, Pill } from "@/components/ui";
+import {
+  ObsPanel, EventRow, RefreshButton, EmptyState, eventMeta, PageHeader, Pill,
+  Row, Stack, Spacer, Pad, Scroll, Notice, Small, Inline, SegmentedControl, Button,
+} from "@/components/ui";
+import { SearchInput, Toggle } from "@/components/forms";
 
 import { API } from "@/lib/api";
 
@@ -18,22 +21,22 @@ function CountPills({ counts }) {
   if (!counts || !Object.keys(counts).length) return null;
   const total = Object.values(counts).reduce((s, n) => s + n, 0);
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 14 }}>
-      <Pill color={T.accentText} strong>{total} total</Pill>
+    <Row wrap gap="xs">
+      <Pill tone="gold" strong>{total} total</Pill>
       {Object.entries(counts)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10)
         .map(([type, n]) => {
           const meta = eventMeta(type);
           return (
-            <Pill key={type} color={T.muted}>
-              <span style={{ color: meta.color, marginRight: 4 }}>{meta.icon}</span>
-              {type.replace(/\./g, " ")}
-              <span style={{ color: T.mutedLt, marginLeft: 4, fontVariantNumeric: "tabular-nums" }}>{n}</span>
+            <Pill key={type} tone="muted">
+              <Inline tone={meta.tone}>{meta.icon}</Inline>{" "}
+              {type.replace(/\./g, " ")}{" "}
+              <Inline tone="subtle">{n}</Inline>
             </Pill>
           );
         })}
-    </div>
+    </Row>
   );
 }
 
@@ -79,81 +82,37 @@ export default function EventLogPanel({ embedded = false } = {}) {
     return true;
   });
 
-  return (
-    // A panel never decides its own width: standalone it fills the shell's
-    // <Column>, embedded it fills its dashboard cell. It used to self-center at
-    // 860px, which quietly overrode LAYOUT.content inside Diagnostics.
-    <div style={{ padding: embedded ? "10px 14px 14px" : 0 }}>
+  const content = (
+    <Stack gap="md">
+      {error && <Notice tone="error">Backend unavailable: {error}</Notice>}
 
-      {/* Header (suppressed when embedded — the dashboard cell carries the title) */}
-      {!embedded && (
-      <PageHeader
-        sticky={false}
-        title="Events"
-        subtitle="Typed event stream from the cognitive runtime · auto-refresh 10s"
-      >
-        <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.muted, cursor: "pointer" }}>
-          <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}
-            style={{ accentColor: T.accent }} />
-          Auto-scroll
-        </label>
-        <RefreshButton onClick={load} />
-      </PageHeader>
-      )}
-
-      {error && (
-        <div style={{ color: T.error, background: T.surface, border: `1px solid ${T.border}`,
-          borderRadius: 10, padding: "8px 14px", marginBottom: 14, fontSize: 12 }}>
-          Backend unavailable: {error}
-        </div>
-      )}
-
-      {/* Event counts */}
       <CountPills counts={counts} />
 
       {/* Filter bar */}
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14, flexWrap: "wrap" }}>
-        <div style={{ display: "flex", gap: 4 }}>
-          {EVENT_CATEGORIES.map(c => (
-            <button key={c.id} onClick={() => setFilter(c.id)} style={{
-              background: filter === c.id ? T.accent + "33" : T.surface2,
-              border: `1px solid ${filter === c.id ? T.accent : T.border}`,
-              color: filter === c.id ? T.accent : T.muted,
-              borderRadius: 99, padding: "4px 13px", fontSize: 11, cursor: "pointer",
-            }}>{c.label}</button>
-          ))}
-        </div>
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search events…"
-          style={{
-            background: T.surface2, border: `1px solid ${T.border}`, color: T.text,
-            borderRadius: 99, padding: "6px 14px", fontSize: 11,
-            outline: "none", minWidth: 170,
-          }}
+      <Row gap="sm" wrap>
+        <SegmentedControl
+          options={EVENT_CATEGORIES.map(c => ({ val: c.id, label: c.label }))}
+          value={filter}
+          onChange={setFilter}
         />
+        <SearchInput value={search} onChange={setSearch} placeholder="Search events…" width={170} />
         {(search || filter !== "all") && (
-          <button onClick={() => { setSearch(""); setFilter("all"); }} style={{
-            background: "transparent", border: `1px solid ${T.border}`,
-            color: T.muted, borderRadius: 99, padding: "4px 12px", fontSize: 11, cursor: "pointer",
-          }}>✕ Clear</button>
+          <Button variant="quiet" size="sm" onClick={() => { setSearch(""); setFilter("all"); }}>
+            ✕ Clear
+          </Button>
         )}
-        <span style={{ fontSize: 11, color: T.muted, marginLeft: "auto" }}>
-          {filtered.length} / {events.length}
-        </span>
-      </div>
+        <Spacer />
+        <Small tone="muted">{filtered.length} / {events.length}</Small>
+      </Row>
 
       {/* Event list */}
       <ObsPanel>
         {loading && !events.length ? (
-          <div style={{ color: T.muted, fontSize: 12, textAlign: "center", padding: 24 }}>Loading events…</div>
+          <EmptyState msg="Loading events…" />
         ) : filtered.length ? (
-          <div ref={listRef} style={{ maxHeight: "calc(100vh - 320px)", overflowY: "auto" }}>
-            {filtered.map((e, i) => (
-              <EventRow key={i} event={e} />
-            ))}
-          </div>
+          <Scroll ref={listRef} max="calc(100vh - 320px)">
+            {filtered.map((e, i) => <EventRow key={i} event={e} />)}
+          </Scroll>
         ) : (
           <EmptyState msg={
             events.length === 0
@@ -162,7 +121,26 @@ export default function EventLogPanel({ embedded = false } = {}) {
           } />
         )}
       </ObsPanel>
+    </Stack>
+  );
 
-    </div>
+  // Embedded in a dashboard cell (which carries the title and owns no padding).
+  if (embedded) return <Pad>{content}</Pad>;
+
+  return (
+    <>
+      <PageHeader
+        sticky={false}
+        title="Events"
+        subtitle="Typed event stream from the cognitive runtime · auto-refresh 10s"
+      >
+        <Row gap="xs">
+          <Toggle checked={autoScroll} onChange={setAutoScroll} label="Auto-scroll" />
+          <Small tone="muted">Auto-scroll</Small>
+        </Row>
+        <RefreshButton onClick={load} />
+      </PageHeader>
+      {content}
+    </>
   );
 }

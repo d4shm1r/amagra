@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { T, SEM } from "@/styles/theme";
-import { PageHeader } from "@/components/ui";
+import { PageHeader, StatStrip } from "@/components/ui";
 import { AGENTS } from "@/config/constants";
 
 import { API } from "@/lib/api";
@@ -23,7 +23,7 @@ function Badge({ label, color }) {
   );
 }
 
-function Bar({ value, max = 1, color = T.success, width = 160, height = 10 }) {
+function Bar({ value, max = 1, color = T.accentText, width = 160, height = 10 }) {
   const pct = Math.min(1, Math.max(0, value / max));
   return (
     <svg width={width} height={height} style={{ display: "block" }}>
@@ -69,11 +69,11 @@ function CoherenceChart({ data }) {
             <text x={PX - 5} y={ys(t) + 4} fill={T.muted} fontSize={9} textAnchor="end">{t.toFixed(2)}</text>
           </g>
         ))}
-        {line("c_routing", T.accent)}
+        {line("c_routing", SEM.teal)}
         {line("c_quality", SEM.purple)}
-        {line("C", T.success)}
+        {line("C", T.accent)}
         {data.map((d, i) => (
-          <circle key={i} cx={xs(i)} cy={ys(d.C ?? 0)} r={3} fill={T.success} opacity={0.85}
+          <circle key={i} cx={xs(i)} cy={ys(d.C ?? 0)} r={3} fill={T.accent} opacity={0.85}
             style={{ cursor: "crosshair" }}
             onMouseEnter={() => setTip({ x: xs(i), y: ys(d.C ?? 0), d, i })} />
         ))}
@@ -83,7 +83,7 @@ function CoherenceChart({ data }) {
         ))}
         <line x1={PX} y1={PY} x2={PX} y2={H - PY} stroke={T.border} />
         <line x1={PX} y1={H - PY} x2={W - PX} y2={H - PY} stroke={T.border} />
-        {[["C(t)", T.success], ["C_routing", T.accent], ["C_quality", SEM.purple]].map(([lbl, col], li) => (
+        {[["C(t)", T.accent], ["C_routing", SEM.teal], ["C_quality", SEM.purple]].map(([lbl, col], li) => (
           <g key={lbl} transform={`translate(${PX + li * 140}, ${PY - 8})`}>
             <line x1={0} y1={0} x2={16} y2={0} stroke={col} strokeWidth={1.8} />
             <text x={20} y={4} fill={T.muted} fontSize={9}>{lbl}</text>
@@ -93,7 +93,7 @@ function CoherenceChart({ data }) {
           <g>
             <line x1={tip.x} y1={PY} x2={tip.x} y2={H - PY} stroke="#1F140822" strokeDasharray="2,2" />
             <rect x={tip.x + 6} y={tip.y - 28} width={98} height={32} rx={3} fill={T.surface} stroke={T.border} />
-            <text x={tip.x + 10} y={tip.y - 15} fill={T.success} fontSize={9} fontFamily="monospace">
+            <text x={tip.x + 10} y={tip.y - 15} fill={T.accentText} fontSize={9} fontFamily="monospace">
               C={tip.d.C?.toFixed(4)}
             </text>
             <text x={tip.x + 10} y={tip.y - 4} fill={T.muted} fontSize={8} fontFamily="monospace">
@@ -111,7 +111,7 @@ function AccuracyMilestones() {
   const milestones = [
     { label: "Action-first baseline (50-prompt)",        pct: 70, color: T.error,   note: "15 misroutes — structural" },
     { label: "Signal-first routing (50-prompt)",         pct: 92, color: T.warn,    note: "4 misroutes — boundary" },
-    { label: "Signal + brain + LLM (100-prompt)",        pct: 97, color: T.success, note: "Full pipeline" },
+    { label: "Signal + brain + LLM (100-prompt)",        pct: 97, color: T.accentText, note: "Full pipeline" },
     { label: "QuerySignal only — ablation (100-prompt)", pct: 99, color: T.accent,  note: "<2s, no LLM calls" },
   ];
   return (
@@ -170,32 +170,30 @@ function DriftHealth({ drift }) {
   ];
 
   return (
-    <div style={{ background: drift.healthy ? "#E7F2E6" : "#F9E7E1",
-      border: `1px solid ${drift.healthy ? `${T.success}33` : `${T.error}33`}`,
-      borderRadius: 14, padding: "14px 18px" }}>
+    <div className="lux-card" style={{ padding: "16px 20px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
         <div style={{ width: 8, height: 8, borderRadius: "50%",
-          background: drift.healthy ? T.success : T.error }} />
+          background: drift.healthy ? T.accentText : T.error }} />
         <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>
           System Drift Health
         </div>
         <Badge label={drift.healthy ? "ALL CLEAR" : `${drift.flags?.length || 0} FLAG${drift.flags?.length !== 1 ? "S" : ""}`}
-          color={drift.healthy ? T.success : T.error} />
+          color={drift.healthy ? T.accentText : T.error} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
         {detectors.map(d => (
           <div key={d.key} style={{ background: d.hit ? `${T.error}10` : T.surface2,
             border: `1px solid ${d.hit ? `${T.error}44` : T.border}`, borderRadius: 10,
             padding: "12px 14px" }}>
-            <div style={{ display: "flex", align: "center", gap: 6, marginBottom: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
-                background: d.hit ? T.error : T.success, display: "inline-block" }} />
+                background: d.hit ? T.error : T.accentText, display: "inline-block" }} />
               <span style={{ fontSize: 12, fontWeight: 600, color: d.hit ? T.error : T.text }}>
                 {d.label}
               </span>
             </div>
             <div style={{ fontFamily: "monospace", fontSize: 20, fontWeight: 700,
-              color: d.hit ? T.error : T.success, marginBottom: 4 }}>{d.value}</div>
+              color: d.hit ? T.error : T.accentText, marginBottom: 4 }}>{d.value}</div>
             <div style={{ fontSize: 10, color: T.muted }}>{d.unit}</div>
             <div style={{ fontSize: 10, color: T.muted, marginTop: 4, lineHeight: 1.4 }}>{d.desc}</div>
           </div>
@@ -222,7 +220,7 @@ function SpecializationTable({ spec }) {
   );
 
   const VERDICT_COLOR = {
-    core:       T.success,
+    core:       T.accentText,
     narrow:     T.accent,
     struggling: T.error,
     redundant:  T.warn,
@@ -268,7 +266,7 @@ function SpecializationTable({ spec }) {
               {r.decisions || 0}
             </span>
             <span style={{ fontFamily: "monospace", fontSize: 11,
-              color: conflict > 0.4 ? T.error : conflict > 0.2 ? T.warn : T.success }}>
+              color: conflict > 0.4 ? T.error : conflict > 0.2 ? T.warn : T.accentText }}>
               {Math.round(conflict * 100)}%
             </span>
             <span style={{ fontFamily: "monospace", fontSize: 11,
@@ -276,7 +274,7 @@ function SpecializationTable({ spec }) {
               {regret.toFixed(3)}
             </span>
             <span style={{ fontFamily: "monospace", fontSize: 11,
-              color: quality >= 0.82 ? T.success : quality >= 0.68 ? T.warn : T.error }}>
+              color: quality >= 0.82 ? T.accentText : quality >= 0.68 ? T.warn : T.error }}>
               {quality.toFixed(3)}
             </span>
             <span style={{ fontSize: 10, color: T.muted, overflow: "hidden",
@@ -397,7 +395,7 @@ function DecisionsTable({ decisions }) {
                   <td style={{ padding: "6px 8px", textAlign: "center" }}>
                     {conflict
                       ? <span style={{ color: T.error, fontSize: 12 }}>✕</span>
-                      : <span style={{ color: T.success, fontSize: 12 }}>✓</span>}
+                      : <span style={{ color: T.accentText, fontSize: 12 }}>✓</span>}
                   </td>
                   <td style={{ padding: "6px 8px", fontFamily: "monospace",
                     color: regret > 0.2 ? T.error : regret > 0.08 ? T.warn : T.muted }}>
@@ -453,7 +451,7 @@ function RefreshTimer({ onRefresh, interval = 30 }) {
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <svg width={20} height={20} style={{ flexShrink: 0 }}>
         <circle cx={10} cy={10} r={8} fill="none" stroke={T.border} strokeWidth={2} />
-        <circle cx={10} cy={10} r={8} fill="none" stroke={T.success} strokeWidth={2}
+        <circle cx={10} cy={10} r={8} fill="none" stroke={T.accentText} strokeWidth={2}
           strokeDasharray={`${2 * Math.PI * 8}`}
           strokeDashoffset={`${2 * Math.PI * 8 * (1 - pct / 100)}`}
           transform="rotate(-90 10 10)" strokeLinecap="round" />
@@ -462,7 +460,7 @@ function RefreshTimer({ onRefresh, interval = 30 }) {
         refresh in {secs}s
       </span>
       <button onClick={() => { onRefresh(); setSecs(interval); }}
-        style={{ background: `${T.success}22`, border: `1px solid ${T.success}66`, color: T.success,
+        style={{ background: `${T.accentText}22`, border: `1px solid ${T.accentText}66`, color: T.accentText,
           padding: "4px 14px", borderRadius: 99, fontSize: 11, fontWeight: 700,
           cursor: "pointer", fontFamily: "inherit" }}>
         ↺ Now
@@ -528,45 +526,38 @@ export default function TimelineTab() {
   if (loading) return <div style={{ color: T.muted, padding: 40, textAlign: "center" }}>Loading timeline data…</div>;
   if (err)     return <div style={{ color: T.error, padding: 20, fontFamily: "monospace" }}>{err}</div>;
 
-  const C_val    = cohState?.C ?? 0;
-  const cohColor = C_val >= 0.82 ? T.success : C_val >= 0.70 ? T.warn : T.error;
+  const C_val = cohState?.C ?? 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20, animation: "fadeIn .2s" }}>
 
       {/* ── Header ── */}
-      <PageHeader title="Learning Timeline" subtitle="Coherence dynamics, drift health, and how the system learns over time.">
+      <PageHeader center title="Timeline" subtitle="Coherence dynamics, drift health, and how the system learns over time.">
         <RefreshTimer onRefresh={load} interval={30} />
       </PageHeader>
 
       {/* ── Drift health ── */}
       {drift && <DriftHealth drift={drift} />}
 
-      {/* ── Top coherence metric cards ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-        {[
+      {/* ── Top coherence metrics — one inline strip, hairline-divided ── */}
+      <div className="lux-card" style={{ padding: "16px 20px" }}>
+        <StatStrip items={[
           { label: "Coherence C(t)", value: C_val.toFixed(4),
             sub: `routing ${cohState?.c_routing?.toFixed(2) ?? "–"} · calib ${cohState?.c_calib?.toFixed(2) ?? "–"}`,
-            color: cohColor },
+            tone: C_val >= 0.82 ? "gold" : C_val >= 0.70 ? "warn" : "error" },
           { label: "Decisions logged", value: cohState?.n_decisions ?? "–",
-            sub: `window of ${cohState?.window ?? 20}`, color: T.accent },
-          { label: "Conflict rate",   value: `${Math.round((cohState?.conflict_rate ?? 0) * 100)}%`,
-            sub: "brain vs router", color: (cohState?.conflict_rate ?? 0) > 0.35 ? T.error : T.warn },
+            sub: `window of ${cohState?.window ?? 20}`, tone: "accent" },
+          { label: "Conflict rate", value: `${Math.round((cohState?.conflict_rate ?? 0) * 100)}%`,
+            sub: "brain vs router", tone: (cohState?.conflict_rate ?? 0) > 0.35 ? "error" : "warn" },
           { label: "Reflection rate", value: `${Math.round((cohState?.reflection_rate ?? 0) * 100)}%`,
-            sub: "triggers / decisions", color: T.warn },
-          { label: "Memories",        value: cohState?.mem_n ?? "–",
-            sub: `avg q ${cohState?.mem_avg_quality?.toFixed(3) ?? "–"}`, color: SEM.purple },
+            sub: "triggers / decisions", tone: "warn" },
+          { label: "Memories", value: cohState?.mem_n ?? "–",
+            sub: `avg q ${cohState?.mem_avg_quality?.toFixed(3) ?? "–"}`, tone: "purple" },
           { label: "Reflection gain", value: cohState?.G_r_n > 0
               ? `${cohState.G_r_mean >= 0 ? "+" : ""}${cohState.G_r_mean?.toFixed(4)}` : "–",
             sub: `n=${cohState?.G_r_n ?? 0}  ${Math.round((cohState?.G_r_positive ?? 0) * 100)}% improved`,
-            color: (cohState?.G_r_mean ?? 0) >= 0 ? T.success : T.error },
-        ].map(m => (
-          <div key={m.label} className="lux-card lux-card-i" style={{ padding: "14px 16px" }}>
-            <div style={{ fontSize: 11, color: T.muted, marginBottom: 4 }}>{m.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, fontFamily: "monospace", color: m.color }}>{m.value}</div>
-            <div style={{ fontSize: 10, color: T.muted, marginTop: 4 }}>{m.sub}</div>
-          </div>
-        ))}
+            tone: (cohState?.G_r_mean ?? 0) >= 0 ? "gold" : "error" },
+        ]} />
       </div>
 
       {/* ── Coherence dynamics chart ── */}
@@ -590,8 +581,8 @@ export default function TimelineTab() {
         <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 14 }}>Routing Accuracy — Progress</div>
         <AccuracyMilestones />
         <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
-          <Badge label="McNemar χ²=5.88  p=0.015" color={T.success} />
-          <Badge label="95% CI: 7–37 pts" color={T.success} />
+          <Badge label="McNemar χ²=5.88  p=0.015" color={T.accentText} />
+          <Badge label="95% CI: 7–37 pts" color={T.accentText} />
           <Badge label="terse 0%→100% architectural signal" color={T.accent} />
         </div>
       </div>
@@ -609,7 +600,7 @@ export default function TimelineTab() {
         </div>
         <SpecializationTable spec={spec} />
         <div style={{ fontSize: 10, color: T.muted, marginTop: 12 }}>
-          Verdicts: <span style={{ color: T.success }}>core</span> = high volume, low conflict ·{" "}
+          Verdicts: <span style={{ color: T.accentText }}>core</span> = high volume, low conflict ·{" "}
           <span style={{ color: T.accent }}>narrow</span> = low volume, specialized ·{" "}
           <span style={{ color: T.error }}>struggling</span> = high conflict + regret ·{" "}
           <span style={{ color: T.warn }}>redundant</span> = domain overlap candidate
@@ -630,7 +621,7 @@ export default function TimelineTab() {
               const w      = parseFloat(a.weight || 0);
               const conf   = parseFloat(a.confidence || 0);
               const regret = parseFloat(a.avg_regret || 0);
-              const wColor = w >= 0.85 ? T.success : w >= 0.65 ? T.warn : T.error;
+              const wColor = w >= 0.85 ? T.accentText : w >= 0.65 ? T.warn : T.error;
               return (
                 <div key={a.agent} style={{ display: "grid",
                   gridTemplateColumns: "160px 1fr 70px 70px 70px",
@@ -678,7 +669,7 @@ export default function TimelineTab() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {memCoh.map((m, i) => {
               const q      = parseFloat(m.avg_quality || 0);
-              const qColor = q >= 0.80 ? T.success : q >= 0.65 ? T.warn : T.error;
+              const qColor = q >= 0.80 ? T.accentText : q >= 0.65 ? T.warn : T.error;
               return (
                 <div key={m.type} style={{ display: "grid",
                   gridTemplateColumns: "120px 1fr 60px 70px 70px",
@@ -722,7 +713,7 @@ export default function TimelineTab() {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px,1fr))", gap: 14 }}>
             {[
-              { label: "Mean G_r",    value: `${cohState.G_r_mean >= 0 ? "+" : ""}${cohState.G_r_mean?.toFixed(4)}`, color: (cohState.G_r_mean ?? 0) >= 0 ? T.success : T.error },
+              { label: "Mean G_r",    value: `${cohState.G_r_mean >= 0 ? "+" : ""}${cohState.G_r_mean?.toFixed(4)}`, color: (cohState.G_r_mean ?? 0) >= 0 ? T.accentText : T.error },
               { label: "Std G_r",     value: (cohState.G_r_std ?? 0).toFixed(4),   color: T.muted },
               { label: "n reflected", value: cohState.G_r_n,                        color: T.accent },
               { label: "G_r > 0",     value: `${Math.round((cohState.G_r_positive ?? 0) * 100)}%`, color: T.warn },
@@ -758,7 +749,7 @@ export default function TimelineTab() {
                   .sort((a, b) => b[1].conflict_rate - a[1].conflict_rate)
                   .map(([agent, v], i) => {
                     const rate = v.conflict_rate || 0;
-                    const col  = rate > 0.60 ? T.error : rate > 0.30 ? T.warn : T.success;
+                    const col  = rate > 0.60 ? T.error : rate > 0.30 ? T.warn : T.accentText;
                     return (
                       <div key={agent} style={{ display: "grid",
                         gridTemplateColumns: "160px 1fr 60px 80px",

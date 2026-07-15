@@ -17,7 +17,7 @@ const fs = require("fs");
 
 const PORT = parseInt(process.env.AMAGRA_PORT || "8000", 10);
 // Renderer origin: keep `localhost` (not 127.0.0.1) so the window matches the UI's
-// default API base (ui/src/api.js → http://localhost:8000) and stays same-origin:
+// default API base (ui/src/lib/api.js → http://localhost:8000) and stays same-origin:
 // no CORS. Chromium special-cases `localhost` to loopback and tries both families,
 // so the window load is robust even when the server is IPv4-only.
 const BASE = `http://localhost:${PORT}`;

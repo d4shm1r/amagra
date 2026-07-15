@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { T, GOLD, LUX, TYPE } from "@/styles/theme";
+import { Page, Stack, SegmentedControl } from "@/components/ui";
 import UCIDashboard      from "@/components/panels/UCIDashboard";
 import RiskObservatoryPanel from "@/components/panels/RiskObservatoryPanel";
 import EventLogPanel       from "@/components/panels/EventLogPanel";
@@ -32,33 +32,16 @@ export default function DiagnosticsTab({ initialSection = "uci" }) {
   const Active = (SECTIONS.find(s => s.id === sec) || SECTIONS[0]).Comp;
 
   return (
-    <div style={{ animation: "fadeIn .2s" }}>
-      {/* Segmented section nav — one decision, six calm options */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 18, flexWrap: "wrap" }}>
-        {SECTIONS.map(s => {
-          const on = s.id === sec;
-          return (
-            <button
-              key={s.id}
-              onClick={() => setSec(s.id)}
-              className="nav-btn"
-              style={{
-                ...TYPE.small, fontWeight: on ? 700 : 500,
-                padding: "7px 16px", borderRadius: 99,
-                background: on ? LUX.goldTint : "transparent",
-                border: `1px solid ${on ? GOLD.g2 + "66" : T.border}`,
-                color: on ? T.accent2 : T.muted,
-                cursor: "pointer", fontFamily: "inherit",
-                transition: "background 0.12s, color 0.12s",
-              }}
-            >
-              {s.label}
-            </button>
-          );
-        })}
-      </div>
-
-      <Active />
-    </div>
+    <Page>
+      <Stack gap="lg">
+        {/* Segmented section nav — one decision, seven calm options */}
+        <SegmentedControl
+          options={SECTIONS.map(s => ({ val: s.id, label: s.label }))}
+          value={sec}
+          onChange={setSec}
+        />
+        <Active />
+      </Stack>
+    </Page>
   );
 }

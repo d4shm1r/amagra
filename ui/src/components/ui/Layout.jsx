@@ -3,7 +3,7 @@
 // Tabs describe structure ("a column with medium gaps", "a 4-up grid"), never
 // geometry. Every gap here lands on the 4px SPACE scale, so vertical rhythm is
 // a property of the system instead of a per-tab guess.
-import { Children } from "react";
+import { Children, forwardRef } from "react";
 import { SPACE, DUR, EASE, T, LAYOUT } from "@/styles/theme";
 
 const GAP = { none: 0, xs: SPACE[1], sm: SPACE[2], md: SPACE[3], lg: SPACE[4], xl: SPACE[6], xxl: SPACE[7] };
@@ -89,6 +89,20 @@ export function Grid({ cols = 2, min, gap = "md", divided = false, children }) {
     </div>
   );
 }
+
+/** Uniform inset — pure spacing, no surface or color. For content that must
+ *  breathe inside a container that doesn't pad it (an embedded panel dropped
+ *  into a dashboard cell). Sizes land on the same SPACE scale as every gap. */
+export function Pad({ size = "md", children }) {
+  return <div style={{ padding: gapOf(size) }}>{children}</div>;
+}
+
+/** A vertical scroll region capped at `max` height — for a long feed that must
+ *  not push the page taller (event logs, run lists). Forwards its ref so a
+ *  caller can pin it to the top on refresh. */
+export const Scroll = forwardRef(function Scroll({ max = "60vh", children }, ref) {
+  return <div ref={ref} style={{ maxHeight: max, overflowY: "auto" }}>{children}</div>;
+});
 
 /** Push subsequent siblings to the far edge of a Row. */
 export function Spacer() {

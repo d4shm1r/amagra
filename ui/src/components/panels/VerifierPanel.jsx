@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { T, FONT_MONO, TYPE } from "@/styles/theme";
-import { PageHeader, ObsPanel, MetricCard } from "@/components/ui";
+import {
+  Page, PageHeader, ObsPanel, MetricCard, RefreshButton, EmptyState,
+  Grid, Stack, Table, Inline,
+} from "@/components/ui";
 import { API } from "@/lib/api";
 
 // ── Step Verifier (Diagnostics section) ───────────────────────────
@@ -9,15 +11,16 @@ import { API } from "@/lib/api";
 // architecture diagram, and this is its observability surface:
 // GET /verify/stats + GET /verify/recent.
 
-const REC_COLOR = {
-  continue: T.success,
-  retry:    T.warn,
-  replan:   T.warn,
-  abort:    T.error,
-};
+// Recommendation → tone (meaning, not decoration). Resolved by the kit.
+const REC_TONE = { continue: "success", retry: "warn", replan: "warn", abort: "error" };
 
 function prettyTs(ts) {
   return (ts || "").slice(5, 16).replace("T", " ");
+}
+
+function passRateTone(v) {
+  if (v == null) return "muted";
+  return v >= 0.9 ? "success" : v >= 0.7 ? "warn" : "error";
 }
 
 export default function VerifierPanel() {
@@ -44,84 +47,61 @@ export default function VerifierPanel() {
     return () => clearInterval(id);
   }, [load]);
 
-  const n        = stats?.n ?? 0;
-  const passRate = stats?.pass_rate;
+  const n         = stats?.n ?? 0;
+  const passRate  = stats?.pass_rate;
   const meanScore = stats?.mean_score;
-  const byRec    = stats?.by_recommendation || {};
-  const rows     = recent || [];
+  const byRec     = stats?.by_recommendation || {};
+  const rows      = recent || [];
+
+  const columns = [
+    { key: "ts", width: 78, mono: true, tone: "muted", render: v => prettyTs(v.ts) },
+    { key: "agent", width: 120, weight: 600, render: v => (v.agent || "?").replace(/_/g, " ") },
+    { key: "score", width: 110, mono: true, render: v => (
+      <>
+        <Inline mono tone={v.passed ? "success" : "error"}>{v.raw_score?.toFixed(2)}</Inline>{" "}
+        <Inline mono tone="muted">/ {v.threshold?.toFixed(2)} req</Inline>
+      </>
+    ) },
+    { key: "recommendation", width: 72, weight: 700, tone: v => REC_TONE[v.recommendation] || "muted" },
+    { key: "issues", grow: true, tone: "muted", render: v => v.issues || "—" },
+  ];
 
   return (
-    <div style={{ animation: "fadeIn .2s" }}>
+    <Page>
       <PageHeader
         sticky={false}
         title="Step Verifier"
         subtitle="Every plan step is scored before the system moves on — pass, retry, replan, or abort."
       >
-        <button onClick={load} className="nav-btn" style={{
-          background: "transparent", border: `1px solid ${T.border}`,
-          color: T.mutedLt, padding: "5px 15px", borderRadius: 16,
-          fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-        }}>
-          ↻ Refresh
-        </button>
+        <RefreshButton onClick={load} />
       </PageHeader>
 
-      {/* ── Stats row ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 14 }}>
-        <MetricCard label="Pass rate" mono
-          value={passRate != null ? `${(passRate * 100).toFixed(1)}%` : "—"}
-          color={passRate == null ? T.muted : passRate >= 0.9 ? T.success : passRate >= 0.7 ? T.warn : T.error}
-          sub={`last ${n} verifications`} />
-        <MetricCard label="Mean score" mono
-          value={meanScore != null ? meanScore.toFixed(3) : "—"}
-          color={meanScore == null ? T.muted : meanScore >= 0.8 ? T.success : T.warn}
-          sub="raw verifier score" />
-        {Object.entries(byRec).map(([rec, rate]) => (
-          <MetricCard key={rec} label={rec} mono
-            value={`${(rate * 100).toFixed(0)}%`}
-            color={REC_COLOR[rec] || T.muted}
-            sub="of recent recommendations" />
-        ))}
-      </div>
+      <Stack gap="md">
+        {/* ── Stats row ── */}
+        <Grid min={150} gap="sm">
+          <MetricCard label="Pass rate" tone={passRateTone(passRate)}
+            value={passRate != null ? `${(passRate * 100).toFixed(1)}%` : "—"}
+            sub={`last ${n} verifications`} />
+          <MetricCard label="Mean score"
+            tone={meanScore == null ? "muted" : meanScore >= 0.8 ? "success" : "warn"}
+            value={meanScore != null ? meanScore.toFixed(3) : "—"}
+            sub="raw verifier score" />
+          {Object.entries(byRec).map(([rec, rate]) => (
+            <MetricCard key={rec} label={rec} tone={REC_TONE[rec] || "muted"}
+              value={`${(rate * 100).toFixed(0)}%`}
+              sub="of recent recommendations" />
+          ))}
+        </Grid>
 
-      {/* ── Recent verifications ── */}
-      <ObsPanel title="Recent verifications" icon="✓">
-        {rows.length === 0 ? (
-          <div style={{ padding: "26px 0", textAlign: "center", color: T.muted, fontSize: 12.5, fontStyle: "italic" }}>
-            No verifications yet — ask something and each verified step lands here.
-          </div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            {rows.map((v, i) => {
-              const color = v.passed ? T.success : T.error;
-              return (
-                <div key={`${v.ts}-${i}`} style={{
-                  display: "flex", alignItems: "center", gap: 12,
-                  padding: "7px 2px", borderBottom: i < rows.length - 1 ? `1px solid ${T.border}` : "none",
-                }}>
-                  <span style={{ ...TYPE.small, fontFamily: FONT_MONO, color: T.muted, minWidth: 78 }}>{prettyTs(v.ts)}</span>
-                  <span style={{ ...TYPE.small, fontWeight: 600, color: T.text, minWidth: 120 }}>
-                    {(v.agent || "?").replace(/_/g, " ")}
-                  </span>
-                  <span style={{ ...TYPE.small, fontFamily: FONT_MONO, color, minWidth: 110 }}>
-                    {v.raw_score?.toFixed(2)} <span style={{ color: T.muted }}>/ {v.threshold?.toFixed(2)} req</span>
-                  </span>
-                  <span style={{
-                    ...TYPE.small, fontWeight: 700, minWidth: 72,
-                    color: REC_COLOR[v.recommendation] || T.muted,
-                  }}>
-                    {v.recommendation}
-                  </span>
-                  <span style={{ ...TYPE.small, color: T.muted, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                    title={v.issues}>
-                    {v.issues || "—"}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </ObsPanel>
-    </div>
+        {/* ── Recent verifications ── */}
+        <ObsPanel title="Recent verifications" icon="✓">
+          {rows.length === 0 ? (
+            <EmptyState msg="No verifications yet — ask something and each verified step lands here." />
+          ) : (
+            <Table columns={columns} rows={rows} rowKey={(v, i) => `${v.ts}-${i}`} />
+          )}
+        </ObsPanel>
+      </Stack>
+    </Page>
   );
 }
