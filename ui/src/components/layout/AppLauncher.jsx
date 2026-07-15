@@ -16,9 +16,30 @@ import { T, LUX, FONT_UI, FONT_DISPLAY, EASE, DUR } from "@/styles/theme";
 export const chatEvent = (name, detail) =>
   window.dispatchEvent(new CustomEvent(name, { detail }));
 
-// `primary` marks the menu's one visual anchor (New chat): a double-width tile
-// with icon-beside-text and the gold chip worn permanently — everything else
-// stays a quiet square, so the eye has a landing point.
+// One tile = icon chip + label + description, and every tile must be the SAME
+// object wearing different words. Two things make that true:
+//
+//   · Fixed internal geometry. The chip, the label line, and a TWO-LINE
+//     description box are each a fixed height, so a tile with a one-line
+//     description and a tile with a two-line one occupy the identical box and
+//     their bottoms line up. (Before, height was fixed but the text was
+//     top-packed, so a ≤34-char description that wrapped in a narrow column but
+//     not a wide one left a different bottom gap per tile — the unevenness.)
+//   · One color ladder, from tokens. Idle: label T.mutedLt over description
+//     T.muted (description always one step lighter). Hover: both warm one step
+//     together (see .tile-label / .tile-sub in the CSS), so the whole button
+//     responds as a unit, not just the chip.
+//
+// `primary` marks the menu's one anchor (New chat): double-width, icon beside
+// text, gold chip worn permanently — the one deliberate exception.
+// Geometry, top to bottom: 14 pad + 32 chip + 10 gap + ~17 label + 3 + 30
+// description + 18 bottom pad = 124. The bottom pad is generous on purpose — a
+// two-line description that fills the reserved box (e.g. "routing and memory in
+// numbers" in a narrow column) still sits clear of the tile's edge, not jammed
+// against it.
+const TILE_H = 124;   // fits chip + label + a reserved 2-line description + air
+const SUB_H  = 30;    // 2 lines at 10.5px / 1.4 — reserved whether used or not
+
 function Tile({ label, icon, sub, active, primary, onClick, ariaLabel }) {
   const gold = active || primary;
   return (
@@ -29,13 +50,9 @@ function Tile({ label, icon, sub, active, primary, onClick, ariaLabel }) {
       style={{
         display: "flex", flexDirection: primary ? "row" : "column",
         alignItems: primary ? "center" : undefined,
-        gap: primary ? 13 : 11, textAlign: "left", userSelect: "none",
+        gap: primary ? 13 : 10, textAlign: "left", userSelect: "none",
         gridColumn: primary ? "span 2" : undefined,
-        // Fixed height, not min-height: every tile now carries an icon, a label
-        // and a description, so they all want the same box. minHeight let a tile
-        // grow if its text wrapped, and one tall tile drags its whole grid row
-        // with it — the ragged look.
-        padding: "15px 15px", height: 104, cursor: "pointer",
+        padding: "14px 15px 18px", height: TILE_H, cursor: "pointer",
         position: "relative", overflow: "hidden",   // hosts the hover sheen sweep
         borderRadius: 14, fontFamily: FONT_UI,
         border: `1px solid ${gold ? T.accent : LUX.tileBorder}`,
@@ -70,17 +87,18 @@ function Tile({ label, icon, sub, active, primary, onClick, ariaLabel }) {
       <div style={{ minWidth: 0, width: "100%" }}>
         <div className="tile-label" style={{
           fontSize: primary ? 14.5 : 13, fontWeight: active || primary ? 700 : 600,
-          color: active ? "#8A5A00" : primary ? T.text : "#4A3A22", letterSpacing: "-0.01em",
-          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          color: active ? T.accentText : primary ? T.text : T.mutedLt, letterSpacing: "-0.01em",
+          lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           transition: `color ${DUR.base} ${EASE.out}`,
         }}>{label}</div>
-        {/* Every destination has a description now, so this line is never empty
-            and the tiles all sit on the same baseline. Two lines maximum: a long
-            one wraps and clamps rather than being cut mid-word by an ellipsis. */}
-        {sub && <div style={{
-          fontSize: 10.5, color: T.muted, marginTop: 3, lineHeight: 1.35,
+        {/* Reserved to a fixed two-line box, so a one-line and a two-line
+            description occupy the same height and every tile's content ends on
+            the same baseline. Clamps rather than cutting a word with an ellipsis. */}
+        {sub && <div className="tile-sub" style={{
+          fontSize: 10.5, color: T.muted, marginTop: 3, lineHeight: 1.4,
+          ...(primary ? null : { height: SUB_H }),
           display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
-          overflow: "hidden",
+          overflow: "hidden", transition: `color ${DUR.base} ${EASE.out}`,
         }}>{sub}</div>}
       </div>
     </button>
@@ -348,7 +366,11 @@ export default function AppLauncher({
           background: linear-gradient(135deg,#FFF3C4,#EACB62) !important; color: #6C4C00 !important;
           box-shadow: 0 4px 12px rgba(196,136,8,0.30), 0 0 18px rgba(222,184,56,0.20), inset 0 1px 1px rgba(255,248,215,0.8);
         }
-        .launch-tile:hover .tile-label { color: #6C4C00 !important; }
+        /* The whole button warms as one on hover: label and description each go
+           one step warmer together, not the label alone with a flat-grey
+           description under it. */
+        .launch-tile:hover .tile-label { color: ${T.accentText} !important; }
+        .launch-tile:hover .tile-sub   { color: ${T.mutedLt} !important; }
         .launch-tile:active { transform: translateY(-1px) scale(0.99); transition-duration: 90ms; }
         .launch-tile:focus-visible { outline: 2px solid ${T.accent}; outline-offset: 2px; }
         .launch-row:hover {
