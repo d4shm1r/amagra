@@ -16,7 +16,7 @@ FastAPI backend frozen in as a PyInstaller sidecar (`packaging/amagra-server.spe
 1. **Bump the version in all four sources — they must match** (drift ships a build
    that reports the wrong version):
    - `infrastructure/version.py` → `__version__` (backend / FastAPI / `/health`)
-   - `ui/src/constants.js` → `VERSION` (in-app UI marker)
+   - `ui/src/config/constants.js` → `VERSION` (in-app UI marker)
    - `ui/package.json` → `version`
    - `desktop/package.json` → `version`
 

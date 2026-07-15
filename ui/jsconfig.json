@@ -1,0 +1,17 @@
+{
+  // Editor-only. Mirrors the `@` → `src/` alias in vite.config.js so VS Code can
+  // resolve `@/components/ui`, `@/lib/api` etc. for go-to-definition and
+  // autocomplete. The build resolves these through Vite, not this file.
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "jsx": "react-jsx",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "checkJs": false
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "build"]
+}

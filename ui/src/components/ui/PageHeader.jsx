@@ -62,14 +62,21 @@ export function PageHeader({ title, subtitle, children, gold = true, center = fa
 
   return (
     <div style={{
-      position: "sticky", top: 0, zIndex: 30,
+      position: "sticky",
+      // Stick at -gutterY, NOT 0. The scroll surface has `padding-top: gutterY`,
+      // so its sticky viewport top sits gutterY below the container's real top.
+      // `top: 0` would pin the band THERE — leaving a gutterY strip of canvas
+      // above it that page content scrolls up through. Offsetting the stick point
+      // by the same gutter cancels the padding, so the band pins to the true top
+      // (0 gap) both at rest and while scrolling. It pairs with the marginTop
+      // below, which keeps the at-rest position flush too.
+      top: -LAYOUT.gutterY, zIndex: 30,
       // Full-bleed: escape the centered column and span the viewport. The scroll
       // surface sets overflowX: hidden, so this never makes a horizontal bar.
       width: "100vw", marginLeft: "calc(50% - 50vw)",
-      // Flush to the very top: pull up through the scroll surface's whole top
-      // gutter so the band starts at y=0 with no strip of canvas above it. The
-      // gutter is re-added as the band's own padding, so the title keeps its
-      // breathing room without the band leaving a gap.
+      // Pull up through the scroll surface's whole top gutter so the band starts
+      // at y=0 with no strip of canvas above it. The gutter is re-added as the
+      // band's own padding, so the title keeps its breathing room.
       marginTop: -LAYOUT.gutterY, marginBottom: 0,
       // Bottom padding carries the dissolve zone (HEADER_FADE) plus the normal
       // gap to the content below, so the fade lands under the pills, never on

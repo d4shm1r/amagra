@@ -39,7 +39,7 @@ A curated subset of these docs is served by the API at `GET /docs/index` + `GET 
 | `evaluation/` | Routing benchmarks, adversarial eval, rater harness |
 | `tools/` | Agent tools: workspace files, sandbox, web search |
 | `training/` | Auto-retrain helpers for the learned router |
-| `ui/` | React dashboard (Vite) — see `ui/src/navConfig.js` for the launcher |
+| `ui/` | React dashboard (Vite) — see `ui/src/README.md` for the folder contract, `ui/src/config/navConfig.js` for the launcher |
 | `desktop/` | Electron shell + `install-desktop-entry.sh` (Linux launcher entry) |
 | `packaging/` | AppImage build (`build-appimage.sh`) |
 | `scripts/` | Live utilities only: `migrate.py`, `migrate_to_single_db.py`, `ModelOverview.py` |

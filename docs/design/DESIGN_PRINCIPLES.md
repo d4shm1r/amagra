@@ -52,8 +52,12 @@ things, not adding them.
 
 - Almost no visual noise; consistent spacing; smooth, calm motion.
 - Instant responses; every interaction feels intentional; no unnecessary dialogs.
-- Brand rule (see [`theme.js`](../../ui/src/theme.js)): **gold is the signature, never the
+- Brand rule (see [`theme.js`](../../ui/src/styles/theme.js)): **gold is the signature, never the
   hierarchy system**; lead with the AMAGRA serif wordmark, never a glyph/monogram.
+- These principles are *enforced*, not just written down: colors and shapes may
+  only be authored in `ui/src/styles/` and `ui/src/components/ui|forms/`, and
+  `npm run lint:ui` fails a view that restyles instead of composing the kit. See
+  [`ui/src/README.md`](../../ui/src/README.md).
 
 ---
 
