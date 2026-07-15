@@ -32,7 +32,12 @@ export const chatEvent = (name, detail) =>
 //
 // `primary` marks the menu's one anchor (New chat): double-width, icon beside
 // text, gold chip worn permanently — the one deliberate exception.
-const TILE_H = 120;   // fits chip + label + a reserved 2-line description
+// Geometry, top to bottom: 14 pad + 32 chip + 10 gap + ~17 label + 3 + 30
+// description + 18 bottom pad = 124. The bottom pad is generous on purpose — a
+// two-line description that fills the reserved box (e.g. "routing and memory in
+// numbers" in a narrow column) still sits clear of the tile's edge, not jammed
+// against it.
+const TILE_H = 124;   // fits chip + label + a reserved 2-line description + air
 const SUB_H  = 30;    // 2 lines at 10.5px / 1.4 — reserved whether used or not
 
 function Tile({ label, icon, sub, active, primary, onClick, ariaLabel }) {
@@ -47,7 +52,7 @@ function Tile({ label, icon, sub, active, primary, onClick, ariaLabel }) {
         alignItems: primary ? "center" : undefined,
         gap: primary ? 13 : 10, textAlign: "left", userSelect: "none",
         gridColumn: primary ? "span 2" : undefined,
-        padding: "14px 15px", height: TILE_H, cursor: "pointer",
+        padding: "14px 15px 18px", height: TILE_H, cursor: "pointer",
         position: "relative", overflow: "hidden",   // hosts the hover sheen sweep
         borderRadius: 14, fontFamily: FONT_UI,
         border: `1px solid ${gold ? T.accent : LUX.tileBorder}`,
