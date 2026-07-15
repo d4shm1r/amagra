@@ -28,7 +28,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # event log and break data-dependent checks (see test_neutral_mode_validation).
 # Must run before the core.api_keys / memory_core.db imports below, which pull
 # in modules that cache their DB path at import time.
-os.environ.setdefault(
+_SESSION_DATA_DIR = os.environ.setdefault(
     "AMAGRA_DATA_DIR",
     tempfile.mkdtemp(prefix="amagra_test_data_"),
 )
@@ -81,6 +81,26 @@ _TEST_KEY = _ak.create_key(owner="pytest@amagra.dev", tier="developer")
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
+@pytest.fixture(autouse=True)
+def _guard_data_dir_isolation():
+    """Reset the durable-data isolation to the session baseline before each test.
+
+    Several modules point AMAGRA_DB (single-file mode) and/or AMAGRA_DATA_DIR at
+    their own temp at *import* time (e.g. test_project_explain,
+    test_model_choices_prompt_version) and re-assert it in their own autouse
+    fixture. Those import-time assignments and any un-restored teardown leak into
+    the session env, so a later test can resolve a DB path with no schema — which
+    only fails on a clean checkout (CI), e.g. /memory/records → "no such table:
+    memories". Resetting here before every test makes each test start from the
+    isolation baseline. Modules that need their own isolation re-assert it in a
+    module-local autouse fixture, which pytest runs *after* this conftest one, so
+    they are unaffected.
+    """
+    os.environ.pop("AMAGRA_DB", None)
+    os.environ["AMAGRA_DATA_DIR"] = _SESSION_DATA_DIR
+    yield
+
 
 @pytest.fixture(scope="session")
 def auth_headers():
