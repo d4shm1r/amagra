@@ -96,3 +96,76 @@ def test_reflect_type_for_python_dev():
 def test_reflect_type_for_unknown_agent():
     s = rg.compute_risk(primary_agent="nonexistent_agent_xyz", log=False)
     assert s.reflect_type == "general"  # fallback
+
+
+# ── reflect_depth — the continuous dial (#110) ────────────────────────────────
+
+def test_reflect_depth_zero_outside_full():
+    # none and light do no correction, so they have no depth to grade.
+    for level, kw in [
+        ("none",  dict(action="lookup", confidence=0.99, complexity="simple")),
+        ("light", dict(action="research", confidence=0.72, complexity="simple")),
+    ]:
+        s = rg.compute_risk(log=False, **kw)
+        if s.reflect_level == level:
+            assert s.reflect_depth == 0.0, f"{level} should have depth 0"
+
+def test_reflect_depth_bounded():
+    for conf in (0.30, 0.50, 0.70, 0.90, 0.99):
+        for action in ("debug", "build", "lookup", "explain"):
+            s = rg.compute_risk(action=action, confidence=conf, log=False)
+            assert 0.0 <= s.reflect_depth <= 1.0
+
+def test_reflect_depth_monotone_in_risk():
+    # Within full, more risk must never mean less correction depth.
+    seen = sorted(
+        (s.total_risk, s.reflect_depth)
+        for s in (
+            rg.compute_risk(action=a, confidence=c, regret=r,
+                            complexity=x, planner_uncertainty=p, log=False)
+            for a in ("debug", "build", "research")
+            for c in (0.3, 0.6, 0.9)
+            for r in (0.0, 0.4)
+            for x in ("simple", "compound")
+            for p in (0.0, 0.8)
+        )
+        if s.reflect_level == "full"
+    )
+    for (r1, d1), (r2, d2) in zip(seen, seen[1:]):
+        assert d2 >= d1, f"depth fell from {d1} to {d2} as risk rose {r1}→{r2}"
+
+def test_reflect_depth_full_band_endpoints():
+    assert rg._risk_to_depth(rg._THRESH_LIGHT, "full") == 0.0   # full begins
+    assert rg._risk_to_depth(1.0, "full") == 1.0                # max risk
+    assert rg._risk_to_depth(1.0, "light") == 0.0               # kind, not degree
+
+def test_reflect_depth_does_not_change_reflect_level():
+    # The dial is additive: it must not perturb the existing three-bucket gate.
+    for conf in (0.3, 0.6, 0.9):
+        s = rg.compute_risk(action="debug", confidence=conf, log=False)
+        expected = ("full" if s.total_risk >= rg._THRESH_LIGHT
+                    else "light" if s.total_risk >= rg._THRESH_NONE
+                    else "none")
+        assert s.reflect_level == expected
+
+def test_reflect_depth_band_is_bottom_heavy():
+    # Guards the calibration trap recorded in _risk_to_depth: `full` is barely
+    # reachable without planner uncertainty, so the dial's live range sits far
+    # below 1.0. If this starts failing, the risk weights moved and any
+    # depth->threshold consumer must be recalibrated before it ships.
+    ceiling_no_planner = (
+        rg._W_ACTION * max(rg._ACTION_RISK.values())
+        + rg._W_ROUTING * 1.0
+        + rg._W_PLANNER * 0.0
+        + rg._W_COMPLEXITY * 0.30
+    )
+    assert ceiling_no_planner <= rg._THRESH_LIGHT + 1e-9, (
+        "full mode became reachable without planner uncertainty — recheck the dial band"
+    )
+    worst = rg.compute_risk(action="debug", confidence=0.30, regret=0.0,
+                            complexity="compound", planner_uncertainty=1.0, log=False)
+    assert worst.reflect_level == "full"
+    assert worst.reflect_depth < 0.5, (
+        f"realistic worst case now reaches depth {worst.reflect_depth}; "
+        "the dial band assumption in _risk_to_depth needs revisiting"
+    )

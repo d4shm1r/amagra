@@ -74,6 +74,54 @@ _THRESH_NONE  = 0.32
 _THRESH_LIGHT = 0.52
 # Above _THRESH_LIGHT → full
 
+# ── Reflection depth dial (issue #110) ────────────────────────
+# `reflect_level` is NOT one ordered axis — none→light switches measurement on
+# (grounded score feeds learning; the response is never touched), light→full
+# switches correction on (critique + refine). Those are different kinds, so a
+# continuous dial spanning none→light→full would interpolate across a type
+# boundary. The dial therefore lives *inside* `full`, grading correction effort:
+#
+#   t = 0  → threshold 0, first eval passes, no refine  (== light's output)
+#   t = 1  → today's full mode
+#
+# Emitted and logged only; no consumer yet. Observe the distribution before
+# wiring it to control (the diagnostic-before-controller discipline of #105).
+_DEPTH_FLOOR = _THRESH_LIGHT   # risk at which `full` begins → t = 0
+
+
+def _risk_to_depth(total: float, level: str) -> float:
+    """Continuous correction depth t ∈ [0,1] for a risk score.
+
+    Zero outside `full` — none and light do no correction, so they have no
+    depth to grade. Within `full`, t is the linear position of `total` in
+    [_DEPTH_FLOOR, 1.0].
+
+    NB (#110): the linearity here is deliberate, not a placeholder.
+    `fractional_reflection_depth` — the function #110 proposed to build this on
+    — reduces to the identity at the canonical base point (φ_t(0) = t exactly),
+    so routing t through it would be an elaborate way to multiply by t. At any
+    other base point the curve's shape is set entirely by that arbitrary choice.
+    See the issue thread; revisit only with a measured reason to bend the curve.
+
+    DO NOT wire this to a controller on today's calibration. Risk is not
+    uniform over [_DEPTH_FLOOR, 1]; it is bunched at the floor. With no planner
+    uncertainty the ceiling is 0.52 — the full threshold itself, hit only if
+    action, routing and complexity all max out at once — so `full` is in
+    practice reached via planner_uncertainty, and even a debug/compound/low-
+    confidence step at p_uncert=1.0 scores 0.682, i.e. t ≈ 0.34. The realistic
+    band is t ∈ [0, ~0.35]; the top two-thirds of the dial is dead. A naive
+    `threshold = THRESHOLD * t` consumer would hand real traffic thresholds
+    around 0.0–0.28 against today's 0.80 and quietly disable refinement.
+    Calibrate the mapping against the logged distribution first.
+    """
+    if level != "full":
+        return 0.0
+    span = 1.0 - _DEPTH_FLOOR
+    if span <= 0.0:
+        return 1.0
+    return round(min(1.0, max(0.0, (total - _DEPTH_FLOOR) / span)), 4)
+
+
 # ── Weights ───────────────────────────────────────────────────
 _W_ACTION     = 0.30
 _W_ROUTING    = 0.25
@@ -94,6 +142,7 @@ class RiskSignal:
     total_risk:           float
     reflect_level:        str     # none | light | full
     reflect_type:         str     # general | code | research
+    reflect_depth:        float   # continuous dial t ∈ [0,1] within `full`
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -101,6 +150,7 @@ class RiskSignal:
     def __str__(self) -> str:
         return (
             f"risk={self.total_risk:.3f} [{self.reflect_level}|{self.reflect_type}] "
+            f"depth={self.reflect_depth:.2f} "
             f"(action={self.action_risk:.2f}, routing={self.routing_uncertainty:.2f}, "
             f"planner={self.planner_uncertainty:.2f}, complexity={self.complexity_risk:.2f})"
         )
@@ -127,9 +177,15 @@ def _ensure_db():
             complexity_risk      REAL,
             total_risk           REAL,
             reflect_level        TEXT,
-            reflect_type         TEXT
+            reflect_type         TEXT,
+            reflect_depth        REAL
         )
     """)
+    # Existing risk_gate.db files predate reflect_depth (#110) — add it in place
+    # rather than losing the accumulated risk history to a rebuild.
+    _cols = {row[1] for row in con.execute("PRAGMA table_info(risk_log)")}
+    if "reflect_depth" not in _cols:
+        con.execute("ALTER TABLE risk_log ADD COLUMN reflect_depth REAL")
     con.execute("PRAGMA journal_mode=WAL")
     con.commit()
     con.close()
@@ -145,12 +201,13 @@ def _log_risk(action: str, agent: str, complexity: str,
             """INSERT INTO risk_log
                (action, agent, complexity, action_risk, routing_uncertainty,
                 planner_uncertainty, complexity_risk, total_risk,
-                reflect_level, reflect_type)
-               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                reflect_level, reflect_type, reflect_depth)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
             (action, agent, complexity,
              signal.action_risk, signal.routing_uncertainty,
              signal.planner_uncertainty, signal.complexity_risk,
-             signal.total_risk, signal.reflect_level, signal.reflect_type),
+             signal.total_risk, signal.reflect_level, signal.reflect_type,
+             signal.reflect_depth),
         )
         con.commit()
         con.close()
@@ -228,6 +285,7 @@ def compute_risk(
         total_risk          = total,
         reflect_level       = level,
         reflect_type        = r_type,
+        reflect_depth       = _risk_to_depth(total, level),
     )
 
     if log:
