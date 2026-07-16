@@ -233,7 +233,11 @@ def _reflect_level(action: str, primary_agent: str,
     Evidence-driven reflection triage (Phase 34).
 
     Delegates to risk_gate.compute_risk() which weighs:
-      action_risk, routing_uncertainty, planner_uncertainty, complexity_risk
+      action_risk, routing_uncertainty, complexity_risk
+
+    planner_uncertainty is accepted and forwarded but NOT weighed — no
+    caller can supply it here, because plan_query runs downstream of this
+    gate (#173). Passing it will not change the returned level.
 
     Falls back to the static rule table if risk_gate is unavailable.
 
