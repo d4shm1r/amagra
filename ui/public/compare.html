@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amagra vs LangSmith vs Promptfoo — Self-Hosted Prompt Debugger Comparison</title>
+  <meta name="description" content="How Amagra compares to LangSmith, Promptfoo, and Open WebUI for prompt testing: a self-hosted GUI that runs one prompt across Claude, GPT, and local models side by side and scores their divergence — private, on your own hardware, MIT licensed." />
+  <meta name="robots" content="index, follow" />
+  <meta name="keywords" content="LangSmith alternative, Promptfoo alternative, self-hosted prompt testing, open source LLM evaluation, cross-model prompt comparison, local prompt debugger, Open WebUI comparison" />
+  <link rel="canonical" href="https://amagra.dev/compare.html" />
+
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="alternate icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="theme-color" content="#160F05" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://amagra.dev/compare.html" />
+  <meta property="og:title" content="Amagra vs LangSmith vs Promptfoo — Self-Hosted Prompt Debugger Comparison" />
+  <meta property="og:description" content="A self-hosted GUI that runs one prompt across Claude, GPT, and local models side by side and scores their divergence. See how it compares to LangSmith, Promptfoo, and Open WebUI." />
+  <meta property="og:image" content="https://amagra.dev/social-preview.png" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="640" />
+  <meta property="og:image:alt" content="Amagra — see where your prompt breaks across models. Local-first, MIT licensed, self-hosted." />
+  <meta property="og:site_name" content="Amagra" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Amagra vs LangSmith vs Promptfoo" />
+  <meta name="twitter:description" content="A self-hosted GUI that compares models on one prompt and scores their divergence. See how it stacks up against LangSmith, Promptfoo, and Open WebUI." />
+  <meta name="twitter:image" content="https://amagra.dev/social-preview.png" />
+  <meta name="twitter:image:alt" content="Amagra — see where your prompt breaks across models. Local-first, MIT licensed, self-hosted." />
+
+  <!-- Structured data: BreadcrumbList — Home › Compare -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://amagra.dev/" },
+      { "@type": "ListItem", "position": 2, "name": "Compare", "item": "https://amagra.dev/compare.html" }
+    ]
+  }
+  </script>
+
+  <!-- Structured data: FAQPage — comparison answers AI engines can extract directly -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is a good self-hosted LangSmith alternative?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Amagra is a self-hosted alternative to LangSmith. LangSmith is a hosted, cloud-based tracing and evaluation platform; Amagra runs entirely on your own hardware, is MIT licensed, and adds a cross-model prompt debugger with a divergence score. Prompts stay private unless you opt into a cloud model with your own API key."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is there an open-source alternative to Promptfoo with a GUI?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Promptfoo is open-source but CLI and config-file driven. Amagra is an open-source (MIT), self-hosted GUI workspace: you paste a prompt, pick models, and see each answer side by side with a divergence score, without writing config files."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does Amagra compare to LangSmith?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "LangSmith is hosted, cloud-based, and proprietary, with tracing and evaluation aimed at production LLM apps. Amagra is local-first, self-hosted, and MIT licensed, focused on interactively comparing one prompt across Claude, GPT, Gemini, and local Ollama models and scoring how much they agree. Choose LangSmith for hosted production observability; choose Amagra to debug prompts privately on your own machine."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does Amagra compare to Promptfoo?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Both run locally and are open source. Promptfoo is a CLI-and-config test runner for prompt assertions and CI. Amagra is a visual GUI that runs a prompt across several models at once, shows the outputs side by side, and reports a divergence score. They are complementary: Promptfoo for scripted regression tests, Amagra for interactive cross-model debugging."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the difference between Amagra and Open WebUI?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Open WebUI is a self-hosted chat front-end for local models. Amagra is a prompt-debugging workspace: its focus is running one prompt across multiple models simultaneously and quantifying their agreement with a divergence score, plus persistent memory and replayable reasoning. Open WebUI is for chatting; Amagra is for comparing and debugging."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <!-- Self-hosted brand fonts + the shared Gilded Calm palette (tokens.css is
+       the single palette source for landing, FAQ, Compare, and the app). -->
+  <link rel="stylesheet" href="/fonts.css" />
+  <link rel="stylesheet" href="/tokens.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Local aliases — mapped onto the shared tokens, never standalone hex. */
+    :root {
+      --bg:    var(--l2);
+      --panel: var(--l4);
+      --ink:   var(--t1);
+      --muted: var(--text-muted);
+      --line:  var(--border);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+    header.site {
+      border-bottom: 1px solid var(--line);
+      padding: 22px 0;
+    }
+    header.site .wrap { display: flex; align-items: center; justify-content: space-between; }
+    .brand { font-family: "Cormorant Garamond", serif; font-weight: 700; font-size: 1.5rem; letter-spacing: 0.04em; color: var(--ink); text-decoration: none; }
+    .brand span { color: var(--g3); }
+    .nav a { color: var(--muted); text-decoration: none; font-size: 0.95rem; font-weight: 500; margin-left: 22px; }
+    .nav a:hover { color: var(--g4); }
+
+    .crumbs { padding: 22px 0 0; font-size: 0.82rem; color: var(--muted); }
+    .crumbs a { color: var(--g4); text-decoration: none; }
+
+    .hero { padding: 30px 0 24px; text-align: center; }
+    .eyebrow { text-transform: uppercase; letter-spacing: 0.18em; font-size: 0.74rem; font-weight: 600; color: var(--g4); }
+    h1 { font-family: "Cormorant Garamond", serif; font-weight: 700; font-size: clamp(2.1rem, 5vw, 2.9rem); line-height: 1.12; margin: 12px 0 14px; }
+    .lede { color: var(--muted); font-size: 1.06rem; max-width: 680px; margin: 0 auto; }
+
+    main { padding: 8px 0 72px; }
+
+    .table-scroll { overflow-x: auto; margin: 12px 0 8px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+    table.cmp { width: 100%; border-collapse: collapse; min-width: 640px; }
+    table.cmp th, table.cmp td { padding: 13px 16px; text-align: center; border-bottom: 1px solid var(--line); font-size: 0.92rem; }
+    table.cmp thead th { font-family: "Cormorant Garamond", serif; font-weight: 700; font-size: 1.05rem; color: var(--ink); }
+    table.cmp tbody tr:last-child td { border-bottom: none; }
+    table.cmp .feature { text-align: left; font-weight: 600; color: var(--ink); }
+    table.cmp .amagra { background: rgba(196, 136, 8, 0.07); font-weight: 600; }
+    table.cmp thead .amagra { color: var(--g4); }
+    .yes { color: #2E7A2C; font-weight: 700; }
+    .no  { color: #B25537; }
+    .part { color: var(--muted); font-size: 0.82rem; }
+
+    .prose { margin: 40px 0 0; }
+    .prose h2 { font-family: "Cormorant Garamond", serif; font-weight: 700; font-size: 1.6rem; margin: 34px 0 8px; color: var(--ink); }
+    .prose p { color: var(--muted); margin: 0 0 12px; }
+    .prose strong { color: var(--ink); }
+
+    .cta { text-align: center; padding: 46px 0 8px; }
+    .btn {
+      display: inline-block;
+      background: linear-gradient(180deg, #DEB838, #C48808);
+      color: #2A1F05; font-weight: 600; text-decoration: none;
+      padding: 13px 26px; border-radius: 10px; font-size: 0.98rem;
+    }
+    .btn:hover { filter: brightness(1.04); }
+    .btn-ghost { display: inline-block; margin-left: 10px; color: var(--g4); text-decoration: none; font-weight: 600; font-size: 0.98rem; padding: 13px 8px; }
+    .btn-ghost:hover { text-decoration: underline; }
+
+    footer.site {
+      border-top: 1px solid var(--line);
+      padding: 28px 0; text-align: center; color: var(--muted); font-size: 0.88rem;
+    }
+    footer.site a { color: var(--g4); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <header class="site">
+    <div class="wrap">
+      <a class="brand" href="/"><span>A</span>magra</a>
+      <nav class="nav">
+        <a href="/">Home</a>
+        <a href="/faq.html">FAQ</a>
+        <a href="https://github.com/d4shm1r/amagra">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a> › <span>Compare</span>
+    </nav>
+  </div>
+
+  <section class="hero">
+    <div class="wrap">
+      <div class="eyebrow">How Amagra compares</div>
+      <h1>Amagra vs LangSmith vs Promptfoo</h1>
+      <p class="lede">A self-hosted GUI that runs one prompt across Claude, GPT, and your local models side by side — and scores how much they agree. Here is where it fits next to the tools you already know.</p>
+    </div>
+  </section>
+
+  <main>
+    <div class="wrap">
+      <div class="table-scroll">
+        <table class="cmp">
+          <thead>
+            <tr>
+              <th class="feature">Feature</th>
+              <th class="amagra">Amagra</th>
+              <th>Promptfoo</th>
+              <th>LangSmith</th>
+              <th>Open WebUI</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="feature">Runs locally</td>
+              <td class="amagra"><span class="yes">✓</span></td>
+              <td><span class="yes">✓</span></td>
+              <td><span class="no">✗</span></td>
+              <td><span class="yes">✓</span></td>
+            </tr>
+            <tr>
+              <td class="feature">Visual GUI workspace</td>
+              <td class="amagra"><span class="yes">✓</span></td>
+              <td><span class="part">CLI</span></td>
+              <td><span class="yes">✓</span></td>
+              <td><span class="yes">✓</span></td>
+            </tr>
+            <tr>
+              <td class="feature">Cross-model side-by-side</td>
+              <td class="amagra"><span class="yes">✓</span></td>
+              <td><span class="part">Config</span></td>
+              <td><span class="part">Partial</span></td>
+              <td><span class="part">Partial</span></td>
+            </tr>
+            <tr>
+              <td class="feature">Divergence score</td>
+              <td class="amagra"><span class="yes">✓</span></td>
+              <td><span class="no">✗</span></td>
+              <td><span class="no">✗</span></td>
+              <td><span class="no">✗</span></td>
+            </tr>
+            <tr>
+              <td class="feature">Pre-run prompt checks</td>
+              <td class="amagra"><span class="yes">✓</span></td>
+              <td><span class="part">Asserts</span></td>
+              <td><span class="no">✗</span></td>
+              <td><span class="no">✗</span></td>
+            </tr>
+            <tr>
+              <td class="feature">Persistent project memory</td>
+              <td class="amagra"><span class="yes">✓</span></td>
+              <td><span class="no">✗</span></td>
+              <td><span class="part">Partial</span></td>
+              <td><span class="part">Partial</span></td>
+            </tr>
+            <tr>
+              <td class="feature">Self-hosted</td>
+              <td class="amagra"><span class="yes">✓</span></td>
+              <td><span class="yes">✓</span></td>
+              <td><span class="part">Limited</span></td>
+              <td><span class="yes">✓</span></td>
+            </tr>
+            <tr>
+              <td class="feature">License</td>
+              <td class="amagra"><span class="yes">MIT</span></td>
+              <td>Open source</td>
+              <td><span class="no">Proprietary</span></td>
+              <td>Open source</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="part" style="text-align:center; margin-top:10px;">Feature availability reflects each tool's core, self-hostable offering at time of writing. Corrections welcome — <a href="https://github.com/d4shm1r/amagra/issues" style="color:var(--g4);">open an issue</a>.</p>
+
+      <div class="prose">
+        <h2>A self-hosted LangSmith alternative</h2>
+        <p><strong>LangSmith</strong> is a hosted, cloud-based tracing and evaluation platform built for observing production LLM apps. It is proprietary and your data lives on their servers. <strong>Amagra</strong> is the opposite posture: local-first, self-hosted, and MIT licensed. It runs entirely on your own hardware, and prompts only leave your machine if you deliberately pick a cloud model and supply your own key. If you want hosted production observability, LangSmith fits; if you want to debug prompts privately on your own machine, Amagra does.</p>
+
+        <h2>An open-source Promptfoo alternative with a GUI</h2>
+        <p><strong>Promptfoo</strong> is open source and local, but CLI- and config-file-driven — excellent for scripted regression tests in CI. <strong>Amagra</strong> covers the interactive half of the same job: paste a prompt, pick models, and read every answer side by side with a divergence score, no YAML required. Many teams use both — Promptfoo for automated assertions, Amagra for hands-on cross-model debugging.</p>
+
+        <h2>More than a local chat UI</h2>
+        <p><strong>Open WebUI</strong> is a polished self-hosted chat front-end for local models. <strong>Amagra</strong> is not a chat app: its job is to run one prompt across several models at once and quantify their agreement, then keep that work in persistent memory with every routing decision logged and replayable. Chat is for conversation; Amagra is for comparison and debugging.</p>
+
+        <h2>The one thing only Amagra does</h2>
+        <p>The <strong>divergence score</strong> is the differentiator none of the others have: the average pairwise word-set overlap across every model's answer, reported as <em>Aligned</em>, <em>Mixed</em>, or <em>Divergent</em>. It turns "did these models actually agree?" from a manual read of five outputs into a single number — so a prompt that silently breaks on one model is visible at a glance.</p>
+      </div>
+
+      <div class="cta">
+        <a class="btn" href="https://github.com/d4shm1r/amagra">Get started on GitHub →</a>
+        <a class="btn-ghost" href="/faq.html">Read the FAQ</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site">
+    <div class="wrap">
+      Amagra — the local cross-model prompt debugger · MIT licensed ·
+      <a href="/">amagra.dev</a> · <a href="/faq.html">FAQ</a> · <a href="https://github.com/d4shm1r/amagra">GitHub</a>
+    </div>
+  </footer>
+</body>
+</html>
