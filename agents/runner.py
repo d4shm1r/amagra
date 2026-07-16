@@ -108,7 +108,13 @@ def run(spec: AgentSpec, ctx: Context) -> Result:
     """The neutral edge: Context in, Result out, no langchain in the signature."""
     history = [_LC[m.role](content=m.content)
                for m in trim_history(ctx.history, max_messages=spec.max_messages)]
-    messages, prompt = _compose(spec, ctx.task, history)
+    # The two edges are handed the current turn differently: the coordinator's
+    # AgentState already carries it at the end of state["messages"], while a
+    # Context keeps it in `task`, separate from prior `history`. So this edge
+    # has to place it. Without this the model gets a system prompt and nothing
+    # to answer, and a small one will simply continue the persona text.
+    turns = [*history, HumanMessage(content=ctx.task)] if ctx.task else history
+    messages, prompt = _compose(spec, ctx.task, turns)
     response = _answer(spec, messages, prompt, ctx.task)
     _persist(spec, ctx.task, response.content)
     return Result(output=response.content)

@@ -13,6 +13,8 @@ is where the behaviour lives, and it is exactly where knowledge_learning had
 been quietly shipping a literal "{user_profile}" to the model on every turn it
 recalled a memory.
 """
+from unittest import mock
+
 import pytest
 
 import agents.runner as runner
@@ -27,6 +29,7 @@ from agents.registry import AGENT_IDS
 from agents.runner import Agent, _compose, _probe_results, _prompt_for
 from agents.spec import AgentSpec, Probe
 from agents.terse import terse_agent
+from core.contract import Context, Msg
 from agents.web_dev import web_dev_agent
 from agents.writer import writer_agent
 
@@ -129,6 +132,65 @@ def test_probe_block_is_appended_only_when_it_has_content(context):
     loud, _ = _compose(spec, "check the gpu", history=[])
     assert len(quiet) == 1, "system message only"
     assert len(loud) == 2, "system message + the probe block"
+
+
+# ── the neutral edge: the task has to reach the model ──
+class _Capture:
+    """Stands in for the model and keeps what it was sent."""
+
+    def __init__(self):
+        self.messages = None
+
+    def invoke(self, messages):
+        self.messages = messages
+        return mock.MagicMock(content="ANSWER")
+
+
+@pytest.fixture
+def captured_model(monkeypatch):
+    cap = _Capture()
+    monkeypatch.setattr(runner._llm, "llm", cap)
+    return cap
+
+
+def _neutral_spec():
+    return AgentSpec(name="python_dev", prompt="PERSONA",
+                     remembers=False, uses_profile=False, uses_tools=False)
+
+
+def test_run_puts_the_task_in_front_of_the_model(captured_model):
+    """The bug this pins: `run` composed [system, *history] and never placed
+    ctx.task, so a Context with no history reached the model as a system prompt
+    with nothing to answer — and phi4-mini just continued the persona text.
+    Every arm of specialization_eval degraded identically, which scored as a
+    tie and read like a null result. It measured the plumbing, not the agents.
+
+    Asserting on shape rather than content is deliberate: conftest MagicMocks
+    langchain_core.messages, so `.content` is unreadable (see this module's
+    docstring) — but each message class is a distinct mock, so position and
+    call args still pin the contract. That blind spot is how this shipped."""
+    runner.run(_neutral_spec(), Context(task="why does my worker leak handles?"))
+
+    sent = captured_model.messages
+    assert len(sent) == 2, "system message + the user's turn"
+    assert sent[0] is runner.SystemMessage.return_value
+    assert sent[-1] is runner.HumanMessage.return_value, "the task must be a user turn"
+    assert runner.HumanMessage.call_args.kwargs["content"] == \
+        "why does my worker leak handles?"
+
+
+def test_run_appends_the_task_after_prior_history(captured_model):
+    """History is prior turns; the task is the current one. Order is the whole
+    point — a question the model has already answered is not the question."""
+    ctx = Context(task="and now the handles?",
+                  history=(Msg(role="user", content="earlier"),
+                           Msg(role="assistant", content="reply")))
+    runner.run(_neutral_spec(), ctx)
+
+    sent = captured_model.messages
+    assert len(sent) == 4, "system + two prior turns + the task"
+    assert sent[-1] is runner.HumanMessage.return_value
+    assert runner.HumanMessage.call_args.kwargs["content"] == "and now the handles?"
 
 
 # ── the opt-out agent ──
