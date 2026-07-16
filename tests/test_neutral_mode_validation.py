@@ -1,7 +1,7 @@
 """
 Validation for the neutral-mode signed-drift metric (issue #74, task 5.4).
 
-The metric (evaluation.math_metrics.neutral_mode_drift) scalarizes the per-agent
+The metric (infrastructure.math_metrics.neutral_mode_drift) scalarizes the per-agent
 weight *vector* into a signed number by naming the slowest-contracting mode
 (smallest adaptive-α ⇒ K = 1−α nearest 1) and reporting *its* signed drift.
 Pooled variance is sign-blind and mode-blind; this is not.

@@ -5,7 +5,7 @@ cubic / "put the sign back"). Each phase is self-contained, additive, and gated 
 existing test suite. Ship phases in order; each ends green before the next starts.*
 
 **Working rule:** every new metric is a **pure function with a self-test** in
-[`evaluation/math_metrics.py`](../../evaluation/math_metrics.py) first, then wired into its consumer.
+[`infrastructure/math_metrics.py`](../../infrastructure/math_metrics.py) first, then wired into its consumer.
 No consumer change ships without its pure function already merged and tested.
 
 ---
@@ -13,7 +13,7 @@ No consumer change ships without its pure function already merged and tested.
 ## Phase 0 — Baseline & guardrails *(pre-work, ~15 min)*
 
 - [ ] **0.1** Run the current suite green: `PYTHONPATH=. python3 -m pytest tests/ -q`.
-- [ ] **0.2** Run the metric self-tests: `python3 evaluation/math_metrics.py` → "all tests passed ✓".
+- [ ] **0.2** Run the metric self-tests: `python3 infrastructure/math_metrics.py` → "all tests passed ✓".
 - [ ] **0.3** Snapshot current dashboard numbers (`GET /telemetry/routing`, `hierarchical_metrics()`)
       to a scratch file — the before/after reference for "no regression."
 - **Exit:** both suites green, baseline captured.
@@ -33,7 +33,7 @@ Fixes the `abs()` sign-loss in `max_abs_curvature`.
       signed variant is the alarm of record.
 - [ ] **1.4** Wire into `cognition/coherence.py print_dynamics` and the UCI curvature alarm in
       `metrics_engine.py` (`uci_curvature`) so the dashboard alarm uses the signed regime.
-- **Exit:** `python3 evaluation/math_metrics.py` green; dashboard shows downturn vs. rebound
+- **Exit:** `python3 infrastructure/math_metrics.py` green; dashboard shows downturn vs. rebound
   distinctly on the snapshot series.
 
 ---
