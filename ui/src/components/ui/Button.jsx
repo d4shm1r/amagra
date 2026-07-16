@@ -67,6 +67,20 @@ export function Button({
   );
 }
 
+// ── The hit-target floor ─────────────────────────────────────────
+// WCAG 2.2 SC 2.5.8 (AA) puts the minimum target at 24×24 CSS px. These glyph
+// buttons were ~29×19 — under it on height, so a ⋯ or ✕ was a smaller thing to
+// hit than the standard allows, which is felt by anyone on a trackpad, a touch
+// screen, or with a tremor, not just by an audit.
+//
+// 24 and not the 44×44 of Apple's HIG: these sit in dense rows beside card
+// titles, and 44px boxes there would either overlap each other — the later one
+// in the DOM silently eating its neighbour's clicks — or force the rows apart
+// and make the toolbar louder than the content it serves. 24 is the floor that
+// fits the material. The GLYPH does not change size; only its box grows, so
+// nothing looks different — the target was simply lying about how big it was.
+const HIT = { minWidth: 24, minHeight: 24, display: "inline-flex", alignItems: "center", justifyContent: "center" };
+
 /** A bare glyph button — the ⋯ / ↻ / ✕ affordances. No chrome until hover. */
 export function IconButton({ onClick, title, ariaLabel, tone = "muted", children }) {
   return (
@@ -78,6 +92,7 @@ export function IconButton({ onClick, title, ariaLabel, tone = "muted", children
       style={{
         border: "none", background: "transparent", cursor: "pointer",
         color: toneColor(tone), fontSize: 15, lineHeight: 1,
+        ...HIT,
         padding: "2px 7px", borderRadius: RADIUS.sm, fontFamily: "inherit",
       }}
     >
@@ -92,6 +107,7 @@ export function RefreshButton({ onClick }) {
     <button onClick={onClick} className="nav-btn" title="Refresh" aria-label="Refresh" style={{
       ...TYPE.micro, background: "transparent", color: T.muted,
       border: `1px solid ${T.border}`, borderRadius: 7,
+      ...HIT,
       padding: "4px 10px", cursor: "pointer", fontFamily: "inherit",
     }}>↻</button>
   );

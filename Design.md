@@ -440,23 +440,32 @@ The kit's own copy is consistent, and it's the reference for new strings:
 - **Keyboard** — a full map (`Ctrl+1..7` surfaces, `Ctrl+B` menu, `⌘K`
   search-focused launcher, `Ctrl+,` settings, `Ctrl+/` shortcuts) that ignores
   keystrokes while focus is in an input.
+- **Async state is announced.** `Toast` is a polite live region and is mounted
+  **permanently** — only its children come and go, because a region that appears
+  at the same instant as its message is not reliably read. `Loading` is a
+  `status`; `Notice` is an `alert` when it carries a failure and a `status`
+  otherwise, so urgency matches the tone.
+- **Hit-target floor: 24×24** (WCAG 2.2 SC 2.5.8), applied in the kit to
+  `IconButton` and `RefreshButton`. Deliberately not Apple's 44×44: these sit in
+  dense rows beside card titles, where 44px boxes would overlap and silently eat
+  each other's clicks. The glyph keeps its size; only the box grows.
+- **A dot is never the only channel.** `Dot` takes a `label` and becomes an image
+  with an accessible name; without one it is `aria-hidden`, on the understanding
+  that adjacent text carries the meaning. Prefer the text — a colour-blind
+  *sighted* user can read a label but cannot hear an `aria-label`.
+
 ### Gaps **[Proposed]**
 Real, and worth naming rather than glossing:
 
-- **Hit targets are not systematized.** The ☰ (44×44) and `Toggle` (44×25) are
-  comfortable; `IconButton` (~29×19 at its padding) is under both the 44×44 of
-  Apple's HIG and the 24×24 floor of WCAG 2.2 SC 2.5.8. The kit should set a
-  floor rather than leaving each glyph button to guess.
-- **The kit's `Dot` is a colour-only trap.** It encodes state in hue alone — the
-  one channel a colour-blind user lacks and a screen reader cannot see. It is
-  currently *unused* (`UCIDashboard` hand-rolled its own, which does carry text
-  labels), so this is a bug waiting for its first caller rather than a live
-  defect. Cheap to fix precisely because nothing depends on it yet.
-- **Async updates aren't announced.** There is not one `aria-live` region in the
-  app, so a screen reader misses the offline banner, panel loading, notices, and
-  streaming chat. The largest gap of the four.
+- **Streaming chat isn't announced.** The kit-level regions cover the offline
+  banner, panel loading, and notices. A streaming assistant reply is a live
+  update in `ChatTab.jsx` — 64KB, in `DEBT`, and needing a chunk-vs-final-answer
+  decision (announcing every token would be unusable). The single biggest
+  remaining a11y gap, and the one that needs design, not just a role attribute.
 - **No documented error-copy contract for assistive tech** — §9's rules are visual
   prose rules; they don't yet say what gets announced.
+- **The audit was reasoned, not measured.** No axe/Lighthouse pass, and no test
+  covers any of the above, so nothing stops a regression.
 
 ---
 
@@ -495,10 +504,10 @@ or would be broken by:
 Honest backlog, in rough priority — the difference between this system and a
 world-class one, stated as work rather than aspiration:
 
-1. **Close the a11y gaps** (§10) — `aria-live` regions, a hit-target floor, and an
-   accessible `Dot`. The only entries here that are correctness bugs rather than
-   polish, and all three live in the kit, so they land app-wide without touching
-   the 38 unconverted files.
+1. **Announce streaming chat** (§10) — the last real a11y gap. The kit-level
+   regions, the 24×24 hit-target floor and the `Dot` doctrine are **done**; this
+   one needs a design decision (announce chunks or the settled answer?) inside a
+   64KB `DEBT` file, which is why it didn't ride along with them.
 2. **Resolve the reading measure** (§6) — bring `860` down to ~80ch or state its
    real rationale. A token whose *why* is missing is a token that drifts.
 3. **Tokenize the z-scale** (§7) — the system exists; nothing names it.
