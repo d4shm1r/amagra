@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, Suspense, startTransition } from "react";
 import { API } from "@/lib/api";
-import { ApiOfflineBanner, Column, Toast } from "@/components/ui";
+import { ApiOfflineBanner, Column, ConfirmProvider, Toast } from "@/components/ui";
 import Onboarding  from "@/components/layout/Onboarding";
 import AppLauncher from "@/components/layout/AppLauncher";
 // Every routed view, registered in tabs/index.js. Chat + Home are eager (they
@@ -18,7 +18,7 @@ import {
 import {
   SURFACE_BY_TAB, DEFAULT_TAB, TAB_ALIASES, VALID_TABS,
 } from "@/config/navConfig";
-import { T, TYPE, LAYOUT, FONT_UI, FONT_DISPLAY } from "@/styles/theme";
+import { T, TYPE, LAYOUT, FONT_UI, FONT_DISPLAY, Z } from "@/styles/theme";
 
 // ── App-wide settings ─────────────────────────────────────────
 const DEFAULT_SETTINGS = {
@@ -377,7 +377,7 @@ export default function App() {
             title={launcherOpen ? "Close menu  (Ctrl+B)" : "Menu  (Ctrl+B)"}
             className="menu-fab"
             style={{ position: launcherOpen ? "fixed" : "absolute", top: 13, left: 15,
-              zIndex: launcherOpen ? 9010 : 50,
+              zIndex: launcherOpen ? Z.overlayTop : Z.launcher,
               width: 44, height: 44, borderRadius: 14, padding: 0 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C48808"
               strokeWidth="2.4" strokeLinecap="round" aria-hidden

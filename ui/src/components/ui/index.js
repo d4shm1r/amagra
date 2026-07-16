@@ -28,6 +28,7 @@ export { Table } from "./Table";
 export { PageHeader } from "./PageHeader";
 export { StatStrip, MetricCard, ScoreBar } from "./Stat";
 export { Loading, EmptyState, EmptyPage, Notice, Toast, ApiOfflineBanner } from "./Feedback";
+export { ConfirmProvider, useConfirm } from "./Confirm";
 export { EventRow, eventMeta } from "./EventRow";
 export { FileEmblem } from "./FileEmblem";
 export { DropZone } from "./DropZone";

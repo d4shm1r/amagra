@@ -121,6 +121,27 @@ select:focus-visible { outline-offset: 1px; }
 .hoverable { transition: border-color 200ms ease-out, background 200ms ease-out; }
 .hoverable:hover { border-color: rgba(196,136,8,0.45); }
 
+/* ── Destructive action (components/ui/Button.jsx, variant="danger") ──
+   Error-toned text and hairline on a whisper of error tint. It has to outrank
+   the neutral Cancel sitting beside it — a bare text button ranks BELOW a
+   bordered one, which is exactly backwards when the question is "delete this?"
+   — while staying quiet enough for the material.
+
+   It cannot borrow .nav-btn like the other quiet variants: that hover forces
+   `color: #2E2010`, which would turn the one red thing on screen brown at the
+   moment the pointer lands on it. Deepens on hover instead of lighting up —
+   this is not an action to make inviting. */
+.btn-danger {
+  background: rgba(180, 35, 24, 0.06);
+  border: 1px solid rgba(180, 35, 24, 0.34);
+  color: #B42318;
+  transition: background 200ms ease-out, border-color 200ms ease-out;
+}
+.btn-danger:not(:disabled):hover {
+  background: rgba(180, 35, 24, 0.12);
+  border-color: rgba(180, 35, 24, 0.55);
+}
+
 /* ── Luxe cards — the single card recipe for the whole app ──────────
    Depth comes from one warm elevation shadow plus an inset paper highlight;
    the edge is a quiet gold hairline, not a white one. Every value lives in

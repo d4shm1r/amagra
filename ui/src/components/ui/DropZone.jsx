@@ -14,6 +14,11 @@ export function DropZone({ onDrop, label = "Drop to add", children }) {
       onDrop={e => { e.preventDefault(); setOver(false); onDrop([...e.dataTransfer.files]); }}
     >
       {children}
+      {/* The overlay's zIndex below is LOCAL, not a layer from Z: it is absolute
+          inside the relative wrapper above, so it only has to out-stack its own
+          siblings. Do not "fix" it into the global scale — it is not competing
+          with the header or the launcher, it is competing with the card it
+          covers. */}
       {over && (
         <div style={{
           position: "absolute", inset: -12, borderRadius: 18, zIndex: 50,

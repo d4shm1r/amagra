@@ -10,7 +10,7 @@ import { Fragment, useEffect, useState, useCallback, useRef } from "react";
 import { API } from "@/lib/api";
 import { SURFACES, NAV, surfaceOf } from "@/config/navConfig";
 import { Icon } from "@/components/ui";
-import { T, LUX, FONT_UI, FONT_DISPLAY, EASE, DUR } from "@/styles/theme";
+import { T, LUX, FONT_UI, FONT_DISPLAY, EASE, DUR, Z } from "@/styles/theme";
 
 // Drive ChatTab (which owns the conversation state) from here via window events.
 export const chatEvent = (name, detail) =>
@@ -315,7 +315,7 @@ export default function AppLauncher({
       role="dialog" aria-modal="true" aria-label="AMAGRA menu"
       onClick={onClose}
       style={{
-        position: "fixed", inset: 0, zIndex: 9000,
+        position: "fixed", inset: 0, zIndex: Z.overlay,
         background: `
           radial-gradient(1100px 460px at 50% -8%, rgba(222,184,56,0.11), transparent 62%),
           radial-gradient(900px 520px at 88% 110%, rgba(196,136,8,0.06), transparent 58%),
