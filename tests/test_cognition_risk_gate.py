@@ -42,13 +42,15 @@ def test_compute_risk_low_returns_none():
     assert s.reflect_level in ("none", "light")  # should be very low
 
 def test_compute_risk_high_returns_full():
-    # Low confidence, high regret, ambiguous, complex action
+    # Low confidence, high regret, complex action.
+    # NB: this deliberately supplies no planner_uncertainty. It used to pass
+    # 0.9 — the one signal production can never supply — which is precisely why
+    # the unreachable-`full` bug survived a green suite until 2026-07-16.
     s = rg.compute_risk(
         action="build",
         confidence=0.30,
         regret=0.8,
         complexity="compound",
-        planner_uncertainty=0.9,
         log=False,
     )
     assert s.reflect_level == "full"
@@ -122,12 +124,11 @@ def test_reflect_depth_monotone_in_risk():
         (s.total_risk, s.reflect_depth)
         for s in (
             rg.compute_risk(action=a, confidence=c, regret=r,
-                            complexity=x, planner_uncertainty=p, log=False)
+                            complexity=x, log=False)
             for a in ("debug", "build", "research")
             for c in (0.3, 0.6, 0.9)
             for r in (0.0, 0.4)
             for x in ("simple", "compound")
-            for p in (0.0, 0.8)
         )
         if s.reflect_level == "full"
     )
@@ -148,22 +149,50 @@ def test_reflect_depth_does_not_change_reflect_level():
                     else "none")
         assert s.reflect_level == expected
 
-def test_reflect_depth_band_is_bottom_heavy():
-    # Guards the calibration trap recorded in _risk_to_depth: `full` is barely
-    # reachable without planner uncertainty, so the dial's live range sits far
-    # below 1.0. If this starts failing, the risk weights moved and any
-    # depth->threshold consumer must be recalibrated before it ships.
-    ceiling_no_planner = (
+def test_full_tier_is_reachable_from_observable_signals():
+    # Regression for the 2026-07-16 finding: planner_uncertainty was 25% of the
+    # score and structurally always 0.0, pinning the ceiling at exactly
+    # _THRESH_LIGHT so `full` never fired (0 of 160 logged runs; max 0.4362).
+    # The gate must stay reachable using ONLY signals a caller can supply.
+    ceiling = (
         rg._W_ACTION * max(rg._ACTION_RISK.values())
         + rg._W_ROUTING * 1.0
-        + rg._W_PLANNER * 0.0
         + rg._W_COMPLEXITY * 0.30
     )
-    assert ceiling_no_planner <= rg._THRESH_LIGHT + 1e-9, (
-        "full mode became reachable without planner uncertainty — recheck the dial band"
+    assert ceiling > rg._THRESH_LIGHT, (
+        f"full tier unreachable again: ceiling {ceiling:.4f} <= threshold "
+        f"{rg._THRESH_LIGHT}. A weighted signal has gone dead."
     )
-    worst = rg.compute_risk(action="debug", confidence=0.30, regret=0.0,
-                            complexity="compound", planner_uncertainty=1.0, log=False)
+    worst = rg.compute_risk(action="debug", confidence=0.0, regret=0.0,
+                            complexity="compound", log=False)
+    assert worst.reflect_level == "full", "worst realistic case must reach full"
+
+def test_weights_sum_to_one_and_exclude_planner():
+    total = rg._W_ACTION + rg._W_ROUTING + rg._W_COMPLEXITY
+    assert abs(total - 1.0) < 0.001, f"weights sum to {total}, not 1.0"
+    assert not hasattr(rg, "_W_PLANNER"), (
+        "_W_PLANNER is back — it cannot be scored unless the gate moved "
+        "downstream of plan_query; if it did, re-tune the thresholds too."
+    )
+
+def test_planner_uncertainty_recorded_but_not_scored():
+    # It is unobservable at gate time, so it must not move the score. If this
+    # fails, either the gate moved downstream (fine — update this test) or the
+    # dead weight crept back in (not fine).
+    a = rg.compute_risk(action="debug", confidence=0.5, complexity="compound",
+                        planner_uncertainty=0.0, log=False)
+    b = rg.compute_risk(action="debug", confidence=0.5, complexity="compound",
+                        planner_uncertainty=1.0, log=False)
+    assert a.total_risk == b.total_risk
+    assert a.reflect_level == b.reflect_level
+    assert b.planner_uncertainty == 1.0     # still recorded as evidence
+
+def test_reflect_depth_band_is_bottom_heavy():
+    # The dial's live range: even the worst case the gate can score tops out
+    # well below t=1, so a depth->threshold consumer must be calibrated against
+    # the logged distribution rather than assuming t spans [0,1].
+    worst = rg.compute_risk(action="debug", confidence=0.0, regret=0.0,
+                            complexity="compound", log=False)
     assert worst.reflect_level == "full"
     assert worst.reflect_depth < 0.5, (
         f"realistic worst case now reaches depth {worst.reflect_depth}; "

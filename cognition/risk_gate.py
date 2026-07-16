@@ -2,22 +2,47 @@
 risk_gate.py — Evidence-driven reflection gate (Phase 34)
 
 Replaces the static action-type lookup in core_brain._reflect_level()
-with a weighted risk score that combines four independent signals:
+with a weighted risk score that combines three observable signals:
 
   action_risk          — how error-prone is this action type? (0-1)
   routing_uncertainty  — brain_decision confidence inverted    (0-1)
-  planner_uncertainty  — plan-level estimate for this step     (0-1)
   complexity_risk      — compound tasks fail more              (0-1)
 
-  risk = 0.30 × action_risk
-       + 0.25 × routing_uncertainty
-       + 0.25 × planner_uncertainty
-       + 0.20 × complexity_risk
+  risk = 0.400 × action_risk
+       + 0.333 × routing_uncertainty
+       + 0.267 × complexity_risk
 
-Thresholds (tuned to match previous full-reflection rate ~15%):
+Thresholds:
   risk < 0.32            → none   (skip reflection)
   0.32 ≤ risk < 0.52     → light  (grounded eval only, no LLM)
   risk ≥ 0.52            → full   (grounded eval + LLM critique)
+
+A fourth signal, planner_uncertainty, was weighted at 0.25 until
+2026-07-16 (#173) — and was silently always 0.0. Neither _reflect_level call
+site passed it, and neither could: the planner that owns
+Plan.uncertainty (orchestration.planner.plan_query) runs downstream in
+deep_pipeline, after this gate has already decided. With a quarter of
+the score pinned at zero the arithmetic ceiling was 0.5200 — exactly
+_THRESH_LIGHT — so `full` required debug AND routing_uncertainty 1.0
+AND compound to coincide, and never fired: across 160 logged gate runs
+(2026-06-13..07-15) the highest score ever reached was 0.4362, and of
+755 recorded decisions exactly one ran `full` — forced by the
+memory-bias path in core_brain, on a lookup/simple query the gate would
+have scored ~0.18. The header claimed the thresholds were "tuned to
+match previous full-reflection rate ~15%"; the true gate-driven rate
+was 0%.
+
+The weight is therefore removed rather than left to rot, and the other
+three rescaled by 1/(1-0.25) to preserve their relative balance. The
+ceiling is now 0.6933 and `full` is reachable. planner_uncertainty is
+still accepted and logged so the evidence trail survives, but it is NOT
+scored — if the gate ever moves downstream of plan_query, re-add the
+weight and re-tune the thresholds against the logged distribution.
+
+Rescaling lifts every score, so the thresholds below now sit lower on
+the distribution than when they were set: replayed over the 160 logged
+runs, `light` goes 5.6% -> 33.1% and `full` 0% -> 2.5%. Re-tuning them
+against the post-fix distribution is #174.
 
 The weights and thresholds are logged to risk_gate.db so they can
 be calibrated against actual reflection outcomes over time.
@@ -103,16 +128,17 @@ def _risk_to_depth(total: float, level: str) -> float:
     other base point the curve's shape is set entirely by that arbitrary choice.
     See the issue thread; revisit only with a measured reason to bend the curve.
 
-    DO NOT wire this to a controller on today's calibration. Risk is not
-    uniform over [_DEPTH_FLOOR, 1]; it is bunched at the floor. With no planner
-    uncertainty the ceiling is 0.52 — the full threshold itself, hit only if
-    action, routing and complexity all max out at once — so `full` is in
-    practice reached via planner_uncertainty, and even a debug/compound/low-
-    confidence step at p_uncert=1.0 scores 0.682, i.e. t ≈ 0.34. The realistic
-    band is t ∈ [0, ~0.35]; the top two-thirds of the dial is dead. A naive
-    `threshold = THRESHOLD * t` consumer would hand real traffic thresholds
-    around 0.0–0.28 against today's 0.80 and quietly disable refinement.
-    Calibrate the mapping against the logged distribution first.
+    DO NOT wire this to a controller before the distribution is known. Risk is
+    not uniform over [_DEPTH_FLOOR, 1] — it bunches near the floor, so early t
+    values will be small and a naive `threshold = THRESHOLD * t` consumer would
+    hand real traffic near-zero thresholds against today's 0.80 and quietly
+    disable refinement. The ceiling is 0.6933 (debug + routing_uncertainty 1.0
+    + compound), i.e. t maxes out near 0.36 even in the worst case the gate can
+    score. Calibrate against logged reflect_depth before any controller reads it.
+
+    Note this dial had NO domain at all until 2026-07-16: `full` was
+    unreachable, so t was 0.0 on 100% of traffic. Depth logged before that date
+    is meaningless for calibration.
     """
     if level != "full":
         return 0.0
@@ -123,10 +149,13 @@ def _risk_to_depth(total: float, level: str) -> float:
 
 
 # ── Weights ───────────────────────────────────────────────────
-_W_ACTION     = 0.30
-_W_ROUTING    = 0.25
-_W_PLANNER    = 0.25
-_W_COMPLEXITY = 0.20
+# Three live signals, rescaled from the original 0.30/0.25/0.20 by
+# 1/(1-_W_PLANNER) when the dead planner weight was removed — relative balance
+# preserved, sum still 1.0. See the module docstring for why planner_uncertainty
+# is not among them.
+_W_ACTION     = 0.400
+_W_ROUTING    = 0.333
+_W_COMPLEXITY = 0.267
 
 
 # ── Data model ────────────────────────────────────────────────
@@ -236,7 +265,10 @@ def compute_risk(
     confidence          : brain_decision.confidence [0.3–1.0]
     regret              : brain_decision.regret (max_alt - chosen, ≥ 0)
     complexity          : "simple" | "compound" | "ambiguous"
-    planner_uncertainty : Plan.uncertainty for this step (0 if no plan)
+    planner_uncertainty : Plan.uncertainty for this step (0 if no plan).
+                          RECORDED BUT NOT SCORED — no caller can supply it at
+                          gate time; see the module docstring. Passing a nonzero
+                          value will not change reflect_level.
     log                 : persist to risk_gate.db
 
     Returns
@@ -259,10 +291,11 @@ def compute_risk(
     c_risk = {"compound": 0.30, "ambiguous": 0.20, "simple": 0.05}.get(complexity, 0.10)
 
     # ── Weighted total ────────────────────────────────────────
+    # p_uncert is deliberately absent: it is unobservable at gate time (see the
+    # module docstring). It is still recorded on the signal as evidence.
     total = (
         _W_ACTION     * a_risk
         + _W_ROUTING  * r_uncert
-        + _W_PLANNER  * p_uncert
         + _W_COMPLEXITY * c_risk
     )
     total = round(min(1.0, max(0.0, total)), 4)
