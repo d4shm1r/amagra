@@ -2,22 +2,47 @@
 risk_gate.py — Evidence-driven reflection gate (Phase 34)
 
 Replaces the static action-type lookup in core_brain._reflect_level()
-with a weighted risk score that combines four independent signals:
+with a weighted risk score that combines three observable signals:
 
   action_risk          — how error-prone is this action type? (0-1)
   routing_uncertainty  — brain_decision confidence inverted    (0-1)
-  planner_uncertainty  — plan-level estimate for this step     (0-1)
   complexity_risk      — compound tasks fail more              (0-1)
 
-  risk = 0.30 × action_risk
-       + 0.25 × routing_uncertainty
-       + 0.25 × planner_uncertainty
-       + 0.20 × complexity_risk
+  risk = 0.400 × action_risk
+       + 0.333 × routing_uncertainty
+       + 0.267 × complexity_risk
 
-Thresholds (tuned to match previous full-reflection rate ~15%):
+Thresholds:
   risk < 0.32            → none   (skip reflection)
   0.32 ≤ risk < 0.52     → light  (grounded eval only, no LLM)
   risk ≥ 0.52            → full   (grounded eval + LLM critique)
+
+A fourth signal, planner_uncertainty, was weighted at 0.25 until
+2026-07-16 (#173) — and was silently always 0.0. Neither _reflect_level call
+site passed it, and neither could: the planner that owns
+Plan.uncertainty (orchestration.planner.plan_query) runs downstream in
+deep_pipeline, after this gate has already decided. With a quarter of
+the score pinned at zero the arithmetic ceiling was 0.5200 — exactly
+_THRESH_LIGHT — so `full` required debug AND routing_uncertainty 1.0
+AND compound to coincide, and never fired: across 160 logged gate runs
+(2026-06-13..07-15) the highest score ever reached was 0.4362, and of
+755 recorded decisions exactly one ran `full` — forced by the
+memory-bias path in core_brain, on a lookup/simple query the gate would
+have scored ~0.18. The header claimed the thresholds were "tuned to
+match previous full-reflection rate ~15%"; the true gate-driven rate
+was 0%.
+
+The weight is therefore removed rather than left to rot, and the other
+three rescaled by 1/(1-0.25) to preserve their relative balance. The
+ceiling is now 0.6933 and `full` is reachable. planner_uncertainty is
+still accepted and logged so the evidence trail survives, but it is NOT
+scored — if the gate ever moves downstream of plan_query, re-add the
+weight and re-tune the thresholds against the logged distribution.
+
+Rescaling lifts every score, so the thresholds below now sit lower on
+the distribution than when they were set: replayed over the 160 logged
+runs, `light` goes 5.6% -> 33.1% and `full` 0% -> 2.5%. Re-tuning them
+against the post-fix distribution is #174.
 
 The weights and thresholds are logged to risk_gate.db so they can
 be calibrated against actual reflection outcomes over time.
@@ -74,11 +99,63 @@ _THRESH_NONE  = 0.32
 _THRESH_LIGHT = 0.52
 # Above _THRESH_LIGHT → full
 
+# ── Reflection depth dial (issue #110) ────────────────────────
+# `reflect_level` is NOT one ordered axis — none→light switches measurement on
+# (grounded score feeds learning; the response is never touched), light→full
+# switches correction on (critique + refine). Those are different kinds, so a
+# continuous dial spanning none→light→full would interpolate across a type
+# boundary. The dial therefore lives *inside* `full`, grading correction effort:
+#
+#   t = 0  → threshold 0, first eval passes, no refine  (== light's output)
+#   t = 1  → today's full mode
+#
+# Emitted and logged only; no consumer yet. Observe the distribution before
+# wiring it to control (the diagnostic-before-controller discipline of #105).
+_DEPTH_FLOOR = _THRESH_LIGHT   # risk at which `full` begins → t = 0
+
+
+def _risk_to_depth(total: float, level: str) -> float:
+    """Continuous correction depth t ∈ [0,1] for a risk score.
+
+    Zero outside `full` — none and light do no correction, so they have no
+    depth to grade. Within `full`, t is the linear position of `total` in
+    [_DEPTH_FLOOR, 1.0].
+
+    NB (#110): the linearity here is deliberate, not a placeholder.
+    `fractional_reflection_depth` — the function #110 proposed to build this on
+    — reduces to the identity at the canonical base point (φ_t(0) = t exactly),
+    so routing t through it would be an elaborate way to multiply by t. At any
+    other base point the curve's shape is set entirely by that arbitrary choice.
+    See the issue thread; revisit only with a measured reason to bend the curve.
+
+    DO NOT wire this to a controller before the distribution is known. Risk is
+    not uniform over [_DEPTH_FLOOR, 1] — it bunches near the floor, so early t
+    values will be small and a naive `threshold = THRESHOLD * t` consumer would
+    hand real traffic near-zero thresholds against today's 0.80 and quietly
+    disable refinement. The ceiling is 0.6933 (debug + routing_uncertainty 1.0
+    + compound), i.e. t maxes out near 0.36 even in the worst case the gate can
+    score. Calibrate against logged reflect_depth before any controller reads it.
+
+    Note this dial had NO domain at all until 2026-07-16: `full` was
+    unreachable, so t was 0.0 on 100% of traffic. Depth logged before that date
+    is meaningless for calibration.
+    """
+    if level != "full":
+        return 0.0
+    span = 1.0 - _DEPTH_FLOOR
+    if span <= 0.0:
+        return 1.0
+    return round(min(1.0, max(0.0, (total - _DEPTH_FLOOR) / span)), 4)
+
+
 # ── Weights ───────────────────────────────────────────────────
-_W_ACTION     = 0.30
-_W_ROUTING    = 0.25
-_W_PLANNER    = 0.25
-_W_COMPLEXITY = 0.20
+# Three live signals, rescaled from the original 0.30/0.25/0.20 by
+# 1/(1-_W_PLANNER) when the dead planner weight was removed — relative balance
+# preserved, sum still 1.0. See the module docstring for why planner_uncertainty
+# is not among them.
+_W_ACTION     = 0.400
+_W_ROUTING    = 0.333
+_W_COMPLEXITY = 0.267
 
 
 # ── Data model ────────────────────────────────────────────────
@@ -94,6 +171,7 @@ class RiskSignal:
     total_risk:           float
     reflect_level:        str     # none | light | full
     reflect_type:         str     # general | code | research
+    reflect_depth:        float   # continuous dial t ∈ [0,1] within `full`
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -101,6 +179,7 @@ class RiskSignal:
     def __str__(self) -> str:
         return (
             f"risk={self.total_risk:.3f} [{self.reflect_level}|{self.reflect_type}] "
+            f"depth={self.reflect_depth:.2f} "
             f"(action={self.action_risk:.2f}, routing={self.routing_uncertainty:.2f}, "
             f"planner={self.planner_uncertainty:.2f}, complexity={self.complexity_risk:.2f})"
         )
@@ -127,9 +206,15 @@ def _ensure_db():
             complexity_risk      REAL,
             total_risk           REAL,
             reflect_level        TEXT,
-            reflect_type         TEXT
+            reflect_type         TEXT,
+            reflect_depth        REAL
         )
     """)
+    # Existing risk_gate.db files predate reflect_depth (#110) — add it in place
+    # rather than losing the accumulated risk history to a rebuild.
+    _cols = {row[1] for row in con.execute("PRAGMA table_info(risk_log)")}
+    if "reflect_depth" not in _cols:
+        con.execute("ALTER TABLE risk_log ADD COLUMN reflect_depth REAL")
     con.execute("PRAGMA journal_mode=WAL")
     con.commit()
     con.close()
@@ -145,12 +230,13 @@ def _log_risk(action: str, agent: str, complexity: str,
             """INSERT INTO risk_log
                (action, agent, complexity, action_risk, routing_uncertainty,
                 planner_uncertainty, complexity_risk, total_risk,
-                reflect_level, reflect_type)
-               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                reflect_level, reflect_type, reflect_depth)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
             (action, agent, complexity,
              signal.action_risk, signal.routing_uncertainty,
              signal.planner_uncertainty, signal.complexity_risk,
-             signal.total_risk, signal.reflect_level, signal.reflect_type),
+             signal.total_risk, signal.reflect_level, signal.reflect_type,
+             signal.reflect_depth),
         )
         con.commit()
         con.close()
@@ -179,7 +265,10 @@ def compute_risk(
     confidence          : brain_decision.confidence [0.3–1.0]
     regret              : brain_decision.regret (max_alt - chosen, ≥ 0)
     complexity          : "simple" | "compound" | "ambiguous"
-    planner_uncertainty : Plan.uncertainty for this step (0 if no plan)
+    planner_uncertainty : Plan.uncertainty for this step (0 if no plan).
+                          RECORDED BUT NOT SCORED — no caller can supply it at
+                          gate time; see the module docstring. Passing a nonzero
+                          value will not change reflect_level.
     log                 : persist to risk_gate.db
 
     Returns
@@ -202,10 +291,11 @@ def compute_risk(
     c_risk = {"compound": 0.30, "ambiguous": 0.20, "simple": 0.05}.get(complexity, 0.10)
 
     # ── Weighted total ────────────────────────────────────────
+    # p_uncert is deliberately absent: it is unobservable at gate time (see the
+    # module docstring). It is still recorded on the signal as evidence.
     total = (
         _W_ACTION     * a_risk
         + _W_ROUTING  * r_uncert
-        + _W_PLANNER  * p_uncert
         + _W_COMPLEXITY * c_risk
     )
     total = round(min(1.0, max(0.0, total)), 4)
@@ -228,6 +318,7 @@ def compute_risk(
         total_risk          = total,
         reflect_level       = level,
         reflect_type        = r_type,
+        reflect_depth       = _risk_to_depth(total, level),
     )
 
     if log:
