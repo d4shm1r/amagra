@@ -18,7 +18,14 @@ Derived by reading `ui/` (v1.7.0). Every normative statement is tagged, because 
 design system that can't tell you what's real is just a wish list:
 
 - **[Enforced]** — something fails if you break it: `npm run lint:ui`, a registry
-  check, or `npm test`. Not "we agreed to"; a machine says no.
+  check, or `npm test`, each run by the **UI** job in CI. Not "we agreed to"; a
+  machine says no, on the pull request, before it lands.
+
+  > Worth knowing how thin this was. Until the UI job existed, CI ran `ruff` and
+  > `pytest` and nothing else — the whole design system was enforceable in
+  > principle and enforced by nobody but whoever remembered to run it. Every
+  > "[Enforced]" in this document was, for a while, a claim about a command
+  > rather than about the repository.
 - **[Observed]** — the code does this consistently today; the kit is built around it.
 - **[Proposed]** — *not true yet.* A gap worth closing, recorded honestly rather
   than described as fact.
