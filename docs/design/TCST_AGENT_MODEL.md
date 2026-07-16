@@ -25,10 +25,10 @@ action interface, all time-dependent.
 
 | TCST component | What it is here | File (canonical) |
 |---|---|---|
-| `Θ(t)` — parameters | per-agent routing weights, calibration | [`training/learning.py`](../training/learning.py), [`decision/weights.py`](../decision/weights.py) |
-| `M(t)` — memory | SQLite → FAISS at 800 entries, dedup, consolidation | [`memory_core/backend.py`](../memory_core/backend.py), [`memory_core/db.py`](../memory_core/db.py) |
-| `R(t)` — reasoning rules | signal heuristics → CoreBrain → risk gate → critic | [`orchestration/core_brain.py`](../orchestration/core_brain.py), [`cognition/reflection.py`](../cognition/reflection.py) |
-| `A(t)` — action interface | skill graph (21 nodes) → 10 specialist agents | [`infrastructure/skill_graph.py`](../infrastructure/skill_graph.py), [`agents/registry.py`](../agents/registry.py) |
+| `Θ(t)` — parameters | per-agent routing weights, calibration | [`training/learning.py`](../../training/learning.py), [`decision/weights.py`](../../decision/weights.py) |
+| `M(t)` — memory | SQLite → FAISS at 800 entries, dedup, consolidation | [`memory_core/backend.py`](../../memory_core/backend.py), [`memory_core/db.py`](../../memory_core/db.py) |
+| `R(t)` — reasoning rules | signal heuristics → CoreBrain → risk gate → critic | [`orchestration/core_brain.py`](../../orchestration/core_brain.py), [`cognition/reflection.py`](../../cognition/reflection.py) |
+| `A(t)` — action interface | skill graph (21 nodes) → 10 specialist agents | [`infrastructure/skill_graph.py`](../../infrastructure/skill_graph.py), [`agents/registry.py`](../../agents/registry.py) |
 
 The genuine claim of TCST is that **all four are state**, not just `Θ`. This repo
 already treats them that way — `R` and `A` are mutable structures (`reflect_level`
@@ -43,7 +43,7 @@ So the object is **REAL** here; the novelty is purely in how the flows *couple*
 ### (1) Parameter flow — `dΘ/dt = −∇L`   · DRESSING
 
 This is SGD with a continuous hat. The real update is the **affine contraction**
-in [`training/learning.py`](../training/learning.py):
+in [`training/learning.py`](../../training/learning.py):
 
 ```
 w ← w + clip(α·(L − w), ±0.02)
@@ -58,7 +58,7 @@ contraction view gives a *provable* convergence the gradient hat does not).
 
 Write/forget are concrete: dedup + consolidation on write, pruning + outcome-
 weighting on forget, with auto-promotion SQLite→FAISS at 800 entries
-([`memory_core/`](../memory_core/), routes in [`routes/memory.py`](../routes/memory.py)).
+([`memory_core/`](../../memory_core/), routes in [`routes/memory.py`](../../routes/memory.py)).
 "Dynamic data manifold" is **METAPHOR** — there is no metric on `M` today, only a
 1024-dim embedding space with cosine retrieval. That's enough for the flow; the
 manifold language buys nothing until a metric is actually used (it isn't).
@@ -70,11 +70,11 @@ assumed — it is **already a closed coupling**, in discrete steps rather than a
 continuous flow:
 
 - `𝒢` (rule deformation) ≈ reflection: `reflection_loop` iterates
-  evaluate→critique→refine ([`cognition/reflection.py:178`](../cognition/reflection.py#L178)),
+  evaluate→critique→refine ([`cognition/reflection.py:178`](../../cognition/reflection.py#L178)),
   and CoreBrain re-selects `reflect_level ∈ {none, light, full}` per query via
-  the risk gate ([`orchestration/core_brain.py:228`](../orchestration/core_brain.py#L228)).
+  the risk gate ([`orchestration/core_brain.py:228`](../../orchestration/core_brain.py#L228)).
 - `C_reason` (coherence constraint) ≈ the coherence series + curvature alarm in
-  [`cognition/coherence.py`](../cognition/coherence.py).
+  [`cognition/coherence.py`](../../cognition/coherence.py).
 
 `𝒢` **does** read `Θ` and `M` as arguments — this is the correction to an earlier
 draft that wrongly listed both as missing:
@@ -82,14 +82,14 @@ draft that wrongly listed both as missing:
 - `R ← Θ`: `confidence = to_confidence(primary)` (derived from the agent's
   historical weights) feeds `_reflect_level` → `risk_gate`, whose
   `routing_uncertainty` term is `1 − confidence`
-  ([`core_brain.py:507-514`](../orchestration/core_brain.py#L507-L514)). Weights
+  ([`core_brain.py:507-514`](../../orchestration/core_brain.py#L507-L514)). Weights
   drive reflection depth today.
 - `R ← M`: the **reflection-history bias** block searches `mem_type="reflection"`
   and swaps agent or forces `full` reflect when this agent scored poorly on
-  similar past queries ([`core_brain.py:517-558`](../orchestration/core_brain.py#L517-L558));
+  similar past queries ([`core_brain.py:517-558`](../../orchestration/core_brain.py#L517-L558));
   the **episodic** block searches `mem_type="episodic"` and boosts confidence on
   past success / adds `light` reflect on past failure
-  ([`core_brain.py:570-602`](../orchestration/core_brain.py#L570-L602)).
+  ([`core_brain.py:570-602`](../../orchestration/core_brain.py#L570-L602)).
 
 So the reasoning flow is **REAL** and genuinely coupled to both memory and
 weights. The remaining gap is downstream, in (4).
@@ -97,13 +97,13 @@ weights. The remaining gap is downstream, in (4).
 ### (4) Action-structure flow — `dA/dt = Ψ(R,Θ,E)`   · partly REAL — **the one open edge**
 
 `A` is reconfigured per query: `select_skills` / `top_agent` re-rank the 21-node
-skill graph ([`infrastructure/skill_graph.py:310`](../infrastructure/skill_graph.py#L310)),
-and the world-model planner sequences actions ([`models/world_model.py:94`](../models/world_model.py#L94)).
+skill graph ([`infrastructure/skill_graph.py:310`](../../infrastructure/skill_graph.py#L310)),
+and the world-model planner sequences actions ([`models/world_model.py:94`](../../models/world_model.py#L94)).
 But `select_skills(query, n)` takes the **query string and nothing else** — no
 `action`, no chosen `primary`, no `confidence`. The planner already *holds* that
-reasoning state as parameters ([`orchestration/planner.py:362-364`](../orchestration/planner.py#L362-L364))
+reasoning state as parameters ([`orchestration/planner.py:362-364`](../../orchestration/planner.py#L362-L364))
 yet calls `select_skills(query, n=3)` and discards it
-([`planner.py:378`](../orchestration/planner.py#L378)). So action geometry is
+([`planner.py:378`](../../orchestration/planner.py#L378)). So action geometry is
 *reconfigurable* (REAL) but **not coupled to reasoning state** — `Ψ` ignores `R`
 and `Θ`. This is the single genuinely-missing coupling (§5).
 
@@ -116,8 +116,8 @@ OCAC second-difference and variational-selection results, and they are **already
 in code** — see [OCAC_STABILITY_BRIDGE.md §4–5](OCAC_STABILITY_BRIDGE.md):
 
 - **Curvature channel:** `series_curvature` / `max_abs_curvature` in
-  [`evaluation/math_metrics.py`](../evaluation/math_metrics.py); `C_curvature`
-  (Δ²C) attached per window in [`cognition/coherence.py`](../cognition/coherence.py);
+  [`infrastructure/math_metrics.py`](../../infrastructure/math_metrics.py); `C_curvature`
+  (Δ²C) attached per window in [`cognition/coherence.py`](../../cognition/coherence.py);
   `uci_curvature()` runs the same Δ² on the UCI trajectory.
 - **Variational selection:** OCAC's `Variational.lean` canonically defines
   fractional reflection depth by minimum curvature — the formal backing for
@@ -147,7 +147,7 @@ reasoning. This system's routing stack *is* that ladder:
 | TCST rung | Component |
 |---|---|
 | `R₀` base inference | direct route (signal heuristics, ~1ms, no LLM) |
-| `R₁` compositional | CoreBrain domain/complexity detection ([`core_brain.py:182`](../orchestration/core_brain.py#L182)) |
+| `R₁` compositional | CoreBrain domain/complexity detection ([`core_brain.py:182`](../../orchestration/core_brain.py#L182)) |
 | `R₂` meta-reasoning | reflection_loop critique/refine |
 | `R₃` rule-modifying | adaptive-α gate that freezes/permits learning |
 
@@ -189,8 +189,8 @@ the corrected status:
 
 | Coupling TCST asserts | Status in repo |
 |---|---|
-| `R` reads `M` (reflection from experience) | ✓ reflection-bias + episodic blocks ([`core_brain.py:517-602`](../orchestration/core_brain.py#L517-L602)) |
-| `R` reads `Θ` (reflection depth from weight confidence) | ✓ `to_confidence` → risk_gate ([`core_brain.py:507-514`](../orchestration/core_brain.py#L507-L514)) |
+| `R` reads `M` (reflection from experience) | ✓ reflection-bias + episodic blocks ([`core_brain.py:517-602`](../../orchestration/core_brain.py#L517-L602)) |
+| `R` reads `Θ` (reflection depth from weight confidence) | ✓ `to_confidence` → risk_gate ([`core_brain.py:507-514`](../../orchestration/core_brain.py#L507-L514)) |
 | outcome → `M` weighting | ✓ outcome-weighted memory exists |
 | `M`/calibration → `Θ` | ✓ via learning signal `L` |
 | `A` reads `R`/`Θ` (skill selection from reasoning state) | ✗ **`select_skills(query)` keys off query only** |
@@ -198,7 +198,7 @@ the corrected status:
 So the reasoning↔memory↔learning triangle is closed. The **one** open edge is
 `A ← R`: the skill graph re-ranks against the bare query and ignores the
 `action`/`primary`/`confidence` the planner already holds
-([`planner.py:362-378`](../orchestration/planner.py#L362-L378)). Closing it is a
+([`planner.py:362-378`](../../orchestration/planner.py#L362-L378)). Closing it is a
 small, bounded change — thread the existing `BrainDecision` fields into
 `select_skills` so skill selection is conditioned on reasoning state rather than
 the query alone. No new storage, no new flow; just stop discarding state that's
@@ -223,7 +223,7 @@ For *this* edge it is partially self-damping, by mechanisms already in the code:
 
 - **Negative-feedback branch.** The reflection-bias block swaps *away* from an
   agent that scored `< 0.60` on similar past queries
-  ([`core_brain.py:529`](../orchestration/core_brain.py#L529)) — so `M → R`
+  ([`core_brain.py:529`](../../orchestration/core_brain.py#L529)) — so `M → R`
   reinforces on success but diverts on failure. The loop only tightens around
   agents that keep succeeding, which is the desired convergence.
 - **Stateless skill scoring.** The `+0.15` bias does not accumulate in the skill

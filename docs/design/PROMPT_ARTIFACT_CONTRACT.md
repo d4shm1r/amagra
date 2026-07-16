@@ -145,7 +145,7 @@ a higher-trust capability than reading — gate it behind the same owner-action 
 ## The AST is a projection, not a rewrite
 
 The prompt analysis already exists and is good: `computeMetrics`, `detectDomain`,
-`structChecks` ([`PromptEditorTab.jsx:478`](../../ui/src/PromptEditorTab.jsx#L478)). What's
+`structChecks` ([`PromptEditorTab.jsx:520`](../../ui/src/tabs/PromptEditorTab.jsx#L520)). What's
 missing is **stable node identity** so a finding can point at a span and a fix can edit
 one node.
 
