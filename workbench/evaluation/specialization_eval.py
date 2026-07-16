@@ -6,6 +6,23 @@ generic one?
     PYTHONPATH=. python3 workbench/evaluation/specialization_eval.py            # all 91
     PYTHONPATH=. python3 workbench/evaluation/specialization_eval.py --dry-run  # wiring only
 
+Generating and judging are separable, and for a real run they should be separated:
+
+    ... specialization_eval.py --answers-only          # phase 1: capture, no verdicts
+    ... specialization_eval.py --rate logs/spec_X.jsonl --judge qwen2.5:14b
+
+Phase 1 is the expensive, fragile half — 91 prompts x 5 arms is 455 local
+generations, and it used to hold every one of them in memory and write the file
+only after the last prompt finished, so anything that died at prompt 90 threw the
+lot away. Answers now stream to disk as they are produced.
+
+Phase 2 is cheap and repeatable, which is the point: the judge is the least
+trustworthy part of this harness (see SCOPE below), so re-judging the SAME answers
+with a different model is how you find out whether a result is real or is just
+one judge's opinion. Regenerating 455 answers to change judges is not a thing
+anyone will actually do, so the harness stops asking. --rate never modifies the
+answers file it reads; verdicts go to a new `_rated_` file.
+
 WHY THIS EXISTS
 ---------------
 Every other harness in this directory (agent_arena, ablation_eval,
@@ -206,6 +223,87 @@ def _judge(llm, q: str, base: str, cand: str) -> str:
     return "tie"
 
 
+# ── phases ───────────────────────────────────────────────────────────────────
+def _out_path(kind: str) -> str:
+    os.makedirs(OUT_DIR, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return os.path.join(OUT_DIR, f"specialization_{kind}{stamp}.jsonl")
+
+
+def _generate(rows, specs, state, path: str) -> list[dict]:
+    """Phase 1. Answers stream to `path` as they are produced — a run that dies at
+    prompt 90 of 91 keeps its first 89."""
+    records = []
+    with open(path, "w") as f:
+        for i, (pid, expected, category, prompt) in enumerate(rows, 1):
+            answers = {}
+            for arm in ARMS:
+                state["arm"] = arm
+                answers[arm] = _answer(_spec_for(arm, expected, specs), prompt)
+            rec = {"id": pid, "expected": expected, "category": category,
+                   "prompt": prompt, "answers": answers}
+            records.append(rec)
+            f.write(json.dumps(rec) + "\n")
+            f.flush()
+            print(f"  [{i:>3}/{len(rows)}] {pid:<8} {expected:<19} answered")
+    return records
+
+
+def _rate(judge, records: list[dict]) -> dict:
+    """Phase 2. Judge each arm against the generic baseline. Mutates `records`
+    with a `verdicts` key and returns the tally."""
+    tally = {a: {"cand": 0, "base": 0, "tie": 0} for a in ARMS if a != "generic"}
+    for i, rec in enumerate(records, 1):
+        verdicts = {}
+        for arm in tally:
+            v = _judge(judge, rec["prompt"], rec["answers"]["generic"], rec["answers"][arm])
+            verdicts[arm] = v
+            tally[arm][v] += 1
+        rec["verdicts"] = verdicts
+        won = " ".join(f"{a}:{verdicts[a][0]}" for a in tally)
+        print(f"  [{i:>3}/{len(records)}] {rec['id']:<8} {rec['expected']:<19} {won}")
+    return tally
+
+
+def _report(tally: dict, n: int) -> None:
+    print("\n" + "=" * 74)
+    print("  vs GENERIC BASELINE   (a win must survive an A/B order swap)")
+    print("=" * 74)
+    print(f"  {'arm':<14} {'wins':>5} {'ties':>5} {'loss':>5} {'net':>7}   {'95% CI on net':>18}")
+    print("  " + "-" * 70)
+    for arm in tally:
+        w, l, t = tally[arm]["cand"], tally[arm]["base"], tally[arm]["tie"]
+        net = (w - l) / max(1, n)
+        # CI is on the win-rate among DECIDED pairs (ties excluded): 50% = no effect.
+        _, lo, hi = wilson_interval(w, max(1, w + l))
+        print(f"  {arm:<14} {w:>5} {t:>5} {l:>5} {net:>+7.1%}   "
+              f"[{lo:>6.1%}, {hi:>6.1%}] win-rate")
+
+    print("\n  How to read it:")
+    print("    persona_only ≈ 0   the system prompts buy nothing")
+    print("    memory_only  ≈ specialist   → MEMORY is the product; personas are decoration,")
+    print("                                  and the routing stack decides nothing that matters")
+    print("    specialist ≈ misrouted      → routing correctness is worth ~nothing")
+    print("    (a null result disproves THESE prompt-level specialists, not specialization)")
+
+
+def _load(path: str) -> list[dict]:
+    with open(path) as f:
+        records = [json.loads(line) for line in f if line.strip()]
+    missing = [r["id"] for r in records if set(ARMS) - set(r.get("answers", {}))]
+    if missing:
+        raise SystemExit(f"{path}: {len(missing)} record(s) missing arms, e.g. {missing[:3]}")
+    return records
+
+
+def _make_judge(model_id: str):
+    import models.llm as _m
+    if not model_id:
+        return _m.llm
+    from langchain_ollama import ChatOllama
+    return ChatOllama(model=model_id, temperature=0)
+
+
 # ── run ──────────────────────────────────────────────────────────────────────
 def main() -> None:
     ap = argparse.ArgumentParser()
@@ -213,7 +311,26 @@ def main() -> None:
     ap.add_argument("--judge", default="", help="judge model id (default: the app's llm)")
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--dry-run", action="store_true", help="stub the model; check wiring only")
+    ap.add_argument("--answers-only", action="store_true",
+                    help="phase 1 only: generate and save answers, judge nothing")
+    ap.add_argument("--rate", default="",
+                    help="phase 2 only: judge an existing answers .jsonl and report")
     args = ap.parse_args()
+
+    if args.rate:
+        if args.answers_only:
+            raise SystemExit("--rate and --answers-only are opposite halves; pick one")
+        records = _load(args.rate)
+        print(f"rating {len(records)} prompts from {os.path.relpath(args.rate, ROOT)}   "
+              f"judge: {args.judge or 'the app llm'}   judgements: {len(records) * 8}\n")
+        tally = _rate(_make_judge(args.judge), records)
+        _report(tally, len(records))
+        path = _out_path("rated_")
+        with open(path, "w") as f:
+            for r in records:
+                f.write(json.dumps(r) + "\n")
+        print(f"\n  verdicts written to {os.path.relpath(path, ROOT)}")
+        return
 
     random.seed(args.seed)
     specs = _agent_specs()
@@ -233,63 +350,33 @@ def main() -> None:
         judge = _Stub()
         print("DRY RUN — stubbed model, verdicts are meaningless\n")
     else:
-        import models.llm as _m
-        judge = _m.llm
-        if args.judge:
-            from langchain_ollama import ChatOllama
-            judge = ChatOllama(model=args.judge, temperature=0)
+        judge = _make_judge(args.judge)
 
     print(f"prompts: {len(rows)}   arms: {len(ARMS)}   "
-          f"generations: {len(rows) * len(ARMS)}   judgements: {len(rows) * 8}\n")
+          f"generations: {len(rows) * len(ARMS)}   "
+          f"judgements: {0 if args.answers_only else len(rows) * 8}\n")
 
-    records, tally = [], {a: {"cand": 0, "base": 0, "tie": 0} for a in ARMS if a != "generic"}
+    path = _out_path("")
+    records = _generate(rows, specs, state, path)
+    print(f"\n  answers written to {os.path.relpath(path, ROOT)}")
 
-    for i, (pid, expected, category, prompt) in enumerate(rows, 1):
-        answers = {}
-        for arm in ARMS:
-            state["arm"] = arm
-            answers[arm] = _answer(_spec_for(arm, expected, specs), prompt)
+    if args.answers_only:
+        print("  → phase 1 done. Judge them with:")
+        print(f"       --rate {os.path.relpath(path, ROOT)} --judge <model>")
+        print("  → or rate them by hand. That is the honest path, and the answers "
+              "are on disk now\n    precisely so a judge you do not trust cannot "
+              "cost you the generation again.")
+        return
 
-        verdicts = {}
-        for arm in tally:
-            v = _judge(judge, prompt, answers["generic"], answers[arm])
-            verdicts[arm] = v
-            tally[arm][v] += 1
+    print()
+    tally = _rate(judge, records)
+    _report(tally, len(rows))
 
-        records.append({"id": pid, "expected": expected, "category": category,
-                        "prompt": prompt, "answers": answers, "verdicts": verdicts})
-        won = " ".join(f"{a}:{verdicts[a][0]}" for a in tally)
-        print(f"  [{i:>3}/{len(rows)}] {pid:<8} {expected:<19} {won}")
-
-    # ── report ──
-    print("\n" + "=" * 74)
-    print("  vs GENERIC BASELINE   (a win must survive an A/B order swap)")
-    print("=" * 74)
-    print(f"  {'arm':<14} {'wins':>5} {'ties':>5} {'loss':>5} {'net':>7}   {'95% CI on net':>18}")
-    print("  " + "-" * 70)
-    n = len(rows)
-    for arm in tally:
-        w, l, t = tally[arm]["cand"], tally[arm]["base"], tally[arm]["tie"]
-        net = (w - l) / n
-        # CI is on the win-rate among DECIDED pairs (ties excluded): 50% = no effect.
-        _, lo, hi = wilson_interval(w, max(1, w + l))
-        print(f"  {arm:<14} {w:>5} {t:>5} {l:>5} {net:>+7.1%}   "
-              f"[{lo:>6.1%}, {hi:>6.1%}] win-rate")
-
-    print("\n  How to read it:")
-    print("    persona_only ≈ 0   the system prompts buy nothing")
-    print("    memory_only  ≈ specialist   → MEMORY is the product; personas are decoration,")
-    print("                                  and the routing stack decides nothing that matters")
-    print("    specialist ≈ misrouted      → routing correctness is worth ~nothing")
-    print("    (a null result disproves THESE prompt-level specialists, not specialization)")
-
-    os.makedirs(OUT_DIR, exist_ok=True)
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = os.path.join(OUT_DIR, f"specialization_{stamp}.jsonl")
-    with open(path, "w") as f:
+    rated = _out_path("rated_")
+    with open(rated, "w") as f:
         for r in records:
             f.write(json.dumps(r) + "\n")
-    print(f"\n  answers written to {os.path.relpath(path, ROOT)}")
+    print(f"\n  verdicts written to {os.path.relpath(rated, ROOT)}")
     print("  → rate them by hand before you trust an LLM judge that grades its own output.")
 
 
