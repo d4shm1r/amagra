@@ -24,4 +24,13 @@ export default defineConfig({
     // Keep CRA's output directory so any existing tooling/muscle memory holds.
     outDir: 'build',
   },
+  // Tests run through this same config, so they resolve "@/..." exactly the way
+  // the app does — no second alias table to drift out of sync.
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setup.js',
+    // Only our own tests. Without this, vitest walks node_modules.
+    include: ['src/**/*.test.{js,jsx}'],
+  },
 });

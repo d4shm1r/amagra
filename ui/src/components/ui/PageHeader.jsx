@@ -17,7 +17,7 @@
 // identically. The band is opaque under the title and pills; only its last
 // HEADER_FADE px thin to nothing, so content scrolling underneath melts away
 // instead of hitting a hard line.
-import { T, LUX, TYPE, LAYOUT } from "@/styles/theme";
+import { T, LUX, TYPE, LAYOUT, Z } from "@/styles/theme";
 
 // How far the band's bottom edge dissolves. Matches the launcher's scroll mask
 // (linear-gradient to transparent over ~30px), so the menu and the tabs fade
@@ -70,7 +70,7 @@ export function PageHeader({ title, subtitle, children, gold = true, center = fa
       // by the same gutter cancels the padding, so the band pins to the true top
       // (0 gap) both at rest and while scrolling. It pairs with the marginTop
       // below, which keeps the at-rest position flush too.
-      top: -LAYOUT.gutterY, zIndex: 30,
+      top: -LAYOUT.gutterY, zIndex: Z.header,
       // Full-bleed: escape the centered column and span the viewport. The scroll
       // surface sets overflowX: hidden, so this never makes a horizontal bar.
       width: "100vw", marginLeft: "calc(50% - 50vw)",

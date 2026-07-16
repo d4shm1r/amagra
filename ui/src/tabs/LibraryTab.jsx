@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { API } from "@/lib/api";
 import {
   Page, PageHeader, DropZone, Grid, GridSpan, Notice, Loading, EmptyPage, EmptyState,
+  useConfirm,
 } from "@/components/ui";
 import { SearchInput, FilePicker } from "@/components/forms";
 import { DocCard } from "@/components/library/DocCard";
@@ -14,6 +15,7 @@ import { ACCEPTED, prettyTitle } from "@/components/library/docMeta";
 const DEFAULT_COLLECTIONS = ["Strategy", "Research", "Product", "Personal", "Archive"];
 
 export default function LibraryTab() {
+  const confirm = useConfirm();
   const [docs,   setDocs]   = useState(null);   // null = loading
   const [query,  setQuery]  = useState("");
   const [notice, setNotice] = useState(null);
@@ -73,7 +75,10 @@ export default function LibraryTab() {
   };
 
   const removeDoc = async (doc) => {
-    if (!window.confirm(`Remove "${prettyTitle(doc.filename)}" from your Library?`)) return;
+    if (!(await confirm({
+      title: `Remove "${prettyTitle(doc.filename)}" from your Library?`,
+      confirmLabel: "Remove", danger: true,
+    }))) return;
     setDocs(prev => prev.filter(d => d.filename !== doc.filename));
     try {
       await fetch(`${API}/documents/${encodeURIComponent(doc.filename)}`, { method: "DELETE" });

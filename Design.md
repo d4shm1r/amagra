@@ -17,7 +17,8 @@
 Derived by reading `ui/` (v1.7.0). Every normative statement is tagged, because a
 design system that can't tell you what's real is just a wish list:
 
-- **[Enforced]** — `npm run lint:ui` or a type/registry check fails the build.
+- **[Enforced]** — something fails if you break it: `npm run lint:ui`, a registry
+  check, or `npm test`. Not "we agreed to"; a machine says no.
 - **[Observed]** — the code does this consistently today; the kit is built around it.
 - **[Proposed]** — *not true yet.* A gap worth closing, recorded honestly rather
   than described as fact.
@@ -464,8 +465,16 @@ Real, and worth naming rather than glossing:
   remaining a11y gap, and the one that needs design, not just a role attribute.
 - **No documented error-copy contract for assistive tech** — §9's rules are visual
   prose rules; they don't yet say what gets announced.
-- **The audit was reasoned, not measured.** No axe/Lighthouse pass, and no test
-  covers any of the above, so nothing stops a regression.
+- **Still no axe/Lighthouse pass, and nobody has driven this with a real screen
+  reader.** The rules above are now *tested* (`npm test` — vitest + jsdom, and
+  each assertion is mutation-checked: breaking the implementation fails exactly
+  the test that names the rule, including re-introducing the conditional `Toast`).
+  But a passing suite proves the attribute is present and the focus moves, not
+  that the result is *pleasant to listen to*. Those are different questions and
+  only the second one matters to the person using it.
+- **jsdom does no layout**, so the 24×24 floor can only be asserted as a
+  declaration. The test catches someone deleting the floor; it would not catch a
+  parent squashing the button.
 
 ---
 
@@ -491,6 +500,9 @@ or would be broken by:
 | **Animate a static container** | movement promises clickability |
 | **Animate two axes at once** | reads as a pop; pops aren't calm |
 | **Let an alert take a row in the layout** | the page lurches; use `Toast` |
+| **Mount a live region with its message** | a region that appears with its content is not announced — the `Toast` layer is permanent on purpose **[Enforced]** |
+| **Ship a modal without containing Tab** | `aria-modal` tells a screen reader the page behind is inert; the browser still tabs into it **[Enforced]** |
+| **`window.confirm()`** | it drops out of the material at the exact moment trust matters — use `useConfirm()` |
 | **A menu tile with no description** | one short tile makes the whole row look broken **[Enforced]** |
 | **An imperative in a nav description** | name what the thing *is* **[Enforced]** |
 | **"Something went wrong."** | name the state, spell out the fix, give the command |

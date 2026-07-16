@@ -24,7 +24,7 @@ export function Menu({ label = "⋯", title = "More", align = "up", width = 168,
       <IconButton onClick={() => setOpen(o => !o)} title={title}>{label}</IconButton>
       {open && (
         <div style={{
-          position: "absolute", right: 0, zIndex: 100, minWidth: width,
+          position: "absolute", right: 0, zIndex: Z.popover, minWidth: width,
           ...(align === "up" ? { bottom: "calc(100% + 6px)" } : { top: "calc(100% + 6px)" }),
           background: T.surface, border: `1px solid ${T.border}`,
           borderRadius: RADIUS.md + 1, boxShadow: LUX.shadowMd, padding: SPACE[1] + 2,

@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import '@/styles/index.css';
 import App from '@/App';
+import { ConfirmProvider } from '@/components/ui';
 
 // Top-level guard: a render-time throw anywhere in the tree should surface a
 // readable message instead of a blank page (which is otherwise indistinguishable
@@ -50,7 +51,12 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
-      <App />
+      {/* Above <App> so any view can ask useConfirm() — the dialog itself is
+          rendered once, here, instead of once per caller. Inside the boundary,
+          so a throw from a confirmed action still shows the error page. */}
+      <ConfirmProvider>
+        <App />
+      </ConfirmProvider>
     </ErrorBoundary>
   </React.StrictMode>
 );

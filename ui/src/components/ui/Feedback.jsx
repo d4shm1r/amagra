@@ -1,7 +1,7 @@
 // Feedback.jsx — the states that aren't content: loading, empty, transient
 // notices, and the engine-offline banner. A tab should never hand-write
 // "Loading…" in an italic div again.
-import { T, LUX, TYPE, FONT_DISPLAY, SPACE, LAYOUT } from "@/styles/theme";
+import { T, LUX, TYPE, FONT_DISPLAY, SPACE, LAYOUT, Z } from "@/styles/theme";
 import { toneColor } from "./tone";
 import { Button } from "./Button";
 
@@ -96,7 +96,7 @@ export function Toast({ children }) {
   return (
     <div role="status" aria-live="polite" style={{
       position: "absolute", top: 12, left: LAYOUT.gutter, right: LAYOUT.gutter,
-      zIndex: 40, display: "flex", justifyContent: "center",
+      zIndex: Z.toast, display: "flex", justifyContent: "center",
       pointerEvents: "none",
     }}>
       <div style={{ pointerEvents: "auto", width: "100%", maxWidth: LAYOUT.content }}>

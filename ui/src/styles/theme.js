@@ -75,6 +75,12 @@ export const LUX = {
   shadowLg:   "0 18px 48px rgba(62, 44, 20, 0.20)",
   glass:      "rgba(250, 247, 242, 0.88)", // frosted bars (pair with backdropFilter)
 
+  // The wash behind a modal. Warm umber, never black — a black scrim over cream
+  // reads as a hole punched in the paper, and the whole material depends on the
+  // shadow being coloured by the light around it. Light enough that the work
+  // stays legible underneath: a dialog interrupts you, it doesn't blindfold you.
+  scrim:      "rgba(72, 52, 28, 0.38)",
+
   // The one card recipe — JS mirror of --card-* in public/tokens.css. Prefer
   // className="lux-card" / "lux-card-i"; these are for surfaces that must stay
   // inline-styled. No outer white glow: the paper highlight is inset, so a card
@@ -121,6 +127,54 @@ export const EASE = {
   inOut: "cubic-bezier(0.65, 0, 0.35, 1)",  // symmetric — loops, toggles
 };
 export const DUR = { fast: "140ms", base: "200ms", slow: "280ms", slower: "600ms" };
+
+// ── Layering — the z-axis, named ─────────────────────────────────
+// The app always had a working stack; what it never had was a NAME for it. So
+// each new layer picked its number by looking over its shoulder at whatever was
+// nearby and adding a zero — which is how 9000 and 9010 ended up one apart while
+// 50 and 100 sit fifty apart. The gaps encode nothing.
+//
+// The cost of that is not that the stack is broken — it isn't. It is that in two
+// places it works by ACCIDENT rather than intent: Onboarding was tied with the
+// paper grain (9999 vs 9999) and sits under it only because `body::after` paints
+// after `#root`; the prompt-diff overlay is tied with the ☰ (50 vs 50) and wins
+// only because it comes later in the DOM. Both are correct today and neither
+// survives a reorder. A tie is a coin toss that has not been called yet.
+//
+// Nine layers, because there are nine kinds of thing that stack:
+//
+//   header     the sticky PageHeader band
+//   toast      floating alerts — over the header, UNDER the launcher, so the
+//              menu stays reachable while an alert is up
+//   launcher   the ☰ at rest
+//   popover    a dropdown anchored to a control (Menu)
+//   tooltip    transient hover text
+//   overlay    a full-screen scrim (the app-grid launcher)
+//   overlayTop the ☰ while its own overlay is open — it is the close button,
+//              so it has to sit above what it closes
+//   modal      a dialog that owns the screen (Confirm, Onboarding)
+//   grain      the paper texture — over everything, never interactive
+//
+// The NUMBERS are inherited on purpose: naming them is safe, renumbering them
+// is a behaviour change, and you cannot renumber safely until every raw literal
+// is gone. Tokenizing is step one. When the last literal is converted, this can
+// become 10/20/30/… in a single mechanical commit that touches only this object.
+//
+// NOT for local stacking. A z-index inside a positioned parent (DropZone's
+// overlay, MindMap's nodes) only competes with its siblings and is nobody's
+// business but that component's. Only reach for Z when a thing must sit above
+// something it does not live inside.
+export const Z = {
+  header:      30,
+  toast:       40,
+  launcher:    50,
+  popover:    100,
+  tooltip:   2000,
+  overlay:   9000,
+  overlayTop: 9010,
+  modal:     9998,   // under the grain (9999) — the paper covers even a dialog
+  grain:     9999,
+};
 
 // Spacing scale (px) — use multiples of 4
 export const SPACE = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 7: 32, 8: 40, 10: 48 };

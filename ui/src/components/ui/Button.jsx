@@ -5,7 +5,12 @@
 //   gold   — the single primary CTA on a surface (landing .btn-gold)
 //   ghost  — secondary CTA, cream fill + luminous gold border (.btn-ghost)
 //   quiet  — tertiary; a bare label that washes on hover (.nav-btn)
-//   danger — destructive, quiet until you touch it
+//   danger — destructive; error-toned border and text on a whisper of tint
+//            (.btn-danger). It was a bare borderless label until the Confirm
+//            dialog became its first caller and showed why that could not work:
+//            beside a bordered Cancel it read as the LESS prominent of the two,
+//            so the dialog quietly recommended deleting. Zero call sites, so
+//            fixing the shape cost nothing.
 import { T, TYPE, RADIUS, DUR, EASE } from "@/styles/theme";
 import { toneColor } from "./tone";
 
@@ -38,7 +43,7 @@ export function Button({
 
   // The gold + ghost recipes live in styles/index.css (they carry pseudo-element
   // sheen and multi-layer shadows that inline styles can't express).
-  const cls = { gold: "btn-gold", ghost: "btn-ghost", quiet: "nav-btn", danger: "nav-btn" }[variant];
+  const cls = { gold: "btn-gold", ghost: "btn-ghost", quiet: "nav-btn", danger: "btn-danger" }[variant];
 
   const variantStyle = {
     gold:  { border: "none", borderRadius: 40 },
@@ -47,10 +52,9 @@ export function Button({
       background: "transparent", color: T.mutedLt,
       border: `1px solid ${T.border}`, borderRadius: RADIUS.md,
     },
-    danger: {
-      background: "transparent", color: toneColor("error"),
-      border: "none", borderRadius: RADIUS.sm,
-    },
+    // Colour, border and hover live in .btn-danger (styles/index.css) — it needs
+    // a hover the inline `nav-btn` wash would fight.
+    danger: { borderRadius: RADIUS.md },
   }[variant];
 
   return (

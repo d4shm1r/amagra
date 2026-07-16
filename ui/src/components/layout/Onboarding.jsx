@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { T, LUX, GOLD, FONT_DISPLAY, FONT_MONO } from "@/styles/theme";
+import { T, LUX, GOLD, FONT_DISPLAY, FONT_MONO, Z } from "@/styles/theme";
 
 // First-run setup wizard. Shown once (gated by localStorage in App), it walks a
 // new user through the only two things that can block a first answer: Ollama
@@ -221,7 +221,7 @@ function Step({ n, title, done, loading, disabled, children }) {
 }
 
 const overlay = {
-  position: "fixed", inset: 0, zIndex: 9999,
+  position: "fixed", inset: 0, zIndex: Z.modal,
   background: "rgba(46, 32, 16, 0.42)", backdropFilter: "blur(6px)",
   display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
 };

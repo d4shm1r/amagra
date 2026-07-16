@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AGENTS, PROGRESS_STEPS, AGENT_ID_REVERSE } from "@/config/constants";
 import AgentContextPanel from "@/components/panels/AgentContextPanel";
+import { useConfirm } from "@/components/ui";
 import { T, LAYOUT, FONT_DISPLAY } from "@/styles/theme";
 
 // ── Signal Pill ────────────────────────────────────────────────
@@ -97,6 +98,7 @@ export default function ChatTab({
   seedPrompt, onSeedConsumed,
   enterToSend = true, showTimestamps = true,
 }) {
+  const confirm = useConfirm();
   const [messages,      setMessages]      = useState([]);
   const [input,         setInput]         = useState("");
   const [loading,       setLoading]       = useState(false);
@@ -229,13 +231,13 @@ export default function ChatTab({
 
   const [editingIndex, setEditingIndex] = useState(null);
 
-  const clearChat = useCallback(() => {
+  const clearChat = useCallback(async () => {
     if (!messages.length) return;
-    if (window.confirm("Clear all messages?")) {
+    if (await confirm({ title: "Clear all messages?", confirmLabel: "Clear", danger: true })) {
       setMessages([]); setFeedbackMap({});
       setExpandedMem({}); setExpandedCoa({});
     }
-  }, [messages.length]);
+  }, [messages.length, confirm]);
 
   const newThread = useCallback(() => {
     setCurrentThreadId(null);

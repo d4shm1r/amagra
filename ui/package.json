@@ -13,8 +13,13 @@
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.0.7"
+    "jsdom": "^29.1.1",
+    "vite": "^6.0.7",
+    "vitest": "^4.1.10"
   },
   "scripts": {
     "start": "vite",
@@ -22,6 +27,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint:ui": "node scripts/lint-ui.mjs",
-    "lint:ui:debt": "node scripts/lint-ui.mjs --debt"
+    "lint:ui:debt": "node scripts/lint-ui.mjs --debt",
+    "test": "vitest run",
+    "test:watch": "vitest"
   }
 }

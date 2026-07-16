@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { AGENTS as AGENTS_LIST } from "@/config/constants";
 import { T, GOLD, LUX, TYPE, EASE, DUR, FONT_DISPLAY, FONT_MONO } from "@/styles/theme";
-import { PageHeader, MetricCard } from "@/components/ui";
+import { PageHeader, MetricCard, useConfirm } from "@/components/ui";
 
 import { API } from "@/lib/api";
 
@@ -162,6 +162,7 @@ function StepCard({ step, onRetry, graphStatus }) {
 }
 
 function GoalCard({ goal, onRefresh }) {
+  const confirm = useConfirm();
   const [expanded, setExpanded] = useState(false);
   const [detail,   setDetail]   = useState(null);
   const [, setRetrying] = useState(false);
@@ -200,7 +201,7 @@ function GoalCard({ goal, onRefresh }) {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Delete this goal?")) return;
+    if (!(await confirm({ title: "Delete this goal?", confirmLabel: "Delete", danger: true }))) return;
     await fetch(`${API}/goals/${goal.id}`, { method: "DELETE" });
     onRefresh();
   };
