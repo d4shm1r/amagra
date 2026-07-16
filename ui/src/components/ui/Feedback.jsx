@@ -5,11 +5,15 @@ import { T, LUX, TYPE, FONT_DISPLAY, SPACE, LAYOUT } from "@/styles/theme";
 import { toneColor } from "./tone";
 import { Button } from "./Button";
 
-/** Quiet inline loading line — for a panel whose data hasn't landed yet. */
+/** Quiet inline loading line — for a panel whose data hasn't landed yet.
+ *
+ *  `role="status"` (an implicit polite live region) so the wait is announced
+ *  rather than being a silent pause: a sighted user sees the panel is busy, and
+ *  without this a screen-reader user gets nothing at all until the data lands. */
 export function Loading({ msg = "Loading…" }) {
   return (
-    <div style={{ ...TYPE.small, padding: `${SPACE[6]}px 0`, textAlign: "center",
-                  color: T.muted, fontStyle: "italic" }}>
+    <div role="status" style={{ ...TYPE.small, padding: `${SPACE[6]}px 0`, textAlign: "center",
+                                color: T.muted, fontStyle: "italic" }}>
       {msg}
     </div>
   );
@@ -46,11 +50,17 @@ export function EmptyPage({ title, children, action, hint }) {
   );
 }
 
-/** A transient message — a failed upload, a backend that went away mid-action. */
+/** A transient message — a failed upload, a backend that went away mid-action.
+ *
+ *  A Notice always appears in reaction to something, so it is always a live
+ *  region. Which kind depends on the tone, because urgency is not decoration:
+ *  a failure interrupts (`alert`, assertive), anything else waits its turn
+ *  (`status`, polite). Getting this backwards means either a user misses that
+ *  their upload died, or every routine success barges into what they were doing. */
 export function Notice({ tone = "error", children }) {
   const color = toneColor(tone);
   return (
-    <div style={{
+    <div role={tone === "error" || tone === "warn" ? "alert" : "status"} style={{
       marginBottom: SPACE[3], padding: `${SPACE[2]}px ${SPACE[3]}px`, borderRadius: 8,
       background: `${color}12`, border: `1px solid ${color}33`,
       ...TYPE.caption, color,
@@ -70,10 +80,21 @@ export function Notice({ tone = "error", children }) {
  *  and only the alert inside it is clickable.
  *
  *  z-index sits above the sticky PageHeader (30) but below the ☰ launcher (50),
- *  so the menu button stays reachable while an alert is up. */
+ *  so the menu button stays reachable while an alert is up.
+ *
+ *  It is also the app's LIVE REGION, and that is why it renders even with no
+ *  children. A screen reader only reliably announces content inserted into a
+ *  region that was ALREADY in the document; mounting the region together with
+ *  its message — `{offline && <Toast>…}` — is the standard way to ship an alert
+ *  that stays silent for exactly the people who need it read aloud. So the layer
+ *  is permanent and only its children come and go. An empty one is inert: it has
+ *  no height, so it intercepts nothing.
+ *
+ *  Polite, not assertive: the banner persists on screen, so it does not need to
+ *  cut into whatever the user is doing — it needs to be heard at the next pause. */
 export function Toast({ children }) {
   return (
-    <div style={{
+    <div role="status" aria-live="polite" style={{
       position: "absolute", top: 12, left: LAYOUT.gutter, right: LAYOUT.gutter,
       zIndex: 40, display: "flex", justifyContent: "center",
       pointerEvents: "none",
@@ -98,7 +119,9 @@ export function ApiOfflineBanner({ onRetry, checking = false }) {
       border: `1px solid ${T.accent}33`,
       boxShadow: LUX.cardShadow,
     }}>
-      <span style={{
+      {/* Decorative: the headline beside it already says "offline"/"connecting",
+          so an accessible name here would only stutter it. */}
+      <span aria-hidden style={{
         width: 9, height: 9, borderRadius: "50%", flexShrink: 0,
         background: dot, boxShadow: `0 0 8px ${dot}66`,
         animation: "dotPulse 1.6s ease-in-out infinite",

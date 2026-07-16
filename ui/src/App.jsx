@@ -401,12 +401,19 @@ export default function App() {
 
           {/* The offline alert floats OVER the workspace — it takes no row in the
               layout, so the page doesn't lurch down when the engine drops and
-              doesn't jump back up when it returns. <Toast> owns that. */}
-          {apiStatus !== "online" && (
-            <Toast>
+              doesn't jump back up when it returns. <Toast> owns that.
+
+              The <Toast> layer itself is mounted UNCONDITIONALLY and only the
+              banner inside it is conditional: it is a live region, and a live
+              region that appears at the same moment as its message is not
+              reliably announced. An empty layer is inert (no height, nothing to
+              click), so this costs nothing and is the difference between the
+              engine dropping silently and it being read out. */}
+          <Toast>
+            {apiStatus !== "online" && (
               <ApiOfflineBanner onRetry={checkHealth} checking={apiStatus === "checking"} />
-            </Toast>
-          )}
+            )}
+          </Toast>
 
           <div style={{
             flex: 1,
