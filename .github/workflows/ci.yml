@@ -42,6 +42,46 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v --tb=short
 
+  # The UI had no CI at all: `Lint` is ruff and `Tests` is pytest, both Python
+  # only, so ui/ was guarded by nothing but whoever remembered to run it. That
+  # is the whole design system — the lint rule that keeps colours out of tabs,
+  # the icon-registry check, the nav one-voice check, the a11y contracts — all
+  # of it enforceable in principle and enforced by nobody. Design.md calls a rule
+  # "[Enforced]" when a machine says no; until this job existed, no machine did.
+  ui:
+    name: UI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@v7
+      # v7 to match the repo's habit of tracking latest majors (checkout@v7).
+      # node-version-file is resolved from the workspace root, not the job's
+      # working-directory — that only applies to `run` steps.
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ui/.nvmrc
+      # `npm install`, not `npm ci`: ui/package-lock.json is gitignored
+      # repo-wide, so there is no lockfile to install from. That also means this
+      # job resolves fresh versions on every run and a transitive release can
+      # break the build with nothing of ours having changed — committing the
+      # lockfile would fix both, but that is a call for the repo owner, not a
+      # thing to smuggle in here.
+      - name: Install
+        run: npm install --no-audit --no-fund
+      # The design system's own rule: colours and style objects may only be
+      # written in styles/ and components/ui|forms/. Also checks that navConfig
+      # names only icons that exist and that all 35 descriptions hold one voice.
+      - name: Design-system lint
+        run: npm run lint:ui
+      - name: Tests
+        run: npm test
+      # Catches what lint and tests cannot: a JSX syntax error in a file no test
+      # imports still ships a blank page.
+      - name: Build
+        run: npm run build
+
   docker-build:
     name: Docker build
     runs-on: ubuntu-latest
