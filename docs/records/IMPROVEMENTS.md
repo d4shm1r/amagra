@@ -19,7 +19,7 @@ number is **not** canonical — it needs a marginal **direction** `v` and **cove
 
 The bridge already imported OCAC's *affine* results (contraction, resolvent, Lyapunov decay,
 curvature, invariant health, chain bound — all shipped in
-[`evaluation/math_metrics.py`](../../evaluation/math_metrics.py)). The newest finding is **sharper and
+[`infrastructure/math_metrics.py`](../../infrastructure/math_metrics.py)). The newest finding is **sharper and
 not yet reflected**:
 
 > Stability is a **signed** quantity. The sign of the cubic/curvature term is what separates
@@ -33,7 +33,7 @@ work — and it traces to a proved theorem, not a heuristic.
 
 ## P1 — `max_abs_curvature` discards the load‑bearing sign ★ ship first
 
-[`math_metrics.py:462`](../../evaluation/math_metrics.py#L462) computes the OCAC second difference
+[`math_metrics.py:519`](../../infrastructure/math_metrics.py#L519) computes the OCAC second difference
 `Δ²` (`series_curvature`, correctly signed) and then **throws the sign away**:
 
 ```python
@@ -110,7 +110,7 @@ The finding's real content: scalarizing a vector‑valued cubic to a *signed* nu
 **direction + covector** = the right/left eigenvectors of the *neutral mode* (eigenvalue ≈ 1 of
 the Jacobian). Amagra's per‑agent weights are exactly such a vector, and current metrics collapse
 them with `σ²_w` (a norm — see `instability_index` /
-[`math_metrics.py:37`](../../evaluation/math_metrics.py#L37)).
+[`math_metrics.py:37`](../../infrastructure/math_metrics.py#L37)).
 
 The principled metric: find the agent‑weight direction nearest the contraction boundary (the
 agent with the smallest effective `α`, i.e. `K = 1−α` closest to 1 — the slowest‑contracting,
@@ -135,7 +135,7 @@ obligation of `stability_core` (direction `v` + covector `ℓ`, `OCAC/Dynamics.l
 ## P4 — Apply the cubic basin to the **nonlinear** quality update
 
 The bridge treats the *affine* weight update (global basin, trivially stable). But
-`quality_update` ([`math_metrics.py:133`](../../evaluation/math_metrics.py#L133)) is genuinely
+`quality_update` ([`math_metrics.py:133`](../../infrastructure/math_metrics.py#L133)) is genuinely
 **nonlinear** — a logistic log‑odds map `q ← σ(σ⁻¹(q) + γδ)`. The affine theory does **not**
 cover it; the *cubic* theory does. Its sigmoid has a nonzero third derivative whose **sign flips
 at q = 0.5** — precisely the regime where the latest finding bites. A streaming‑feedback fixed

@@ -58,7 +58,7 @@ V(w')        = (1−α)²·V(w)
 
 So the loop is a **global** contraction (basin = all of weight space) with
 per-step energy decay `(1−α)²`. Exposed as
-`affine_lyapunov_decay(alpha)` in [`evaluation/math_metrics.py`](../../evaluation/math_metrics.py).
+`affine_lyapunov_decay(alpha)` in [`infrastructure/math_metrics.py`](../../infrastructure/math_metrics.py).
 When nonlinearity is later added to the update, OCAC's *cubic* basin
 `x² < −2/c` (and the `−4` critical anchor) is the next rung.
 
@@ -141,7 +141,7 @@ Reflection is functional iteration `s_{n+1} = R(s_n)`; we track
 
 ## 5. What landed in code
 
-**Pure functions** (additive, self-tested — `evaluation/math_metrics.py`):
+**Pure functions** (additive, self-tested — `infrastructure/math_metrics.py`):
 `effective_contraction`, `resolvent_bound`, `affine_lyapunov_decay`,
 `instability_conjunctive`, `series_curvature`, `max_abs_curvature`.
 
@@ -167,13 +167,13 @@ latest `agent_arena` run from `logs/arena.db` when present (tagged `measured`),
 else the static ablation snapshot tagged `assumed_constant` — surfaced as
 `lrn_routing_accuracy_source` so a hardcoded value can never masquerade as live.
 
-**Coordinate-invariant health** (`evaluation/math_metrics.py`): `invariant_health`
+**Coordinate-invariant health** (`infrastructure/math_metrics.py`): `invariant_health`
 reports the weight-invariant `floor`/`spread`, the weak-pillar-sensitive
 `geomean`, and the scale-invariant `balance = GM/AM` — quantities that mean the
 same across versions and weighting choices, unlike the raw UCI. (On live data it
 correctly surfaces `learning` as the bottleneck pillar.)
 
-**Chain error-propagation bound** (`evaluation/math_metrics.py`):
+**Chain error-propagation bound** (`infrastructure/math_metrics.py`):
 `chain_error_bound`, `gevrey_majorant`, `stable_recursion_depth` — the OCAC
 majorant ceiling applied to multi-agent / self-recursive depth. Composing per-step
 resolvent sensitivities `1/α` gives a provable worst-case on how a small
@@ -201,7 +201,7 @@ All changes verified against the **full suite (833 tests pass)** plus the
 ## 6. 2026-07-03 refinement pass — syncing with the latest OCAC findings
 
 Four OCAC results landed after §1–§5 were written; two *correct* claims above,
-two *add* capability. All are now reflected in `evaluation/math_metrics.py`.
+two *add* capability. All are now reflected in `infrastructure/math_metrics.py`.
 
 **(a) A falsity finding that touches our A3 story.** OCAC refuted its own
 Gevrey chain as stated: per-order bounded sensitivity (axiom A3, "every
