@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { AGENTS } from "@/config/constants";
-import { T, SEM, TYPE } from "@/styles/theme";
+import { T, SEM, TYPE, RADIUS, LUX } from "@/styles/theme";
+import { PageHeader } from "@/components/ui";
 
 import { API } from "@/lib/api";
 
@@ -60,8 +61,10 @@ function SectionHeader({ label, color = T.muted, count }) {
 function Panel({ color, children, style }) {
   return (
     <div style={{
-      borderLeft: `3px solid ${color}55`,
-      paddingLeft: 12, marginBottom: 16,
+      borderLeft: `3px solid ${color}66`,
+      background: `${color}08`,
+      borderRadius: RADIUS.sm,
+      padding: "11px 14px", marginBottom: 12,
       ...style,
     }}>
       {children}
@@ -91,7 +94,7 @@ function SnapshotDetail({ snap }) {
 
       {/* Identity */}
       <div style={{
-        background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 4,
+        background: T.surface2, border: `1px solid ${T.border}`, borderRadius: RADIUS.sm,
         padding: "10px 14px", marginBottom: 18, display: "flex", alignItems: "center", gap: 12,
       }}>
         <span style={{ ...TYPE.micro, color: T.muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>
@@ -273,13 +276,13 @@ function DiffView({ idA, idB, data: preloaded }) {
     <div style={{ padding: "18px 20px", overflowY: "auto", height: "100%" }}>
       {/* Header */}
       <div style={{ display: "flex", gap: 10, marginBottom: 18, alignItems: "center" }}>
-        <div style={{ background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "7px 12px", flex: 1 }}>
+        <div style={{ background: T.surface2, border: `1px solid ${T.border}`, borderRadius: RADIUS.sm, padding: "7px 12px", flex: 1 }}>
           <div style={{ ...TYPE.micro, color: T.muted, marginBottom: 2 }}>Build A</div>
           <Mono color={T.accent2}>#{idA}</Mono>
           <div style={{ ...TYPE.micro, color: T.muted, marginTop: 2 }}>{diff.a?.timestamp?.slice(0, 16).replace("T", " ")}</div>
         </div>
         <span style={{ fontSize: 16, color: T.muted }}>⇄</span>
-        <div style={{ background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "7px 12px", flex: 1 }}>
+        <div style={{ background: T.surface2, border: `1px solid ${T.border}`, borderRadius: RADIUS.sm, padding: "7px 12px", flex: 1 }}>
           <div style={{ ...TYPE.micro, color: T.muted, marginBottom: 2 }}>Build B</div>
           <Mono color={T.accent2}>#{idB}</Mono>
           <div style={{ ...TYPE.micro, color: T.muted, marginTop: 2 }}>{diff.b?.timestamp?.slice(0, 16).replace("T", " ")}</div>
@@ -559,32 +562,31 @@ function SnapRow({ snap, selected, compareA, compareB, onClick }) {
   const m        = AGENT_META[agent] || { color: T.muted, icon: "?" };
   const isA      = compareA === snap._snapshot_id;
   const isB      = compareB === snap._snapshot_id;
+  const query    = (snap.input?.query || "").trim();
 
-  let borderColor = T.border;
-  if (selected) borderColor = m.color + "88";
-  else if (isA) borderColor = `${T.accent2}88`;
-  else if (isB) borderColor = `${SEM.teal}88`;
+  // One accent drives the whole pill: the selected agent's color, or the A/B
+  // comparison color. Unselected pills keep a whisper of the agent color on the
+  // spine so the list still reads by agent at a glance.
+  const accent = selected ? m.color : isA ? T.accent2 : isB ? SEM.teal : null;
 
   return (
     <div
       onClick={onClick}
+      className="insp-pill"
       style={{
-        background: selected ? T.surface2 : T.surface2,
-        border: `1.5px solid ${borderColor}`,
-        borderLeft: `3px solid ${selected ? m.color : isA ? T.accent2 : isB ? SEM.teal : T.border}`,
-        borderRadius: 7, padding: "9px 12px", cursor: "pointer",
-        transition: "all .1s",
+        background: selected ? `${m.color}0E` : T.surface,
+        border: `1px solid ${accent ? `${accent}66` : T.border}`,
+        borderLeft: `3px solid ${accent || `${m.color}55`}`,
+        borderRadius: RADIUS.md, padding: "11px 13px", cursor: "pointer",
+        display: "flex", flexDirection: "column", gap: 7,
+        transition: "background .14s ease, border-color .14s ease, box-shadow .14s ease",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-        <span style={{ ...TYPE.micro, color: T.muted, fontFamily: "monospace" }}>
-          {snap.timestamp?.slice(11, 19)}
-        </span>
+      {/* Who ran, and how it was handled */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         {agent && <AgentChip id={agent} />}
         {snap.routing?.action && (
-          <span style={{ ...TYPE.micro, color: T.muted, background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 3, padding: "1px 5px" }}>
-            {snap.routing.action}
-          </span>
+          <span style={{ ...TYPE.micro, color: T.muted }}>{snap.routing.action}</span>
         )}
         <span style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center" }}>
           {isA && <span style={{ ...TYPE.micro, color: T.accent2, fontWeight: 700 }}>A</span>}
@@ -592,14 +594,28 @@ function SnapRow({ snap, selected, compareA, compareB, onClick }) {
           {snap.parent_context_id && (
             <span title="Fork" style={{ ...TYPE.micro, color: SEM.teal, fontWeight: 700 }}>⑂</span>
           )}
-          <span style={{ ...TYPE.micro, color: T.muted }}>#{snap._snapshot_id}</span>
+          <span style={{ ...TYPE.micro, color: T.muted, fontFamily: "monospace" }}>#{snap._snapshot_id}</span>
         </span>
       </div>
+
+      {/* What this build actually answered — the descriptive line */}
+      <div style={{
+        ...TYPE.caption, color: query ? T.text : T.muted, lineHeight: 1.45,
+        fontStyle: query ? "normal" : "italic",
+        display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+      }}>
+        {query || "no query captured"}
+      </div>
+
+      {/* Signals */}
       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-        {snap.routing?.confidence != null && <ScoreBar value={snap.routing.confidence} width={50} />}
+        {snap.routing?.confidence != null && <ScoreBar value={snap.routing.confidence} width={46} />}
+        <span style={{ ...TYPE.micro, color: T.muted, fontFamily: "monospace" }}>
+          {snap.timestamp?.slice(11, 19)}
+        </span>
         <span style={{ ...TYPE.micro, color: T.muted }}>{mem} mem</span>
         {hasEval && (
-          <span style={{ ...TYPE.micro, color: SEM.magenta, background: `${SEM.magenta}11`, border: `1px solid ${SEM.magenta}33`, borderRadius: 3, padding: "1px 5px" }}>
+          <span style={{ marginLeft: "auto", ...TYPE.micro, color: SEM.magenta, background: `${SEM.magenta}11`, border: `1px solid ${SEM.magenta}33`, borderRadius: 99, padding: "1px 7px" }}>
             eval
           </span>
         )}
@@ -762,20 +778,45 @@ export default function ContextInspectorTab({ contextId }) {
   });
 
   return (
-    <div style={{ display: "flex", height: "100%", gap: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+      <style>{`
+        .insp-pill:hover{
+          border-color:${T.accent}55;
+          box-shadow:0 0 0 1px ${T.accent}18, 0 4px 14px -8px rgba(72,52,28,0.28);
+        }
+        .insp-btn{ transition:background .14s ease, border-color .14s ease, box-shadow .14s ease; }
+        .insp-btn:hover:not(:disabled){ background:${T.surface2}; border-color:${T.accent}55; }
+      `}</style>
 
-      {/* Left: snapshot list */}
+      <PageHeader
+        sticky={false}
+        center
+        title="Inspector"
+        subtitle="The full execution context behind one answer — routing, injected memory, prompt, model, and output for every build. Select a build to inspect, compare two side by side, or fork one to change a single variable."
+      />
+
+      {/* The two-pane workbench — two distinct paper columns on the canvas: the
+          build list on the left, the inspector on the right. Each is its own
+          card so they read as two columns, not one split box. */}
+      <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 14 }}>
+
+      {/* Left column: snapshot list */}
       <div style={{
         width: 320, minWidth: 280, display: "flex", flexDirection: "column",
-        background: T.surface, borderRight: `1px solid ${T.border}`,
+        background: T.surface, border: `1px solid ${T.border}`,
+        borderRadius: RADIUS.lg, boxShadow: LUX.cardShadow, overflow: "hidden",
       }}>
         {/* Toolbar */}
         <div style={{ padding: "12px 14px", borderBottom: `1px solid ${T.border}` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span style={{ ...TYPE.small, fontWeight: 700, color: T.text }}>Context Inspector</span>
-            <span style={{ marginLeft: "auto", ...TYPE.caption, color: T.muted }}>{snapshots.length}</span>
-            <button onClick={load} style={{
-              background: "transparent", border: `1px solid ${T.border}`, borderRadius: 3,
+            <span style={{ ...TYPE.micro, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: 1.2 }}>
+              Builds
+            </span>
+            <span style={{ ...TYPE.micro, color: T.muted, background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 99, padding: "1px 7px" }}>
+              {snapshots.length}
+            </span>
+            <button onClick={load} title="Refresh" style={{
+              marginLeft: "auto", background: "transparent", border: `1px solid ${T.border}`, borderRadius: RADIUS.sm,
               color: T.muted, ...TYPE.caption, padding: "2px 8px", cursor: "pointer", fontFamily: "inherit",
             }}>↻</button>
           </div>
@@ -785,7 +826,7 @@ export default function ContextInspectorTab({ contextId }) {
             placeholder="Search query, agent, action…"
             style={{
               width: "100%", background: T.surface2, border: `1px solid ${T.border}`,
-              borderRadius: 3, color: T.text, padding: "5px 10px",
+              borderRadius: RADIUS.sm, color: T.text, padding: "6px 11px",
               ...TYPE.caption, fontFamily: "inherit", outline: "none", boxSizing: "border-box",
             }}
           />
@@ -806,7 +847,7 @@ export default function ContextInspectorTab({ contextId }) {
         )}
 
         {/* Snapshot rows */}
-        <div style={{ overflowY: "auto", flex: 1, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 5 }}>
+        <div style={{ overflowY: "auto", flex: 1, padding: "10px 11px", display: "flex", flexDirection: "column", gap: 8 }}>
           {loading && <div style={{ color: T.muted, ...TYPE.caption, padding: 8 }}>Loading…</div>}
           {!loading && filtered.length === 0 && (
             <div style={{ color: T.muted, ...TYPE.caption, padding: 16, textAlign: "center" }}>
@@ -828,12 +869,16 @@ export default function ContextInspectorTab({ contextId }) {
         </div>
       </div>
 
-      {/* Right: detail or diff */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* Right column: detail or diff */}
+      <div style={{
+        flex: 1, minWidth: 0, display: "flex", flexDirection: "column",
+        background: T.surface, border: `1px solid ${T.border}`,
+        borderRadius: RADIUS.lg, boxShadow: LUX.cardShadow, overflow: "hidden",
+      }}>
         {/* Panel header */}
         <div style={{
-          padding: "10px 18px", borderBottom: `1px solid ${T.border}`,
-          display: "flex", alignItems: "center", gap: 10, background: T.surface,
+          padding: "11px 18px", borderBottom: `1px solid ${T.border}`,
+          display: "flex", alignItems: "center", gap: 10, background: T.surface2,
         }}>
           {diffMode && compareA && compareB ? (
             <>
@@ -841,9 +886,9 @@ export default function ContextInspectorTab({ contextId }) {
                 Diff — build <span style={{ color: T.accent2 }}>#{compareA}</span>
                 {" "}↔ <span style={{ color: SEM.teal }}>#{compareB}</span>
               </span>
-              <button onClick={exitDiff} style={{
+              <button onClick={exitDiff} className="insp-btn" style={{
                 marginLeft: "auto", background: "transparent", border: `1px solid ${T.border}`,
-                borderRadius: 3, color: T.muted, ...TYPE.caption, padding: "2px 10px",
+                borderRadius: RADIUS.sm, color: T.muted, ...TYPE.caption, padding: "3px 11px",
                 cursor: "pointer", fontFamily: "inherit",
               }}>✕ exit diff</button>
             </>
@@ -854,25 +899,25 @@ export default function ContextInspectorTab({ contextId }) {
               </span>
               <span style={{ ...TYPE.caption, color: T.muted }}>{selected.routing?.agent?.replace(/_/g, " ")}</span>
               {selected.parent_context_id && (
-                <span style={{ ...TYPE.micro, color: SEM.teal, background: `${SEM.teal}11`,
-                  border: `1px solid ${SEM.teal}33`, borderRadius: 3, padding: "1px 6px" }}>⑂ fork</span>
+                <span style={{ ...TYPE.micro, fontWeight: 700, color: SEM.teal, background: `${SEM.teal}14`,
+                  border: `1px solid ${SEM.teal}33`, borderRadius: 99, padding: "1px 8px" }}>⑂ fork</span>
               )}
               <span style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-                <button onClick={runReplay} disabled={forkRunning} title="Re-run same input (determinism check)" style={{
+                <button onClick={runReplay} disabled={forkRunning} title="Re-run same input (determinism check)" className="insp-btn" style={{
                   background: "transparent", border: `1px solid ${T.border}`,
-                  borderRadius: 3, color: T.muted, ...TYPE.caption, padding: "2px 8px",
+                  borderRadius: RADIUS.sm, color: T.muted, ...TYPE.caption, padding: "3px 10px",
                   cursor: forkRunning ? "not-allowed" : "pointer", fontFamily: "inherit",
                 }}>↻ Replay</button>
-                <button onClick={openFork} style={{
+                <button onClick={openFork} className="insp-btn" style={{
                   background: forkOpen ? `${SEM.teal}22` : "transparent",
                   border: `1px solid ${forkOpen ? `${SEM.teal}55` : T.border}`,
-                  borderRadius: 3, color: forkOpen ? SEM.teal : T.muted,
-                  ...TYPE.caption, padding: "2px 10px",
+                  borderRadius: RADIUS.sm, color: forkOpen ? SEM.teal : T.muted,
+                  ...TYPE.caption, padding: "3px 11px",
                   cursor: "pointer", fontFamily: "inherit", fontWeight: forkOpen ? 700 : 400,
                 }}>⑂ Fork</button>
-                <button onClick={enterDiff} style={{
+                <button onClick={enterDiff} className="insp-btn" style={{
                   background: `${T.accent2}11`, border: `1px solid ${T.accent2}44`,
-                  borderRadius: 3, color: T.accent2, ...TYPE.caption, padding: "2px 10px",
+                  borderRadius: RADIUS.sm, color: T.accent2, ...TYPE.caption, padding: "3px 11px",
                   cursor: "pointer", fontFamily: "inherit", fontWeight: 700,
                 }}>⇄ Compare</button>
               </span>
@@ -927,16 +972,26 @@ export default function ContextInspectorTab({ contextId }) {
             <div style={{
               height: "100%", display: "flex", flexDirection: "column",
               alignItems: "center", justifyContent: "center", color: T.muted,
+              gap: 14, padding: "0 32px", textAlign: "center",
             }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>⊙</div>
-              <div style={{ ...TYPE.small }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: "50%",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 26, color: T.accent,
+                background: `${T.accent}0E`, border: `1px solid ${T.accent}33`,
+              }}>⊙</div>
+              <div style={{ ...TYPE.small, color: T.text, fontWeight: 600 }}>
+                {snapshots.length === 0 ? "No builds captured yet" : "Nothing selected"}
+              </div>
+              <div style={{ ...TYPE.caption, color: T.muted, maxWidth: 320, lineHeight: 1.5 }}>
                 {snapshots.length === 0
-                  ? "Send a message to capture the first execution artifact."
-                  : "Select a build from the list to inspect its execution context."}
+                  ? "Send a message in chat, then return here to inspect the full execution context it produced."
+                  : "Choose a build from the list to inspect its routing, memory, prompt, model, and output."}
               </div>
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { AGENTS as AGENTS_LIST } from "@/config/constants";
 import { T, GOLD, LUX, TYPE, EASE, DUR, FONT_DISPLAY, FONT_MONO } from "@/styles/theme";
-import { PageHeader, MetricCard, useConfirm } from "@/components/ui";
+import { PageHeader, useConfirm } from "@/components/ui";
 
 import { API } from "@/lib/api";
 
@@ -458,12 +458,25 @@ export default function GoalTracker() {
         </div>
       </PageHeader>
 
-      {/* Summary tiles */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 22 }}>
-        <MetricCard label="Active"  value={active.length}  color={active.length ? T.accent2 : T.text} />
-        <MetricCard label="Done"    value={done.length}    color={T.success} />
-        <MetricCard label="Failed"  value={failed.length}  color={failed.length ? T.error : T.text} />
-        <MetricCard label="Pending" value={pending.length} />
+      {/* Status counts — inline in the body as one quiet line, not four tiles */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        gap: 16, flexWrap: "wrap", marginBottom: 22,
+      }}>
+        {[
+          ["active",  active.length,  active.length  ? T.accent2 : T.mutedLt],
+          ["done",    done.length,    done.length    ? T.success : T.mutedLt],
+          ["failed",  failed.length,  failed.length  ? T.error   : T.mutedLt],
+          ["pending", pending.length, pending.length ? TEAL      : T.mutedLt],
+        ].map(([label, n, color], i) => (
+          <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 16 }}>
+            {i > 0 && <span style={{ color: T.border }}>·</span>}
+            <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}>
+              <span style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 18, color, fontVariantNumeric: "tabular-nums" }}>{n}</span>
+              <span style={{ ...TYPE.caption, color: T.muted }}>{label}</span>
+            </span>
+          </span>
+        ))}
       </div>
 
       {/* Create form */}

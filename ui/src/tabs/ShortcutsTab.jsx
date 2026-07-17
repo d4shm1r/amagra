@@ -1,4 +1,4 @@
-import { Page, PageHeader, Section, Stack, Grid, Row, Spacer, Small, Micro, KeyChord } from "@/components/ui";
+import { Page, PageHeader, Section, Stack, Grid, Row, Spacer, Small, KeyChord } from "@/components/ui";
 
 // Every binding below is wired (App.jsx global handler + ChatTab panel handler)
 // — nothing aspirational.
@@ -66,7 +66,6 @@ export default function ShortcutsTab() {
           <Section
             key={group.title}
             title={group.title}
-            action={<Micro mono>{group.rows.length}</Micro>}
           >
             <Grid cols={2} divided>
               {group.rows.map(([action, combo]) => (
