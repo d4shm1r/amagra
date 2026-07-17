@@ -57,7 +57,7 @@ function SkillCard({ skill }) {
   const cc = COMPLEXITY_COLOR[complexity] || T.muted;
 
   return (
-    <div className="lux-card lux-card-i" style={{
+    <div className="lux-card" style={{
       padding: "16px 18px",
       display: "flex", flexDirection: "column", gap: 9,
     }}>
