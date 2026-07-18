@@ -15,7 +15,6 @@ export { default as HomeTab } from "./HomeTab";
 
 export const AboutTab            = lazy(() => import("./AboutTab"));
 export const CognitionTab        = lazy(() => import("./CognitionTab"));
-export const CognitiveOSTab      = lazy(() => import("./CognitiveOSTab"));
 export const ConsensusTab        = lazy(() => import("./ConsensusTab"));
 export const ContextInspectorTab = lazy(() => import("./ContextInspectorTab"));
 export const DataTab             = lazy(() => import("./DataTab"));

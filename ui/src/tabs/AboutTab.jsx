@@ -6,6 +6,7 @@ import {
   Wordmark, Pill, Caption, Lead, DataRow, Inline,
 } from "@/components/ui";
 import InspectOverviewPanel from "@/components/panels/InspectOverviewPanel";
+import IdentityPanel from "@/components/panels/IdentityPanel";
 
 const FACTS = [
   ["Architecture", "Signal-first routing"],
@@ -69,6 +70,9 @@ export default function AboutTab({ coherence, apiStatus, onNav }) {
 
         {/* Live snapshot — recent decisions + recent work */}
         <InspectOverviewPanel embedded onNav={onNav} />
+
+        {/* Who this instance is — intrinsic state you set, learned state it earned */}
+        <IdentityPanel />
 
         {/* Live engine readout */}
         <Section title="System" icon="⚙">

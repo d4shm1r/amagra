@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback } from "react";
 import { API } from "@/lib/api";
 import { usePoll } from "@/lib/usePoll";
 import { T } from "@/styles/theme";
-import { Section } from "@/components/ui";
+import { Section, useConfirm } from "@/components/ui";
 
 function StatCard({ label, value, color, sub }) {
   return (
@@ -32,6 +32,9 @@ export function MemoryAdminPanel({ stats, onChanged }) {
   const [pruneResult,       setPruneResult]       = useState(null);
   const [consolidating,     setConsolidating]     = useState(false);
   const [consolidateResult, setConsolidateResult] = useState(null);
+  const [resolving,         setResolving]         = useState(false);
+  const [resolveResult,     setResolveResult]     = useState(null);
+  const confirm = useConfirm();
 
   const loadAtRisk = useCallback(() => {
     fetch(`${API}/memory/at-risk?n=20`).then(r => r.json())
@@ -59,6 +62,33 @@ export function MemoryAdminPanel({ stats, onChanged }) {
     setConsolidating(false);
   };
 
+  // Rehomed from the retired CogOS tab, which was the only place this action
+  // existed — stranded on a diagnostics screen, next to a read-only list of
+  // contradictions, while every other memory action lived here.
+  //
+  // It asks first. CogOS fired it on a single click: it deletes one side of
+  // each contradicting pair, which is not something to discover after the fact,
+  // and the threshold is doing real work (0.90 cosine) that the reader should
+  // see before agreeing to it.
+  const runAutoResolve = async () => {
+    const ok = await confirm({
+      title: "Auto-resolve contradictions?",
+      body: "Near-identical contradicting pairs (cosine > 0.90) are merged, keeping the "
+          + "higher-quality memory and deleting the other. This cannot be undone.",
+      confirmLabel: "Resolve",
+      danger: true,
+    });
+    if (!ok) return;
+
+    setResolving(true); setResolveResult(null);
+    try {
+      const d = await fetch(`${API}/memory/auto-resolve?threshold=0.90`, { method: "POST" })
+        .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); });
+      setResolveResult(d); loadAtRisk(); onChanged?.();
+    } catch (e) { setResolveResult({ error: e.message || "Request failed" }); }
+    setResolving(false);
+  };
+
   return (
     <Section title="Memory Health" style={{ marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -73,6 +103,10 @@ export function MemoryAdminPanel({ stats, onChanged }) {
             style={{ padding: "5px 14px", fontSize: 11, cursor: consolidating ? "not-allowed" : "pointer" }}>
             {consolidating ? "Running…" : "Consolidate"}
           </button>
+          <button onClick={runAutoResolve} disabled={resolving} className="btn-ghost"
+            style={{ padding: "5px 14px", fontSize: 11, cursor: resolving ? "not-allowed" : "pointer" }}>
+            {resolving ? "Resolving…" : "Auto-resolve"}
+          </button>
           <button onClick={runPrune} disabled={pruning || prunable === 0}
             style={{ padding: "5px 14px", borderRadius: 40, fontSize: 11, fontWeight: 700, fontFamily: "inherit", cursor: pruning || prunable === 0 ? "not-allowed" : "pointer", background: prunable > 0 ? `${T.error}14` : T.surface2, color: prunable > 0 ? T.error : T.muted, border: `1px solid ${prunable > 0 ? `${T.error}3D` : T.border}` }}>
             {pruning ? "Pruning…" : `Prune${prunable > 0 ? ` (${prunable})` : ""}`}
@@ -83,6 +117,13 @@ export function MemoryAdminPanel({ stats, onChanged }) {
       {consolidateResult && (
         <div style={{ marginBottom: 10, padding: "7px 12px", borderRadius: 4, background: consolidateResult.error ? "#F9E7E1" : T.surface2, border: `1px solid ${consolidateResult.error ? "#B4231855" : T.border}`, fontSize: 12, color: consolidateResult.error ? T.error : T.mutedLt }}>
           {consolidateResult.error ? `Error: ${consolidateResult.error}` : `Removed ${consolidateResult.removed} near-duplicates · ${consolidateResult.remaining} memories remaining`}
+        </div>
+      )}
+      {resolveResult && (
+        <div style={{ marginBottom: 10, padding: "7px 12px", borderRadius: 4, background: resolveResult.error ? "#F9E7E1" : T.surface2, border: `1px solid ${resolveResult.error ? "#B4231855" : T.border}`, fontSize: 12, color: resolveResult.error ? T.error : T.mutedLt }}>
+          {resolveResult.error
+            ? `Error: ${resolveResult.error}`
+            : `Resolved ${resolveResult.resolved} contradicting pair${resolveResult.resolved === 1 ? "" : "s"} · ${resolveResult.remaining} memories remaining${resolveResult.dry_run ? " (dry run — nothing changed)" : ""}`}
         </div>
       )}
       {pruneResult && (

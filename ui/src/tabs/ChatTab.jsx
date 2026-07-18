@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { API } from "@/lib/api";
+import { usePoll } from "@/lib/usePoll";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AGENTS, PROGRESS_STEPS, AGENT_ID_REVERSE } from "@/config/constants";
@@ -93,12 +94,14 @@ function PipelineBanner({ agents }) {
 
 export default function ChatTab({
   apiStatus, onLogAdd, onQueryComplete, onLitNode,
-  onActivityChange, onCoherenceUpdate, forcedAgent,
+  onActivityChange, forcedAgent,
   onForcedAgentChange, onInspect, defaultReflectMode,
   seedPrompt, onSeedConsumed,
   enterToSend = true, showTimestamps = true,
 }) {
   const confirm = useConfirm();
+  // Shares App's subscription — same URL, one request between them.
+  const { data: coherence, refresh: refreshCoherence } = usePoll("/coherence", { interval: 30_000 });
   const [messages,      setMessages]      = useState([]);
   const [input,         setInput]         = useState("");
   const [loading,       setLoading]       = useState(false);
@@ -107,7 +110,6 @@ export default function ChatTab({
   const [progressStep,  setProgressStep] = useState(0);
   const [feedbackMap,   setFeedbackMap]  = useState({});
   const [feedbackAck,   setFeedbackAck]  = useState({});
-  const [coherence,     setCoherence]    = useState(null);
   const [expandedMem,   setExpandedMem]  = useState({});
   const [expandedCoa,   setExpandedCoa]  = useState({});
   const [reflectMode,   setReflectMode]  = useState(defaultReflectMode ?? "");
@@ -165,16 +167,6 @@ export default function ChatTab({
   }, [setSideTab]);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
-
-  const fetchCoherence = useCallback(() => {
-    if (!online) return;
-    fetch(`${API}/coherence`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) { setCoherence(d); onCoherenceUpdate?.(d); } })
-      .catch(() => {});
-  }, [online, onCoherenceUpdate]);
-
-  useEffect(() => { fetchCoherence(); }, [fetchCoherence]);
 
   const fetchThreads = useCallback(() => {
     if (!online) return;
@@ -434,7 +426,7 @@ export default function ChatTab({
 
       onLitNode("coordinator");
       setTimeout(() => { onLitNode(finalAgent); setTimeout(() => onLitNode(null), 2500); }, 800);
-      onQueryComplete(); fetchCoherence();
+      onQueryComplete(); refreshCoherence();
       onLogAdd(`▸ ${finalAgent.replace(/_/g, " ")} responded (${elapsed}s)`, AGENTS.find(a => a.id === finalAgent)?.color || T.success);
     } catch (err) {
       if (err.name === "AbortError") {
@@ -455,7 +447,7 @@ export default function ChatTab({
     }
     onActivityChange(100); setTimeout(() => onActivityChange(0), 300);
     setLoading(false); isProcessingRef.current = false; abortRef.current = null;
-  }, [input, pinnedContext, forcedAgent, reflectMode, currentThreadId, onLogAdd, onQueryComplete, onLitNode, onActivityChange, fetchCoherence, fetchThreads]);
+  }, [input, pinnedContext, forcedAgent, reflectMode, currentThreadId, onLogAdd, onQueryComplete, onLitNode, onActivityChange, refreshCoherence, fetchThreads]);
 
   // Re-run the last user prompt, replacing the last agent reply.
   const handleRegenerate = useCallback(async () => {

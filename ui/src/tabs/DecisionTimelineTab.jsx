@@ -358,6 +358,17 @@ function Divider() {
   return <div style={{ height: 1, background: T.border, marginBottom: 12 }} />;
 }
 
+// The routes worth a second look: brain and router disagreed AND the winning
+// call was made with low confidence. A plain conflict is often benign — two
+// defensible agents for one query — so the confidence floor is what separates
+// "the system had an opinion" from "the system was guessing".
+//
+// Carried over from the retired CogOS tab, which listed these as "Uncertain
+// Routes". It was the one thing on that screen the decision feed could not
+// already do: this tab could filter conflicts, but not conflicts it was unsure
+// about, which is the subset anyone reviewing routing actually wants.
+const isUncertain = (d) => d.conflict && (d.confidence ?? 1) < 0.50;
+
 function ContradictionHistoryPanel({ items }) {
   const [open, setOpen] = useState(false);
   if (!items) return null;
@@ -528,6 +539,7 @@ export default function DecisionTimeline() {
   const filtered = decisions.filter(d => {
     if (filter === "conflicts" && !d.conflict) return false;
     if (filter === "reflect"   && !d.reflect)  return false;
+    if (filter === "uncertain" && !isUncertain(d)) return false;
     if (search) {
       const q = search.toLowerCase();
       if (!d.task?.toLowerCase().includes(q) &&
@@ -612,6 +624,7 @@ export default function DecisionTimeline() {
         {[
           { id: "all",       label: `All (${decisions.length})`,                           color: T.muted },
           { id: "conflicts", label: `⚡ Conflicts (${decisions.filter(d => d.conflict).length})`, color: T.error },
+          { id: "uncertain", label: `? Uncertain (${decisions.filter(isUncertain).length})`,      color: T.warn },
           { id: "reflect",   label: `🔥 Reflect (${decisions.filter(d => d.reflect).length})`,   color: SEM.magenta },
         ].map(f => (
           <button key={f.id} onClick={() => { setFilter(f.id); setVisibleCount(PAGE_SIZE); }} style={{
