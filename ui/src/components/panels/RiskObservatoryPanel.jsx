@@ -1,274 +1,182 @@
-import { useState, useEffect } from "react";
-import { T, FONT_MONO } from "@/styles/theme";
-import { ObsPanel, MetricCard, RefreshButton, EmptyState, hScore, PageHeader } from "@/components/ui";
+import {
+  ObsPanel, MetricCard, EmptyState, TrendChart, Notice, Table, Grid, Stack,
+  Row, Spacer, Dot, Micro, Inline, StackedBar, BarRow, Scroll, scoreTone,
+} from "@/components/ui";
+import { usePoll } from "@/lib/usePoll";
 
-import { API } from "@/lib/api";
+// ── Risk Observatory (Diagnostics section) ────────────────────────
+// Section contract: content only — the host owns the header and refresh.
+//
+// The reflect level is the gate's verdict on a query, and it is the one piece
+// of vocabulary this whole panel is built from: the distribution bar, the dots
+// on the timeline and the rows below all encode the same three states in the
+// same three tones, so a colour means the same thing everywhere on screen.
+const LEVELS = [
+  { id: "none",  label: "None",  tone: "success" },
+  { id: "light", label: "Light", tone: "warn" },
+  { id: "full",  label: "Full",  tone: "error" },
+];
+const toneOf = (level) => LEVELS.find(l => l.id === level)?.tone || "muted";
 
-const LEVEL_COLOR = { none: T.success, light: T.warn, full: T.error };
-const LEVEL_LABEL = { none: "None", light: "Light", full: "Full" };
+// Risk runs backwards from every other score here: 0 is safe, 1 is abort. The
+// shared scoreTone expects "higher is better", so the value is inverted before
+// it is coloured — otherwise a perfectly safe 0.0 would render as a failure.
+const riskTone = (v) => (v == null ? "muted" : scoreTone((1 - v) * 100));
 
-// ── Reflect-level distribution bar ───────────────────────────
+// ── Reflect-level distribution ────────────────────────────────
 function LevelDistribution({ byLevel, total }) {
   if (!byLevel || !total) return <EmptyState msg="No risk data yet." />;
 
-  const order  = ["none", "light", "full"];
-  const values = order.map(k => ({ level: k, pct: (byLevel[k] || 0) }));
-
   return (
-    <div>
-      {/* Stacked bar */}
-      <div style={{ display: "flex", height: 14, borderRadius: 99, overflow: "hidden", marginBottom: 12 }}>
-        {values.map(({ level, pct }) => pct > 0 && (
-          <div key={level} style={{
-            width: `${pct * 100}%`, background: LEVEL_COLOR[level],
-            transition: "width 0.5s ease",
-          }} title={`${level}: ${(pct * 100).toFixed(1)}%`} />
+    <Stack gap="sm">
+      <StackedBar segments={LEVELS.map(l => ({ ...l, value: byLevel[l.id] || 0 }))} />
+      <Row gap="md" wrap>
+        {LEVELS.map(l => (
+          <Row key={l.id} gap="xs">
+            <Dot tone={l.tone} />
+            <Micro tone="subtle">{l.label}</Micro>
+            <Micro mono tone={l.tone}>{((byLevel[l.id] || 0) * 100).toFixed(0)}%</Micro>
+          </Row>
         ))}
-      </div>
-      {/* Legend */}
-      <div style={{ display: "flex", gap: 16 }}>
-        {values.map(({ level, pct }) => (
-          <div key={level} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ width: 10, height: 10, borderRadius: 2, background: LEVEL_COLOR[level] }} />
-            <span style={{ fontSize: 11, color: T.mutedLt }}>{LEVEL_LABEL[level]}</span>
-            <span style={{ fontSize: 11, fontFamily: FONT_MONO, color: LEVEL_COLOR[level] }}>
-              {(pct * 100).toFixed(0)}%
-            </span>
-          </div>
-        ))}
-        <span style={{ fontSize: 11, color: T.muted, marginLeft: "auto" }}>n={total}</span>
-      </div>
-    </div>
+        <Spacer />
+        <Micro>n={total}</Micro>
+      </Row>
+    </Stack>
   );
 }
 
-// ── Risk score sparkline (SVG) ────────────────────────────────
-function RiskSparkline({ history }) {
+// ── Risk score timeline ───────────────────────────────────────
+// The shared TrendChart draws the line, the mean and the axis; this only
+// decides MEANING — each sample is dotted in its reflect-level tone, so the
+// chart shows both how risky recent work was and what the gate did about it.
+function RiskTimeline({ history }) {
   if (!history?.length) return <EmptyState msg="No risk history." />;
 
-  const vals  = history.map(r => r.total_risk ?? 0);
-  const W = 560, H = 80, PX = 8, PY = 8;
-  const iW = W - 2 * PX, iH = H - 2 * PY;
-  const xs = i => PX + (i / Math.max(1, vals.length - 1)) * iW;
-  const ys = v => PY + (1 - Math.max(0, Math.min(1, v))) * iH;
-  const pts = vals.map((v, i) => `${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(" ");
-
-  // Color segments by reflect level
-  const levelPath = (level) => {
-    const filtered = history.map((r, i) => ({ ...r, i })).filter(r => r.reflect_level === level);
-    if (!filtered.length) return null;
-    return filtered.map(r => (
-      <circle key={r.i} cx={xs(r.i)} cy={ys(r.total_risk ?? 0)}
-        r={3} fill={LEVEL_COLOR[level]} opacity={0.8} />
-    ));
-  };
-
+  const vals = history.map(r => r.total_risk ?? 0);
   const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
-  const meanY = ys(mean);
 
   return (
-    <div>
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block", overflow: "visible" }}>
-        {/* Mean line */}
-        <line x1={PX} y1={meanY} x2={W - PX} y2={meanY}
-          stroke={T.border} strokeWidth={1} strokeDasharray="4 3" />
-        {/* Risk line */}
-        <polyline points={pts} fill="none" stroke={T.warn} strokeWidth={1.5}
-          strokeLinejoin="round" strokeLinecap="round" opacity={0.6} />
-        {/* Dots colored by level */}
-        {["none", "light", "full"].map(l => levelPath(l))}
-        {/* Mean label */}
-        <text x={W - PX + 2} y={meanY + 4} fill={T.muted} fontSize={9}>
-          {mean.toFixed(2)}
-        </text>
-      </svg>
-      <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
-        {["none", "light", "full"].map(l => (
-          <span key={l} style={{ fontSize: 10, color: T.muted }}>
-            <span style={{ color: LEVEL_COLOR[l] }}>●</span> {l}
-          </span>
-        ))}
-      </div>
-    </div>
+    <TrendChart
+      height={110}
+      domain={[0, 1]}
+      grid={[0.25, 0.5, 0.75]}
+      mean={mean}
+      empty="No risk history."
+      series={[{
+        label: "total risk",
+        values: vals,
+        tone: "warn",
+        emphasis: true,
+        dots: history.map((r, i) => ({ index: i, tone: toneOf(r.reflect_level) })),
+      }]}
+    />
   );
 }
 
 // ── By-action breakdown ───────────────────────────────────────
 function ActionBreakdown({ byAction }) {
   if (!byAction || !Object.keys(byAction).length) return null;
-  const total  = Object.values(byAction).reduce((s, n) => s + n, 0);
-  const sorted = Object.entries(byAction).sort((a, b) => b[1] - a[1]);
+  const total = Object.values(byAction).reduce((s, n) => s + n, 0);
 
   return (
     <div>
-      {sorted.map(([action, n]) => {
-        const pct = n / total;
-        return (
-          <div key={action} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-            <span style={{ fontSize: 11, color: T.mutedLt, minWidth: 80 }}>{action}</span>
-            <div style={{ flex: 1, background: T.surface2, borderRadius: 2, height: 6 }}>
-              <div style={{
-                width: `${pct * 100}%`, height: "100%",
-                background: T.accent, borderRadius: 2,
-              }} />
-            </div>
-            <span style={{ fontSize: 10, fontFamily: FONT_MONO, color: T.muted, minWidth: 30, textAlign: "right" }}>
-              {n}
-            </span>
-          </div>
-        );
-      })}
+      {Object.entries(byAction)
+        .sort((a, b) => b[1] - a[1])
+        .map(([action, n]) => (
+          <BarRow key={action} label={action} fraction={n / total} value={n} />
+        ))}
     </div>
   );
 }
 
 // ── Recent risk events ────────────────────────────────────────
+// The same Table the Verifier section uses: two lists of scored events on one
+// surface should not be two different kinds of list.
+const COLUMNS = [
+  { key: "reflect_level", width: 58, weight: 700,
+    tone: r => toneOf(r.reflect_level),
+    render: r => r.reflect_level || "—" },
+  { key: "action",     width: 74, tone: "subtle", render: r => r.action || "—" },
+  { key: "agent",      width: 108, tone: "muted", render: r => r.agent?.replace(/_/g, " ") || "—" },
+  { key: "complexity", width: 70, render: r => r.complexity || "—" },
+  { key: "total_risk", grow: true, mono: true, align: "right",
+    tone: r => riskTone(r.total_risk),
+    render: r => r.total_risk?.toFixed(3) ?? "—" },
+];
+
 function RecentRiskRows({ history }) {
   if (!history?.length) return <EmptyState msg="No risk events." />;
   return (
-    <div style={{ maxHeight: 280, overflowY: "auto" }}>
-      {history.slice(0, 40).map((r, i) => (
-        <div key={i} style={{
-          display: "flex", gap: 10, alignItems: "center",
-          padding: "5px 0", borderBottom: `1px solid ${T.border}`,
-          fontSize: 11,
-        }}>
-          <span style={{
-            minWidth: 52, fontFamily: FONT_MONO, fontSize: 10,
-            color: LEVEL_COLOR[r.reflect_level] || T.muted,
-            background: (LEVEL_COLOR[r.reflect_level] || T.muted) + "18",
-            border: `1px solid ${(LEVEL_COLOR[r.reflect_level] || T.muted)}44`,
-            borderRadius: 99, padding: "2px 7px", textAlign: "center",
-          }}>{r.reflect_level || "—"}</span>
-          <span style={{ color: T.mutedLt, minWidth: 60 }}>{r.action || "—"}</span>
-          <span style={{ color: T.muted, minWidth: 64 }}>{r.agent?.replace(/_/g, " ") || "—"}</span>
-          <span style={{ color: T.text, minWidth: 50 }}>{r.complexity || "—"}</span>
-          <span style={{ fontFamily: FONT_MONO, color: hScore((1 - (r.total_risk ?? 0)) * 100), marginLeft: "auto" }}>
-            {r.total_risk?.toFixed(3) ?? "—"}
-          </span>
-        </div>
-      ))}
-    </div>
+    <Scroll max="280px">
+      <Table columns={COLUMNS} rows={history.slice(0, 40)} rowKey={(r, i) => `${r.timestamp}-${i}`} />
+    </Scroll>
   );
 }
 
 // ── Main component ────────────────────────────────────────────
-export default function RiskObservatoryPanel({ embedded = false } = {}) {
-  const [stats,   setStats]   = useState(null);
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
+export default function RiskObservatoryPanel() {
+  const { data: stats, error, loading } = usePoll("/risk/stats", { interval: 30_000 });
+  const { data: histRaw }               = usePoll("/risk/history?n=100", { interval: 30_000 });
 
-  const load = () => {
-    setLoading(true);
-    Promise.all([
-      fetch(`${API}/risk/stats`).then(r => r.json()).catch(() => null),
-      fetch(`${API}/risk/history?n=100`).then(r => r.json()).catch(() => []),
-    ]).then(([s, h]) => {
-      setStats(s);
-      setHistory(Array.isArray(h) ? h.reverse() : []);
-      setError(null);
-    }).catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  };
+  // The API returns newest-first; the chart reads left-to-right in time.
+  const history = Array.isArray(histRaw) ? [...histRaw].reverse() : [];
 
-  useEffect(() => { load(); const id = setInterval(load, 30_000); return () => clearInterval(id); }, []);
+  const light = stats?.by_level?.light || 0;
+  const full  = stats?.by_level?.full  || 0;
+  const reflectPct = stats ? Math.round((light + full) * 100) : null;
 
-  const reflectPct = stats
-    ? Math.round(((stats.by_level?.light || 0) + (stats.by_level?.full || 0)) * 100)
-    : null;
+  if (loading && !stats) return <EmptyState msg="Loading…" />;
 
   return (
-    // A panel never decides its own width: standalone it fills the shell's
-    // <Column>, embedded it fills its dashboard cell. It used to self-center at
-    // 860px, which quietly overrode LAYOUT.content inside Diagnostics.
-    <div style={{ padding: embedded ? "10px 14px 14px" : 0 }}>
+    <Stack gap="md">
+      {error && <Notice tone="error">Backend unavailable: {error}</Notice>}
 
-      {/* Header (suppressed when embedded — the dashboard cell carries the title) */}
-      {!embedded && (
-      <PageHeader
-        sticky={false}
-        title="Risk Observatory"
-        subtitle="Reflection gate signals · risk score distribution · per-action breakdown"
+      <Grid min={150} gap="sm">
+        <MetricCard label="Mean risk" tone={riskTone(stats?.mean_risk)}
+          value={stats?.mean_risk?.toFixed(3) ?? "—"}
+          sub="0 = safe · 1 = abort" />
+        <MetricCard label="Reflect rate" tone={reflectPct > 40 ? "warn" : "success"}
+          value={reflectPct != null ? `${reflectPct}%` : "—"}
+          sub="light + full triggers" />
+        <MetricCard label="Samples" tone="gold"
+          value={stats?.n ?? "—"}
+          sub="from risk_gate.db" />
+        <MetricCard label="Full reflect" tone={full > 0.2 ? "error" : "success"}
+          // 0 is a real answer here, and the panel used to print "—" for it
+          // because the key is simply absent when the gate never escalated.
+          value={stats ? `${(full * 100).toFixed(0)}%` : "—"}
+          sub="highest cost level" />
+      </Grid>
+
+      <ObsPanel title="Reflect-level distribution" icon="⌇">
+        <LevelDistribution byLevel={stats?.by_level} total={stats?.n} />
+      </ObsPanel>
+
+      <ObsPanel title="Risk score timeline" icon="△"
+        hint="each sample dotted in the level the gate chose">
+        <RiskTimeline history={history} />
+      </ObsPanel>
+
+      {stats?.by_action && Object.keys(stats.by_action).length > 0 && (
+        <ObsPanel title="Triggers by action" icon="◉">
+          <ActionBreakdown byAction={stats.by_action} />
+        </ObsPanel>
+      )}
+
+      <ObsPanel title="Recent risk events" icon="⚑"
+        action={
+          <Row gap="sm">
+            {LEVELS.map(l => (
+              <Row key={l.id} gap="xs">
+                <Dot tone={l.tone} />
+                <Micro>{l.id}</Micro>
+              </Row>
+            ))}
+          </Row>
+        }
       >
-        <RefreshButton onClick={load} />
-      </PageHeader>
-      )}
-
-      {error && (
-        <div style={{ color: T.error, background: T.surface, border: `1px solid ${T.border}`,
-          borderRadius: 10, padding: "8px 14px", marginBottom: 14, fontSize: 12 }}>
-          Backend unavailable: {error}
-        </div>
-      )}
-
-      {loading && !stats ? (
-        <div style={{ color: T.muted, fontSize: 12, padding: 40, textAlign: "center" }}>Loading…</div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-          {/* Summary cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
-            <MetricCard
-              label="Mean Risk"
-              value={stats?.mean_risk?.toFixed(3) ?? "—"}
-              color={hScore((1 - (stats?.mean_risk || 0)) * 100)}
-              sub="0 = safe · 1 = abort"
-            />
-            <MetricCard
-              label="Reflect Rate"
-              value={reflectPct != null ? `${reflectPct}%` : "—"}
-              color={reflectPct > 40 ? T.warn : T.success}
-              sub="light + full triggers"
-            />
-            <MetricCard
-              label="Samples"
-              value={stats?.n ?? "—"}
-              color={T.accent}
-              sub="from risk_gate.db"
-            />
-            <MetricCard
-              label="Full Reflect"
-              value={stats?.by_level?.full != null ? `${((stats.by_level.full) * 100).toFixed(0)}%` : "—"}
-              color={(stats?.by_level?.full || 0) > 0.2 ? T.error : T.success}
-              sub="highest cost level"
-            />
-          </div>
-
-          {/* Reflect-level distribution */}
-          <ObsPanel title="Reflect-Level Distribution" icon="⌇">
-            <LevelDistribution byLevel={stats?.by_level} total={stats?.n} />
-          </ObsPanel>
-
-          {/* Risk trend sparkline */}
-          <ObsPanel title="Risk Score Timeline" icon="△">
-            <RiskSparkline history={history} />
-          </ObsPanel>
-
-          {/* By-action breakdown */}
-          {stats?.by_action && Object.keys(stats.by_action).length > 0 && (
-            <ObsPanel title="Triggers by Action" icon="◉">
-              <ActionBreakdown byAction={stats.by_action} />
-            </ObsPanel>
-          )}
-
-          {/* Recent events */}
-          <ObsPanel title="Recent Risk Events" icon="⚑"
-            action={
-              <span style={{ fontSize: 10, color: T.muted }}>
-                {["none", "light", "full"].map(l => (
-                  <span key={l} style={{ marginLeft: 8 }}>
-                    <span style={{ color: LEVEL_COLOR[l] }}>●</span> {l}
-                  </span>
-                ))}
-              </span>
-            }
-          >
-            <RecentRiskRows history={history} />
-          </ObsPanel>
-
-        </div>
-      )}
-    </div>
+        <RecentRiskRows history={history} />
+      </ObsPanel>
+    </Stack>
   );
 }

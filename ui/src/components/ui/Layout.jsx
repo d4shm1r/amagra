@@ -90,6 +90,24 @@ export function Grid({ cols = 2, min, gap = "md", divided = false, children }) {
   );
 }
 
+/** An asymmetric two-column split: a main region that takes the space, and a
+ *  fixed-ish rail beside it. `<Split>{main}{aside}</Split>`.
+ *
+ *  Grid only does EQUAL columns, so every "scores on the left, live signal on
+ *  the right" layout in the app had been hand-writing
+ *  `gridTemplateColumns: "1fr 320px"` inline. Flex-wrap rather than a media
+ *  query, because these are inline styles: below the combined min widths the
+ *  rail simply wraps underneath instead of crushing the main column. */
+export function Split({ side = 320, mainMin = 420, gap = "md", children }) {
+  const [main, aside] = Children.toArray(children);
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: gapOf(gap), alignItems: "flex-start" }}>
+      <div style={{ flex: `1 1 ${mainMin}px`, minWidth: 0 }}>{main}</div>
+      <div style={{ flex: `1 1 ${side}px`, maxWidth: "100%", minWidth: 0 }}>{aside}</div>
+    </div>
+  );
+}
+
 /** Uniform inset — pure spacing, no surface or color. For content that must
  *  breathe inside a container that doesn't pad it (an embedded panel dropped
  *  into a dashboard cell). Sizes land on the same SPACE scale as every gap. */

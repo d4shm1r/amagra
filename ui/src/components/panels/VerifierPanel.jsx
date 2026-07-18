@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
 import {
-  Page, PageHeader, ObsPanel, MetricCard, RefreshButton, EmptyState,
-  Grid, Stack, Table, Inline,
+  ObsPanel, MetricCard, EmptyState, Grid, Stack, Table, Inline,
 } from "@/components/ui";
-import { API } from "@/lib/api";
+import { usePoll } from "@/lib/usePoll";
 
 // ── Step Verifier (Diagnostics section) ───────────────────────────
 // The verifier scores every plan step before the system moves on
 // (pass / retry / replan / abort → event_bus). It appears in every
 // architecture diagram, and this is its observability surface:
 // GET /verify/stats + GET /verify/recent.
+//
+// Section contract: content only — Diagnostics owns the header and refresh.
+// This file used to return its own <Page> nested inside the tab's, plus a
+// second PageHeader that retitled the page to "Step Verifier".
 
 // Recommendation → tone (meaning, not decoration). Resolved by the kit.
 const REC_TONE = { continue: "success", retry: "warn", replan: "warn", abort: "error" };
@@ -24,34 +26,14 @@ function passRateTone(v) {
 }
 
 export default function VerifierPanel() {
-  const [stats,  setStats]  = useState(null);
-  const [recent, setRecent] = useState(null);
-
-  const load = useCallback(async () => {
-    try {
-      const [sR, rR] = await Promise.all([
-        fetch(`${API}/verify/stats`),
-        fetch(`${API}/verify/recent?n=40`),
-      ]);
-      setStats(sR.ok ? await sR.json() : null);
-      const rec = rR.ok ? await rR.json() : null;
-      setRecent(rec?.verifications || []);
-    } catch {
-      setStats(null); setRecent([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-    const id = setInterval(load, 30_000);
-    return () => clearInterval(id);
-  }, [load]);
+  const { data: stats }  = usePoll("/verify/stats", { interval: 30_000 });
+  const { data: recent } = usePoll("/verify/recent?n=40", { interval: 30_000 });
 
   const n         = stats?.n ?? 0;
   const passRate  = stats?.pass_rate;
   const meanScore = stats?.mean_score;
   const byRec     = stats?.by_recommendation || {};
-  const rows      = recent || [];
+  const rows      = recent?.verifications || [];
 
   const columns = [
     { key: "ts", width: 78, mono: true, tone: "muted", render: v => prettyTs(v.ts) },
@@ -67,41 +49,31 @@ export default function VerifierPanel() {
   ];
 
   return (
-    <Page>
-      <PageHeader
-        sticky={false}
-        title="Step Verifier"
-        subtitle="Every plan step is scored before the system moves on — pass, retry, replan, or abort."
-      >
-        <RefreshButton onClick={load} />
-      </PageHeader>
+    <Stack gap="md">
+      {/* ── Stats row ── */}
+      <Grid min={150} gap="sm">
+        <MetricCard label="Pass rate" tone={passRateTone(passRate)}
+          value={passRate != null ? `${(passRate * 100).toFixed(1)}%` : "—"}
+          sub={`last ${n} verifications`} />
+        <MetricCard label="Mean score"
+          tone={meanScore == null ? "muted" : meanScore >= 0.8 ? "success" : "warn"}
+          value={meanScore != null ? meanScore.toFixed(3) : "—"}
+          sub="raw verifier score" />
+        {Object.entries(byRec).map(([rec, rate]) => (
+          <MetricCard key={rec} label={rec} tone={REC_TONE[rec] || "muted"}
+            value={`${(rate * 100).toFixed(0)}%`}
+            sub="of recent recommendations" />
+        ))}
+      </Grid>
 
-      <Stack gap="md">
-        {/* ── Stats row ── */}
-        <Grid min={150} gap="sm">
-          <MetricCard label="Pass rate" tone={passRateTone(passRate)}
-            value={passRate != null ? `${(passRate * 100).toFixed(1)}%` : "—"}
-            sub={`last ${n} verifications`} />
-          <MetricCard label="Mean score"
-            tone={meanScore == null ? "muted" : meanScore >= 0.8 ? "success" : "warn"}
-            value={meanScore != null ? meanScore.toFixed(3) : "—"}
-            sub="raw verifier score" />
-          {Object.entries(byRec).map(([rec, rate]) => (
-            <MetricCard key={rec} label={rec} tone={REC_TONE[rec] || "muted"}
-              value={`${(rate * 100).toFixed(0)}%`}
-              sub="of recent recommendations" />
-          ))}
-        </Grid>
-
-        {/* ── Recent verifications ── */}
-        <ObsPanel title="Recent verifications" icon="✓">
-          {rows.length === 0 ? (
-            <EmptyState msg="No verifications yet — ask something and each verified step lands here." />
-          ) : (
-            <Table columns={columns} rows={rows} rowKey={(v, i) => `${v.ts}-${i}`} />
-          )}
-        </ObsPanel>
-      </Stack>
-    </Page>
+      {/* ── Recent verifications ── */}
+      <ObsPanel title="Recent verifications" icon="✓">
+        {rows.length === 0 ? (
+          <EmptyState msg="No verifications yet — ask something and each verified step lands here." />
+        ) : (
+          <Table columns={columns} rows={rows} rowKey={(v, i) => `${v.ts}-${i}`} />
+        )}
+      </ObsPanel>
+    </Stack>
   );
 }

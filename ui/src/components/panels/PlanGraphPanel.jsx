@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { API } from "@/lib/api";
+import { useState, useRef } from "react";
+import { usePoll } from "@/lib/usePoll";
 import { T, FONT_MONO } from "@/styles/theme";
-import { RefreshButton, PageHeader } from "@/components/ui";
+
+// ── Plan Graph (Diagnostics section) ──────────────────────────────
+// Section contract: content only — the host owns the header and refresh.
 
 // ── Layout constants ──────────────────────────────────────────
 const NODE_W  = 210;
@@ -271,33 +273,11 @@ function NodeDetail({ node, onClose }) {
 
 
 // ── Main component ────────────────────────────────────────────
-export default function PlanGraphPanel({ embedded = false } = {}) {
-  const [data,       setData]       = useState(null);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState(null);
-  const [selected,   setSelected]   = useState(null);
+export default function PlanGraphPanel() {
+  const [selected, setSelected] = useState(null);
   const svgRef = useRef(null);
 
-  const fetch_ = useCallback(async () => {
-    try {
-      setLoading(true);
-      const r = await fetch(`${API}/plan/graph`);
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const d = await r.json();
-      setData(d);
-      setError(null);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetch_();
-    const id = setInterval(fetch_, 15000);
-    return () => clearInterval(id);
-  }, [fetch_]);
+  const { data, loading, error } = usePoll("/plan/graph", { interval: 15_000 });
 
   const hasGraph = data && data.nodes?.length > 0;
   const nodeMap  = hasGraph
@@ -332,19 +312,13 @@ export default function PlanGraphPanel({ embedded = false } = {}) {
     : {};
 
   return (
-    <div style={{ color: T.text, fontFamily: "inherit", padding: embedded ? "10px 14px 14px" : 0 }}>
+    <div style={{ color: T.text, fontFamily: "inherit" }}>
 
-      {/* ── Header (suppressed when embedded — the dashboard cell carries the title) ── */}
-      {!embedded && (
-      <PageHeader
-        sticky={false}
-        title="Plan Graph"
-        subtitle={hasGraph && data.meta
-          ? `${data.meta.mode} · ${data.meta.steps} steps · u ${Math.round(data.meta.uncertainty * 100)}% · ${data.meta.elapsed_ms}ms`
-          : "Execution DAG — live step status, agents, dependencies"}
-      >
-        <RefreshButton onClick={fetch_} />
-      </PageHeader>
+      {/* ── Plan meta — what the header used to carry as its subtitle ── */}
+      {hasGraph && data.meta && (
+        <div style={{ fontSize: 11, color: T.muted, marginBottom: 12 }}>
+          {data.meta.mode} · {data.meta.steps} steps · u {Math.round(data.meta.uncertainty * 100)}% · {data.meta.elapsed_ms}ms
+        </div>
       )}
 
       {/* ── Status counts ── */}

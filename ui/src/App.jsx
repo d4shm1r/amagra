@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, Suspense, startTransition } from "react";
 import { API } from "@/lib/api";
+import { usePoll } from "@/lib/usePoll";
 import { ApiOfflineBanner, Column, ConfirmProvider, Toast } from "@/components/ui";
 import Onboarding  from "@/components/layout/Onboarding";
 import AppLauncher from "@/components/layout/AppLauncher";
@@ -8,7 +9,7 @@ import AppLauncher from "@/components/layout/AppLauncher";
 // Paired with startTransition in navTo + the Suspense boundary below, a tab
 // switch stays non-blocking instead of janking on a big synchronous mount.
 import {
-  ChatTab, HomeTab, AboutTab, CognitionTab, CognitiveOSTab, ConsensusTab,
+  ChatTab, HomeTab, AboutTab, CognitionTab, ConsensusTab,
   ContextInspectorTab, DataTab, DecisionTimelineTab, DiagnosticsTab,
   ExplainProjectTab, GoalsTab, GuideTab, KnowledgeGraphTab, LibraryTab, LogTab,
   MemoryBrowserTab, MindMapTab, PreferencesTab, ProjectStateTab, PromptEditorTab,
@@ -45,13 +46,14 @@ export default function App() {
   const [launcherOpen, setLauncherOpen] = useState(false);   // the unified ☰ app-grid menu
   const [launcherSearchSignal, setLauncherSearchSignal] = useState(0); // bumped by ⌘K → launcher focuses its search
   const [researchDoc,  setResearchDoc]  = useState(null);
-  const [apiStatus,    setApiStatus]    = useState("checking");
   const [activityPct,  setActivityPct]  = useState(0);
   const [litNode,      setLitNode]      = useState(null);
   const [sessionLog,   setSessionLog]   = useState([]);
-  const [totalQueries, setTotalQueries] = useState(0);
   const [settings,         setSettings]         = useState(loadSettings);
   const [inspectContextId, setInspectContextId] = useState(null);
+  // Which Diagnostics section a deep link asked for (the Cognition dashboard
+  // tiles open the diagnostics behind their number).
+  const [diagSection,      setDiagSection]      = useState("uci");
   // Per-surface "last visited sub-tab" so each view reopens where you left it.
   const [lastTabBySurface, setLastTabBySurface] = useState(() => ({ ...DEFAULT_TAB }));
   const [seedPrompt,       setSeedPrompt]       = useState(null);
@@ -112,7 +114,18 @@ export default function App() {
     setInspectContextId(ctxId);
     navTo("inspector");
   }, [navTo]);
-  const [coherence,    setCoherence]    = useState(null);
+
+  // Dashboard tile → the Diagnostics section that explains it. Same shape as
+  // handleInspect: remember what was asked for, then navigate.
+  const openDiagnostics = useCallback((section) => {
+    setDiagSection(section);
+    navTo("diagnostics");
+  }, [navTo]);
+  // One subscription for the whole app. App and ChatTab each used to run their
+  // own /coherence poll, and ChatTab pushed its result back up through an
+  // onCoherenceUpdate callback — so the value arrived twice, by two routes, on
+  // two clocks. Both now read the same cache entry: one request, one answer.
+  const { data: coherence } = usePoll("/coherence", { interval: 30_000 });
 
   useEffect(() => {
     try {
@@ -125,43 +138,20 @@ export default function App() {
     try { localStorage.setItem("session_log_v1", JSON.stringify(sessionLog.slice(-50))); } catch (_) {}
   }, [sessionLog]);
 
-  const checkHealth = useCallback(async () => {
-    setApiStatus(prev => (prev === "online" ? prev : "checking"));
-    try {
-      const r = await fetch(`${API}/health`, { signal: AbortSignal.timeout(5000) });
-      setApiStatus(r.ok ? "online" : "offline");
-      if (r.ok) {
-        try {
-          const h = await fetch(`${API}/history`);
-          if (h.ok) {
-            const hd = await h.json();
-            setTotalQueries((hd.history || hd || []).length);
-          }
-        } catch (_) {}
-      }
-    } catch { setApiStatus("offline"); }
-  }, []);
+  // /health is the app's liveness probe AND the Intelligence section's system
+  // strip AND a Dashboard tile. Three pollers on one endpoint, on three clocks,
+  // is three different opinions about whether the engine is up. One entry now;
+  // the 5s bound this used to set by hand is the hook's `timeout`.
+  const { data: health, error: healthErr, loading: healthLoading, refresh: refreshHealth } =
+    usePoll("/health", { interval: 30_000, timeout: 5_000 });
+  const apiStatus = healthErr ? "offline" : health ? "online" : (healthLoading ? "checking" : "offline");
 
-  useEffect(() => {
-    checkHealth();
-    const id = setInterval(checkHealth, 30000);
-    return () => clearInterval(id);
-  }, [checkHealth]);
+  // Only meaningful once the engine answers, so it stays paused while offline
+  // rather than retrying into a backend we already know is down.
+  const { data: history, refresh: refreshHistory } =
+    usePoll(apiStatus === "online" ? "/history" : null, { interval: 30_000 });
+  const totalQueries = (history?.history || history || []).length ?? 0;
 
-
-  const fetchCoherence = useCallback(() => {
-    if (apiStatus !== "online") return;
-    fetch(`${API}/coherence`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setCoherence(d); })
-      .catch(() => {});
-  }, [apiStatus]);
-
-  useEffect(() => {
-    fetchCoherence();
-    const id = setInterval(fetchCoherence, 30000);
-    return () => clearInterval(id);
-  }, [fetchCoherence]);
 
   const addLog = (msg, color = T.success) => {
     const ts = new Date().toLocaleTimeString();
@@ -189,7 +179,7 @@ export default function App() {
             case "l": e.preventDefault(); navTo("timeline");  break;
             case "y": e.preventDefault(); navTo("policy");    break;
             case "r": e.preventDefault(); navTo("brain");     break;
-            case "x": e.preventDefault(); navTo("cognitive"); break;
+            case "x": e.preventDefault(); navTo("diagnostics"); break;
             case "a": e.preventDefault(); navTo("data");      break;
             case "m": e.preventDefault(); navTo("memory");    break;
             case "k": e.preventDefault(); navTo("knowledge"); break;
@@ -320,6 +310,10 @@ export default function App() {
           display: inline-flex; align-items: center; justify-content: center;
           color: #9A6C00; font-weight: 700; font-family: inherit; cursor: pointer;
           letter-spacing: -0.01em; border-radius: 40px;
+          /* The class is used on <a> as well as <button> (the memory export
+             links). Without this, those render underlined and no longer match
+             the buttons beside them, so each call site patched it inline. */
+          text-decoration: none;
           background:
             linear-gradient(#FBF8F3, #FBF8F3) padding-box,
             linear-gradient(145deg, #FFE880, #DEB838, #C48808) border-box;
@@ -411,7 +405,7 @@ export default function App() {
               engine dropping silently and it being read out. */}
           <Toast>
             {apiStatus !== "online" && (
-              <ApiOfflineBanner onRetry={checkHealth} checking={apiStatus === "checking"} />
+              <ApiOfflineBanner onRetry={refreshHealth} checking={apiStatus === "checking"} />
             )}
           </Toast>
 
@@ -425,7 +419,7 @@ export default function App() {
             display: activeTab === "chat" || activeTab === "prompt" ? "flex" : "block",
             flexDirection: activeTab === "chat" || activeTab === "prompt" ? "column" : undefined,
           }}>
-            {activeTab === "chat"      && <ChatTab apiStatus={apiStatus} onLogAdd={addLog} onQueryComplete={() => setTotalQueries(q => q + 1)} onLitNode={setLitNode} onActivityChange={setActivityPct} onCoherenceUpdate={setCoherence} forcedAgent={forcedAgent} onForcedAgentChange={setForcedAgent} onInspect={handleInspect} defaultReflectMode={settings.reflectMode} seedPrompt={seedPrompt} onSeedConsumed={() => setSeedPrompt(null)} enterToSend={settings.enterToSend} showTimestamps={settings.showTimestamps} />}
+            {activeTab === "chat"      && <ChatTab apiStatus={apiStatus} onLogAdd={addLog} onQueryComplete={refreshHistory} onLitNode={setLitNode} onActivityChange={setActivityPct} forcedAgent={forcedAgent} onForcedAgentChange={setForcedAgent} onInspect={handleInspect} defaultReflectMode={settings.reflectMode} seedPrompt={seedPrompt} onSeedConsumed={() => setSeedPrompt(null)} enterToSend={settings.enterToSend} showTimestamps={settings.showTimestamps} />}
             {activeTab === "prompt"    && (
               <Suspense fallback={
                 <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
@@ -459,9 +453,8 @@ export default function App() {
               {activeTab === "runs"          && <RunsTab />}
               {activeTab === "timeline"      && <TimelineTab />}
               {activeTab === "data"          && <DataTab />}
-              {activeTab === "cog-dash"      && <CognitionTab />}
-              {activeTab === "diagnostics"   && <DiagnosticsTab />}
-              {activeTab === "cognitive"     && <CognitiveOSTab coherence={coherence} />}
+              {activeTab === "cog-dash"      && <CognitionTab onOpenSection={openDiagnostics} />}
+              {activeTab === "diagnostics"   && <DiagnosticsTab initialSection={diagSection} />}
               {activeTab === "inspector"     && <ContextInspectorTab contextId={inspectContextId} />}
               {activeTab === "project-state" && <ProjectStateTab />}
               {activeTab === "consensus"     && <ConsensusTab />}

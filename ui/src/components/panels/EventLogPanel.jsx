@@ -1,11 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  ObsPanel, EventRow, RefreshButton, EmptyState, eventMeta, PageHeader, Pill,
-  Row, Stack, Spacer, Pad, Scroll, Notice, Small, Inline, SegmentedControl, Button,
+  ObsPanel, EventRow, EmptyState, eventMeta, Pill,
+  Row, Stack, Spacer, Scroll, Notice, Small, Inline, SegmentedControl, Button,
 } from "@/components/ui";
-import { SearchInput, Toggle } from "@/components/forms";
+import { SearchInput } from "@/components/forms";
+import { usePoll } from "@/lib/usePoll";
 
-import { API } from "@/lib/api";
+// ── Events (Diagnostics section) ──────────────────────────────────
+// The typed event stream from the cognitive runtime.
+//
+// Section contract: content only — Diagnostics owns the header and refresh.
+// The auto-scroll toggle went with the header: this list is newest-first and
+// pinned to the top on every refresh, so "auto-scroll" only ever meant "undo
+// my scrolling", which is what a toggle should never silently do.
 
 const EVENT_CATEGORIES = [
   { id: "all",     label: "All" },
@@ -41,34 +48,19 @@ function CountPills({ counts }) {
 }
 
 // ── Main component ────────────────────────────────────────────
-export default function EventLogPanel({ embedded = false } = {}) {
-  const [data,       setData]       = useState({ events: [], counts: {} });
-  const [filter,     setFilter]     = useState("all");
-  const [search,     setSearch]     = useState("");
-  const [autoScroll, setAutoScroll] = useState(true);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState(null);
+export default function EventLogPanel() {
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const listRef = useRef(null);
 
-  const load = () => {
-    setLoading(true);
-    fetch(`${API}/cos/events?n=200`)
-      .then(r => r.json())
-      .then(d => { setData(d || { events: [], counts: {} }); setError(null); })
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  };
+  const { data, error, loading } = usePoll("/cos/events?n=200", { interval: 10_000 });
 
-  useEffect(() => { load(); const id = setInterval(load, 10_000); return () => clearInterval(id); }, []);
+  const events = data?.events || [];
+  const counts = data?.counts || {};
 
-  useEffect(() => {
-    if (autoScroll && listRef.current) {
-      listRef.current.scrollTop = 0;
-    }
-  }, [data, autoScroll]);
-
-  const events = data.events || [];
-  const counts = data.counts || {};
+  // Newest-first list: a refresh that left the viewport mid-list would show
+  // rows sliding under the reader's cursor, so it returns to the top.
+  useEffect(() => { if (listRef.current) listRef.current.scrollTop = 0; }, [data]);
 
   const cat = EVENT_CATEGORIES.find(c => c.id === filter);
   const filtered = events.filter(e => {
@@ -82,7 +74,7 @@ export default function EventLogPanel({ embedded = false } = {}) {
     return true;
   });
 
-  const content = (
+  return (
     <Stack gap="md">
       {error && <Notice tone="error">Backend unavailable: {error}</Notice>}
 
@@ -91,6 +83,7 @@ export default function EventLogPanel({ embedded = false } = {}) {
       {/* Filter bar */}
       <Row gap="sm" wrap>
         <SegmentedControl
+          label="Event category"
           options={EVENT_CATEGORIES.map(c => ({ val: c.id, label: c.label }))}
           value={filter}
           onChange={setFilter}
@@ -122,25 +115,5 @@ export default function EventLogPanel({ embedded = false } = {}) {
         )}
       </ObsPanel>
     </Stack>
-  );
-
-  // Embedded in a dashboard cell (which carries the title and owns no padding).
-  if (embedded) return <Pad>{content}</Pad>;
-
-  return (
-    <>
-      <PageHeader
-        sticky={false}
-        title="Events"
-        subtitle="Typed event stream from the cognitive runtime · auto-refresh 10s"
-      >
-        <Row gap="xs">
-          <Toggle checked={autoScroll} onChange={setAutoScroll} label="Auto-scroll" />
-          <Small tone="muted">Auto-scroll</Small>
-        </Row>
-        <RefreshButton onClick={load} />
-      </PageHeader>
-      {content}
-    </>
   );
 }

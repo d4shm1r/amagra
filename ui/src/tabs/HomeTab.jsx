@@ -63,7 +63,6 @@ const SIMPLE_NAV_SHORTCUTS = [
 const ADVANCED_NAV_SHORTCUTS = [
   { sym: "↗", label: "Chat",         tab: "chat" },
   { sym: "⌘", label: "Prompt IDE",   tab: "prompt" },
-  { sym: "Ψ", label: "Cognitive OS", tab: "cognitive" },
   { sym: "⊙", label: "Inspector",    tab: "inspector" },
 ];
 

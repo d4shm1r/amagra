@@ -49,7 +49,6 @@ export const SURFACES = [
     // views (UCI/Risk/Verifier/Events/Plan/Policy) into one tab with sections.
     { id: "cog-dash",    label: "Dashboard",   icon: "dashboard",   desc: "system health at a glance", group: "Health" },
     { id: "diagnostics", label: "Diagnostics", icon: "diagnostics", desc: "risk, events, plans and policy", group: "Health" },
-    { id: "cognitive",   label: "CogOS",       icon: "cogos",       desc: "the cognitive runtime", group: "Advanced" },
     { id: "skills",      label: "Skills",      icon: "skills",      desc: "the routing skill graph", group: "Advanced" },
     { id: "timeline",    label: "Timeline",    icon: "timeline",    desc: "how the system learned", group: "Advanced" },
   ]},
@@ -98,6 +97,12 @@ export const TAB_ALIASES     = {
   // inside Diagnostics — redirect old ids so deep links / shortcuts still land.
   uci: "diagnostics", "risk-obs": "diagnostics", "event-log": "diagnostics",
   "plan-graph": "diagnostics", policy: "diagnostics",
+  // CogOS dissolved: it was a third parallel implementation of a domain the
+  // other two tabs already covered. Its coherence hero, Δ²C indicator and
+  // health prediction became the Diagnostics › Coherence section; its identity
+  // contract went to About; its auto-resolve action to Memory; its routing
+  // inspector and contradiction list were already in Runs › Decisions.
+  cognitive: "diagnostics",
 };
 export const VALID_TABS      = new Set(["home", ...Object.keys(SURFACE_BY_TAB)]);
 
