@@ -3,6 +3,7 @@ import time
 import sqlite3
 import uuid
 import json
+import queue
 import asyncio
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request
@@ -1207,23 +1208,62 @@ async def ask_stream(req: AskRequest):
                 yield f"data: {json.dumps({'type': 'error', 'detail': str(exc)})}\n\n"
                 # fall through to non-streaming path
 
-        # ── Fallback: run coordinator, emit as one chunk ───────
+        # ── Fallback: run coordinator, stream its real lifecycle events ───
+        # The coordinator emits agent.selected / step.verified.* as the work
+        # actually happens, from an executor thread. Forward the events
+        # belonging to *this* run so the client sees progress that occurred
+        # rather than progress on a timer. SimpleQueue because the emitting
+        # thread is not the event loop's.
         try:
             import cognition.run_tracer as _rt
-            _run_id = _rt.start(req.message)
-            async with inference_slot():  # gate local inference (GPU OOM guard)
-                result = await asyncio.get_event_loop().run_in_executor(
-                  None,
-                  lambda: coordinator.invoke({
-                    "messages":              [{"role": "user", "content": _stream_msg}],
-                    "active_agent": "", "task": _stream_msg, "result": "",
-                    "next_agent": "", "memory": {}, "force_agent": req.force_agent or "",
-                    "brain_decision": {}, "reflect": False, "reflect_type": "general",
-                    "reflect_level": "none", "contradiction_detected": False,
-                    "force_reflect_level": req.force_reflect_level or "",
-                    "run_id": _run_id, "model_tier": "fast",
-                })
+            from infrastructure.event_bus import (
+                subscribe as _subscribe, unsubscribe as _unsubscribe,
+                EventType as _ET,
             )
+            _run_id = _rt.start(req.message)
+            _steps  = queue.SimpleQueue()
+
+            def _on_step(key, payload, ts):
+                # The bus is global and requests are concurrent — run_id is
+                # what makes a forwarded step provably ours.
+                if payload.get("run_id") == _run_id:
+                    _steps.put({"type": "step", "event": key, "payload": payload})
+
+            _watched = (_ET.AGENT_SELECTED, _ET.STEP_VERIFIED_PASS, _ET.STEP_VERIFIED_FAIL)
+            for _et in _watched:
+                _subscribe(_et, _on_step)
+
+            try:
+                async with inference_slot():  # gate local inference (GPU OOM guard)
+                    _work = asyncio.get_event_loop().run_in_executor(
+                      None,
+                      lambda: coordinator.invoke({
+                        "messages":              [{"role": "user", "content": _stream_msg}],
+                        "active_agent": "", "task": _stream_msg, "result": "",
+                        "next_agent": "", "memory": {}, "force_agent": req.force_agent or "",
+                        "brain_decision": {}, "reflect": False, "reflect_type": "general",
+                        "reflect_level": "none", "contradiction_detected": False,
+                        "force_reflect_level": req.force_reflect_level or "",
+                        "run_id": _run_id, "model_tier": "fast",
+                    })
+                    )
+                    while not _work.done():
+                        try:
+                            yield f"data: {json.dumps(_steps.get_nowait())}\n\n"
+                        except queue.Empty:
+                            await asyncio.sleep(0.05)
+                    result = await _work
+            finally:
+                for _et in _watched:
+                    _unsubscribe(_et, _on_step)
+
+            # Events emitted between the final poll and completion.
+            while True:
+                try:
+                    yield f"data: {json.dumps(_steps.get_nowait())}\n\n"
+                except queue.Empty:
+                    break
+
             bd       = result.get("brain_decision", {})
             fallback_agent = result.get("active_agent", agent_name)
             yield f"data: {json.dumps({'type': 'token', 'text': result['messages'][-1].content})}\n\n"

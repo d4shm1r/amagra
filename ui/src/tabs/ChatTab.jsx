@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { API } from "@/lib/api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { AGENTS, PROGRESS_STEPS, AGENT_ID_REVERSE } from "@/config/constants";
+import { AGENTS, AGENT_ID_REVERSE } from "@/config/constants";
 import AgentContextPanel from "@/components/panels/AgentContextPanel";
 import { useConfirm } from "@/components/ui";
 import { T, LAYOUT, FONT_DISPLAY } from "@/styles/theme";
@@ -21,8 +21,41 @@ function Pill({ label, color, title }) {
   );
 }
 
-// ── Typing indicator ───────────────────────────────────────────
-function Thinking({ step }) {
+// ── Live progress ──────────────────────────────────────────────
+// Every line rendered here corresponds to a lifecycle event the backend
+// actually emitted for this run. Until one arrives we say only that work is
+// in progress: an unlabelled wait is honest, an invented stage is not.
+const STEP_LABELS = {
+  "agent.selected":     p => `Routed to ${String(p.agent || "agent").replace(/_/g, " ")}`,
+  "step.verified.pass": p => `Verified${p.score != null ? ` · ${p.score}` : ""}`,
+  "step.verified.fail": p => `Verification flagged${p.recommendation ? ` · ${p.recommendation}` : ""}`,
+};
+
+function StepList({ steps }) {
+  if (!steps?.length) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
+      {steps.map((s, i) => {
+        const fmt = STEP_LABELS[s.event];
+        if (!fmt) return null;
+        const failed = s.event === "step.verified.fail";
+        return (
+          <div key={i} style={{
+            display: "flex", gap: 8, alignItems: "center", fontSize: 11,
+            color: failed ? T.error : T.muted, animation: "routeFadeIn 0.25s ease-out",
+          }}>
+            <span style={{ color: failed ? T.error : T.success, fontFamily: "monospace" }}>
+              {failed ? "!" : "✓"}
+            </span>
+            <span>{fmt(s.payload || {})}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Thinking() {
   return (
     <div style={{
       display: "flex", gap: 10, alignItems: "center",
@@ -38,7 +71,7 @@ function Thinking({ step }) {
           }} />
         ))}
       </div>
-      <span style={{ fontSize: 12, color: T.warn }}>{PROGRESS_STEPS[step]}</span>
+      <span style={{ fontSize: 12, color: T.warn }}>Working…</span>
     </div>
   );
 }
@@ -104,7 +137,6 @@ export default function ChatTab({
   const [loading,       setLoading]       = useState(false);
   const [pinnedContext, setPinnedContext] = useState("");
   const [copiedIdx,     setCopiedIdx]    = useState(null);
-  const [progressStep,  setProgressStep] = useState(0);
   const [feedbackMap,   setFeedbackMap]  = useState({});
   const [feedbackAck,   setFeedbackAck]  = useState({});
   const [coherence,     setCoherence]    = useState(null);
@@ -141,7 +173,6 @@ export default function ChatTab({
   const [liveEvents,    setLiveEvents]  = useState([]);
 
   const chatEndRef      = useRef(null);
-  const progressRef     = useRef(null);
   const isProcessingRef = useRef(false);
   const abortRef        = useRef(null);
   const textareaRef     = useRef(null);
@@ -202,18 +233,6 @@ export default function ChatTab({
     const id = setInterval(fn, 5000);
     return () => clearInterval(id);
   }, []);
-
-  useEffect(() => {
-    if (loading) {
-      progressRef.current = setInterval(
-        () => setProgressStep(s => (s + 1) % PROGRESS_STEPS.length), 10000
-      );
-    } else {
-      if (progressRef.current) { clearInterval(progressRef.current); progressRef.current = null; }
-      setProgressStep(0);
-    }
-    return () => { if (progressRef.current) clearInterval(progressRef.current); };
-  }, [loading]);
 
   const autoResize = useCallback(() => {
     const ta = textareaRef.current;
@@ -373,6 +392,18 @@ export default function ChatTab({
                   signal_conf:      ev.signal_conf      || 0,
                   action:           ev.action           || "unknown",
                   confidence:       ev.confidence       || 0.67,
+                };
+              }
+              return next;
+            });
+          } else if (ev.type === "step") {
+            setMessages(prev => {
+              const next = [...prev];
+              const last = next[next.length - 1];
+              if (last?.streaming) {
+                next[next.length - 1] = {
+                  ...last,
+                  steps: [...(last.steps || []), { event: ev.event, payload: ev.payload }],
                 };
               }
               return next;
@@ -741,6 +772,7 @@ export default function ChatTab({
 
                       <PipelineBanner agents={msg.pipeline_agents} />
                       <RoutingStrip msg={msg} />
+                      <StepList steps={msg.steps} />
 
                       <div className="msg-content" style={{ wordBreak: "break-word", paddingRight: 72 }}>
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text || " "}</ReactMarkdown>
@@ -837,7 +869,7 @@ export default function ChatTab({
               );
             })}
 
-            {loading && !messages.some(m => m.streaming) && <Thinking step={progressStep} />}
+            {loading && !messages.some(m => m.streaming) && <Thinking />}
             <div ref={chatEndRef} />
           </div>
         </div>

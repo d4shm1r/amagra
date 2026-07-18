@@ -1082,15 +1082,6 @@ export const VERSION_EPOCHS = [
   { version: "v0.1", label: "Foundation",            color: "#15803D",  phases: [1,  2,  3] },
 ];
 
-export const PROGRESS_STEPS = [
-  "◈ Coordinator analyzing…",
-  "⊹ Consulting agent registry…",
-  "∴ Routing to specialist…",
-  "⚙ Agent processing…",
-  "∑ Gathering context…",
-  "· Generating response…",
-];
-
 export const AGENT_ID_REVERSE = {
   it_networking:      "it_networking",
   python_dev:         "python_dev",
