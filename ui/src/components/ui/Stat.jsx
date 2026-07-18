@@ -70,17 +70,41 @@ export function StatStrip({ items }) {
   );
 }
 
-/** A single stat as its own small card — label / big value / sub-text. */
-export function MetricCard({ label, value, sub, tone = "default", color }) {
+/** A single stat as its own small card — label / big value / sub-text.
+ *
+ *  `onClick` turns it into a way IN: the card becomes a button, gains a chevron
+ *  and announces itself as a link to wherever the number is explained in full.
+ *  A dashboard tile that shows a worrying number and offers no route to the
+ *  detail behind it makes the reader hunt through a menu for it.
+ *  `children` is a slot under the sub-text — a sparkline, usually. */
+export function MetricCard({ label, value, sub, tone = "default", color, onClick, children }) {
+  const interactive = typeof onClick === "function";
   return (
-    <div className="lux-card lux-card-i" style={{ padding: "14px 16px" }}>
-      <div style={{ ...TYPE.metric, color: color ?? toneColor(tone), fontFamily: "inherit" }}>
-        {value ?? "—"}
+    <div
+      className={`lux-card${interactive ? " lux-card-i" : ""}`}
+      onClick={onClick}
+      {...(interactive ? {
+        role: "button", tabIndex: 0,
+        onKeyDown: (e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(e); }
+        },
+        "aria-label": `${label}${value != null ? `: ${value}` : ""} — open details`,
+      } : null)}
+      style={{ padding: "14px 16px", ...(interactive ? { cursor: "pointer" } : null) }}
+    >
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+        <div style={{ ...TYPE.metric, color: color ?? toneColor(tone), fontFamily: "inherit" }}>
+          {value ?? "—"}
+        </div>
+        {interactive && (
+          <span aria-hidden style={{ ...TYPE.caption, color: T.muted, marginLeft: "auto" }}>›</span>
+        )}
       </div>
       <div style={{ ...TYPE.eyebrow, fontWeight: 600, letterSpacing: "0.08em", color: T.muted, marginTop: 5 }}>
         {label}
       </div>
       {sub && <div style={{ ...TYPE.micro, color: T.muted, marginTop: 3 }}>{sub}</div>}
+      {children && <div style={{ marginTop: 10 }}>{children}</div>}
     </div>
   );
 }

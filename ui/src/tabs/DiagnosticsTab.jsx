@@ -41,10 +41,21 @@ const SECTIONS = [
     desc: "Thumbs ratings rolled up by agent — the human signal on answer quality" },
 ];
 
+const valid = (id) => (SECTIONS.some(s => s.id === id) ? id : "uci");
+
 export default function DiagnosticsTab({ initialSection = "uci" }) {
-  const [sec, setSec] = useState(
-    SECTIONS.some(s => s.id === initialSection) ? initialSection : "uci"
-  );
+  const [sec, setSec] = useState(() => valid(initialSection));
+
+  // A deep link must win even if this tab is already mounted. Reading the prop
+  // only in the useState initializer would make "open the Risk diagnostics"
+  // silently do nothing whenever the tab happened to still be alive — a bug
+  // that hides until someone changes how tabs unmount.
+  const [seenProp, setSeenProp] = useState(initialSection);
+  if (initialSection !== seenProp) {
+    setSeenProp(initialSection);
+    setSec(valid(initialSection));
+  }
+
   const active = SECTIONS.find(s => s.id === sec) || SECTIONS[0];
   const Active = active.Comp;
 

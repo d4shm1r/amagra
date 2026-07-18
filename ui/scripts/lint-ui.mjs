@@ -47,7 +47,6 @@ const DEBT = new Set([
   "config/constants.js",
   "lib/monacoSetup.js",
   "tabs/ChatTab.jsx",
-  "tabs/CognitionTab.jsx",
   "tabs/CognitiveOSTab.jsx",
   "tabs/ConsensusTab.jsx",
   "tabs/ContextInspectorTab.jsx",

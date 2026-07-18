@@ -52,6 +52,9 @@ export default function App() {
   const [totalQueries, setTotalQueries] = useState(0);
   const [settings,         setSettings]         = useState(loadSettings);
   const [inspectContextId, setInspectContextId] = useState(null);
+  // Which Diagnostics section a deep link asked for (the Cognition dashboard
+  // tiles open the diagnostics behind their number).
+  const [diagSection,      setDiagSection]      = useState("uci");
   // Per-surface "last visited sub-tab" so each view reopens where you left it.
   const [lastTabBySurface, setLastTabBySurface] = useState(() => ({ ...DEFAULT_TAB }));
   const [seedPrompt,       setSeedPrompt]       = useState(null);
@@ -111,6 +114,13 @@ export default function App() {
   const handleInspect = useCallback((ctxId) => {
     setInspectContextId(ctxId);
     navTo("inspector");
+  }, [navTo]);
+
+  // Dashboard tile → the Diagnostics section that explains it. Same shape as
+  // handleInspect: remember what was asked for, then navigate.
+  const openDiagnostics = useCallback((section) => {
+    setDiagSection(section);
+    navTo("diagnostics");
   }, [navTo]);
   const [coherence,    setCoherence]    = useState(null);
 
@@ -459,8 +469,8 @@ export default function App() {
               {activeTab === "runs"          && <RunsTab />}
               {activeTab === "timeline"      && <TimelineTab />}
               {activeTab === "data"          && <DataTab />}
-              {activeTab === "cog-dash"      && <CognitionTab />}
-              {activeTab === "diagnostics"   && <DiagnosticsTab />}
+              {activeTab === "cog-dash"      && <CognitionTab onOpenSection={openDiagnostics} />}
+              {activeTab === "diagnostics"   && <DiagnosticsTab initialSection={diagSection} />}
               {activeTab === "cognitive"     && <CognitiveOSTab coherence={coherence} />}
               {activeTab === "inspector"     && <ContextInspectorTab contextId={inspectContextId} />}
               {activeTab === "project-state" && <ProjectStateTab />}

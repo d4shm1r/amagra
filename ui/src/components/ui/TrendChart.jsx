@@ -41,20 +41,27 @@ const STROKE = { emphasis: 2.2, normal: 1.2 };
 export function TrendChart({
   series = [], domain = [0, 1], grid = [], threshold, mean, marker,
   xLabels = [], height = 130, legend = false, format = (v) => v.toFixed(2),
-  empty = "Not enough samples yet.",
+  empty = "Not enough samples yet.", bare = false,
 }) {
   const live = series.filter(s => Array.isArray(s.values) && s.values.length > 1);
-  if (!live.length) return <EmptyState msg={empty} />;
+  // A sparkline inside a summary tile is decoration for the number beside it:
+  // if there is no shape to show, it must take up no room rather than push an
+  // empty-state sentence into a card that has none to spare.
+  if (!live.length) return bare ? null : <EmptyState msg={empty} />;
 
   const [lo, hi] = domain;
   const n  = Math.max(...live.map(s => s.values.length));
-  const iW = VB_W - PAD.x * 2;
-  const iH = height - PAD.y - PAD.bottom;
+  // `bare` is the same chart stripped to its line — no axis, labels, grid or
+  // readout — for use inside a MetricCard where the value is already stated in
+  // full beside it and every one of those marks would be repetition.
+  const pad = bare ? { x: 2, y: 3, bottom: 3 } : PAD;
+  const iW = VB_W - pad.x * 2;
+  const iH = height - pad.y - pad.bottom;
 
-  const xs = i => PAD.x + (n <= 1 ? 0 : (i / (n - 1)) * iW);
+  const xs = i => pad.x + (n <= 1 ? 0 : (i / (n - 1)) * iW);
   const ys = v => {
     const t = (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo || 1);
-    return PAD.y + (1 - t) * iH;
+    return pad.y + (1 - t) * iH;
   };
 
   const points = vals => vals
@@ -76,11 +83,11 @@ export function TrendChart({
       >
         {/* Reference grid — labelled on the left so the scale is readable
             without a legend. */}
-        {grid.map(g => (
+        {!bare && grid.map(g => (
           <g key={g}>
-            <line x1={PAD.x} y1={ys(g)} x2={VB_W - PAD.x} y2={ys(g)}
+            <line x1={pad.x} y1={ys(g)} x2={VB_W - pad.x} y2={ys(g)}
                   stroke={T.border} strokeWidth={1} strokeDasharray="2 4" />
-            <text x={PAD.x - 5} y={ys(g) + 3} fill={T.muted} fontSize={8}
+            <text x={pad.x - 5} y={ys(g) + 3} fill={T.muted} fontSize={8}
                   textAnchor="end" fontFamily={FONT_MONO}>
               {format(g)}
             </text>
@@ -91,10 +98,10 @@ export function TrendChart({
             it is a judgement ("healthy"), not just another gridline. */}
         {threshold != null && (
           <g>
-            <line x1={PAD.x} y1={ys(threshold.value)} x2={VB_W - PAD.x} y2={ys(threshold.value)}
+            <line x1={pad.x} y1={ys(threshold.value)} x2={VB_W - pad.x} y2={ys(threshold.value)}
                   stroke={T.accent} strokeWidth={1} strokeDasharray="4 3" opacity={0.55} />
-            {threshold.label && (
-              <text x={VB_W - PAD.x + 3} y={ys(threshold.value) + 3}
+            {threshold.label && !bare && (
+              <text x={VB_W - pad.x + 3} y={ys(threshold.value) + 3}
                     fill={T.muted} fontSize={7}>{threshold.label}</text>
             )}
           </g>
@@ -108,9 +115,9 @@ export function TrendChart({
             where there is room to say what it is the mean OF. */}
         {mean != null && (
           <g>
-            <line x1={PAD.x} y1={ys(mean)} x2={VB_W - PAD.x} y2={ys(mean)}
+            <line x1={pad.x} y1={ys(mean)} x2={VB_W - pad.x} y2={ys(mean)}
                   stroke={T.border} strokeWidth={1} strokeDasharray="4 3" />
-            <text x={VB_W - PAD.x + 3} y={ys(mean) - 7} fill={T.muted} fontSize={7}>mean</text>
+            <text x={VB_W - pad.x + 3} y={ys(mean) - 7} fill={T.muted} fontSize={7}>mean</text>
           </g>
         )}
 
@@ -140,17 +147,21 @@ export function TrendChart({
           </circle>
         )}
 
-        {/* Latest point + its value. */}
-        <circle cx={xs(primary.values.length - 1)} cy={ys(lastVal)} r={3.2} fill={lastCol} />
-        <text x={xs(primary.values.length - 1) + 6} y={ys(lastVal) + 3.5}
-              fill={lastCol} fontSize={9} fontWeight={700} fontFamily={FONT_MONO}>
-          {format(lastVal)}
-        </text>
+        {/* Latest point. Its value is spelled out beside the line in the full
+            chart; in a tile the MetricCard above already carries the number. */}
+        <circle cx={xs(primary.values.length - 1)} cy={ys(lastVal)}
+                r={bare ? 2.2 : 3.2} fill={lastCol} />
+        {!bare && (
+          <text x={xs(primary.values.length - 1) + 6} y={ys(lastVal) + 3.5}
+                fill={lastCol} fontSize={9} fontWeight={700} fontFamily={FONT_MONO}>
+            {format(lastVal)}
+          </text>
+        )}
 
         {/* Baseline + x labels. */}
-        <line x1={PAD.x} y1={PAD.y + iH} x2={VB_W - PAD.x} y2={PAD.y + iH} stroke={T.border} />
-        {xLabels.slice(0, 3).map((label, i, arr) => (
-          <text key={label + i} x={PAD.x + (arr.length === 1 ? 0 : (i / (arr.length - 1)) * iW)}
+        {!bare && <line x1={pad.x} y1={pad.y + iH} x2={VB_W - pad.x} y2={pad.y + iH} stroke={T.border} />}
+        {!bare && xLabels.slice(0, 3).map((label, i, arr) => (
+          <text key={label + i} x={pad.x + (arr.length === 1 ? 0 : (i / (arr.length - 1)) * iW)}
                 y={height - 4} fill={T.muted} fontSize={8}
                 textAnchor={i === 0 ? "start" : i === arr.length - 1 ? "end" : "middle"}
                 fontFamily={FONT_MONO}>

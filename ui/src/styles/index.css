@@ -184,20 +184,6 @@ select:focus-visible { outline-offset: 1px; }
   box-shadow: var(--card-shadow-hover);
 }
 
-/* ── Cognition dashboard: the cell IS the card ──────────────────
-   Flatten any lux-card nested inside a dashboard cell so we never get
-   card-in-card nesting (or nested gold hover borders). Inner panels keep
-   their padding/content but lose the card chrome. */
-.cog-cell-body .lux-card {
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  transition: none;
-}
-.cog-cell-body .lux-card::after { content: none; }
-.cog-cell-body .lux-card-i:hover { transform: none; }
-
 /* Interactive variant — discrete "objects" (stat tiles) earn a calm lift.
    Containers stay still; gold glow stays a whisper, per the grayscale rule. */
 .lux-card-i {
