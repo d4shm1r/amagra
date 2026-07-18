@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
 import { T, FONT_MONO } from "@/styles/theme";
-import { ObsPanel, MetricCard, RefreshButton, EmptyState, hScore, PageHeader } from "@/components/ui";
+import { ObsPanel, MetricCard, EmptyState, hScore, TrendChart, Notice } from "@/components/ui";
+import { usePoll } from "@/lib/usePoll";
 
-import { API } from "@/lib/api";
+// ── Risk Observatory (Diagnostics section) ────────────────────────
+// Section contract: content only — the host owns the header and refresh.
 
 const LEVEL_COLOR = { none: T.success, light: T.warn, full: T.error };
 const LEVEL_LABEL = { none: "None", light: "Light", full: "Full" };
+const LEVEL_TONE  = { none: "success", light: "warn", full: "error" };
 
 // ── Reflect-level distribution bar ───────────────────────────
 function LevelDistribution({ byLevel, total }) {
@@ -42,54 +44,31 @@ function LevelDistribution({ byLevel, total }) {
   );
 }
 
-// ── Risk score sparkline (SVG) ────────────────────────────────
-function RiskSparkline({ history }) {
+// ── Risk score timeline ───────────────────────────────────────
+// The shared TrendChart draws the line, the mean and the axis; this only
+// decides MEANING — each sample is dotted in its reflect-level tone, so the
+// chart shows both how risky recent work was and what the gate did about it.
+function RiskTimeline({ history }) {
   if (!history?.length) return <EmptyState msg="No risk history." />;
 
-  const vals  = history.map(r => r.total_risk ?? 0);
-  const W = 560, H = 80, PX = 8, PY = 8;
-  const iW = W - 2 * PX, iH = H - 2 * PY;
-  const xs = i => PX + (i / Math.max(1, vals.length - 1)) * iW;
-  const ys = v => PY + (1 - Math.max(0, Math.min(1, v))) * iH;
-  const pts = vals.map((v, i) => `${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(" ");
-
-  // Color segments by reflect level
-  const levelPath = (level) => {
-    const filtered = history.map((r, i) => ({ ...r, i })).filter(r => r.reflect_level === level);
-    if (!filtered.length) return null;
-    return filtered.map(r => (
-      <circle key={r.i} cx={xs(r.i)} cy={ys(r.total_risk ?? 0)}
-        r={3} fill={LEVEL_COLOR[level]} opacity={0.8} />
-    ));
-  };
-
+  const vals = history.map(r => r.total_risk ?? 0);
   const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
-  const meanY = ys(mean);
 
   return (
-    <div>
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block", overflow: "visible" }}>
-        {/* Mean line */}
-        <line x1={PX} y1={meanY} x2={W - PX} y2={meanY}
-          stroke={T.border} strokeWidth={1} strokeDasharray="4 3" />
-        {/* Risk line */}
-        <polyline points={pts} fill="none" stroke={T.warn} strokeWidth={1.5}
-          strokeLinejoin="round" strokeLinecap="round" opacity={0.6} />
-        {/* Dots colored by level */}
-        {["none", "light", "full"].map(l => levelPath(l))}
-        {/* Mean label */}
-        <text x={W - PX + 2} y={meanY + 4} fill={T.muted} fontSize={9}>
-          {mean.toFixed(2)}
-        </text>
-      </svg>
-      <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
-        {["none", "light", "full"].map(l => (
-          <span key={l} style={{ fontSize: 10, color: T.muted }}>
-            <span style={{ color: LEVEL_COLOR[l] }}>●</span> {l}
-          </span>
-        ))}
-      </div>
-    </div>
+    <TrendChart
+      height={110}
+      domain={[0, 1]}
+      grid={[0.25, 0.5, 0.75]}
+      mean={mean}
+      empty="No risk history."
+      series={[{
+        label: "total risk",
+        values: vals,
+        tone: "warn",
+        emphasis: true,
+        dots: history.map((r, i) => ({ index: i, tone: LEVEL_TONE[r.reflect_level] || "muted" })),
+      }]}
+    />
   );
 }
 
@@ -153,57 +132,23 @@ function RecentRiskRows({ history }) {
 }
 
 // ── Main component ────────────────────────────────────────────
-export default function RiskObservatoryPanel({ embedded = false } = {}) {
-  const [stats,   setStats]   = useState(null);
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
+export default function RiskObservatoryPanel() {
+  const { data: stats, error, loading } = usePoll("/risk/stats", { interval: 30_000 });
+  const { data: histRaw }               = usePoll("/risk/history?n=100", { interval: 30_000 });
 
-  const load = () => {
-    setLoading(true);
-    Promise.all([
-      fetch(`${API}/risk/stats`).then(r => r.json()).catch(() => null),
-      fetch(`${API}/risk/history?n=100`).then(r => r.json()).catch(() => []),
-    ]).then(([s, h]) => {
-      setStats(s);
-      setHistory(Array.isArray(h) ? h.reverse() : []);
-      setError(null);
-    }).catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { load(); const id = setInterval(load, 30_000); return () => clearInterval(id); }, []);
+  // The API returns newest-first; the chart reads left-to-right in time.
+  const history = Array.isArray(histRaw) ? [...histRaw].reverse() : [];
 
   const reflectPct = stats
     ? Math.round(((stats.by_level?.light || 0) + (stats.by_level?.full || 0)) * 100)
     : null;
 
   return (
-    // A panel never decides its own width: standalone it fills the shell's
-    // <Column>, embedded it fills its dashboard cell. It used to self-center at
-    // 860px, which quietly overrode LAYOUT.content inside Diagnostics.
-    <div style={{ padding: embedded ? "10px 14px 14px" : 0 }}>
-
-      {/* Header (suppressed when embedded — the dashboard cell carries the title) */}
-      {!embedded && (
-      <PageHeader
-        sticky={false}
-        title="Risk Observatory"
-        subtitle="Reflection gate signals · risk score distribution · per-action breakdown"
-      >
-        <RefreshButton onClick={load} />
-      </PageHeader>
-      )}
-
-      {error && (
-        <div style={{ color: T.error, background: T.surface, border: `1px solid ${T.border}`,
-          borderRadius: 10, padding: "8px 14px", marginBottom: 14, fontSize: 12 }}>
-          Backend unavailable: {error}
-        </div>
-      )}
+    <div>
+      {error && <Notice tone="error">Backend unavailable: {error}</Notice>}
 
       {loading && !stats ? (
-        <div style={{ color: T.muted, fontSize: 12, padding: 40, textAlign: "center" }}>Loading…</div>
+        <EmptyState msg="Loading…" />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
@@ -240,9 +185,10 @@ export default function RiskObservatoryPanel({ embedded = false } = {}) {
             <LevelDistribution byLevel={stats?.by_level} total={stats?.n} />
           </ObsPanel>
 
-          {/* Risk trend sparkline */}
-          <ObsPanel title="Risk Score Timeline" icon="△">
-            <RiskSparkline history={history} />
+          {/* Risk trend */}
+          <ObsPanel title="Risk Score Timeline" icon="△"
+            hint="each sample dotted in the level the gate chose">
+            <RiskTimeline history={history} />
           </ObsPanel>
 
           {/* By-action breakdown */}

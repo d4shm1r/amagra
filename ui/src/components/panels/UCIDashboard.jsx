@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
 import { T, FONT_MONO } from "@/styles/theme";
-import { ObsPanel, EventRow, RefreshButton, EmptyState, hScore, PageHeader } from "@/components/ui";
+import { ObsPanel, EventRow, EmptyState, hScore, TrendChart, Notice } from "@/components/ui";
+import { usePoll } from "@/lib/usePoll";
 
-import { API } from "@/lib/api";
+// ── Cognitive Index (Diagnostics section) ─────────────────────────
+// Section contract: content only — the host owns the header and refresh.
+
 const BASELINE_HUCI = 75.1;   // h_UCI before Phase 37 fixes
 
 // ── System health strip ────────────────────────────────────────
@@ -47,7 +49,10 @@ function HealthStrip({ health }) {
   );
 }
 
-// ── UCI trajectory + curvature sparkline ──────────────────────
+// ── UCI trajectory + curvature ────────────────────────────────
+// The shared TrendChart owns the drawing; this owns the reading of it — a
+// fixed 0–100 domain so the slope stays honest across refreshes, the 80/60
+// Healthy/Nominal grid, and a ring on the sharpest Δ² bend.
 function UCITrajectory({ traj }) {
   const hist = traj?.history || [];
   if (hist.length < 2) {
@@ -56,40 +61,27 @@ function UCITrajectory({ traj }) {
 
   const vals = hist.map(h => h.uci);
   const curv = traj?.curvature?.curvature || [];   // aligns to interior points
-  const W = 560, H = 90, PX = 8, PY = 10;
-  const iW = W - 2 * PX, iH = H - 2 * PY;
-  // Fixed 0–100 UCI scale so the slope is honest across refreshes.
-  const xs = i => PX + (i / Math.max(1, vals.length - 1)) * iW;
-  const ys = v => PY + (1 - Math.max(0, Math.min(100, v)) / 100) * iH;
-  const pts = vals.map((v, i) => `${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(" ");
 
   const last  = vals[vals.length - 1];
-  const first = vals[0];
-  const trend = last - first;
+  const trend = last - vals[0];
 
-  // Mark the sharpest bend (peak |Δ²|). curvature[k] corresponds to vals[k+1].
+  // Peak |Δ²|. curvature[k] describes vals[k+1], so the index shifts by one.
   let peakIdx = -1, peakVal = 0;
   curv.forEach((c, k) => { if (Math.abs(c) > Math.abs(peakVal)) { peakVal = c; peakIdx = k + 1; } });
 
   return (
     <div>
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block", overflow: "visible" }}>
-        {/* 80 / 60 reference grid (Healthy / Nominal thresholds) */}
-        {[80, 60].map(g => (
-          <line key={g} x1={PX} y1={ys(g)} x2={W - PX} y2={ys(g)}
-            stroke={T.border} strokeWidth={1} strokeDasharray="3 4" />
-        ))}
-        {/* UCI line */}
-        <polyline points={pts} fill="none" stroke={hScore(last)} strokeWidth={1.8}
-          strokeLinejoin="round" strokeLinecap="round" />
-        {/* Sharpest-bend marker */}
-        {peakIdx >= 0 && Math.abs(peakVal) > 1 && (
-          <circle cx={xs(peakIdx)} cy={ys(vals[peakIdx])} r={3.5}
-            fill="none" stroke={Math.abs(peakVal) > 2 ? T.error : T.warn} strokeWidth={1.5} />
-        )}
-        {/* Latest point */}
-        <circle cx={xs(vals.length - 1)} cy={ys(last)} r={3} fill={hScore(last)} />
-      </svg>
+      <TrendChart
+        height={110}
+        domain={[0, 100]}
+        grid={[60, 80]}
+        format={v => v.toFixed(0)}
+        series={[{ label: "h_UCI", values: vals, tone: hScore(last), emphasis: true }]}
+        marker={peakIdx >= 0 && Math.abs(peakVal) > 1
+          ? { index: peakIdx, tone: Math.abs(peakVal) > 2 ? "error" : "warn",
+              title: `Sharpest bend: Δ² = ${peakVal.toFixed(2)} UCI pts` }
+          : null}
+      />
       <div style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 10, color: T.muted, flexWrap: "wrap" }}>
         <span>{vals.length} samples</span>
         <span>range <span style={{ fontFamily: FONT_MONO }}>{Math.min(...vals).toFixed(1)}–{Math.max(...vals).toFixed(1)}</span></span>
@@ -122,23 +114,56 @@ function CurvatureBadge({ curvature }) {
 }
 
 // ── Routing-accuracy source badge (measured vs assumed) ───────
+// How a number came to exist. Three states, and the badge says which one it
+// actually is rather than collapsing them into measured/not: a `proxy` is a
+// stand-in the system computed, an `assumed` is a static snapshot nobody
+// re-measured. Reporting a proxy as "assumed" understates it, and reporting it
+// as measured would be a lie — this surface's whole claim is that it shows its
+// own uncertainty honestly.
+const SOURCE_META = {
+  measured: { tone: T.success, hint: "Measured live from the most recent run." },
+  proxy:    { tone: T.warn,    hint: "Derived from a stand-in signal, not measured directly." },
+  assumed:  { tone: T.muted,   hint: "Static snapshot — nothing on record re-measured this." },
+};
+
 function SourceBadge({ source }) {
   if (!source) return null;
-  const measured = source === "measured";
-  const col = measured ? T.success : T.muted;
+  const meta = SOURCE_META[source] || SOURCE_META.assumed;
   return (
     <span
-      title={measured
-        ? "Routing accuracy measured live from the most recent agent_arena run."
-        : "No agent_arena run on record — showing the static ablation snapshot, not a live measurement."}
+      title={meta.hint}
       style={{
         fontSize: 8, fontWeight: 700, fontFamily: FONT_MONO, letterSpacing: 0.4,
-        color: col, background: `${col}14`, border: `1px solid ${col}40`,
+        color: meta.tone, background: `${meta.tone}14`, border: `1px solid ${meta.tone}40`,
         borderRadius: 3, padding: "0 4px", textTransform: "uppercase",
       }}>
-      {measured ? "measured" : "assumed"}
+      {source}
     </span>
   );
+}
+
+// ── Layer component formatting ────────────────────────────────
+// A layer mixes three kinds of number and they cannot be rendered by one rule.
+
+// Counts, not percentages. "342 completed tasks" rendered as "342.00" reads
+// like a score that overflowed its scale.
+const COUNT_KEY = /(_tasks|_sessions|_count)$/;
+
+// Metrics where LOW is good. Everything else in a layer is "higher is better",
+// so the shared score coloring works — but abort_rate 0.0, a perfect result,
+// came out red, which is the panel reporting success as failure.
+const INVERTED_KEY = /^(abort_rate)$/;
+
+function fmtComponent(k, v) {
+  if (typeof v !== "number") return String(v ?? "—");
+  if (COUNT_KEY.test(k) || v > 100) return v.toLocaleString();
+  return `${v.toFixed(1)}%`;
+}
+
+function componentTone(k, v) {
+  if (typeof v !== "number") return T.text;
+  if (COUNT_KEY.test(k) || v > 100) return T.text;   // a count has no health
+  return hScore(INVERTED_KEY.test(k) ? 100 - v : v);
 }
 
 // ── Layer detail grid ─────────────────────────────────────────
@@ -147,9 +172,21 @@ function LayerDetail({ name, layer }) {
   const comps = { ...layer };
   delete comps.score;
   delete comps.weight;
-  // Rendered inline on the routing_accuracy card, not as its own cell.
-  const routingSource = comps.routing_accuracy_source;
-  delete comps.routing_accuracy_source;
+
+  // Every metric ships a sibling `<metric>_source` telling you whether it was
+  // measured or assumed. Those are ANNOTATIONS on their metric, not metrics —
+  // pull them all out and render each as a badge on the card it describes.
+  // This used to special-case `routing_accuracy_source` alone, which was
+  // invisibly fine only because the whole grid was rendering empty; with the
+  // layer lookup fixed, the other five would have shown up as their own cells
+  // reading "measured".
+  const sources = {};
+  for (const k of Object.keys(comps)) {
+    if (k.endsWith("_source")) {
+      sources[k.slice(0, -"_source".length)] = comps[k];
+      delete comps[k];
+    }
+  }
 
   return (
     <div style={{ marginBottom: 16 }}>
@@ -178,16 +215,13 @@ function LayerDetail({ name, layer }) {
               <div style={{ fontSize: 9, color: T.muted, textTransform: "uppercase", letterSpacing: 0.8 }}>
                 {k.replace(/_/g, " ")}
               </div>
-              {k === "routing_accuracy" && <SourceBadge source={routingSource} />}
+              {sources[k] && <SourceBadge source={sources[k]} />}
             </div>
             <div style={{
               fontSize: 13, fontWeight: 700, fontFamily: FONT_MONO,
-              color: typeof v === "number" && v <= 100 ? hScore(v) : T.text,
-              marginTop: 2,
+              color: componentTone(k, v), marginTop: 2,
             }}>
-              {typeof v === "number"
-                ? (v > 1 && v <= 100 ? v.toFixed(1) + "%" : v.toFixed(2))
-                : String(v ?? "—")}
+              {fmtComponent(k, v)}
             </div>
           </div>
         ))}
@@ -327,40 +361,28 @@ function MiniEventFeed({ events }) {
 }
 
 // ── Main component ────────────────────────────────────────────
-export default function UCIDashboard({ embedded = false } = {}) {
-  const [uci,     setUCI]     = useState(null);
-  const [cos,     setCos]     = useState(null);
-  const [events,  setEvents]  = useState([]);
-  const [health,  setHealth]  = useState(null);
-  const [transp,  setTransp]  = useState(null);
-  const [traj,    setTraj]    = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
+export default function UCIDashboard() {
+  const { data: uci, error, loading } = usePoll("/cos/uci/hierarchical", { interval: 25_000 });
+  const { data: cos }    = usePoll("/cos/state",               { interval: 25_000 });
+  const { data: health } = usePoll("/health",                  { interval: 25_000 });
+  const { data: transp } = usePoll("/cos/transparency",        { interval: 25_000 });
+  const { data: traj }   = usePoll("/cos/uci/trajectory?n=100",{ interval: 25_000 });
+  // Shares the Events section's subscription — same URL, one request between
+  // them. This panel used to fetch `?n=30` alongside it on a different clock,
+  // so the surface polled the event bus twice and the two feeds disagreed.
+  const { data: evData } = usePoll("/cos/events?n=200",        { interval: 25_000 });
 
-  const load = () => {
-    setLoading(true);
-    Promise.all([
-      fetch(`${API}/cos/uci/hierarchical`).then(r => r.json()).catch(() => null),
-      fetch(`${API}/cos/state`).then(r => r.json()).catch(() => null),
-      fetch(`${API}/cos/events?n=30`).then(r => r.json()).catch(() => null),
-      fetch(`${API}/health`).then(r => r.json()).catch(() => null),
-      fetch(`${API}/cos/transparency`).then(r => r.json()).catch(() => null),
-      fetch(`${API}/cos/uci/trajectory?n=100`).then(r => r.json()).catch(() => null),
-    ]).then(([u, s, ev, h, tp, tj]) => {
-      setUCI(u);
-      setCos(s);
-      setEvents(ev?.events || []);
-      setHealth(h);
-      setTransp(tp);
-      setTraj(tj);
-      setError(null);
-    }).catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { load(); const id = setInterval(load, 25_000); return () => clearInterval(id); }, []);
-
-  const layers = uci?.layers || {};
+  const events = evData?.events || [];
+  // GET /cos/uci/hierarchical keys its layers in lower case ("reliability"),
+  // and this panel had always looked them up in Title Case ("Reliability") —
+  // so every lookup returned undefined and the four summary bars and the whole
+  // Layer Components panel rendered empty, under a hero number that worked
+  // fine. Silent, because a missing key is not an error: it just draws "—".
+  // Match on the lower-cased key and keep Title Case for display.
+  const layers = Object.fromEntries(
+    Object.entries(uci?.layers || {}).map(([k, v]) => [k.toLowerCase(), v])
+  );
+  const layer = (name) => layers[name.toLowerCase()];
   const hUCI   = uci?.h_uci;
   const legacy = uci?.legacy_uci;
   const risk   = cos?.risk;
@@ -368,28 +390,11 @@ export default function UCIDashboard({ embedded = false } = {}) {
   const delta = hUCI != null ? hUCI - BASELINE_HUCI : null;
 
   return (
-    <div style={{ padding: embedded ? "10px 14px 14px" : 0 }}>
-
-      {/* Header (suppressed when embedded — the dashboard cell carries the title) */}
-      {!embedded && (
-      <PageHeader
-        sticky={false}
-        title="Cognitive Index"
-        subtitle="Unified Cognitive Index · 30% Reliability · 30% Intelligence · 25% Adaptation · 15% Productivity"
-      >
-        <RefreshButton onClick={load} />
-      </PageHeader>
-      )}
-
+    <div>
       {/* System health strip */}
       <HealthStrip health={health} />
 
-      {error && (
-        <div style={{ color: T.error, background: T.surface, border: `1px solid ${T.border}`,
-          borderRadius: 5, padding: "8px 14px", marginBottom: 16, fontSize: 12 }}>
-          Backend unavailable: {error}
-        </div>
-      )}
+      {error && <Notice tone="error">Backend unavailable: {error}</Notice>}
 
       {/* Main layout: left = scores, right = live signal */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 16, alignItems: "start" }}>
@@ -445,13 +450,13 @@ export default function UCIDashboard({ embedded = false } = {}) {
                     <div style={{ fontSize: 11, color: T.muted, minWidth: 88 }}>{name}</div>
                     <div style={{ flex: 1, background: T.surface2, borderRadius: 2, height: 5 }}>
                       <div style={{
-                        width: `${Math.min(100, layers[name]?.score ?? 0)}%`, height: "100%",
-                        background: hScore(layers[name]?.score), borderRadius: 2,
+                        width: `${Math.min(100, layer(name)?.score ?? 0)}%`, height: "100%",
+                        background: hScore(layer(name)?.score), borderRadius: 2,
                         transition: "width 0.5s ease",
                       }} />
                     </div>
-                    <div style={{ fontSize: 10, fontFamily: FONT_MONO, color: hScore(layers[name]?.score), minWidth: 34, textAlign: "right" }}>
-                      {layers[name]?.score?.toFixed(1) ?? "—"}
+                    <div style={{ fontSize: 10, fontFamily: FONT_MONO, color: hScore(layer(name)?.score), minWidth: 34, textAlign: "right" }}>
+                      {layer(name)?.score?.toFixed(1) ?? "—"}
                     </div>
                   </div>
                 ))}
@@ -470,10 +475,10 @@ export default function UCIDashboard({ embedded = false } = {}) {
               <div style={{ color: T.muted, fontSize: 12 }}>Loading…</div>
             ) : (
               <>
-                <LayerDetail name="Reliability"  layer={layers.Reliability} />
-                <LayerDetail name="Intelligence" layer={layers.Intelligence} />
-                <LayerDetail name="Adaptation"   layer={layers.Adaptation} />
-                <LayerDetail name="Productivity" layer={layers.Productivity} />
+                <LayerDetail name="Reliability"  layer={layer("Reliability")} />
+                <LayerDetail name="Intelligence" layer={layer("Intelligence")} />
+                <LayerDetail name="Adaptation"   layer={layer("Adaptation")} />
+                <LayerDetail name="Productivity" layer={layer("Productivity")} />
               </>
             )}
           </ObsPanel>

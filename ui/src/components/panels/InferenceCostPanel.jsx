@@ -1,37 +1,23 @@
-import { useState, useEffect, useCallback } from "react";
-import {
-  PageHeader, RefreshButton, EmptyState, StatStrip, Stack, Divider, Small, Pad,
-} from "@/components/ui";
-
-import { API } from "@/lib/api";
+import { EmptyState, StatStrip, Stack, Divider, Small } from "@/components/ui";
+import { usePoll } from "@/lib/usePoll";
 
 // ── Inference Cost (v1.5 Hybrid Inference) ───────────────────────────────────
 // The Productivity cost axis: how much recent reasoning cost in cloud spend, and
 // how often the hybrid policy escalated past the local default. In the default
 // local-only posture this reads a truthful "$0.00 — fully local" — escalation is
 // opt-in behind AMAGRA_HYBRID.
+//
+// Section contract: content only — the host owns the header and refresh.
 
-export default function InferenceCostPanel({ embedded = false }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
+export default function InferenceCostPanel() {
+  const { data, loading } = usePoll("/runs/cost", { interval: 60_000 });
 
-  const load = useCallback(() => {
-    setLoading(true);
-    fetch(`${API}/runs/cost`)
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => setData(null))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  const usd = (n) => `$${(n ?? 0).toFixed(n >= 1 ? 2 : 4)}`;
+  const usd   = (n) => `$${(n ?? 0).toFixed(n >= 1 ? 2 : 4)}`;
   const local = data && data.escalated_runs === 0;
 
-  const body = !data ? (
-    <EmptyState msg={loading ? "Loading…" : "No run data yet"} />
-  ) : (
+  if (!data) return <EmptyState msg={loading ? "Loading…" : "No run data yet"} />;
+
+  return (
     <Stack gap="md">
       <StatStrip items={[
         { label: "Total spend", value: usd(data.total_cost_usd), sub: `last ${data.runs} runs`, tone: local ? "success" : "gold" },
@@ -46,18 +32,5 @@ export default function InferenceCostPanel({ embedded = false }) {
           : "Hybrid inference active — hard or low-confidence routes escalated to a cloud model."}
       </Small>
     </Stack>
-  );
-
-  // Embedded in the Cognition dashboard cell, which owns no padding — inset it.
-  if (embedded) return <Pad>{body}</Pad>;
-
-  return (
-    <div>
-      <PageHeader title="Inference Cost"
-                  subtitle="Cloud spend and escalation rate across recent runs." gold>
-        <RefreshButton onClick={load} loading={loading} />
-      </PageHeader>
-      {body}
-    </div>
   );
 }

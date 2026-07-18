@@ -8,6 +8,7 @@
 // Each is self-contained (owns its own fetches) so it can drop into any tab.
 import { useState, useEffect, useCallback } from "react";
 import { API } from "@/lib/api";
+import { usePoll } from "@/lib/usePoll";
 import { T } from "@/styles/theme";
 import { Section } from "@/components/ui";
 
@@ -135,12 +136,8 @@ function buildFeedbackStats(entries) {
 }
 
 export function FeedbackLoopPanel() {
-  const [feedback, setFeedback] = useState([]);
-
-  useEffect(() => {
-    fetch(`${API}/feedback?limit=500`).then(r => r.json())
-      .then(d => setFeedback(Array.isArray(d) ? d : [])).catch(() => {});
-  }, []);
+  const { data } = usePoll("/feedback?limit=500", { interval: 60_000 });
+  const feedback = Array.isArray(data) ? data : [];
 
   const total     = feedback.length;
   const totalUp   = feedback.filter(f => f.rating === 1).length;

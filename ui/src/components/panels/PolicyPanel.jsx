@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
 import { T, SEM } from "@/styles/theme";
-import { PageHeader, MetricCard, ObsPanel, RefreshButton } from "@/components/ui";
+import { MetricCard, ObsPanel } from "@/components/ui";
+import { usePoll } from "@/lib/usePoll";
 
-import { API } from "@/lib/api";
+// ── Policy (Diagnostics section) ──────────────────────────────────
+// Section contract: content only — the host owns the header and refresh.
 
 // ── Colour helpers ────────────────────────────────────────────
 function rateColor(rate, lo, hi) {
@@ -89,20 +90,7 @@ function entropy(buckets) {
 
 // ── Main component ────────────────────────────────────────────
 export default function PolicyPanel() {
-  const [data,    setData]    = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
-
-  const load = useCallback(() => {
-    setLoading(true);
-    fetch(`${API}/policy/health?limit=200`)
-      .then(r => r.json())
-      .then(d => { setData(d); setError(null); })
-      .catch(() => setError("API unreachable"))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => { load(); const id = setInterval(load, 30000); return () => clearInterval(id); }, [load]);
+  const { data, loading, error } = usePoll("/policy/health?limit=200", { interval: 30_000 });
 
   if (loading && !data) {
     return <div style={{ padding: 24, color: T.muted }}>Loading policy metrics…</div>;
@@ -110,7 +98,12 @@ export default function PolicyPanel() {
   if (error) {
     return <div style={{ padding: 24, color: T.error }}>{error}</div>;
   }
-  if (!data || data.no_data) {
+  // `no_data` is the documented empty signal, but the guard cannot rest on it
+  // alone: any 200 that omits the metric fields (a partial payload, an older
+  // backend, a gate that logged nothing yet) used to fall through to
+  // `mean_uplift.toFixed(3)` and throw — which unmounts the whole Diagnostics
+  // tab, not just this section. Missing headline numbers IS no data.
+  if (!data || data.no_data || data.total == null || data.mean_uplift == null) {
     return (
       <div style={{ padding: 24, color: T.muted, maxWidth: 600 }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: T.mutedLt, marginBottom: 8 }}>
@@ -148,17 +141,7 @@ export default function PolicyPanel() {
     : "Retry earning its cost";
 
   return (
-    <div style={{ animation: "fadeIn .2s" }}>
-
-      {/* ── Header ── */}
-      <PageHeader
-        sticky={false}
-        title="Policy"
-        subtitle="Critic-gate health · acceptance, uplift, calibration, marginal value"
-      >
-        <RefreshButton onClick={load} />
-      </PageHeader>
-
+    <div>
       {/* ── Headline row ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 20 }}>
         <MetricCard label="Acceptance Rate" mono
@@ -379,15 +362,6 @@ export default function PolicyPanel() {
             </>
           )}
         </Panel>
-      </div>
-
-      {/* ── Refresh hint ── */}
-      <div style={{ marginTop: 14, textAlign: "right", fontSize: 10, color: T.muted }}>
-        Auto-refresh every 30s ·{" "}
-        <button onClick={load} style={{ background: "none", border: "none", color: SEM.teal,
-          cursor: "pointer", fontSize: 10, fontFamily: "inherit", padding: 0 }}>
-          refresh now
-        </button>
       </div>
     </div>
   );

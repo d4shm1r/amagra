@@ -1,10 +1,51 @@
 // Stat.jsx — how the app shows a number.
 //
+// HeroStat    — THE number a page is about, at hero scale
 // StatStrip   — headline numbers as one hairline-divided row (preferred)
 // MetricCard  — a single stat as its own small card
 // ScoreBar    — a 0–100 score with a bar, colored by health
-import { T, TYPE, DUR } from "@/styles/theme";
+import { T, TYPE, FONT_MONO, DUR } from "@/styles/theme";
 import { toneColor, scoreTone } from "./tone";
+
+/** The one number a page is about — the health figure at the top of Dashboard
+ *  and Coherence. Big, monospaced (so digits don't jitter as it refreshes),
+ *  with its trend arrow inline and status badges pushed to the right.
+ *
+ *  Two panels had grown their own 52px and 56px hero blocks with different
+ *  weights and label placement, which is why the surface had two competing
+ *  "main numbers" that didn't even look like siblings. This is that block,
+ *  once — so a second hero is a prop, not a copy. */
+export function HeroStat({ value, label, tone = "default", trend, trendTone = "muted", badges, children }) {
+  const color = toneColor(tone);
+  return (
+    <div className="lux-card" style={{ padding: "22px 24px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 20, flexWrap: "wrap" }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{
+            fontSize: 52, lineHeight: 1, fontWeight: 700, color,
+            fontFamily: FONT_MONO, letterSpacing: "-0.03em",
+            fontVariantNumeric: "tabular-nums",
+          }}>
+            {value ?? "—"}
+            {trend && (
+              <span style={{ fontSize: 26, marginLeft: 10, color: toneColor(trendTone) }}>{trend}</span>
+            )}
+          </div>
+          {label && <div style={{ ...TYPE.caption, color: T.muted, marginTop: 8 }}>{label}</div>}
+        </div>
+        {badges && (
+          <div style={{
+            marginLeft: "auto", display: "flex", flexDirection: "column",
+            alignItems: "flex-end", gap: 8,
+          }}>
+            {badges}
+          </div>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
 
 /** Headline numbers as one hairline-divided row, not floating mini-cards.
  *  Items: { label, value, sub?, tone? }. Wraps cleanly — every cell carries a

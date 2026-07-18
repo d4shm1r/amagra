@@ -30,11 +30,11 @@ function Cell({ title, hint, children }) {
         }}>{title}</span>
         {hint && <span style={{ fontSize: 10, color: T.muted, letterSpacing: "0.02em" }}>{hint}</span>}
       </div>
-      {/* The embedded tab components carry their own padding/headers; clip and
-          scroll within the cell so one busy panel can't stretch the grid. The
-          cog-cell-body class flattens any nested lux-cards so the cell is the
-          ONLY card — content inside reads flat, no card-in-card nesting. */}
-      <div className="cog-cell-body" style={{ flex: 1, overflow: "auto", minHeight: 0 }}>
+      {/* Sections render content only (no header of their own) and own no
+          padding, so the cell insets them. It clips and scrolls so one busy
+          panel can't stretch the grid, and cog-cell-body flattens any nested
+          lux-card so the cell is the ONLY card — no card-in-card nesting. */}
+      <div className="cog-cell-body" style={{ flex: 1, overflow: "auto", minHeight: 0, padding: "12px 16px 16px" }}>
         {children}
       </div>
     </div>
@@ -55,11 +55,11 @@ export default function CognitionView() {
         gap: 16,
         alignItems: "stretch",
       }}>
-        <Cell title="Intelligence" hint="UCI"><UCIDashboard embedded /></Cell>
-        <Cell title="Risk" hint="Observatory"><RiskObservatoryPanel embedded /></Cell>
-        <Cell title="Events" hint="Live"><EventLogPanel embedded /></Cell>
-        <Cell title="Plan" hint="Active graph"><PlanGraphPanel embedded /></Cell>
-        <Cell title="Inference Cost" hint="Productivity"><InferenceCostPanel embedded /></Cell>
+        <Cell title="Intelligence" hint="UCI"><UCIDashboard /></Cell>
+        <Cell title="Risk" hint="Observatory"><RiskObservatoryPanel /></Cell>
+        <Cell title="Events" hint="Live"><EventLogPanel /></Cell>
+        <Cell title="Plan" hint="Active graph"><PlanGraphPanel /></Cell>
+        <Cell title="Inference Cost" hint="Productivity"><InferenceCostPanel /></Cell>
       </div>
     </div>
   );
