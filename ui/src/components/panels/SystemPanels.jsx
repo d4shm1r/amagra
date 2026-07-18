@@ -1,28 +1,19 @@
 // ── SystemPanels ──────────────────────────────────────────────────────────────
 // Live panels rehomed from the retired Progress tab (v1.7.1 menu declutter).
-//   • MemoryAdminPanel — prune / consolidate / export actions + the "at-risk"
-//     list. Lives inside the Memory surface (MemoryBrowserTab already renders the
-//     stats display, so this adds only the *actions* it was missing).
-//   • FeedbackLoopPanel — 👍/👎 rating rollup by agent. Lives as a Diagnostics
-//     section under Cognition.
+//   • MemoryAdminPanel — export / consolidate / auto-resolve / prune actions and
+//     the "at-risk" list. Lives inside the Memory surface (MemoryBrowserTab
+//     already renders the stats, so this adds only the actions it was missing).
+//   • FeedbackLoopPanel — thumbs rollup by agent. A Diagnostics section.
 // Each is self-contained (owns its own fetches) so it can drop into any tab.
 import { useState, useEffect, useCallback } from "react";
 import { API } from "@/lib/api";
 import { usePoll } from "@/lib/usePoll";
-import { T } from "@/styles/theme";
-import { Section, useConfirm } from "@/components/ui";
+import {
+  Section, Well, Row, Stack, Spacer, Button, Notice, Disclosure,
+  StatStrip, BarRow, Micro, Small, Caption, Inline, EmptyState, useConfirm,
+} from "@/components/ui";
 
-function StatCard({ label, value, color, sub }) {
-  return (
-    <div style={{ background: T.bg, borderRadius: 4, padding: "12px 16px", border: `1px solid ${color}22` }}>
-      <div style={{ fontSize: 22, fontWeight: 800, color, fontFamily: "monospace" }}>{value}</div>
-      <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>{label}</div>
-      {sub && <div style={{ fontSize: 10, color: T.muted, marginTop: 3 }}>{sub}</div>}
-    </div>
-  );
-}
-
-// ── Memory admin: prune / consolidate / export + at-risk ──────────────────────
+// ── Memory admin: export / consolidate / auto-resolve / prune + at-risk ───────
 // `stats` is the /memory/stats object the host tab already fetched; `onChanged`
 // lets the host refresh its own view after a destructive action.
 export function MemoryAdminPanel({ stats, onChanged }) {
@@ -90,82 +81,88 @@ export function MemoryAdminPanel({ stats, onChanged }) {
   };
 
   return (
-    <Section title="Memory Health" style={{ marginBottom: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+    <Section title="Memory health">
+      <Stack gap="sm">
+        <Row gap="xs" wrap>
           {[["csv", "memories.csv"], ["json", "memories.json"], ["md", "memories.md"]].map(([fmt, fname]) => (
-            <a key={fmt} href={`${API}/memory/export.${fmt}`} download={fname} className="btn-ghost"
-              style={{ padding: "5px 14px", fontSize: 11, textDecoration: "none" }}>
+            <a key={fmt} href={`${API}/memory/export.${fmt}`} download={fname}
+               className="btn-ghost">
               {fmt.toUpperCase()}
             </a>
           ))}
-          <button onClick={runConsolidate} disabled={consolidating} className="btn-ghost"
-            style={{ padding: "5px 14px", fontSize: 11, cursor: consolidating ? "not-allowed" : "pointer" }}>
+          <Button variant="ghost" size="sm" onClick={runConsolidate} disabled={consolidating}>
             {consolidating ? "Running…" : "Consolidate"}
-          </button>
-          <button onClick={runAutoResolve} disabled={resolving} className="btn-ghost"
-            style={{ padding: "5px 14px", fontSize: 11, cursor: resolving ? "not-allowed" : "pointer" }}>
+          </Button>
+          <Button variant="ghost" size="sm" onClick={runAutoResolve} disabled={resolving}>
             {resolving ? "Resolving…" : "Auto-resolve"}
-          </button>
-          <button onClick={runPrune} disabled={pruning || prunable === 0}
-            style={{ padding: "5px 14px", borderRadius: 40, fontSize: 11, fontWeight: 700, fontFamily: "inherit", cursor: pruning || prunable === 0 ? "not-allowed" : "pointer", background: prunable > 0 ? `${T.error}14` : T.surface2, color: prunable > 0 ? T.error : T.muted, border: `1px solid ${prunable > 0 ? `${T.error}3D` : T.border}` }}>
+          </Button>
+          {/* Prune is the destructive one and reads as it: danger styling, and
+              disabled outright when there is nothing to prune. */}
+          <Button variant="danger" size="sm" onClick={runPrune} disabled={pruning || prunable === 0}>
             {pruning ? "Pruning…" : `Prune${prunable > 0 ? ` (${prunable})` : ""}`}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Row>
 
-      {consolidateResult && (
-        <div style={{ marginBottom: 10, padding: "7px 12px", borderRadius: 4, background: consolidateResult.error ? "#F9E7E1" : T.surface2, border: `1px solid ${consolidateResult.error ? "#B4231855" : T.border}`, fontSize: 12, color: consolidateResult.error ? T.error : T.mutedLt }}>
-          {consolidateResult.error ? `Error: ${consolidateResult.error}` : `Removed ${consolidateResult.removed} near-duplicates · ${consolidateResult.remaining} memories remaining`}
-        </div>
-      )}
-      {resolveResult && (
-        <div style={{ marginBottom: 10, padding: "7px 12px", borderRadius: 4, background: resolveResult.error ? "#F9E7E1" : T.surface2, border: `1px solid ${resolveResult.error ? "#B4231855" : T.border}`, fontSize: 12, color: resolveResult.error ? T.error : T.mutedLt }}>
-          {resolveResult.error
-            ? `Error: ${resolveResult.error}`
-            : `Resolved ${resolveResult.resolved} contradicting pair${resolveResult.resolved === 1 ? "" : "s"} · ${resolveResult.remaining} memories remaining${resolveResult.dry_run ? " (dry run — nothing changed)" : ""}`}
-        </div>
-      )}
-      {pruneResult && (
-        <div style={{ marginBottom: 10, padding: "7px 12px", borderRadius: 4, background: pruneResult.error ? "#F9E7E1" : "#E7F2E6", border: `1px solid ${pruneResult.error ? "#B4231855" : "#15803D33"}`, fontSize: 12, color: pruneResult.error ? "#B42318" : "#15803D" }}>
-          {pruneResult.error ? `Error: ${pruneResult.error}` : `Deleted ${pruneResult.deleted} entries · ${pruneResult.remaining} remaining`}
-        </div>
-      )}
-
-      <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => setAtRiskOpen(o => !o)}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: T.warn }}>⚠ At Risk</span>
-          <span style={{ fontSize: 11, color: T.muted }}>{atRisk.length} memories (q 0.55–0.70, used ≤ 1×)</span>
-          <span style={{ marginLeft: "auto", fontSize: 11, color: T.muted }}>{atRiskOpen ? "▲" : "▼"}</span>
-        </div>
-        {atRiskOpen && (
-          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
-            {atRisk.length === 0 ? (
-              <div style={{ fontSize: 12, color: T.muted, padding: "6px 0" }}>No at-risk memories right now.</div>
-            ) : atRisk.map(m => {
-              const q = m.quality || 0;
-              const dc = q < 0.60 ? T.error : T.warn;
-              return (
-                <div key={m.id} style={{ background: T.bg, border: `1px solid ${dc}33`, borderRadius: 7, padding: "7px 11px", display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 36, height: 4, background: T.border, borderRadius: 2, overflow: "hidden", flexShrink: 0 }}>
-                    <div style={{ width: `${Math.round(((q - 0.55) / 0.15) * 100)}%`, height: "100%", background: dc, borderRadius: 2 }} />
-                  </div>
-                  <span style={{ fontSize: 10, color: dc, fontFamily: "monospace", fontWeight: 700, minWidth: 38 }}>{q.toFixed(3)}</span>
-                  <span style={{ fontSize: 10, color: T.muted, minWidth: 30 }}>{m.agent?.replace(/_/g, " ")}</span>
-                  <span style={{ fontSize: 10, color: T.muted, minWidth: 24 }}>{m.type}</span>
-                  <span style={{ fontSize: 11, color: T.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.preview}</span>
-                  <span style={{ fontSize: 10, color: T.muted, flexShrink: 0 }}>×{m.use_count}</span>
-                </div>
-              );
-            })}
-          </div>
+        {/* Result banners. These used to be three hand-mixed tint recipes —
+            a pale red, a pale green — re-deriving by eye what Notice already
+            computes from a tone, and drifting from it in the process. */}
+        {consolidateResult && (
+          <Notice tone={consolidateResult.error ? "error" : "success"}>
+            {consolidateResult.error
+              ? `Error: ${consolidateResult.error}`
+              : `Removed ${consolidateResult.removed} near-duplicates · ${consolidateResult.remaining} memories remaining`}
+          </Notice>
         )}
-      </div>
+        {resolveResult && (
+          <Notice tone={resolveResult.error ? "error" : "success"}>
+            {resolveResult.error
+              ? `Error: ${resolveResult.error}`
+              : `Resolved ${resolveResult.resolved} contradicting pair${resolveResult.resolved === 1 ? "" : "s"} · ${resolveResult.remaining} memories remaining${resolveResult.dry_run ? " (dry run — nothing changed)" : ""}`}
+          </Notice>
+        )}
+        {pruneResult && (
+          <Notice tone={pruneResult.error ? "error" : "success"}>
+            {pruneResult.error
+              ? `Error: ${pruneResult.error}`
+              : `Deleted ${pruneResult.deleted} entries · ${pruneResult.remaining} remaining`}
+          </Notice>
+        )}
+
+        <Disclosure
+          title="At risk"
+          subtitle={`${atRisk.length} memories scoring 0.55–0.70 and recalled at most once`}
+          open={atRiskOpen}
+          onToggle={() => setAtRiskOpen(o => !o)}
+        />
+        {atRiskOpen && (
+          atRisk.length === 0
+            ? <EmptyState msg="No at-risk memories right now." />
+            : <Stack gap="xs">
+                {atRisk.map(m => {
+                  const q = m.quality || 0;
+                  return (
+                    <Well key={m.id} tone={q < 0.60 ? "error" : "warn"}>
+                      <Row gap="sm">
+                        <Inline mono weight={700} tone={q < 0.60 ? "error" : "warn"}>
+                          {q.toFixed(3)}
+                        </Inline>
+                        <Micro>{m.agent?.replace(/_/g, " ")}</Micro>
+                        <Micro>{m.type}</Micro>
+                        <Small tone="default">{m.preview}</Small>
+                        <Spacer />
+                        <Micro>×{m.use_count}</Micro>
+                      </Row>
+                    </Well>
+                  );
+                })}
+              </Stack>
+        )}
+      </Stack>
     </Section>
   );
 }
 
-// ── Feedback loop: 👍/👎 rollup by agent ──────────────────────────────────────
+// ── Feedback loop: thumbs rollup by agent ────────────────────────────────────
 function buildFeedbackStats(entries) {
   const byAgent = {};
   for (const e of entries) {
@@ -183,48 +180,50 @@ export function FeedbackLoopPanel() {
   const total     = feedback.length;
   const totalUp   = feedback.filter(f => f.rating === 1).length;
   const totalDown = feedback.filter(f => f.rating === -1).length;
-  const byAgent   = buildFeedbackStats(feedback);
-  const agentRows = Object.entries(byAgent).sort((a, b) => (b[1].up + b[1].down) - (a[1].up + a[1].down));
+  const agentRows = Object.entries(buildFeedbackStats(feedback))
+    .sort((a, b) => (b[1].up + b[1].down) - (a[1].up + a[1].down));
+
+  if (total === 0) {
+    return (
+      <Section title="Feedback loop">
+        <EmptyState msg="No ratings yet — rate any answer in Chat and the rollup starts here." />
+      </Section>
+    );
+  }
+
+  const pct = (n) => Math.round((n / total) * 100);
 
   return (
-    <Section title="Feedback Loop">
-      {total === 0 ? (
-        <div style={{ padding: "20px 0", textAlign: "center" }}>
-          <div style={{ fontSize: 28, marginBottom: 8 }}>👍 👎</div>
-          <div style={{ fontSize: 13, color: T.muted }}>No ratings yet.</div>
-          <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>
-            Use the thumbs buttons under any response in the Chat tab to start collecting feedback.
-          </div>
-        </div>
-      ) : (
-        <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 14 }}>
-            <StatCard label="Total Ratings" value={total}     color={T.accentText} />
-            <StatCard label="Positive 👍"   value={totalUp}   color="#15803D" sub={total > 0 ? `${Math.round((totalUp/total)*100)}%` : ""} />
-            <StatCard label="Negative 👎"   value={totalDown} color="#B42318" sub={total > 0 ? `${Math.round((totalDown/total)*100)}%` : ""} />
-          </div>
-          {agentRows.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              {agentRows.map(([agent, d]) => {
-                const tot = d.up + d.down;
-                const pct = tot > 0 ? Math.round((d.up / tot) * 100) : 0;
-                const barColor = pct >= 70 ? "#15803D" : pct >= 40 ? "#9A6C00" : "#B42318";
-                return (
-                  <div key={agent} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", background: T.bg, borderRadius: 4, border: `1px solid ${T.border}` }}>
-                    <span style={{ fontSize: 11, color: T.mutedLt, minWidth: 140, fontFamily: "monospace" }}>{agent.replace(/_/g," ")}</span>
-                    <div style={{ flex: 1, height: 4, background: T.border, borderRadius: 2 }}>
-                      <div style={{ width: `${pct}%`, height: 4, background: barColor, borderRadius: 2, transition: "width .3s" }} />
-                    </div>
-                    <span style={{ fontSize: 10, color: T.success, minWidth: 28, textAlign: "right" }}>👍{d.up}</span>
-                    <span style={{ fontSize: 10, color: T.error,   minWidth: 28, textAlign: "right" }}>👎{d.down}</span>
-                    <span style={{ fontSize: 10, color: barColor,  minWidth: 32, textAlign: "right", fontFamily: "monospace" }}>{pct}%</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </>
-      )}
+    <Section title="Feedback loop" hint="the human signal on answer quality">
+      <Stack gap="md">
+        <StatStrip items={[
+          { label: "Total ratings", value: total, tone: "gold" },
+          { label: "Positive", value: totalUp,   sub: `${pct(totalUp)}%`,   tone: "success" },
+          { label: "Negative", value: totalDown, sub: `${pct(totalDown)}%`, tone: "error" },
+        ]} />
+
+        {/* Per agent, share positive. The bar is the share and the number is the
+            count, so a 100% built on two ratings cannot masquerade as a strong
+            result — the emoji-labelled 👍/👎 columns this replaces made the two
+            impossible to tell apart at a glance. */}
+        <Stack gap="none">
+          {agentRows.map(([agent, d]) => {
+            const n     = d.up + d.down;
+            const share = n > 0 ? d.up / n : 0;
+            return (
+              <BarRow
+                key={agent}
+                label={agent.replace(/_/g, " ")}
+                labelWidth={140}
+                fraction={share}
+                tone={share >= 0.7 ? "success" : share >= 0.4 ? "warn" : "error"}
+                value={`${Math.round(share * 100)}% · ${n}`}
+              />
+            );
+          })}
+        </Stack>
+        <Caption>Bar shows share positive; the number is that share and the rating count.</Caption>
+      </Stack>
     </Section>
   );
 }

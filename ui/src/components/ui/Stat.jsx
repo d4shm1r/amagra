@@ -109,6 +109,56 @@ export function MetricCard({ label, value, sub, tone = "default", color, onClick
   );
 }
 
+/** A proportion split across categories, as one bar.
+ *
+ *  segments: [{ label, value (0–1), tone }]. For "94% none / 6% light / 0% full"
+ *  — a whole divided into parts, which is a different question from ScoreBar's
+ *  "how far along one thing is", and was being hand-rolled as a flex row of
+ *  divs wherever it came up. */
+export function StackedBar({ segments = [], height = 14 }) {
+  const live = segments.filter(s => s.value > 0);
+  if (!live.length) return null;
+  return (
+    <div style={{ display: "flex", height, borderRadius: 999, overflow: "hidden" }}>
+      {live.map(s => (
+        <div
+          key={s.label}
+          title={`${s.label}: ${(s.value * 100).toFixed(1)}%`}
+          style={{
+            width: `${s.value * 100}%`, background: toneColor(s.tone),
+            transition: `width ${DUR.slower} ease`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/** One labelled bar in a ranked list — label, proportional bar, raw value.
+ *
+ *  ScoreBar answers "what score is this out of 100"; this answers "how big is
+ *  this next to its siblings", where the number on the right is a COUNT, not a
+ *  percentage. Used for per-action and per-agent breakdowns. */
+export function BarRow({ label, fraction = 0, value, tone = "accent", labelWidth = 90 }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+      <span style={{ ...TYPE.caption, color: T.mutedLt, minWidth: labelWidth }}>{label}</span>
+      <div style={{ flex: 1, background: T.surface2, borderRadius: 3, height: 6, overflow: "hidden" }}>
+        <div style={{
+          width: `${Math.min(100, Math.max(0, fraction * 100))}%`, height: "100%",
+          background: toneColor(tone), borderRadius: 3, transition: `width ${DUR.slower} ease`,
+        }} />
+      </div>
+      <span style={{
+        ...TYPE.micro, fontFamily: FONT_MONO, color: T.muted,
+        minWidth: 34, textAlign: "right",
+      }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
 /** Horizontal bar for a 0–100 score. The bar colors itself from the score. */
 export function ScoreBar({ label, value, sub, style = {} }) {
   const pct   = value == null ? 0 : Math.min(100, Math.max(0, value));

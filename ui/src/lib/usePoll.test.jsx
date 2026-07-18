@@ -166,6 +166,26 @@ describe("usePoll", () => {
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(2));
   });
 
+  it("bounds every request with an abort signal", async () => {
+    // A backend that hangs rather than crashes would otherwise pin `loading`
+    // true forever — a panel stuck on a spinner with nothing to report. The
+    // signal is asserted rather than the elapsed abort, because
+    // AbortSignal.timeout runs on a real timer that fake timers do not drive:
+    // firing it here would test the platform, not this module.
+    render(<Reader path="/plan/graph" interval={60_000} />);
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
+    expect(fetchSpy.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("resolves the spinner when a request aborts", async () => {
+    fetchSpy.mockImplementationOnce(() =>
+      Promise.reject(Object.assign(new Error("signal timed out"), { name: "TimeoutError" })));
+
+    render(<Reader path="/plan/graph" interval={60_000} />);
+    // The guarantee that matters: loading always ends, one way or the other.
+    await waitFor(() => expect(screen.getByTestId("out")).toHaveTextContent("error:signal timed out"));
+  });
+
   it("does not fetch when the path is falsy", async () => {
     render(<Reader path={null} />);
     await act(async () => { vi.advanceTimersByTime(2000); });

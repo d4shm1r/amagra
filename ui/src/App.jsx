@@ -46,11 +46,9 @@ export default function App() {
   const [launcherOpen, setLauncherOpen] = useState(false);   // the unified ☰ app-grid menu
   const [launcherSearchSignal, setLauncherSearchSignal] = useState(0); // bumped by ⌘K → launcher focuses its search
   const [researchDoc,  setResearchDoc]  = useState(null);
-  const [apiStatus,    setApiStatus]    = useState("checking");
   const [activityPct,  setActivityPct]  = useState(0);
   const [litNode,      setLitNode]      = useState(null);
   const [sessionLog,   setSessionLog]   = useState([]);
-  const [totalQueries, setTotalQueries] = useState(0);
   const [settings,         setSettings]         = useState(loadSettings);
   const [inspectContextId, setInspectContextId] = useState(null);
   // Which Diagnostics section a deep link asked for (the Cognition dashboard
@@ -140,28 +138,19 @@ export default function App() {
     try { localStorage.setItem("session_log_v1", JSON.stringify(sessionLog.slice(-50))); } catch (_) {}
   }, [sessionLog]);
 
-  const checkHealth = useCallback(async () => {
-    setApiStatus(prev => (prev === "online" ? prev : "checking"));
-    try {
-      const r = await fetch(`${API}/health`, { signal: AbortSignal.timeout(5000) });
-      setApiStatus(r.ok ? "online" : "offline");
-      if (r.ok) {
-        try {
-          const h = await fetch(`${API}/history`);
-          if (h.ok) {
-            const hd = await h.json();
-            setTotalQueries((hd.history || hd || []).length);
-          }
-        } catch (_) {}
-      }
-    } catch { setApiStatus("offline"); }
-  }, []);
+  // /health is the app's liveness probe AND the Intelligence section's system
+  // strip AND a Dashboard tile. Three pollers on one endpoint, on three clocks,
+  // is three different opinions about whether the engine is up. One entry now;
+  // the 5s bound this used to set by hand is the hook's `timeout`.
+  const { data: health, error: healthErr, loading: healthLoading, refresh: refreshHealth } =
+    usePoll("/health", { interval: 30_000, timeout: 5_000 });
+  const apiStatus = healthErr ? "offline" : health ? "online" : (healthLoading ? "checking" : "offline");
 
-  useEffect(() => {
-    checkHealth();
-    const id = setInterval(checkHealth, 30000);
-    return () => clearInterval(id);
-  }, [checkHealth]);
+  // Only meaningful once the engine answers, so it stays paused while offline
+  // rather than retrying into a backend we already know is down.
+  const { data: history, refresh: refreshHistory } =
+    usePoll(apiStatus === "online" ? "/history" : null, { interval: 30_000 });
+  const totalQueries = (history?.history || history || []).length ?? 0;
 
 
   const addLog = (msg, color = T.success) => {
@@ -321,6 +310,10 @@ export default function App() {
           display: inline-flex; align-items: center; justify-content: center;
           color: #9A6C00; font-weight: 700; font-family: inherit; cursor: pointer;
           letter-spacing: -0.01em; border-radius: 40px;
+          /* The class is used on <a> as well as <button> (the memory export
+             links). Without this, those render underlined and no longer match
+             the buttons beside them, so each call site patched it inline. */
+          text-decoration: none;
           background:
             linear-gradient(#FBF8F3, #FBF8F3) padding-box,
             linear-gradient(145deg, #FFE880, #DEB838, #C48808) border-box;
@@ -412,7 +405,7 @@ export default function App() {
               engine dropping silently and it being read out. */}
           <Toast>
             {apiStatus !== "online" && (
-              <ApiOfflineBanner onRetry={checkHealth} checking={apiStatus === "checking"} />
+              <ApiOfflineBanner onRetry={refreshHealth} checking={apiStatus === "checking"} />
             )}
           </Toast>
 
@@ -426,7 +419,7 @@ export default function App() {
             display: activeTab === "chat" || activeTab === "prompt" ? "flex" : "block",
             flexDirection: activeTab === "chat" || activeTab === "prompt" ? "column" : undefined,
           }}>
-            {activeTab === "chat"      && <ChatTab apiStatus={apiStatus} onLogAdd={addLog} onQueryComplete={() => setTotalQueries(q => q + 1)} onLitNode={setLitNode} onActivityChange={setActivityPct} forcedAgent={forcedAgent} onForcedAgentChange={setForcedAgent} onInspect={handleInspect} defaultReflectMode={settings.reflectMode} seedPrompt={seedPrompt} onSeedConsumed={() => setSeedPrompt(null)} enterToSend={settings.enterToSend} showTimestamps={settings.showTimestamps} />}
+            {activeTab === "chat"      && <ChatTab apiStatus={apiStatus} onLogAdd={addLog} onQueryComplete={refreshHistory} onLitNode={setLitNode} onActivityChange={setActivityPct} forcedAgent={forcedAgent} onForcedAgentChange={setForcedAgent} onInspect={handleInspect} defaultReflectMode={settings.reflectMode} seedPrompt={seedPrompt} onSeedConsumed={() => setSeedPrompt(null)} enterToSend={settings.enterToSend} showTimestamps={settings.showTimestamps} />}
             {activeTab === "prompt"    && (
               <Suspense fallback={
                 <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
