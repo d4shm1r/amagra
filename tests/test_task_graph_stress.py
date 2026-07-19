@@ -24,23 +24,27 @@ import infrastructure.task_graph as tg
 from infrastructure.executor import _verify, _classify_failure
 
 # ── Test DB isolation ─────────────────────────────────────────
-# Use a throw-away DB so tests never touch the live tasks.db.
+# Use a throw-away DB so tests never touch the live tasks.db. Lives in a
+# tempdir (not tests/) so a test that bails before its explicit teardown()
+# can't leave a stray .db dirtying the working tree.
 
-_TEST_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_tasks.db")
+import tempfile
+
+_TEST_DB = os.path.join(tempfile.mkdtemp(prefix="amagra_taskgraph_"), "test_tasks.db")
 
 _orig_db = tg.DB_PATH
 tg.DB_PATH = _TEST_DB
 
 
 def setup():
-    """Reset test DB before each test."""
+    """Reset test DB before each test (called explicitly by each test)."""
     if os.path.exists(_TEST_DB):
         os.remove(_TEST_DB)
     tg.init_db()
 
 
 def teardown():
-    """Remove test DB after each test."""
+    """Remove test DB after each test (called explicitly by each test)."""
     if os.path.exists(_TEST_DB):
         os.remove(_TEST_DB)
 
