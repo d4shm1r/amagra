@@ -5,4 +5,4 @@ Import this everywhere the running version is reported (the FastAPI app metadata
 marker in ui/src/config/constants.js (VERSION) — keep the two in lockstep on release.
 """
 
-__version__ = "1.7.6"
+__version__ = "1.8.0"
