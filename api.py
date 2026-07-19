@@ -101,6 +101,15 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[startup] provider config load skipped: {e}")
 
+    # Memory schema must exist before the first chat: the coordinator's memory
+    # search raises `no such table: memories` on a fresh data dir otherwise
+    # (init_db used to run only on the first document upload).
+    try:
+        from memory_core.db import init_db as _mem_init
+        _mem_init()
+    except Exception as e:
+        print(f"[startup] memory init skipped: {e}")
+
     try:
         from memory_core.backend import get_backend, promote_if_needed
         backend  = get_backend()
@@ -123,6 +132,24 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             print(f"[startup] embedding warm-up skipped: {e}")
     asyncio.create_task(_warm_embeddings())
+
+    # ── Warm up the generation model ───────────────────────────
+    # Same cold-load problem, much bigger: the first chat lazily loads
+    # phi4-mini into Ollama (3–8s+ on top of actual inference), which is the
+    # single largest "the app feels slow" contributor. One throwaway token at
+    # boot moves that cost off the user's first message. Local provider only —
+    # API providers have no model to load.
+    async def _warm_generation():
+        try:
+            if os.environ.get("LLM_PROVIDER", os.environ.get("BRAIN_PROVIDER", "ollama")) != "ollama":
+                return
+            import models.llm as _mllm
+            t0 = time.monotonic()
+            await asyncio.to_thread(_mllm.llm.invoke, "hi")
+            print(f"[startup] Generation model warmed up ({time.monotonic() - t0:.1f}s)")
+        except Exception as e:
+            print(f"[startup] generation warm-up skipped: {e}")
+    asyncio.create_task(_warm_generation())
 
     try:
         import memory_core.db as _mdb
