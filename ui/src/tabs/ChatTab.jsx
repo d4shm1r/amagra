@@ -410,6 +410,13 @@ export default function ChatTab({
             });
           } else if (ev.type === "done") {
             doneMeta = ev;
+            // The server persists every streamed turn under a thread id (it
+            // generates one when we sent null). Adopt it so follow-up messages
+            // continue the same thread instead of starting a fresh one each time.
+            if (ev.thread_id && ev.thread_id !== currentThreadId) {
+              setCurrentThreadId(ev.thread_id);
+              try { localStorage.setItem("amagra_thread_id", ev.thread_id); } catch {}
+            }
           } else if (ev.type === "error") {
             throw new Error(ev.detail || "Streaming error");
           }
@@ -438,7 +445,7 @@ export default function ChatTab({
             gram_winner: "", gram_log: "",
             weight_before: 0, weight_after: 0, weight_delta: 0,
             pipeline_agents: [], pipeline_responses: [],
-            context_id: "",
+            context_id: doneMeta.context_id || "",
           };
         }
         return next;
@@ -458,6 +465,7 @@ export default function ChatTab({
       onLitNode("coordinator");
       setTimeout(() => { onLitNode(finalAgent); setTimeout(() => onLitNode(null), 2500); }, 800);
       onQueryComplete(); refreshCoherence();
+      fetchThreads();  // the turn was just persisted server-side — show it now
       onLogAdd(`▸ ${finalAgent.replace(/_/g, " ")} responded (${elapsed}s)`, AGENTS.find(a => a.id === finalAgent)?.color || T.success);
     } catch (err) {
       if (err.name === "AbortError") {

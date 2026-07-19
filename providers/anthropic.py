@@ -44,20 +44,25 @@ class AnthropicProvider(ModelProvider):
         prompt: str,
         system_prompt: str | None = None,
         temperature: float = 0.2,
+        messages: list[dict] | None = None,
     ) -> str:
-        return self.generate_detailed(prompt, system_prompt, temperature).text
+        return self.generate_detailed(prompt, system_prompt, temperature, messages).text
 
     def generate_detailed(
         self,
         prompt: str,
         system_prompt: str | None = None,
         temperature: float = 0.2,
+        messages: list[dict] | None = None,
     ) -> GenResult:
+        # `messages` (a full role/content turn list ending with the user turn,
+        # e.g. thread context from the ask pipeline) replaces the single-turn
+        # prompt when provided.
         import anthropic
         kwargs: dict = {
             "model": self._model,
             "max_tokens": 4096,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": messages or [{"role": "user", "content": prompt}],
         }
         if system_prompt:
             kwargs["system"] = system_prompt
@@ -119,11 +124,12 @@ class AnthropicProvider(ModelProvider):
         self,
         prompt: str,
         system_prompt: str | None = None,
+        messages: list[dict] | None = None,
     ) -> AsyncIterator[str]:
         kwargs: dict = {
             "model": self._model,
             "max_tokens": 4096,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": messages or [{"role": "user", "content": prompt}],
         }
         if system_prompt:
             kwargs["system"] = system_prompt

@@ -14,16 +14,24 @@ import time
 
 from core.contract import Result
 
-_DEFAULT_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs", "runtime.db"
-)
+def _default_path() -> str:
+    """logs/runtime.db under the data root. Resolved via infrastructure.paths
+    so AMAGRA_DATA_DIR relocates it (packaged app, test isolation) — the old
+    hardcoded repo path wrote into the install dir and leaked test rows into
+    the real logs/ tree."""
+    try:
+        from infrastructure.paths import base_dir
+        root = base_dir()
+    except Exception:
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(root, "logs", "runtime.db")
 
 
 class RunLog:
-    def __init__(self, path: str = _DEFAULT_PATH) -> None:
-        self.path = path
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        con = sqlite3.connect(path)
+    def __init__(self, path: str | None = None) -> None:
+        self.path = path or _default_path()
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
+        con = sqlite3.connect(self.path)
         con.execute(
             """CREATE TABLE IF NOT EXISTS runs (
                    id     INTEGER PRIMARY KEY AUTOINCREMENT,

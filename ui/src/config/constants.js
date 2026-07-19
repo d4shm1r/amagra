@@ -1,6 +1,6 @@
 // Single source of truth for the app version. Keep in lockstep with the latest
 // GitHub release, api.py FastAPI version, and ui/package.json on every release.
-export const VERSION = "1.7.6";
+export const VERSION = "1.8.0";
 
 export const AGENTS = [
   { id: "coordinator",        label: "Coordinator",         icon: "◈", color: "#9A6C00", focus: "Delegation & orchestration of all agents", role: "Reads every message, runs keyword routing first, falls back to phi4-mini for ambiguous queries. Routes to the correct specialist in under 1 second for known keywords.", keywords: ["any message — it decides where it goes"], phase: 4 },
@@ -870,6 +870,21 @@ export const BUILD_PHASES = [
       "Runs › Overview folded into System › About as a live snapshot",
     ],
   },
+
+  // ── v1.8.0  Unified Ask Pipeline & Instant First Response ──────
+  {
+    id: 104, version: "v1.8.0", date: "Jul 19, 2026",
+    label: "Unified Ask Pipeline & Instant First Response", title: "Every chat remembered, first answer in seconds", color: "#C48808", status: "done",
+    summary: "Streamed and non-streamed chat now run one shared pipeline, so every conversation is persisted — threads, sessions, telemetry, run log — with real context continuity across turns. The generation model warms at boot, cutting the first answer from ~10s to ~2s, and a fresh install's first chat no longer crashes.",
+    steps: [
+      "One ask pipeline — /ask and /ask/stream share route → invoke → persist; transport is the only difference (parity-tested)",
+      "Streamed chats persist + carry thread context — the Threads panel finally sees what the chat UI does",
+      "Generation model warm-up at boot — first-token latency ~9.7s → ~2.1s measured",
+      "Fresh-install fix — memory schema created at startup (first chat used to fail with 'no such table')",
+      "Claude paths receive thread context via provider messages support",
+      "Registry-backed decision↔session linking + run log honor AMAGRA_DATA_DIR (packaged installs)",
+    ],
+  },
 ];
 
 // ── Roadmap (upcoming phases) ──────────────────────────────────────────────────
@@ -1040,6 +1055,7 @@ export const ROADMAP = [
 
 // ── Version epoch groups (used by VersionHistoryTab) ──────────────────────────
 export const VERSION_EPOCHS = [
+  { version: "v1.8.0", label: "Unified Ask Pipeline & Instant First Response", color: "#C48808", phases: [104] },
   { version: "v1.7.6", label: "Electron-First Unification & Sandbox Isolation", color: "#7E3F8F", phases: [103] },
   { version: "v1.7.5", label: "Windows Desktop Startup Reliability", color: "#1E5A8A", phases: [102] },
   { version: "v1.7.4", label: "Single-Instance Desktop", color: "#0F766E", phases: [101] },
