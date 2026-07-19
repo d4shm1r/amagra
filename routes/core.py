@@ -13,164 +13,19 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from orchestration.coordinator import coordinator
-from core.logger import log_response, read_log
-from core.run_log import RunLog
-from core.contract import Result
+from core.logger import read_log
 import cognition.run_tracer as run_tracer
 from infrastructure.db import path as _dbpath
 from infrastructure.inference_limit import inference_slot
 
 from .deps import (
-    _cos, session_history, _SESSIONS_DB, _CONTRADICTIONS_DB,
+    session_history, _SESSIONS_DB,
     AskRequest, AskResponse,
 )
+from . import ask_pipeline as pipeline
+from .ask_pipeline import TELEMETRY_DB as _TELEMETRY_DB, base_state
 
 router = APIRouter()
-
-# Append-only transparent run log (core/run_log.py). One row per /ask run,
-# readable with a plain SELECT against logs/runtime.db. Lazy singleton so the
-# table is created once per process, not per request.
-_run_log: RunLog | None = None
-
-
-def _get_run_log() -> RunLog | None:
-    global _run_log
-    if _run_log is None:
-        try:
-            _run_log = RunLog()
-        except Exception:
-            return None
-    return _run_log
-
-
-_TELEMETRY_DB = _dbpath("telemetry")
-
-def _init_telemetry():
-    os.makedirs(os.path.dirname(_TELEMETRY_DB), exist_ok=True)
-    conn = sqlite3.connect(_TELEMETRY_DB, timeout=5)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS routing_telemetry (
-            id           INTEGER PRIMARY KEY AUTOINCREMENT,
-            ts           TEXT NOT NULL,
-            query_prefix TEXT NOT NULL,
-            agent        TEXT NOT NULL,
-            signal_conf  REAL,
-            complexity   TEXT,
-            duration_ms  INTEGER,
-            correct      INTEGER        -- NULL=unlabeled, 1=correct, 0=wrong
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-_init_telemetry()
-
-def _log_telemetry(query: str, agent: str, signal_conf: float, complexity: str, duration_ms: int):
-    try:
-        conn = sqlite3.connect(_TELEMETRY_DB, timeout=3)
-        conn.execute(
-            "INSERT INTO routing_telemetry (ts, query_prefix, agent, signal_conf, complexity, duration_ms) "
-            "VALUES (?,?,?,?,?,?)",
-            (datetime.now(timezone.utc).isoformat(), query[:120], agent,
-             round(signal_conf, 3), complexity, duration_ms),
-        )
-        conn.commit()
-        conn.close()
-    except Exception:
-        pass
-
-# ── Thread helpers ────────────────────────────────────────────
-
-def _load_thread_context(thread_id: str, n: int = 4) -> list:
-    """Return last n turns as message dicts (oldest first) for LangGraph."""
-    try:
-        conn = sqlite3.connect(_SESSIONS_DB, timeout=5)
-        rows = conn.execute(
-            "SELECT user_msg, agent_msg FROM turns "
-            "WHERE thread_id=? ORDER BY id DESC LIMIT ?",
-            (thread_id, n),
-        ).fetchall()
-        conn.close()
-        msgs = []
-        for user_msg, agent_msg in reversed(rows):
-            msgs.append({"role": "user",      "content": user_msg})
-            msgs.append({"role": "assistant",  "content": agent_msg})
-        return msgs
-    except Exception:
-        return []
-
-
-def _save_turn(thread_id: str, user_msg: str, agent_msg: str, agent: str) -> None:
-    try:
-        conn = sqlite3.connect(_SESSIONS_DB, timeout=5)
-        now = datetime.now(timezone.utc).isoformat()
-        conn.execute(
-            "INSERT OR IGNORE INTO threads (id, title, created_at, updated_at, turn_count) "
-            "VALUES (?,?,?,?,0)",
-            (thread_id, user_msg[:60], now, now),
-        )
-        conn.execute(
-            "UPDATE threads SET updated_at=?, turn_count=turn_count+1 WHERE id=?",
-            (now, thread_id),
-        )
-        conn.execute(
-            "INSERT INTO turns (thread_id, ts, user_msg, agent_msg, agent) VALUES (?,?,?,?,?)",
-            (thread_id, now, user_msg, agent_msg, agent),
-        )
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"[threading] save_turn error: {e}")
-
-
-def _get_document_context(query: str, source_files: list[str], top_k: int = 5) -> str:
-    """Return relevant document chunks as a context block for injection into the prompt."""
-    if not source_files:
-        return ""
-    try:
-        import numpy as np
-        from memory_core.db import DB_PATH, get_embedding
-        q_arr = np.array(get_embedding(query), dtype=np.float32)
-        norm  = np.linalg.norm(q_arr)
-        if norm > 0:
-            q_arr /= norm
-
-        conn = sqlite3.connect(DB_PATH, timeout=5)
-        rows = conn.execute(
-            "SELECT content, embedding, metadata FROM memories WHERE mem_type = 'document'"
-        ).fetchall()
-        conn.close()
-
-        scored: list[tuple[float, str, str]] = []
-        for content, emb_blob, meta_raw in rows:
-            try:
-                meta = json.loads(meta_raw) if meta_raw else {}
-            except Exception:
-                meta = {}
-            if meta.get("source_file") not in source_files:
-                continue
-            score = 0.0
-            if emb_blob:
-                emb = np.frombuffer(emb_blob, dtype=np.float32)
-                score = float(np.dot(q_arr, emb))
-            scored.append((score, content, meta.get("source_file", "unknown")))
-
-        scored.sort(reverse=True)
-        top = scored[:top_k]
-        if not top:
-            return ""
-
-        by_file: dict[str, list[str]] = {}
-        for _, content, sf in top:
-            by_file.setdefault(sf, []).append(content)
-
-        lines = ["[Document context — answer the question using the following material]"]
-        for sf, chunks in by_file.items():
-            lines.append(f"\nSource: {sf}")
-            lines.extend(chunks)
-        return "\n".join(lines)
-    except Exception:
-        return ""
 
 
 # NOTE: "/" is owned by the bundled UI (api.py serves ui/build there). Machine
@@ -253,349 +108,71 @@ _OFFLINE_DETAIL = ("LLM backend offline — start Ollama (ollama serve) "
                    "or check your provider in Settings → Model")
 
 
-@router.post("/ask", response_model=AskResponse)
-async def ask(req: AskRequest, request: Request):
-    start = time.time()
-
-    _weights_snap_before: dict = {}
-    try:
-        from decision.weights import load as _load_weights
-        _weights_snap_before = _load_weights()
-    except Exception:
-        pass
-
-    _run_id = run_tracer.start(req.message)
-
-    if _cos:
-        try:
-            _cos.begin_request(req.message, run_id=_run_id, action="unknown")
-        except Exception:
-            pass
-
-    try:
-        import cognition.context_snapshot as _cx
-        from orchestration.query_normalizer import normalize as _qnorm
-        _sig = _qnorm(req.message, "")
-        _cx.begin(_run_id, req.message,
-                  normalized_query=f"{_sig.domain}/{_sig.answer_shape}/{_sig.verbosity}")
-    except Exception:
-        pass
-
-    # ── Tenant scoping — propagate key_id so all memory search/save calls
-    #    in this request are automatically filtered to the calling tenant (S2).
-    try:
-        from memory_core.db import _current_owner_key_id as _owner_cv
-        _key_id      = getattr(request.state, "key_id", None)
-        _owner_token = _owner_cv.set(_key_id)
-    except Exception:
-        _owner_token = None
-
-    # ── Conversation threading ────────────────────────────────────
-    _thread_id = req.thread_id or str(uuid.uuid4())
-    _ctx_msgs  = _load_thread_context(_thread_id, n=4)
-
-    _doc_ctx = _get_document_context(req.message, req.context_files or [])
-    _task_msg = f"{_doc_ctx}\n\n{req.message}" if _doc_ctx else req.message
-
-    _invoke_input = {
-        "messages":               [*_ctx_msgs, {"role": "user", "content": _task_msg}],
-        "active_agent":           "",
-        "task":                   _task_msg,
-        "result":                 "",
-        "next_agent":             "",
-        "memory":                 {},
-        "force_agent":            req.force_agent or "",
-        "brain_decision":         {},
-        "reflect":                False,
-        "reflect_type":           "general",
-        "reflect_level":          "none",
-        "contradiction_detected": False,
-        "force_reflect_level":    req.force_reflect_level or "",
-        "run_id":                 _run_id,
-    }
-
-    # ── Anthropic provider path — when caller requests it explicitly or
-    #    PREFER_ANTHROPIC=1 is set and an API key is available.
-    _anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    _use_anthropic = (
-        _anthropic_key
+def _anthropic_selected(req: AskRequest) -> bool:
+    """Anthropic provider path — when the caller requests it explicitly or
+    PREFER_ANTHROPIC=1 is set and an API key is available."""
+    return bool(
+        os.environ.get("ANTHROPIC_API_KEY", "")
         and (req.provider == "anthropic" or os.environ.get("PREFER_ANTHROPIC", "0") == "1")
     )
-    if _use_anthropic:
+
+
+async def _invoke_coordinator(state: dict) -> dict:
+    """The one place the local model is invoked. Gated: a burst of concurrent
+    calls OOMs the GPU. Raises the raw exception — callers map it via
+    `_map_invoke_error` after marking the run failed."""
+    loop = asyncio.get_event_loop()
+    async with inference_slot():
+        return await loop.run_in_executor(None, lambda: coordinator.invoke(state))
+
+
+def _map_invoke_error(e: Exception) -> HTTPException:
+    if isinstance(e, ConnectionRefusedError) or _is_offline_error(e):
+        return HTTPException(status_code=503, detail=_OFFLINE_DETAIL)
+    return HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/ask", response_model=AskResponse)
+async def ask(req: AskRequest, request: Request):
+    run = pipeline.begin_run(req, key_id=getattr(request.state, "key_id", None))
+
+    if _anthropic_selected(req):
         try:
-            from orchestration.core_brain import think as _think
-            from models.state import AgentState as _AgentState
-            _dummy: _AgentState = {  # type: ignore[misc]
-                "messages": [{"role": "user", "content": req.message}],
-                "active_agent": "", "task": req.message, "result": "",
-                "next_agent": "", "memory": {}, "force_agent": req.force_agent or "",
-                "brain_decision": {}, "reflect": False, "reflect_type": "general",
-                "reflect_level": "none", "contradiction_detected": False,
-                "force_reflect_level": req.force_reflect_level or "",
-                "run_id": _run_id, "model_tier": "fast",
-            }
-            _dec       = _think(req.message, _dummy)
-            _agent_name = (_dec.agent_strategy[0] if _dec.agent_strategy else None) or "knowledge_learning"
-            _sys_prompt = _get_agent_system_prompt(_agent_name, req.message)
+            pre = pipeline.route_preview(req, run_id=run.run_id)
             from providers.anthropic import AnthropicProvider as _AP
-            _ap_model    = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
-            _ap_provider = _AP(model=_ap_model, api_key=_anthropic_key)
-            loop         = asyncio.get_event_loop()
-            _ap_response = await loop.run_in_executor(
+            _ap_model = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+            provider  = _AP(model=_ap_model, api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+            loop = asyncio.get_event_loop()
+            run.response = await loop.run_in_executor(
                 None,
-                lambda: _ap_provider.generate(req.message, system_prompt=_sys_prompt),
+                lambda: provider.generate(run.task_msg,
+                                          system_prompt=pre.system_prompt,
+                                          messages=run.provider_messages),
             )
-            duration_ms = int((time.time() - start) * 1000)
-            agent_used  = _agent_name
-            response    = _ap_response
-            _bd_for_log = {
-                "signal_domain": _dec.signal_domain,
-                "signal_shape":  _dec.signal_shape,
-                "signal_conf":   round(_dec.signal_conf, 2),
-                "complexity":    _dec.complexity,
-                "confidence":    round(getattr(_dec, "confidence", 0.67), 2),
-                "action":        getattr(_dec, "action", "generate"),
-                "memories_used": [],
-            }
-            result = {"brain_decision": _bd_for_log, "active_agent": agent_used}
+            run.agent_used = pre.agent
+            run.bd         = {**pre.meta, "memories_used": []}
+            run.result     = {"brain_decision": run.bd, "active_agent": pre.agent}
+            run.model_used = _ap_model
         except Exception as _ap_err:
-            run_tracer.mark_failed(_run_id, str(_ap_err))
+            pipeline.fail_run(run, str(_ap_err))
             raise HTTPException(status_code=500, detail=f"Anthropic provider error: {_ap_err}")
     else:
+        state = base_state(run.task_msg, run.run_id,
+                           messages=run.provider_messages,
+                           force_agent=req.force_agent or "",
+                           force_reflect_level=req.force_reflect_level or "")
         try:
-            loop   = asyncio.get_event_loop()
-            # Gate local inference: a burst of concurrent calls OOMs the GPU.
-            async with inference_slot():
-                result = await loop.run_in_executor(None, lambda: coordinator.invoke(_invoke_input))
-        except ConnectionRefusedError:
-            run_tracer.mark_failed(_run_id, "LLM backend offline")
-            raise HTTPException(status_code=503, detail=_OFFLINE_DETAIL)
+            run.result = await _invoke_coordinator(state)
         except Exception as e:
-            run_tracer.mark_failed(_run_id, str(e))
-            if _is_offline_error(e):
-                raise HTTPException(status_code=503, detail=_OFFLINE_DETAIL)
-            raise HTTPException(status_code=500, detail=str(e))
+            pipeline.fail_run(run, "LLM backend offline" if isinstance(e, ConnectionRefusedError) else str(e))
+            raise _map_invoke_error(e)
+        run.agent_used = run.result.get("active_agent", "unknown")
+        run.response   = run.result["messages"][-1].content
+        run.bd         = run.result.get("brain_decision", {})
+        run.model_used = "phi4-mini"
 
-        duration_ms = int((time.time() - start) * 1000)
-        agent_used  = result.get("active_agent", "unknown")
-        response    = result["messages"][-1].content
-        _bd_for_log = result.get("brain_decision", {})
-
-    _save_turn(_thread_id, req.message, response, agent_used)
-    bd = _bd_for_log
-    _log_telemetry(
-        req.message, agent_used,
-        float(bd.get("signal_conf", 0.0)),
-        bd.get("complexity", "simple"),
-        duration_ms,
-    )
-    log_response(agent_used, req.message)
-    try:
-        _conn = sqlite3.connect(_dbpath("traces"))
-        _conn.execute("""CREATE TABLE IF NOT EXISTS traces (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT, agent TEXT, user_message TEXT,
-            routing_reason TEXT, duration_ms INTEGER
-        )""")
-        for _col, _typ in [("signal_domain", "TEXT"), ("signal_shape", "TEXT"), ("signal_conf", "REAL")]:
-            try: _conn.execute(f"ALTER TABLE traces ADD COLUMN {_col} {_typ}")
-            except Exception: pass
-        _bd = _bd_for_log
-        _conn.execute(
-            "INSERT INTO traces (timestamp, agent, user_message, routing_reason, duration_ms, signal_domain, signal_shape, signal_conf) "
-            "VALUES (?,?,?,?,?,?,?,?)",
-            (datetime.now(timezone.utc).isoformat(), agent_used, req.message[:200],
-             f"routed to {agent_used}", duration_ms,
-             _bd.get("signal_domain", "general"), _bd.get("signal_shape", "explanation"),
-             round(float(_bd.get("signal_conf", 0.0)), 3))
-        )
-        _conn.commit()
-        _conn.close()
-    except Exception:
-        pass
-
-    # Transparent run log — one append-only row per run (core/run_log.py).
-    try:
-        _rl = _get_run_log()
-        if _rl is not None:
-            _bd = _bd_for_log
-            _rl.append(
-                task=req.message,
-                ext_id=_run_id,
-                result=Result(output=response, meta={
-                    "agent":        agent_used,
-                    "duration_ms":  duration_ms,
-                    "complexity":   _bd.get("complexity", "simple"),
-                    "signal_domain": _bd.get("signal_domain", "general"),
-                    "signal_shape": _bd.get("signal_shape", "explanation"),
-                    "signal_conf":  round(float(_bd.get("signal_conf", 0.0)), 3),
-                }),
-            )
-    except Exception:
-        pass
-
-    confidence = _bd_for_log.get("confidence", 0.67)
-    entry = {
-        "ts":          datetime.now().strftime('%H:%M:%S'),
-        "user":        req.message,
-        "agent":       agent_used,
-        "response":    response,
-        "duration_ms": duration_ms,
-    }
-    session_history.append(entry)
-    _session_id = -1
-    try:
-        _sc = sqlite3.connect(_SESSIONS_DB)
-        _cur = _sc.execute(
-            "INSERT INTO sessions (timestamp, user_input, response, agent, duration_ms, confidence) "
-            "VALUES (?,?,?,?,?,?)",
-            (datetime.now(timezone.utc).isoformat(), req.message[:500],
-             response[:2000], agent_used, duration_ms, confidence),
-        )
-        _session_id = _cur.lastrowid
-        _sc.commit()
-        _sc.close()
-    except Exception:
-        pass
-
-    # Auto-retrain the learned router every N real sessions (#15) — non-blocking.
-    if _session_id > 0:
-        try:
-            from orchestration.auto_retrain import note_session
-            note_session()
-        except Exception:
-            pass
-
-    if _session_id > 0:
-        try:
-            _lnk_decisions = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs", "decisions.db")
-            _dc = sqlite3.connect(_lnk_decisions)
-            _dec_row = _dc.execute(
-                "SELECT id FROM brain_decisions WHERE run_id=? LIMIT 1",
-                (_run_id,),
-            ).fetchone()
-            if _dec_row:
-                _dec_id = _dec_row[0]
-                _dc.execute("UPDATE brain_decisions SET session_id=? WHERE id=?",
-                            (_session_id, _dec_id))
-                _dc.commit()
-                _sc2 = sqlite3.connect(_SESSIONS_DB)
-                _sc2.execute("UPDATE sessions SET decision_id=? WHERE id=?",
-                             (_dec_id, _session_id))
-                _sc2.commit()
-                _sc2.close()
-            _dc.close()
-        except Exception:
-            pass
-
-    try:
-        _linked_dec_id = locals().get("_dec_id", -1) or -1
-        run_tracer.finish(
-            _run_id,
-            agent=agent_used,
-            decision_id=int(_linked_dec_id) if _linked_dec_id else -1,
-            session_id=_session_id,
-            duration_ms=duration_ms,
-        )
-    except Exception:
-        pass
-
-    bd = _bd_for_log
-    memories_used = []
-    try:
-        import memory_core.db as _mdb
-        memories_used = _mdb.get_last_accessed_content(req.message, n=4)
-    except Exception:
-        pass
-
-    _weight_before = 0.0
-    _weight_after  = 0.0
-    _weight_delta  = 0.0
-    try:
-        from decision.weights import load as _load_weights
-        _weights_snap_after = _load_weights()
-        _weight_before = round(_weights_snap_before.get(agent_used, 1.0), 4)
-        _weight_after  = round(_weights_snap_after.get(agent_used, 1.0), 4)
-        _weight_delta  = round(_weight_after - _weight_before, 4)
-    except Exception:
-        pass
-
-    _contradiction = bool(result.get("contradiction_detected", False))
-    if _contradiction:
-        try:
-            _cc = sqlite3.connect(_CONTRADICTIONS_DB)
-            _cc.execute(
-                "INSERT INTO contradictions (timestamp, agent, query, response_snip, reflect_level) "
-                "VALUES (?,?,?,?,?)",
-                (datetime.now(timezone.utc).isoformat(), agent_used,
-                 req.message[:200], response[:120],
-                 result.get("reflect_level", "none")),
-            )
-            _cc.commit()
-            _cc.close()
-        except Exception:
-            pass
-
-    try:
-        _cx.finalize(_run_id, response, session_id=_session_id)
-    except Exception:
-        pass
-
-    if _cos:
-        try:
-            _cos.request.action = bd.get("action", "unknown")
-            _cos.end_request(
-                agent            = agent_used,
-                outcome          = "completed",
-                response_snippet = response[:300],
-                quality          = result.get("response_quality"),
-                kept             = result.get("gram_winner")
-                                   or result.get("response_kept", ""),
-            )
-        except Exception:
-            pass
-
-    # Reset tenant ContextVar so it doesn't leak into unrelated tasks
-    try:
-        if _owner_token is not None:
-            _owner_cv.reset(_owner_token)
-    except Exception:
-        pass
-
-    return AskResponse(
-        response=response,
-        agent_used=agent_used,
-        routing_reason=f"Routed to {agent_used}",
-        duration_ms=duration_ms,
-        timestamp=datetime.now().isoformat(),
-        signal_domain=bd.get("signal_domain", "general"),
-        signal_shape=bd.get("signal_shape", "explanation"),
-        signal_verbosity=bd.get("signal_verbosity", "normal"),
-        signal_conf=round(float(bd.get("signal_conf", 0.0)), 2),
-        action=bd.get("action", "unknown"),
-        complexity=bd.get("complexity", "simple"),
-        model_tier={"compound": "reasoning", "moderate": "standard"}.get(
-            bd.get("complexity", "simple"), "fast"
-        ),
-        reflect_level=result.get("reflect_level", "none"),
-        confidence=round(float(bd.get("confidence", 0.67)), 2),
-        regret=round(float(bd.get("regret", 0.0)), 3),
-        contradiction_detected=_contradiction,
-        memories_used=memories_used,
-        gram_winner=result.get("gram_winner", ""),
-        gram_log=result.get("gram_log", ""),
-        weight_before=_weight_before,
-        weight_after=_weight_after,
-        weight_delta=_weight_delta,
-        pipeline_agents=result.get("pipeline_agents", []),
-        pipeline_responses=result.get("pipeline_responses", []),
-        context_id=_run_id,
-        thread_id=_thread_id,
-        model_used=(
-            os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
-            if _use_anthropic else "phi4-mini"
-        ),
-    )
+    extras = pipeline.finish_run(run)
+    return pipeline.build_response(run, extras)
 
 
 @router.get("/threads")
@@ -871,22 +448,7 @@ def replay_run(run_id: str):
     _run_id = run_tracer.start(query)
     _start  = time.time()
     try:
-        result = coordinator.invoke({
-            "messages":               [{"role": "user", "content": query}],
-            "active_agent":           "",
-            "task":                   query,
-            "result":                 "",
-            "next_agent":             "",
-            "memory":                 {},
-            "force_agent":            "",
-            "brain_decision":         {},
-            "reflect":                False,
-            "reflect_type":           "general",
-            "reflect_level":          "none",
-            "contradiction_detected": False,
-            "force_reflect_level":    "",
-            "run_id":                 _run_id,
-        })
+        result = coordinator.invoke(base_state(query, _run_id))
     except ConnectionRefusedError:
         run_tracer.mark_failed(_run_id, "LLM backend offline")
         raise HTTPException(status_code=503, detail="LLM backend offline")
@@ -946,22 +508,7 @@ def ask_replay(req: _ReplayRequest):
 
     start = time.time()
     try:
-        result = coordinator.invoke({
-            "messages":               [{"role": "user", "content": req.query}],
-            "active_agent":           "",
-            "task":                   req.query,
-            "result":                 "",
-            "next_agent":             "",
-            "memory":                 {},
-            "force_agent":            "",
-            "brain_decision":         {},
-            "reflect":                False,
-            "reflect_type":           "general",
-            "reflect_level":          "none",
-            "contradiction_detected": False,
-            "force_reflect_level":    "",
-            "run_id":                 f"replay-{int(time.time())}",
-        })
+        result = coordinator.invoke(base_state(req.query, f"replay-{int(time.time())}"))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -1098,100 +645,30 @@ def get_metrics():
 # Uses Claude's streaming API to deliver real-time token-by-token responses.
 # Falls back to a chunked non-streaming response when no API key is set.
 
-_AGENT_PROMPTS: dict[str, str] = {}
-
-def _get_agent_system_prompt(agent: str, query: str | None = None) -> str:
-    """Return the raw system prompt template for a given agent.
-
-    `query` is forwarded to get_profile_context so non-English input drops the
-    private profile block on this Anthropic path too (issue #6)."""
-    if not _AGENT_PROMPTS:
-        try:
-            from agents.it_networking     import IT_SYSTEM_PROMPT
-            from agents.python_dev        import PYTHON_SYSTEM_PROMPT
-            from agents.dotnet_dev        import DOTNET_SYSTEM_PROMPT
-            from agents.ai_ml             import AI_ML_SYSTEM_PROMPT
-            from agents.knowledge_learning import KNOWLEDGE_SYSTEM_PROMPT
-            from agents.terse             import TERSE_SYSTEM_PROMPT
-            from agents.web_dev           import WEB_DEV_SYSTEM_PROMPT
-            from agents.devops            import DEVOPS_SYSTEM_PROMPT
-            from agents.data_analyst      import DATA_ANALYST_SYSTEM_PROMPT
-            from agents.writer            import WRITER_SYSTEM_PROMPT
-            _AGENT_PROMPTS.update({
-                "it_networking":     IT_SYSTEM_PROMPT,
-                "python_dev":        PYTHON_SYSTEM_PROMPT,
-                "dotnet_dev":        DOTNET_SYSTEM_PROMPT,
-                "ai_ml":             AI_ML_SYSTEM_PROMPT,
-                "knowledge_learning": KNOWLEDGE_SYSTEM_PROMPT,
-                "terse":             TERSE_SYSTEM_PROMPT,
-                "web_dev":           WEB_DEV_SYSTEM_PROMPT,
-                "devops":            DEVOPS_SYSTEM_PROMPT,
-                "data_analyst":      DATA_ANALYST_SYSTEM_PROMPT,
-                "writer":            WRITER_SYSTEM_PROMPT,
-            })
-        except Exception:
-            pass
-
-    template = _AGENT_PROMPTS.get(agent, "You are Amagra, an elite AI assistant.")
-    try:
-        from user_profile import get_profile_context
-        return template.format(user_profile=get_profile_context(query))
-    except Exception:
-        return template
-
-
 @router.post("/ask/stream")
-async def ask_stream(req: AskRequest):
+async def ask_stream(req: AskRequest, request: Request):
     """
-    SSE streaming response.
+    SSE streaming response — same pipeline as /ask, different transport.
 
     When ANTHROPIC_API_KEY is set: routes the query, selects the appropriate
-    agent system prompt, and streams directly via Claude Sonnet.
+    agent system prompt, and streams token-by-token via Claude.
 
-    When no API key: runs the standard coordinator and streams the result in
-    one chunk (degraded but non-breaking).
+    When no API key: runs the standard coordinator, forwarding its real
+    lifecycle events as they happen, and delivers the result in one chunk.
+
+    Either way the run is persisted through `pipeline.finish_run` after the
+    last token — a streamed chat leaves exactly the same records as /ask
+    (threads, session, telemetry, traces, run log; contract §1.1).
     """
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
 
-    # ── Get routing decision (always local, fast) ─────────────
-    _decision_meta: dict = {}
-    try:
-        from orchestration.core_brain import think
-        from models.state import AgentState
-        _dummy_state: AgentState = {  # type: ignore[misc]
-            "messages": [{"role": "user", "content": req.message}],
-            "active_agent": "", "task": req.message, "result": "",
-            "next_agent": "", "memory": {}, "force_agent": req.force_agent or "",
-            "brain_decision": {}, "reflect": False, "reflect_type": "general",
-            "reflect_level": "none", "contradiction_detected": False,
-            "force_reflect_level": req.force_reflect_level or "",
-            "run_id": "", "model_tier": "fast",
-        }
-        decision      = think(req.message, _dummy_state)
-        agent_name    = decision.agent_strategy[0] if decision.agent_strategy else "knowledge_learning"
-        complexity    = decision.complexity
-        system_prompt = _get_agent_system_prompt(agent_name, req.message)
-        _decision_meta = {
-            "signal_domain":    decision.signal_domain,
-            "signal_shape":     decision.signal_shape,
-            "signal_verbosity": decision.signal_verbosity,
-            "signal_conf":      round(decision.signal_conf, 2),
-            "action":           decision.action,
-            "complexity":       decision.complexity,
-            "confidence":       round(getattr(decision, "confidence", 0.67), 2),
-        }
-    except Exception:
-        agent_name    = "knowledge_learning"
-        complexity    = "simple"
-        system_prompt = "You are Amagra, an elite AI assistant. Be direct and precise."
-
-    model_tier = {"compound": "reasoning", "moderate": "standard"}.get(complexity, "fast")
-
-    _stream_doc_ctx = _get_document_context(req.message, req.context_files or [])
-    _stream_msg     = f"{_stream_doc_ctx}\n\n{req.message}" if _stream_doc_ctx else req.message
+    run = pipeline.begin_run(req, key_id=getattr(request.state, "key_id", None))
+    pre = pipeline.route_preview(req, run_id=run.run_id)
 
     async def _event_stream():
-        yield f"data: {json.dumps({'type': 'routing', 'agent': agent_name, 'complexity': complexity, 'model_tier': model_tier, **_decision_meta})}\n\n"
+        yield _sse({"type": "routing", "agent": pre.agent, "complexity": pre.complexity,
+                    "model_tier": pre.model_tier, "thread_id": run.thread_id,
+                    "context_id": run.run_id, **pre.meta})
 
         if api_key:
             # ── Claude streaming path ──────────────────────────
@@ -1199,13 +676,26 @@ async def ask_stream(req: AskRequest):
                 from providers.anthropic import AnthropicProvider
                 stream_model = os.environ.get("ENHANCE_MODEL", "claude-sonnet-4-6")
                 provider     = AnthropicProvider(model=stream_model, api_key=api_key)
-                async for chunk in provider.stream(_stream_msg, system_prompt=system_prompt):
+                acc: list[str] = []
+                async for chunk in provider.stream(run.task_msg,
+                                                   system_prompt=pre.system_prompt,
+                                                   messages=run.provider_messages):
                     if chunk:
-                        yield f"data: {json.dumps({'type': 'token', 'text': chunk})}\n\n"
-                yield f"data: {json.dumps({'type': 'done', 'agent': agent_name, 'model': stream_model, **_decision_meta})}\n\n"
+                        acc.append(chunk)
+                        yield _sse({"type": "token", "text": chunk})
+                run.response   = "".join(acc)
+                run.agent_used = pre.agent
+                run.bd         = dict(pre.meta)
+                run.result     = {"brain_decision": run.bd, "active_agent": pre.agent}
+                run.model_used = stream_model
+                extras = pipeline.finish_run(run)
+                yield _sse({"type": "done", "agent": pre.agent, "model": stream_model,
+                            "thread_id": run.thread_id, "context_id": run.run_id,
+                            **pre.meta,
+                            "memories_used": extras.get("memories_used", [])})
                 return
             except Exception as exc:
-                yield f"data: {json.dumps({'type': 'error', 'detail': str(exc)})}\n\n"
+                yield _sse({"type": "error", "detail": str(exc)})
                 # fall through to non-streaming path
 
         # ── Fallback: run coordinator, stream its real lifecycle events ───
@@ -1215,37 +705,30 @@ async def ask_stream(req: AskRequest):
         # rather than progress on a timer. SimpleQueue because the emitting
         # thread is not the event loop's.
         try:
-            import cognition.run_tracer as _rt
             from infrastructure.event_bus import (
                 subscribe as _subscribe, unsubscribe as _unsubscribe,
                 EventType as _ET,
             )
-            _run_id = _rt.start(req.message)
-            _steps  = queue.SimpleQueue()
+            _steps = queue.SimpleQueue()
 
             def _on_step(key, payload, ts):
                 # The bus is global and requests are concurrent — run_id is
                 # what makes a forwarded step provably ours.
-                if payload.get("run_id") == _run_id:
+                if payload.get("run_id") == run.run_id:
                     _steps.put({"type": "step", "event": key, "payload": payload})
 
             _watched = (_ET.AGENT_SELECTED, _ET.STEP_VERIFIED_PASS, _ET.STEP_VERIFIED_FAIL)
             for _et in _watched:
                 _subscribe(_et, _on_step)
 
+            state = base_state(run.task_msg, run.run_id,
+                               messages=run.provider_messages,
+                               force_agent=req.force_agent or "",
+                               force_reflect_level=req.force_reflect_level or "")
             try:
                 async with inference_slot():  # gate local inference (GPU OOM guard)
                     _work = asyncio.get_event_loop().run_in_executor(
-                      None,
-                      lambda: coordinator.invoke({
-                        "messages":              [{"role": "user", "content": _stream_msg}],
-                        "active_agent": "", "task": _stream_msg, "result": "",
-                        "next_agent": "", "memory": {}, "force_agent": req.force_agent or "",
-                        "brain_decision": {}, "reflect": False, "reflect_type": "general",
-                        "reflect_level": "none", "contradiction_detected": False,
-                        "force_reflect_level": req.force_reflect_level or "",
-                        "run_id": _run_id, "model_tier": "fast",
-                    })
+                        None, lambda: coordinator.invoke(state)
                     )
                     while not _work.done():
                         try:
@@ -1264,12 +747,22 @@ async def ask_stream(req: AskRequest):
                 except queue.Empty:
                     break
 
-            bd       = result.get("brain_decision", {})
-            fallback_agent = result.get("active_agent", agent_name)
-            yield f"data: {json.dumps({'type': 'token', 'text': result['messages'][-1].content})}\n\n"
-            yield f"data: {json.dumps({'type': 'done', 'agent': fallback_agent, 'model': 'phi4-mini', **_decision_meta, 'reflect_level': result.get('reflect_level', 'none'), 'memories_used': bd.get('memories_used', [])})}\n\n"
+            run.result     = result
+            run.agent_used = result.get("active_agent", pre.agent)
+            run.response   = result["messages"][-1].content
+            run.bd         = result.get("brain_decision", {})
+            run.model_used = "phi4-mini"
+            extras = pipeline.finish_run(run)
+            yield _sse({"type": "token", "text": run.response})
+            yield _sse({"type": "done", "agent": run.agent_used, "model": "phi4-mini",
+                        "thread_id": run.thread_id, "context_id": run.run_id,
+                        **pre.meta,
+                        "reflect_level": result.get("reflect_level", "none"),
+                        "memories_used": extras.get("memories_used",
+                                                    run.bd.get("memories_used", []))})
         except Exception as exc:
-            yield f"data: {json.dumps({'type': 'error', 'detail': str(exc)})}\n\n"
+            pipeline.fail_run(run, str(exc))
+            yield _sse({"type": "error", "detail": str(exc)})
 
     return StreamingResponse(
         _event_stream(),
@@ -1279,3 +772,7 @@ async def ask_stream(req: AskRequest):
             "X-Accel-Buffering": "no",
         },
     )
+
+
+def _sse(payload: dict) -> str:
+    return f"data: {json.dumps(payload)}\n\n"
