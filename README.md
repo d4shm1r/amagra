@@ -3,9 +3,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.8.0" src="https://img.shields.io/badge/release-v1.8.0-C48808?style=flat-square&labelColor=2E2010" /></a>
+  <a href="https://github.com/d4shm1r/amagra/releases"><img alt="Release v1.8.0" src="docs/brand/badge-release.svg" /></a>
   <a href="https://github.com/d4shm1r/amagra/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-C48808?style=flat-square&labelColor=2E2010" /></a>
-  <a href="https://github.com/d4shm1r/amagra/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/d4shm1r/amagra?style=flat-square&logo=github&logoColor=white&color=C48808&labelColor=2E2010" /></a>
+  <a href="https://github.com/d4shm1r/amagra/stargazers"><img alt="Stars" src="https://badgen.net/github/stars/d4shm1r/amagra?color=C48808&labelColor=2E2010&icon=github" /></a>
   <img alt="Self-hosted" src="https://img.shields.io/badge/self--hosted-✓-C48808?style=flat-square&labelColor=2E2010" />
   <img alt="Tests: 986 passing" src="https://img.shields.io/badge/tests-986%20passing-C48808?style=flat-square&labelColor=2E2010" />
 </p>
