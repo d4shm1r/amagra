@@ -12,7 +12,11 @@ Both endpoints run against the same mocked coordinator result, then each
 persistence table is diffed on its content columns (timestamps, ids and
 durations excluded).
 
-Run: python3 -m pytest tests/test_ask_parity.py -v
+NOTE on the filename: test_auth.py must be the first module to import `api`
+(it sets REQUIRE_AUTH=1 pre-import), so this file is named test_routes_* to
+sort after it — as every other api-importing test module does.
+
+Run: python3 -m pytest tests/test_routes_ask_parity.py -v
 """
 
 import json
