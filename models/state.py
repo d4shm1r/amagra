@@ -19,3 +19,13 @@ class AgentState(TypedDict):
     force_reflect_level:    str    # User override: none|light|full|"" (empty = auto)
     run_id:                 str    # Trace ID from run_tracer — threads through graph
     model_tier:             str    # fast|standard|reasoning — set by coordinator
+    # ── Observability: raw orchestration signals from the agent node ──
+    # Declared here so LangGraph's state merge doesn't drop them. Without a
+    # schema slot these keys are silently discarded before reaching the run log
+    # or API response, even though the coordinator sets them. Keys are optional
+    # at runtime (absent when the producing path didn't run).
+    response_quality:       float  # critic-gate / reflection quality of the kept answer
+    response_kept:          str    # first_attempt|reflection_rewrite|A/B — which candidate kept
+    reflect_delta:          float  # score_final - score_initial when reflection ran
+    gram_winner:            str    # dual-trajectory winning branch ("" when unused)
+    gram_log:               str    # dual-trajectory decision log

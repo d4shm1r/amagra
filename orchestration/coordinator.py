@@ -462,6 +462,10 @@ def _run_with_reflection(invoke_fn, state: AgentState):
     # them. Starts from the critic gate; the reflected path overrides below.
     _resp_quality: float | None = _critic_perf
     _resp_kept: str = _critic_kept
+    # Reflection improvement (score_final - score_initial), propagated into
+    # `result` so the run log can persist it as a raw observation. None on the
+    # non-reflected path — the reader treats absence as "not reflected".
+    _resp_reflect_delta: float | None = None
 
     if state.get("reflect", False) or reflect_level in {"light", "full"}:
         # ── Reflected path: grounded performance signal ───────
@@ -514,6 +518,8 @@ def _run_with_reflection(invoke_fn, state: AgentState):
                     },
                     quality=performance,
                 )
+
+            _resp_reflect_delta = reflect_delta
 
             # Single learning update with real quality signal
             apply_learning_update(
@@ -588,6 +594,8 @@ def _run_with_reflection(invoke_fn, state: AgentState):
         # Honest values only — keys absent when the critic gate didn't run.
         updates["response_quality"] = round(float(_resp_quality), 3)
         updates["response_kept"]    = _resp_kept or "first_attempt"
+    if _resp_reflect_delta is not None:
+        updates["reflect_delta"] = round(float(_resp_reflect_delta), 4)
     if updates:
         result = {**result, **updates}
 
