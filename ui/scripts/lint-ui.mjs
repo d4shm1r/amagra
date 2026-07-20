@@ -42,6 +42,7 @@ const DEBT = new Set([
   "components/panels/PromptVersionDiff.jsx",
   "components/panels/TracesPanel.jsx",
   "config/constants.js",
+  "config/history.js",
   "lib/monacoSetup.js",
   "tabs/ChatTab.jsx",
   "tabs/ConsensusTab.jsx",

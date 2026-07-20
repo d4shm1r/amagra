@@ -65,11 +65,6 @@ export default function App() {
     setShowOnboarding(false);
   }, []);
 
-  // The Simple/Advanced toggle was removed — every surface, menu, and diagnostic
-  // is always shown. `mode` is pinned to "advanced" so the handful of components
-  // that still branch on it render the full experience.
-  const mode = "advanced";
-
   const updateSetting = useCallback((key, val) => {
     setSettings(prev => {
       const next = { ...prev, [key]: val };
@@ -443,7 +438,7 @@ export default function App() {
                   Loading…
                 </div>
               }>
-              {activeTab === "home"          && <HomeTab apiStatus={apiStatus} coherence={coherence} totalQueries={totalQueries} onNav={navTo} mode={mode} />}
+              {activeTab === "home"          && <HomeTab apiStatus={apiStatus} coherence={coherence} totalQueries={totalQueries} onNav={navTo} />}
               {activeTab === "concepts"      && <ResearchTab activeDoc={researchDoc} />}
               {activeTab === "knowledge"     && <KnowledgeGraphTab />}
               {activeTab === "mindmap"       && <MindMapTab litNode={litNode} onForceAgent={(id) => { setForcedAgent(id); navTo("chat"); }} />}
