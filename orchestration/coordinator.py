@@ -31,8 +31,8 @@ from cognition.reflection import grounded_evaluate
 from cognition.self_consistency import (
     escalation_decision,
     extract_final_answer,
-    is_numeric_reasoning,
     majority_vote,
+    wants_scalar_answer,
 )
 
 _COS_SESSION_ID = "cos-session-main"
@@ -255,19 +255,21 @@ def _run_with_reflection(invoke_fn, state: AgentState):
 
     run_tracer.record_generate(run_id, agent)
 
-    # ── Self-consistency (opt-in, numeric-reasoning only) ─────────
-    # For arithmetic word problems, majority-vote across N samples instead of
+    # ── Self-consistency (on by default, scalar-numeric only) ─────
+    # For scalar-numeric queries, majority-vote across N samples instead of
     # trusting one greedy draft (+0.19 on GSM8K/phi4-mini). Reuse the draft we
     # already have as sample 1 and gather N-1 more via re-invoke (the same
     # natural-nondeterminism mechanism the critic gate uses). The winning-vote
     # agreement is a calibrated confidence signal that also drives escalation:
     # low agreement (<0.6, ~90% of errors at ~30% of volume) → escalate.
-    # Off unless AMAGRA_SELF_CONSISTENCY=1; gated to arithmetic queries so the
+    # On unless AMAGRA_SELF_CONSISTENCY=0 (#185); gated by wants_scalar_answer —
+    # arithmetic word problems plus scalar `compute`-shaped queries (#184), but
+    # NOT enumerations/proofs (vector answers → tool execution, #186) — so the
     # N× cost never touches the common path.
     _vote_escalate = False
-    if (os.environ.get("AMAGRA_SELF_CONSISTENCY") == "1"
+    if (os.environ.get("AMAGRA_SELF_CONSISTENCY", "1") != "0"
             and task and response_raw
-            and is_numeric_reasoning(task)):
+            and wants_scalar_answer(task, bd.get("signal_shape", ""))):
         try:
             from langchain_core.messages import AIMessage as _AIMsgSC
 
