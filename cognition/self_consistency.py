@@ -208,3 +208,41 @@ def is_numeric_reasoning(query: str) -> bool:
         return False
     numbers = re.findall(r"\d[\d,]*(?:\.\d+)?", query)
     return len(numbers) >= 1 and bool(_QUANTITY_CUE.search(query))
+
+
+# Enumeration / sequence / proof cues: the answer is a *vector* (many terms) or
+# a derivation, not a single number. Scalar majority-voting (extract_final_answer
+# pulls ONE number) can't validate those, so they are excluded even when the
+# router shapes them `compute` — they need tool execution (#186), not sampling.
+_NON_SCALAR_CUE = re.compile(
+    r"\b(enumerate|list the|first \d+ \w+|all the|each (term|prime|digit|value)|"
+    r"terms?|sequence|decimal (expansion|places)|to \d+ (decimal )?places|"
+    r"prove that|show that|derive)\b",
+    re.IGNORECASE,
+)
+
+
+def wants_scalar_answer(query: str, shape: str = "") -> bool:
+    """
+    True when the query expects a single numeric answer that scalar
+    majority-voting can actually validate — the subset of computation where
+    self-consistency helps.
+
+    Fires on arithmetic word problems (`is_numeric_reasoning`) and on scalar
+    `compute`-shaped queries ("17 factorial", "the 15th Fibonacci number",
+    "evaluate the sum …"). Excludes enumerations / sequences / proofs (vector or
+    derivation answers) — voting on one extracted number there is misleading, so
+    those route to tool execution (#186) instead.
+
+    `shape` is the router's answer_shape (`compute` after #184); passing it lets
+    scalar compute prompts qualify without stuffing computation verbs into the
+    word-problem cue set (which would wrongly catch enumerations).
+    """
+    if not query:
+        return False
+    if _NON_SCALAR_CUE.search(query):
+        return False
+    if is_numeric_reasoning(query):
+        return True
+    # A scalar compute query still needs at least one number to vote on.
+    return shape == "compute" and bool(re.search(r"\d", query))

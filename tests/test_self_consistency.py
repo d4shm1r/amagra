@@ -8,6 +8,7 @@ from cognition.self_consistency import (
     escalation_decision,
     extract_final_answer,
     is_numeric_reasoning,
+    wants_scalar_answer,
     majority_vote,
     normalize_number,
     self_consistent_answer,
@@ -175,6 +176,43 @@ def test_numeric_reasoning_skips_ordinary_prose():
 def test_numeric_reasoning_needs_a_number_and_a_cue():
     assert not is_numeric_reasoning("The answer is 42")   # number but no cue word
     assert is_numeric_reasoning("Add 5 and 7 together")   # number + 'add'
+
+
+# ── wants_scalar_answer (the #185 gate: scalar-only self-consistency) ─
+
+def test_scalar_gate_fires_on_word_problems():
+    # Arithmetic word problems still qualify (the measured +0.19 lever).
+    assert wants_scalar_answer("What is 12 times 8?")
+    assert wants_scalar_answer(
+        "A shop sold 12 apples and had 30 left. How many in total?"
+    )
+
+
+def test_scalar_gate_fires_on_scalar_compute_shape():
+    # Scalar compute-shaped queries (#184) qualify only with the shape hint,
+    # since they carry no word-problem cue word.
+    assert wants_scalar_answer("Compute 17 factorial exactly", shape="compute")
+    assert wants_scalar_answer("Compute the 15th Fibonacci number", shape="compute")
+    assert wants_scalar_answer("Evaluate the sum 1+2+3+...+100", shape="compute")
+    # Without the compute shape, a bare compute verb + number is not enough.
+    assert not wants_scalar_answer("Compute 17 factorial exactly")
+
+
+def test_scalar_gate_excludes_enumerations_and_proofs():
+    # Vector / derivation answers: scalar voting can't validate them → #186.
+    for q in [
+        "Compute the first 12 terms of the sequence a1=1, a2=2",
+        "Enumerate the first 10 prime numbers",
+        "List the first 8 powers of 2 exactly",
+        "Give the exact decimal expansion of 1/7 to 12 places",
+        "Prove that the sum of the first n odd numbers equals n squared",
+    ]:
+        assert not wants_scalar_answer(q, shape="compute"), q
+
+
+def test_scalar_gate_needs_a_number_and_rejects_empty():
+    assert not wants_scalar_answer("Compute the answer", shape="compute")  # no number
+    assert not wants_scalar_answer("", shape="compute")
 
 
 def test_coordinator_composition_picks_winning_sample_text():
