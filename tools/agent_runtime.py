@@ -14,6 +14,11 @@ Even when enabled the loop only engages if at least one tool is actually
 available (the workspace read tools always are; sandbox/web are separately
 gated). Any failure falls back to a plain llm.invoke so a tool hiccup never
 costs the user a response.
+
+Exact-computation queries (#184's `compute` answer_shape) are additionally
+steered toward the run_python sandbox tool via a directive preamble (#186), so
+"compute the first 12 terms" is executed rather than free-handed — but only
+when run_python is actually available, otherwise the preamble is untouched.
 """
 
 import os
@@ -29,6 +34,44 @@ DEFAULT_AGENT_TOOL_ITERS = 3
 def agent_tools_enabled() -> bool:
     """True when the in-agent tool loop is switched on via config."""
     return os.environ.get("AMAGRA_AGENT_TOOLS", "0") == "1"
+
+
+# Steer exact-computation queries (#184's `compute` shape) toward the sandbox
+# instead of letting a small model free-hand a number/sequence/proof. This is
+# the execution end of the chain #184→#185→#186: #185 votes on scalar answers
+# it can validate; enumerations and proofs (vector/derivation answers) need a
+# real interpreter, which is what run_python provides.
+_COMPUTE_DIRECTIVE = (
+    "This request needs an EXACT computed result — a number, a full sequence, "
+    "or a proof — not a description of how to compute it. Use the run_python "
+    "tool to compute the answer and read its real output; do not hand-calculate "
+    "or guess. For an enumeration (\"the first N …\"), list every term straight "
+    "from the program's output."
+)
+
+
+def _augment_for_compute(task: str, system_prompt: str, available: dict) -> str:
+    """
+    Prepend the compute directive when the query wants an exact computed result
+    AND run_python is actually available.
+
+    Guarded on run_python because without a sandbox the directive would order the
+    model to use a tool it can't call — a dead instruction. When it's absent the
+    preamble is returned untouched, so a compute query with the sandbox off
+    behaves exactly like any other tool turn (no regression). The persona still
+    leads the system message; the directive follows it, ahead of the tool
+    protocol.
+    """
+    if "run_python" not in available:
+        return system_prompt
+    try:
+        from orchestration.query_normalizer import detect_answer_shape
+        if detect_answer_shape(task) != "compute":
+            return system_prompt
+    except Exception:
+        return system_prompt
+    return (f"{system_prompt}\n\n{_COMPUTE_DIRECTIVE}"
+            if system_prompt else _COMPUTE_DIRECTIVE)
 
 
 def _llm_invoke(transcript):
@@ -58,12 +101,14 @@ def run_with_tools(system_prompt: str, task: str, *,
         return None
     if not task or not task.strip():
         return None
-    if not catalog.available_tools():
+    available = catalog.available_tools()
+    if not available:
         return None
     inv = invoke or _llm_invoke
+    preamble = _augment_for_compute(task, system_prompt, available)
     try:
         result = tool_loop.run_tool_loop(
-            inv, task, max_iters=max_iters, system_preamble=system_prompt,
+            inv, task, max_iters=max_iters, system_preamble=preamble,
         )
         answer = result.get("answer")
         return answer if (answer and answer.strip()) else None
