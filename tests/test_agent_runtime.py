@@ -80,6 +80,42 @@ def test_blank_answer_returns_none(monkeypatch):
     assert ar.run_with_tools("persona", "task", invoke=_scripted("x")) is None
 
 
+# ── compute steering: exact-computation queries → run_python (#186) ───────────
+
+_COMPUTE_TASK = "Compute the first 12 terms of the sequence a1=1, a2=2. Do not guess."
+
+
+def test_compute_directive_injected_when_run_python_available(monkeypatch):
+    monkeypatch.setenv("AMAGRA_AGENT_TOOLS", "1")
+    # Pretend the sandbox is on: run_python is offered.
+    monkeypatch.setattr(ar.catalog, "available_tools",
+                        lambda: {"run_python": {"args": ["code"], "desc": "run"}, "read_file": {"args": ["path"], "desc": "read"}})
+    inv = _scripted("done")                       # answers without a tool call
+    ar.run_with_tools("PERSONA", _COMPUTE_TASK, invoke=inv)
+    system_msg = inv.seen[0][0][1]
+    assert system_msg.startswith("PERSONA")       # persona still leads
+    assert "run_python" in system_msg             # directive steers to the sandbox
+    assert "EXACT computed result" in system_msg
+
+
+def test_compute_directive_absent_without_run_python(monkeypatch):
+    monkeypatch.setenv("AMAGRA_AGENT_TOOLS", "1")
+    # Sandbox off: only read tools. Directive would be a dead instruction → omit.
+    monkeypatch.setattr(ar.catalog, "available_tools", lambda: {"read_file": {"args": ["path"], "desc": "read"}})
+    inv = _scripted("done")
+    ar.run_with_tools("PERSONA", _COMPUTE_TASK, invoke=inv)
+    assert "EXACT computed result" not in inv.seen[0][0][1]
+
+
+def test_compute_directive_absent_for_non_compute_task(monkeypatch):
+    monkeypatch.setenv("AMAGRA_AGENT_TOOLS", "1")
+    monkeypatch.setattr(ar.catalog, "available_tools",
+                        lambda: {"run_python": {"args": ["code"], "desc": "run"}, "read_file": {"args": ["path"], "desc": "read"}})
+    inv = _scripted("done")
+    ar.run_with_tools("PERSONA", "Explain how DNS resolution works", invoke=inv)
+    assert "EXACT computed result" not in inv.seen[0][0][1]
+
+
 # ── respond_with_optional_tools: drop-in for llm.invoke ───────────────────────
 
 def test_respond_falls_back_to_plain_invoke_when_disabled(monkeypatch):
