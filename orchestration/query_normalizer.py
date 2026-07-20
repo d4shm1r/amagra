@@ -18,7 +18,7 @@ from dataclasses import dataclass
 class QuerySignal:
     domain:       str    # "networking"|"python"|"dotnet"|"ai_ml"|"web"|"devops"|"data"|"writing"|"general"
     domain_conf:  float  # 0.0–1.0; >0.3 = confident enough for domain routing
-    answer_shape: str    # "factual" | "explanation" | "code" | "debug" | "procedural" | "comparison"
+    answer_shape: str    # "factual" | "explanation" | "code" | "debug" | "procedural" | "comparison" | "compute"
     verbosity:    str    # "terse" | "normal" | "detailed"
     action:       str    # carried from _detect_action() in core_brain
 
@@ -172,6 +172,27 @@ def detect_domain(query: str) -> tuple[str, float]:
     return best_domain, best_conf
 
 
+# Exact-computation / enumeration / proof: the caller wants a *computed result*
+# — a number, a sequence, a proof — not a prose description of the method. This
+# is the shape the router previously lacked, so "Compute the first 12 terms …"
+# was routed identically to "Explain X" and the model described the algorithm
+# instead of running it (#184). Imperative computation verbs and enumeration /
+# proof patterns only; bare exactness words ("exactly") are deliberately NOT
+# sufficient, so "explain exactly how X works" stays an explanation.
+_COMPUTE_CUE = re.compile(
+    r"\b(compute|calculate|enumerate|tabulate|"
+    r"factorial|factori[sz]e|"
+    r"evaluate the (sum|product|expression|series|integral|value)|"
+    r"first \d+ (terms?|primes?|numbers?|digits?|powers?|values?|multiples?|"
+    r"fibonacci)|"
+    r"list the first \d|"
+    r"the \d+(st|nd|rd|th) (term|prime|digit|fibonacci|value|number)|"
+    r"prove that|show that|derive the|"
+    r"decimal (expansion|places)|to \d+ (decimal )?places)\b",
+    re.IGNORECASE,
+)
+
+
 def detect_answer_shape(query: str) -> str:
     """
     Classify the expected shape of the response.
@@ -181,6 +202,7 @@ def detect_answer_shape(query: str) -> str:
     debug       — caller has a broken state and wants a fix
     procedural  — step-by-step how-to or setup guide
     comparison  — contrast between two or more things
+    compute     — caller wants an exact computed result / enumeration / proof
     explanation — default; prose description of a concept
     """
     q = query.lower()
@@ -230,6 +252,14 @@ def detect_answer_shape(query: str) -> str:
         q
     ):
         return "comparison"
+
+    # Compute: exact computation / enumeration / proof. Placed last so every
+    # other shape wins first — this only ever splits what would have been an
+    # "explanation" into "explanation" vs "compute", never touching factual /
+    # code / debug / procedural / comparison. "How do I compute …" is caught by
+    # the procedural check above and stays procedural, as intended.
+    if _COMPUTE_CUE.search(q):
+        return "compute"
 
     return "explanation"
 
@@ -298,6 +328,18 @@ if __name__ == "__main__":
         ("Write a FastAPI endpoint that accepts a JSON body",        "python",    "code",        "normal"),
         ("What is a transformer model",                              "ai_ml",     "explanation", "terse"),
         ("Explain how DNS works",                                    "networking","explanation", "terse"),
+        # ── compute shape (#184): exact computation / enumeration / proof ──
+        ("Compute the first 12 terms of the sequence a1=1, a2=2, a_n=a_{n-1}+a_{n-2}. Do not guess.",
+                                                                     "general",   "compute",     "normal"),
+        ("Enumerate the first 10 prime numbers. Do not guess.",      "general",   "compute",     "normal"),
+        ("List the first 8 powers of 2 exactly.",                    "general",   "compute",     "normal"),
+        ("Compute 17 factorial exactly. Do not guess.",              "general",   "compute",     "normal"),
+        ("Prove that the sum of the first n odd numbers equals n squared.",
+                                                                     "general",   "compute",     "normal"),
+        # Guard: "how do I compute …" is a method question → procedural, NOT compute
+        ("How do I compute a rolling average in pandas",             "data",      "procedural",  "normal"),
+        # Guard: bare "exactly" in prose stays explanation
+        ("Explain exactly how DNS resolution works",                 "networking","explanation", "terse"),
     ]
 
     passed = total = 0
