@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { BUILD_PHASES, VERSION_EPOCHS } from "@/config/constants";
+import { BUILD_PHASES, VERSION_EPOCHS } from "@/config/history";
 import { T, TYPE, EASE, DUR, RADIUS, FONT_MONO } from "@/styles/theme";
 import { PageHeader } from "@/components/ui";
 

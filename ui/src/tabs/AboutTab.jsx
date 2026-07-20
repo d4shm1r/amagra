@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { API } from "@/lib/api";
-import { BUILD_PHASES, VERSION } from "@/config/constants";
+import { VERSION } from "@/config/constants";
+import { BUILD_PHASES } from "@/config/history";
 import {
   Page, PageHeader, Section, Card, Grid, Row, Stack,
   Wordmark, Pill, Caption, Lead, DataRow, Inline,

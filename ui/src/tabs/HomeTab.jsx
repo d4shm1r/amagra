@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { T, LUX, GOLD, TYPE, FONT_DISPLAY } from "@/styles/theme";
-import { BUILD_PHASES, ROADMAP, VERSION } from "@/config/constants";
+// Derived facts only — Home is eager, so it must not pull in config/history.js.
+import { PHASE_COUNT, CURRENT_FOCUS, VERSION } from "@/config/constants";
 
 // ── Feature pillars ─────────────────────────────────────────────
 // Gold is the signature, never the hierarchy system: every mark is the same
@@ -53,14 +54,7 @@ const STACK = [
 // ── Quick nav — first actions, not a second launcher ──────────────
 // The sidebar already navigates everywhere; this is a calm "start here"
 // for a first-run user. Kept short and gold-unified.
-const SIMPLE_NAV_SHORTCUTS = [
-  { sym: "↗", label: "Chat",       tab: "chat" },
-  { sym: "⌘", label: "Prompt IDE", tab: "prompt" },
-  { sym: "◎", label: "Consensus",  tab: "consensus" },
-  { sym: "?", label: "Guide",      tab: "guide" },
-];
-
-const ADVANCED_NAV_SHORTCUTS = [
+const NAV_SHORTCUTS = [
   { sym: "↗", label: "Chat",         tab: "chat" },
   { sym: "⌘", label: "Prompt IDE",   tab: "prompt" },
   { sym: "⊙", label: "Inspector",    tab: "inspector" },
@@ -77,13 +71,11 @@ const PIPELINE = [
   { label: "Response",        sub: "reflect + learn" },
 ];
 
-export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mode = "advanced" }) {
+export default function HomeTab({ apiStatus, coherence, totalQueries, onNav }) {
   const online  = apiStatus === "online";
 
   const [showInternals, setShowInternals] = useState(false);
 
-  const currentPhase = ROADMAP.find(p => p.status === "next");
-  const navShortcuts = mode === "simple" ? SIMPLE_NAV_SHORTCUTS : ADVANCED_NAV_SHORTCUTS;
 
   return (
     <div style={{ animation: "fadeIn .2s", fontFamily: "inherit" }}>
@@ -103,8 +95,8 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
             <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 16 }}>
               <Badge label={`v${VERSION}`}   />
               <Badge label="Open Core · MIT" />
-              {currentPhase && (
-                <Badge label={`Now: ${currentPhase.title}`} pulse />
+              {CURRENT_FOCUS && (
+                <Badge label={`Now: ${CURRENT_FOCUS}`} pulse />
               )}
             </div>
 
@@ -169,7 +161,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
           gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
           gap: 8,
         }}>
-          {navShortcuts.map(n => (
+          {NAV_SHORTCUTS.map(n => (
             <button
               key={n.tab}
               onClick={() => onNav(n.tab)}
@@ -334,7 +326,7 @@ export default function HomeTab({ apiStatus, coherence, totalQueries, onNav, mod
         display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
       }}>
         <span style={{ ...TYPE.micro, fontWeight: 400, color: T.muted }}>
-          Started Dec 15 2025 · {BUILD_PHASES.length} build phases · v{VERSION} · MIT
+          Started Dec 15 2025 · {PHASE_COUNT} build phases · v{VERSION} · MIT
         </span>
         <span style={{ color: T.border }}>·</span>
         <span
