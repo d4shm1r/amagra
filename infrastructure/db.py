@@ -50,6 +50,7 @@ REGISTRY: dict[str, str] = {
     "traces":         os.path.join("logs", "traces.db"),
     "arena":          os.path.join("logs", "arena.db"),
     "telemetry":      os.path.join("logs", "telemetry.db"),
+    "strategy":       os.path.join("logs", "strategy.db"),
 }
 
 
