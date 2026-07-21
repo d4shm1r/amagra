@@ -89,22 +89,22 @@ the roadmap — it is the join key for directions 1, 2, 3, and 10.
 
 ## 2. Strategy Memory ("what worked before")
 
-**Status: 🟡 35%**
+**Status: 🟢 60%**
 
 **Existing**
+- **[decision/strategy_memory.py](../../decision/strategy_memory.py) — `StrategyRecord` + `StrategyMemory`: task_class → strategy → {attempts, success_rate, avg_cost, avg_latency}, ranked cheapest-successful-first. `ingest_run_log()` (idempotent) backfills from the run log; `stats_for`/`best_for` query it. Demonstrated end-to-end (real ingest shows e.g. python/code: python_dev 47s vs pipeline+reflect:light 104s — a 2× cost gap for the same class).**
 - Episodic memory records outcome (performance, regret, action, complexity) — [memory_core/db.py](../../memory_core/db.py)
 - Decision records with provenance (explicit vs derived) — [decision/model_choices.py](../../decision/model_choices.py)
-- Outcome-weighted memory ranking (quality×relevance×freshness)
 
 **Missing**
-- Aggregation keyed by **task class → strategy → {success_rate, avg_cost, avg_latency}**
-- A query the router can call at decision time ("for this task class, which strategy historically wins?")
+- The router calling `best_for(task_class)` **at decision time** (query exists; not yet wired into routing)
+- Multiple strategies per class from real traffic — natural runs pick one strategy each, so `best_for` is only meaningful once exploration (forced or reflection-ROI-driven) populates alternatives
 
-**Depends on:** Strategy Record · reflection stress data (#-stress) as a first population source
+**Depends on:** ✅ Strategy Record (done) · exploration data (reflection ROI / forced A/B) to fill alternatives
 
-**Done when:** a `strategy_memory` query returns ranked strategies for a task class, backed by ≥N real records, and the router reads it before deciding.
+**Done when:** the router reads ranked strategies for a task class before deciding and it beats the current baseline on held-out tasks.
 
-**Note:** this is an aggregation/query layer over data we already collect — not a new subsystem. Narrow version first (task-class → strategy stats), not the full KOS (#9).
+**Note:** built as an aggregation/query layer over the run log — not a new subsystem, as scoped. `best_for` is the query the EV engine (#1) consumes.
 
 ---
 
