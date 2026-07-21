@@ -58,3 +58,16 @@ def test_shipped_stress_dataset_valid():
     assert len(cats) == 7
     for v in data.values():
         assert "prompt" in v and "check" in v and "type" in v["check"]
+
+
+def test_numeric_accepts_spelled_out_answer():
+    # Local model answers in words — must still grade.
+    assert ck.check({"type": "numeric", "expect": 60}, "Answer: sixty apples remain") is True
+    assert ck.check({"type": "numeric", "expect": 47}, "it was half on day forty-seven") is True
+    assert ck.check({"type": "numeric", "expect": 47}, "day forty seven") is True
+    assert ck.check({"type": "numeric", "expect": 5}, "Answer: five cents") is True
+    # A wrong answer that is ONLY spelled out (no digits, not the expected word)
+    # is ungradeable → None, not a false pass. Honest under-grading, not wrong.
+    assert ck.check({"type": "numeric", "expect": 60}, "Answer: fifty apples") is None
+    # But a wrong DIGIT answer is still caught as False.
+    assert ck.check({"type": "numeric", "expect": 60}, "Answer: 50 apples") is False

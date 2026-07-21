@@ -46,6 +46,27 @@ _UNCERTAINTY_MARKERS = (
 )
 
 
+_ONES = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
+         "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+         "sixteen", "seventeen", "eighteen", "nineteen"]
+_TENS = {20: "twenty", 30: "thirty", 40: "forty", 50: "fifty", 60: "sixty",
+         70: "seventy", 80: "eighty", 90: "ninety"}
+
+
+def _int_to_words(n: int) -> list[str]:
+    """Spelled forms of a non-negative int 0-99 (the range of stress answers):
+    60 -> ['sixty'], 47 -> ['forty-seven', 'forty seven']. Empty if out of range."""
+    if n < 0 or n > 99:
+        return []
+    if n < 20:
+        return [_ONES[n]]
+    tens, ones = divmod(n, 10)
+    tw = _TENS[tens * 10]
+    if ones == 0:
+        return [tw]
+    return [f"{tw}-{_ONES[ones]}", f"{tw} {_ONES[ones]}"]
+
+
 def _numbers(text: str) -> list[float]:
     """All numbers in the text, commas stripped. '18', '1,024', '3.5' → floats."""
     out = []
@@ -70,7 +91,14 @@ def check(spec: dict, text: str) -> bool | None:
         # echoes the question's numbers, so scanning everything is fooled. The
         # stress prompts request an "Answer: N" line to make this reliable.
         tail = re.split(r"answer\s*[:=]", text, flags=re.IGNORECASE)
-        nums = _numbers(tail[-1]) if len(tail) > 1 else _numbers(text)
+        scope = tail[-1] if len(tail) > 1 else text
+        # The local model often answers in words ("Answer: sixty apples"), which
+        # digit extraction misses. Accept the spelled form of the expected value.
+        if float(expect).is_integer():
+            spelled = _int_to_words(int(expect))
+            if spelled and any(w in scope.lower() for w in spelled):
+                return True
+        nums = _numbers(scope)
         if not nums:
             return None
         # After an explicit answer marker, judge the FIRST number stated there;
