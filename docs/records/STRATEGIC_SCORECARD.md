@@ -70,20 +70,22 @@ the roadmap — it is the join key for directions 1, 2, 3, and 10.
 
 ## 1. Decision Intelligence Layer (expected-value strategy selection)
 
-**Status: 🟡 30%**
+**Status: 🟠 50%**
 
 **Existing**
-- Confidence + calibration (ECE) — [decision/weights.py](../../decision/weights.py), [workbench/evaluation/calibration_report.py](../../workbench/evaluation/calibration_report.py)
-- Regret signal threaded through routing — [orchestration/coordinator.py](../../orchestration/coordinator.py)
-- Escalation gate (vote-margin) and `model_tier` ladder — coordinator
+- **[decision/strategy_selector.py](../../decision/strategy_selector.py) — `StrategySelector`: EV = value·P(success) − latency_penalty − cost_penalty over strategy-memory stats. Beta-shrinkage on P(success) (lucky 1/1 → ~0.67) + abstention (returns None to keep the current router when evidence is thin). `rank`/`select` are the decision-time queries. Demonstrated: python/code ranks python_dev (EV 0.45, 47s) over pipeline+reflect:light (EV 0.20, 104s).**
+- Strategy memory supplying the estimates — [decision/strategy_memory.py](../../decision/strategy_memory.py) (#2)
+- Confidence + calibration (ECE) — [decision/weights.py](../../decision/weights.py), [calibration_report.py](../../workbench/evaluation/calibration_report.py)
+- Regret signal + escalation gate + `model_tier` ladder — [coordinator.py](../../orchestration/coordinator.py)
 
 **Missing**
-- Per-strategy success **prediction**
-- Explicit expected-value calculation choosing the cheapest successful path
+- The **router calling `select()`** at decision time (engine built; not wired into routing)
+- **Calibration** of the heuristic weights/budgets (LATENCY_WEIGHT, budgets, prior)
+- **Validation** that it beats the baseline on held-out tasks — needs ≥min_attempts of data per class, which today's sparse runs don't have (selector correctly abstains everywhere so far)
 
-**Depends on:** Decision Quality v0.1 (done) · Strategy Memory aggregation (#2) · Strategy Record
+**Depends on:** ✅ Strategy Memory (#2) · exploration data to reach min_attempts per class
 
-**Done when:** the router selects a strategy using predicted utility (P(success)×value − cost − latency) and beats the current signal/rule baseline on a held-out task set.
+**Done when:** the router selects a strategy using predicted utility and beats the current signal/rule baseline on a held-out task set.
 
 ---
 
