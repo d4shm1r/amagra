@@ -501,16 +501,31 @@ def finish_run(run: AskRun) -> dict:
     try:
         _rl = _get_run_log()
         if _rl is not None:
+            _mem_used = bd.get("memories_used") or []
             _rl.append(
                 task=req.message,
                 ext_id=run.run_id,
                 result=Result(output=response, meta={
+                    # Join keys — make run_id first-class so experiments can be
+                    # compared across model / routing / reflection / memory changes.
+                    "run_id":       run.run_id,
                     "agent":        agent_used,
                     "duration_ms":  duration_ms,
                     "complexity":   bd.get("complexity", "simple"),
                     "signal_domain": bd.get("signal_domain", "general"),
                     "signal_shape": bd.get("signal_shape", "explanation"),
                     "signal_conf":  round(float(bd.get("signal_conf", 0.0)), 3),
+                    # ── Raw orchestration observations ("what happened") ──
+                    # Deliberately NOT evaluation labels ("was it good") — the
+                    # Decision Quality Benchmark derives those from these facts.
+                    "reflect_level":    run.result.get("reflect_level", "none"),
+                    "reflect_delta":    run.result.get("reflect_delta"),
+                    "response_quality": run.result.get("response_quality"),
+                    "response_kept":    run.result.get("gram_winner")
+                                        or run.result.get("response_kept", ""),
+                    "memory_used":      bool(_mem_used),
+                    "memory_hit_count": len(_mem_used),
+                    "contradiction":    bool(run.result.get("contradiction_detected", False)),
                 }),
             )
     except Exception:
