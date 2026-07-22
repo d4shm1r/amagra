@@ -1,0 +1,195 @@
+/* ─────────────────────────────────────────────────────────────────
+   AMAGRA marketing pages — shared "quiet luxury" chrome + primitives.
+   Loaded on top of tokens.css by every public page:
+     landing.html · compare.html · faq.html
+   This is the SINGLE source for the nav, gradient wordmark, button,
+   card, comparison table, footer, and layout primitives — so the three
+   pages can never drift apart. Page-specific components stay in each
+   page's own inline <style>. Change shared look HERE, once.
+   ───────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; scrollbar-color: var(--g2) transparent; }
+
+body {
+  background: var(--l0);
+  color: var(--t2);
+  font-family:
+    "DM Sans", "Manrope", ui-sans-serif,
+    -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* Scrollbar — a slim gold thumb that floats in the track (transparent border
+   + padding-box clip give it inset breathing room). Brightens on hover. */
+::-webkit-scrollbar { width: 13px; height: 13px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--g1) 0%, var(--g2) 55%, var(--g3) 100%);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #FFF3B4 0%, var(--g1) 45%, var(--g2) 100%);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+}
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* ── Display type — Cormorant serif ── */
+h1, h2, h3 {
+  font-family: 'Cormorant Garamond', 'Iowan Old Style', Palatino, Georgia, serif;
+  font-weight: 600;
+  color: var(--t1);
+  letter-spacing: -0.01em;
+}
+
+/* ── Wordmark — the ONE gold-gradient identity, identical on every page.
+   Clipped gradient fill; never selectable as text (it reads as a logo,
+   not a word to copy). ── */
+.wordmark {
+  font-family: 'Cormorant Garamond', 'Iowan Old Style', Palatino, Georgia, serif;
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  display: inline-block;
+  background: linear-gradient(120deg,
+    var(--g4) 0%,
+    var(--g2) 38%,
+    var(--g1) 50%,
+    var(--g3) 64%,
+    var(--g4) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ── NAV ──
+   Scope to the top-level bar only (body > nav). The breadcrumb on compare/faq
+   is ALSO a <nav> (<nav class="crumbs">); a bare `nav` selector would fix-position
+   it on top of the real navbar and hide it — which is exactly what it did. */
+body > nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 64px;
+  background: rgba(244, 240, 232, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 32px; z-index: 100; gap: 32px;
+}
+.nav-links { display: flex; gap: 26px; margin-left: 28px; margin-right: auto; list-style: none; align-items: center; }
+.nav-links a {
+  font-size: 14px; color: var(--t2); font-weight: 500;
+  transition: color 160ms ease;
+}
+.nav-links a:hover { color: var(--gold-text); }
+.nav-cta { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+
+/* ── BUTTON — one refined ghost, used everywhere. Colour shift on hover,
+   never a rise: no transform, so the button stays put under the cursor. ── */
+.btn {
+  padding: 11px 22px; border-radius: 10px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  font-family: inherit;
+  color: var(--t1); background: var(--l3);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 2px rgba(72,52,28,0.04);
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+}
+.btn:hover { border-color: var(--g3); color: var(--gold-text); background: var(--l4); }
+.btn:focus-visible { outline: 2px solid var(--g3); outline-offset: 2px; }
+.btn-lg { padding: 14px 30px; font-size: 15px; border-radius: 12px; }
+
+/* ── LAYOUT PRIMITIVES ── */
+section { padding: 96px 32px; }
+.container { max-width: 1080px; margin: 0 auto; }
+.center { text-align: center; margin-left: auto; margin-right: auto; }
+
+/* Shared page scaffolding — identical hero clearance, content-section wash,
+   reading measure and CTA rhythm on landing, compare, and faq. */
+#hero { background: var(--hero-bg); text-align: center; padding: 140px 32px 44px; }
+#body { background: var(--features-bg); padding-top: 32px; }
+.measure { max-width: 800px; margin-left: auto; margin-right: auto; }
+.cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 48px; }
+
+.eyebrow {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--gold-text); margin-bottom: 14px;
+}
+h1 {
+  font-size: clamp(44px, 6vw, 76px);
+  font-weight: 600; line-height: 1.02;
+  letter-spacing: -0.02em; margin-bottom: 24px;
+}
+h2 { font-size: clamp(32px, 3.6vw, 46px); line-height: 1.08; margin-bottom: 18px; }
+h3 { font-size: 20px; }
+.lead {
+  font-size: clamp(16px, 1.5vw, 19px); color: var(--t2);
+  max-width: 620px; line-height: 1.7;
+}
+.section-sub { font-size: 16px; color: var(--t2); max-width: 600px; line-height: 1.7; margin-bottom: 52px; }
+.center.section-sub { margin-left: auto; margin-right: auto; }
+
+/* Accent word — ONE restrained gold gradient, no drop-shadow/glow */
+.accent {
+  background: linear-gradient(100deg, var(--g4), var(--g2) 55%, var(--g4));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+/* ── CARD — the shared refined token, ONE shadow ── */
+.card {
+  background: var(--l2); border-radius: 16px;
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  transition: transform 240ms cubic-bezier(0.22,1,0.36,1), box-shadow 240ms ease;
+}
+.card.lift:hover { transform: translateY(-3px); box-shadow: var(--card-shadow-lift); }
+
+/* ── COMPARISON TABLE — shared by the landing "what it is" table and /compare ── */
+.table-wrap { overflow-x: auto; border-radius: 16px; border: 1px solid var(--card-border); box-shadow: var(--card-shadow); }
+table.cmp { width: 100%; border-collapse: collapse; background: var(--l2); font-size: 14px; }
+table.cmp th, table.cmp td { padding: 15px 20px; text-align: center; border-bottom: 1px solid rgba(199,154,67,0.10); }
+table.cmp thead th { background: rgba(199,154,67,0.06); font-weight: 700; font-size: 13px; color: var(--t2); font-family: inherit; }
+table.cmp th.f, table.cmp td.f { text-align: left; }
+table.cmp th.f { color: var(--t3); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; }
+table.cmp td.f { color: var(--t1); font-weight: 600; }
+table.cmp th.a { background: rgba(199,154,67,0.14); color: var(--gold-text); }
+table.cmp td.a { background: rgba(199,154,67,0.05); color: var(--t1); }
+table.cmp tr:last-child td { border-bottom: none; }
+table.cmp code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12.5px; color: var(--gold-text); background: rgba(199,154,67,0.10); padding: 2px 6px; border-radius: 5px; }
+.check { color: var(--ok); font-weight: 700; }
+.cross { color: var(--t4); }
+.partial { color: var(--g4); font-weight: 600; font-size: 12.5px; }
+.table-note { font-size: 15px; color: var(--t2); max-width: 640px; margin: 26px auto 0; text-align: center; font-style: italic; line-height: 1.6; }
+.table-note em { color: var(--t1); font-style: normal; font-weight: 600; }
+
+/* ── FOOTER — just the wordmark + copyright. The title keeps its one size
+   (no footer override), and there is no secondary bottom link list. ── */
+footer { padding: 30px 32px; background: var(--footer-bg); border-top: 1px solid var(--border); display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap; }
+.footer-copy { font-size: 13px; color: var(--t3); }
+
+/* ── RESPONSIVE + MOTION ── */
+@media (max-width: 640px) {
+  body > nav { padding: 0 18px; gap: 12px; }
+  .nav-links { gap: 18px; }
+  section { padding: 68px 18px; }
+  footer { flex-direction: column; align-items: flex-start; gap: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto; transition: none !important; }
+}

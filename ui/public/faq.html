@@ -104,179 +104,58 @@
   }
   </script>
 
-  <!-- Structured data: BreadcrumbList — Home › FAQ, for rich results + AI context -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://amagra.dev/" },
-      { "@type": "ListItem", "position": 2, "name": "FAQ", "item": "https://amagra.dev/faq.html" }
-    ]
-  }
-  </script>
-
   <!-- Self-hosted brand fonts + the shared Gilded Calm palette (tokens.css is
        the single palette source for landing, FAQ, and the app). -->
   <link rel="stylesheet" href="/fonts.css" />
   <link rel="stylesheet" href="/tokens.css" />
+  <link rel="stylesheet" href="/site.css" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    /* Local aliases — mapped onto the shared tokens, never standalone hex.
-       (This page had drifted onto its own off-system palette.) */
-    :root {
-      --bg:    var(--l2);
-      --panel: var(--l4);
-      --ink:   var(--t1);
-      --muted: var(--text-muted);
-      --line:  var(--border);
-    }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: "DM Sans", system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--ink);
-      line-height: 1.65;
-      -webkit-font-smoothing: antialiased;
-    }
-    .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; }
-    header.site {
-      border-bottom: 1px solid var(--line);
-      padding: 22px 0;
-    }
-    header.site .wrap { display: flex; align-items: center; justify-content: space-between; }
-    .brand { font-family: "Cormorant Garamond", serif; font-weight: 700; font-size: 1.5rem; letter-spacing: 0.04em; color: var(--ink); text-decoration: none; }
-    .brand span { color: var(--g3); }
-    .nav a { color: var(--muted); text-decoration: none; font-size: 0.95rem; font-weight: 500; margin-left: 22px; }
-    .nav a:hover { color: var(--g4); }
-
-    .hero { padding: 64px 0 28px; text-align: center; }
-    .eyebrow { text-transform: uppercase; letter-spacing: 0.18em; font-size: 0.74rem; font-weight: 600; color: var(--g4); }
-    h1 { font-family: "Cormorant Garamond", serif; font-weight: 700; font-size: clamp(2.2rem, 5vw, 3rem); line-height: 1.1; margin: 12px 0 14px; }
-    .lede { color: var(--muted); font-size: 1.08rem; max-width: 620px; margin: 0 auto; }
-
-    main { padding: 8px 0 72px; }
-    .faq-item {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 26px 28px;
-      margin: 16px 0;
-    }
-    .faq-item h2 {
-      font-family: "Cormorant Garamond", serif;
-      font-weight: 600;
-      font-size: 1.4rem;
-      margin-bottom: 8px;
-      color: var(--ink);
-    }
-    .faq-item p { color: var(--muted); }
-    .faq-item code {
-      font-family: "JetBrains Mono", monospace;
-      font-size: 0.86em;
-      background: #F2ECE1;
-      color: var(--g4);
-      padding: 1px 6px;
-      border-radius: 5px;
-    }
-    .cta {
-      text-align: center;
-      padding: 44px 0 8px;
-    }
-    .btn {
-      display: inline-block;
-      background: linear-gradient(180deg, #DEB838, #C48808);
-      color: #2A1F05;
-      font-weight: 600;
-      text-decoration: none;
-      padding: 13px 26px;
-      border-radius: 10px;
-      font-size: 0.98rem;
-    }
-    .btn:hover { filter: brightness(1.04); }
-    footer.site {
-      border-top: 1px solid var(--line);
-      padding: 28px 0;
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.88rem;
-    }
-    footer.site a { color: var(--g4); text-decoration: none; }
+    /* Page-specific styles — hero, #body, .cta-row + chrome all come from /site.css. */
+    .faq-list { display: grid; gap: 16px; max-width: 800px; margin: 0 auto; }
+    .faq-item { padding: 26px 28px; }
+    .faq-item h2 { font-size: 22px; margin-bottom: 10px; }
+    .faq-item p { color: var(--t2); line-height: 1.7; }
+    .faq-item code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.86em; background: rgba(199,154,67,0.10); color: var(--gold-text); padding: 1px 6px; border-radius: 5px; }
   </style>
 </head>
 <body>
-  <header class="site">
-    <div class="wrap">
-      <a class="brand" href="/"><span>A</span>magra</a>
-      <nav class="nav">
-        <a href="/">Home</a>
-        <a href="/compare.html">Compare</a>
-        <a href="https://github.com/d4shm1r/amagra">GitHub</a>
-      </nav>
-    </div>
-  </header>
+  <nav>
+    <a class="wordmark" href="/landing.html">AMAGRA</a>
+    <ul class="nav-links">
+      <li><a href="/compare.html">Compare</a></li>
+      <li><a href="/faq.html">FAQ</a></li>
+    </ul>
+  </nav>
 
-  <section class="hero">
-    <div class="wrap">
+  <section id="hero">
+    <div class="container center">
       <div class="eyebrow">Frequently asked questions</div>
       <h1>The local cross-model prompt debugger</h1>
-      <p class="lede">Direct answers about testing one prompt across Claude, GPT, and your local models — privately, on your own hardware.</p>
+      <p class="lead center">Direct answers about testing one prompt across Claude, GPT, and your local models — privately, on your own hardware.</p>
     </div>
   </section>
 
-  <main>
-    <div class="wrap">
-      <article class="faq-item">
-        <h2>What is a prompt debugger?</h2>
-        <p>A prompt debugger lets you see how a single prompt behaves across different language models, side by side, so you can find where it silently breaks, drifts, or produces inconsistent answers. Amagra is a local, self-hosted prompt debugger: it runs one prompt across Claude, GPT, and local Ollama models at once and scores how much they agree.</p>
-      </article>
-
-      <article class="faq-item">
-        <h2>How do I test one prompt across multiple models?</h2>
-        <p>In Amagra, paste your prompt into the editor, select the models to compare, and run. Each model's output appears in its own card with latency and length, plus a divergence score (Aligned, Mixed, or Divergent) summarizing how much the answers agree. Programmatically, send a <code>POST /debug/prompt</code> request with your prompt and the list of models.</p>
-      </article>
-
-      <article class="faq-item">
-        <h2>What is a divergence score?</h2>
-        <p>Amagra's divergence score quantifies how much the models' outputs actually agree, measured as the average pairwise word-set overlap across the successful responses. It is reported as a verdict (Aligned, Mixed, or Divergent) with an agreement percentage and word-count spread, so you can spot inconsistent prompt behavior at a glance instead of reading every output.</p>
-      </article>
-
-      <article class="faq-item">
-        <h2>Can I run Amagra locally and offline?</h2>
-        <p>Yes. Amagra is self-hosted and runs entirely on your own hardware via Ollama, with no account and no internet required for local models. Cloud models (Claude, GPT, Gemini) work too if you add your own API key, but nothing is required to leave your machine.</p>
-      </article>
-
-      <article class="faq-item">
-        <h2>Is my data private? Does Amagra send my prompts to the cloud?</h2>
-        <p>Amagra is local-first and private by default. When you use local Ollama models, your prompts and data never leave your machine. Cloud models are opt-in: prompts are only sent to a provider like Anthropic or OpenAI if you choose a cloud model and supply your own API key.</p>
-      </article>
-
-      <article class="faq-item">
-        <h2>How is Amagra different from LangSmith, Promptfoo, or Helicone?</h2>
-        <p>LangSmith is a hosted, cloud-based tracing and evaluation platform. Promptfoo is open-source but CLI and config-file driven. Helicone is primarily an observability and logging layer. Amagra is a self-hosted GUI workspace that compares models on one prompt, scores their divergence, keeps persistent project memory, and runs fully private on your own hardware.</p>
-      </article>
-
-      <article class="faq-item">
-        <h2>Which models does Amagra support?</h2>
-        <p>Local models via Ollama (the default), plus Anthropic Claude, OpenAI GPT, Google Gemini, and any OpenAI-compatible endpoint such as vLLM or LM Studio.</p>
-      </article>
-
-      <article class="faq-item">
-        <h2>Is Amagra free?</h2>
-        <p>Yes. Self-hosting is free and MIT licensed, always. There is also a managed free tier (100 requests per day, no card required), with paid tiers for managed hosting and enterprise features.</p>
-      </article>
-
-      <div class="cta">
-        <a class="btn" href="https://github.com/d4shm1r/amagra">Get started on GitHub →</a>
+  <section id="body">
+    <div class="container">
+      <div class="faq-list">
+        <article class="card faq-item"><h2>What is a prompt debugger?</h2><p>A prompt debugger lets you see how a single prompt behaves across different language models, side by side, so you can find where it silently breaks, drifts, or produces inconsistent answers. Amagra is a local, self-hosted prompt debugger: it runs one prompt across Claude, GPT, and local Ollama models at once and scores how much they agree.</p></article>
+        <article class="card faq-item"><h2>How do I test one prompt across multiple models?</h2><p>In Amagra, paste your prompt into the editor, select the models to compare, and run. Each model's output appears in its own card with latency and length, plus a divergence score (Aligned, Mixed, or Divergent) summarizing how much the answers agree. Programmatically, send a <code>POST /debug/prompt</code> request with your prompt and the list of models.</p></article>
+        <article class="card faq-item"><h2>What is a divergence score?</h2><p>Amagra's divergence score quantifies how much the models' outputs actually agree, measured as the average pairwise word-set overlap across the successful responses. It is reported as a verdict (Aligned, Mixed, or Divergent) with an agreement percentage and word-count spread, so you can spot inconsistent prompt behavior at a glance instead of reading every output.</p></article>
+        <article class="card faq-item"><h2>Can I run Amagra locally and offline?</h2><p>Yes. Amagra is self-hosted and runs entirely on your own hardware via Ollama, with no account and no internet required for local models. Cloud models (Claude, GPT, Gemini) work too if you add your own API key, but nothing is required to leave your machine.</p></article>
+        <article class="card faq-item"><h2>Is my data private? Does Amagra send my prompts to the cloud?</h2><p>Amagra is local-first and private by default. When you use local Ollama models, your prompts and data never leave your machine. Cloud models are opt-in: prompts are only sent to a provider like Anthropic or OpenAI if you choose a cloud model and supply your own API key.</p></article>
+        <article class="card faq-item"><h2>How is Amagra different from LangSmith, Promptfoo, or Helicone?</h2><p>LangSmith is a hosted, cloud-based tracing and evaluation platform. Promptfoo is open-source but CLI and config-file driven. Helicone is primarily an observability and logging layer. Amagra is a self-hosted GUI workspace that compares models on one prompt, scores their divergence, keeps persistent project memory, and runs fully private on your own hardware.</p></article>
+        <article class="card faq-item"><h2>Which models does Amagra support?</h2><p>Local models via Ollama (the default), plus Anthropic Claude, OpenAI GPT, Google Gemini, and any OpenAI-compatible endpoint such as vLLM or LM Studio.</p></article>
+        <article class="card faq-item"><h2>Is Amagra free?</h2><p>Yes. Self-hosting is free and MIT licensed, always. There is also a managed free tier (100 requests per day, no card required), with paid tiers for managed hosting and enterprise features.</p></article>
+      </div>
+      <div class="cta-row">
+        <a class="btn btn-lg" href="https://github.com/d4shm1r/amagra">Get started on GitHub →</a>
       </div>
     </div>
-  </main>
+  </section>
 
-  <footer class="site">
-    <div class="wrap">
-      Amagra — the local cross-model prompt debugger · MIT licensed ·
-      <a href="/">amagra.dev</a> · <a href="/compare.html">Compare</a> · <a href="https://github.com/d4shm1r/amagra">GitHub</a>
-    </div>
+  <footer>
+    <span class="wordmark">AMAGRA</span>
+    <span class="footer-copy">© 2026 Amagra · the local cross-model prompt debugger · MIT licensed</span>
   </footer>
 </body>
 </html>

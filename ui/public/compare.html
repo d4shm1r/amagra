@@ -31,18 +31,6 @@
   <meta name="twitter:image" content="https://amagra.dev/social-preview.png" />
   <meta name="twitter:image:alt" content="Amagra — see where your prompt breaks across models. Local-first, MIT licensed, self-hosted." />
 
-  <!-- Structured data: BreadcrumbList — Home › Compare -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://amagra.dev/" },
-      { "@type": "ListItem", "position": 2, "name": "Compare", "item": "https://amagra.dev/compare.html" }
-    ]
-  }
-  </script>
-
   <!-- Structured data: FAQPage — comparison answers AI engines can extract directly -->
   <script type="application/ld+json">
   {
@@ -97,180 +85,56 @@
        the single palette source for landing, FAQ, Compare, and the app). -->
   <link rel="stylesheet" href="/fonts.css" />
   <link rel="stylesheet" href="/tokens.css" />
+  <link rel="stylesheet" href="/site.css" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    /* Local aliases — mapped onto the shared tokens, never standalone hex. */
-    :root {
-      --bg:    var(--l2);
-      --panel: var(--l4);
-      --ink:   var(--t1);
-      --muted: var(--text-muted);
-      --line:  var(--border);
-    }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: "DM Sans", system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--ink);
-      line-height: 1.65;
-      -webkit-font-smoothing: antialiased;
-    }
-    .wrap { max-width: 860px; margin: 0 auto; padding: 0 24px; }
-    header.site {
-      border-bottom: 1px solid var(--line);
-      padding: 22px 0;
-    }
-    header.site .wrap { display: flex; align-items: center; justify-content: space-between; }
-    .brand { font-family: "Cormorant Garamond", serif; font-weight: 700; font-size: 1.5rem; letter-spacing: 0.04em; color: var(--ink); text-decoration: none; }
-    .brand span { color: var(--g3); }
-    .nav a { color: var(--muted); text-decoration: none; font-size: 0.95rem; font-weight: 500; margin-left: 22px; }
-    .nav a:hover { color: var(--g4); }
-
-    .crumbs { padding: 22px 0 0; font-size: 0.82rem; color: var(--muted); }
-    .crumbs a { color: var(--g4); text-decoration: none; }
-
-    .hero { padding: 30px 0 24px; text-align: center; }
-    .eyebrow { text-transform: uppercase; letter-spacing: 0.18em; font-size: 0.74rem; font-weight: 600; color: var(--g4); }
-    h1 { font-family: "Cormorant Garamond", serif; font-weight: 700; font-size: clamp(2.1rem, 5vw, 2.9rem); line-height: 1.12; margin: 12px 0 14px; }
-    .lede { color: var(--muted); font-size: 1.06rem; max-width: 680px; margin: 0 auto; }
-
-    main { padding: 8px 0 72px; }
-
-    .table-scroll { overflow-x: auto; margin: 12px 0 8px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
-    table.cmp { width: 100%; border-collapse: collapse; min-width: 640px; }
-    table.cmp th, table.cmp td { padding: 13px 16px; text-align: center; border-bottom: 1px solid var(--line); font-size: 0.92rem; }
-    table.cmp thead th { font-family: "Cormorant Garamond", serif; font-weight: 700; font-size: 1.05rem; color: var(--ink); }
-    table.cmp tbody tr:last-child td { border-bottom: none; }
-    table.cmp .feature { text-align: left; font-weight: 600; color: var(--ink); }
-    table.cmp .amagra { background: rgba(196, 136, 8, 0.07); font-weight: 600; }
-    table.cmp thead .amagra { color: var(--g4); }
-    .yes { color: #2E7A2C; font-weight: 700; }
-    .no  { color: #B25537; }
-    .part { color: var(--muted); font-size: 0.82rem; }
-
-    .prose { margin: 40px 0 0; }
-    .prose h2 { font-family: "Cormorant Garamond", serif; font-weight: 700; font-size: 1.6rem; margin: 34px 0 8px; color: var(--ink); }
-    .prose p { color: var(--muted); margin: 0 0 12px; }
-    .prose strong { color: var(--ink); }
-
-    .cta { text-align: center; padding: 46px 0 8px; }
-    .btn {
-      display: inline-block;
-      background: linear-gradient(180deg, #DEB838, #C48808);
-      color: #2A1F05; font-weight: 600; text-decoration: none;
-      padding: 13px 26px; border-radius: 10px; font-size: 0.98rem;
-    }
-    .btn:hover { filter: brightness(1.04); }
-    .btn-ghost { display: inline-block; margin-left: 10px; color: var(--g4); text-decoration: none; font-weight: 600; font-size: 0.98rem; padding: 13px 8px; }
-    .btn-ghost:hover { text-decoration: underline; }
-
-    footer.site {
-      border-top: 1px solid var(--line);
-      padding: 28px 0; text-align: center; color: var(--muted); font-size: 0.88rem;
-    }
-    footer.site a { color: var(--g4); text-decoration: none; }
+    /* Page-specific styles — hero, #body, .cta-row + chrome all come from /site.css. */
+    .fineprint { text-align: center; font-size: 12.5px; color: var(--t3); margin-top: 14px; }
+    .fineprint a { color: var(--gold-text); }
+    .prose { max-width: 800px; margin: 52px auto 0; }
+    .prose h2 { font-size: 22px; margin: 34px 0 10px; }
+    .prose h2:first-child { margin-top: 0; }
+    .prose p { color: var(--t2); margin: 0 0 14px; line-height: 1.78; }
+    .prose strong { color: var(--t1); font-weight: 600; }
+    .prose em { color: var(--gold-text); font-style: normal; }
   </style>
 </head>
 <body>
-  <header class="site">
-    <div class="wrap">
-      <a class="brand" href="/"><span>A</span>magra</a>
-      <nav class="nav">
-        <a href="/">Home</a>
-        <a href="/faq.html">FAQ</a>
-        <a href="https://github.com/d4shm1r/amagra">GitHub</a>
-      </nav>
-    </div>
-  </header>
+  <nav>
+    <a class="wordmark" href="/landing.html">AMAGRA</a>
+    <ul class="nav-links">
+      <li><a href="/compare.html">Compare</a></li>
+      <li><a href="/faq.html">FAQ</a></li>
+    </ul>
+  </nav>
 
-  <div class="wrap">
-    <nav class="crumbs" aria-label="Breadcrumb">
-      <a href="/">Home</a> › <span>Compare</span>
-    </nav>
-  </div>
-
-  <section class="hero">
-    <div class="wrap">
+  <section id="hero">
+    <div class="container center">
       <div class="eyebrow">How Amagra compares</div>
       <h1>Amagra vs LangSmith vs Promptfoo</h1>
-      <p class="lede">A self-hosted GUI that runs one prompt across Claude, GPT, and your local models side by side — and scores how much they agree. Here is where it fits next to the tools you already know.</p>
+      <p class="lead center">A self-hosted GUI that runs one prompt across Claude, GPT, and your local models side by side — and scores how much they agree. Here's where it fits next to the tools you already know.</p>
     </div>
   </section>
 
-  <main>
-    <div class="wrap">
-      <div class="table-scroll">
+  <section id="body">
+    <div class="container">
+      <div class="table-wrap">
         <table class="cmp">
           <thead>
-            <tr>
-              <th class="feature">Feature</th>
-              <th class="amagra">Amagra</th>
-              <th>Promptfoo</th>
-              <th>LangSmith</th>
-              <th>Open WebUI</th>
-            </tr>
+            <tr><th class="f">Feature</th><th class="a">Amagra</th><th>Promptfoo</th><th>LangSmith</th><th>Open WebUI</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="feature">Runs locally</td>
-              <td class="amagra"><span class="yes">✓</span></td>
-              <td><span class="yes">✓</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="yes">✓</span></td>
-            </tr>
-            <tr>
-              <td class="feature">Visual GUI workspace</td>
-              <td class="amagra"><span class="yes">✓</span></td>
-              <td><span class="part">CLI</span></td>
-              <td><span class="yes">✓</span></td>
-              <td><span class="yes">✓</span></td>
-            </tr>
-            <tr>
-              <td class="feature">Cross-model side-by-side</td>
-              <td class="amagra"><span class="yes">✓</span></td>
-              <td><span class="part">Config</span></td>
-              <td><span class="part">Partial</span></td>
-              <td><span class="part">Partial</span></td>
-            </tr>
-            <tr>
-              <td class="feature">Divergence score</td>
-              <td class="amagra"><span class="yes">✓</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="no">✗</span></td>
-            </tr>
-            <tr>
-              <td class="feature">Pre-run prompt checks</td>
-              <td class="amagra"><span class="yes">✓</span></td>
-              <td><span class="part">Asserts</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="no">✗</span></td>
-            </tr>
-            <tr>
-              <td class="feature">Persistent project memory</td>
-              <td class="amagra"><span class="yes">✓</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="part">Partial</span></td>
-              <td><span class="part">Partial</span></td>
-            </tr>
-            <tr>
-              <td class="feature">Self-hosted</td>
-              <td class="amagra"><span class="yes">✓</span></td>
-              <td><span class="yes">✓</span></td>
-              <td><span class="part">Limited</span></td>
-              <td><span class="yes">✓</span></td>
-            </tr>
-            <tr>
-              <td class="feature">License</td>
-              <td class="amagra"><span class="yes">MIT</span></td>
-              <td>Open source</td>
-              <td><span class="no">Proprietary</span></td>
-              <td>Open source</td>
-            </tr>
+            <tr><td class="f">Runs locally</td><td class="a"><span class="check">✓</span></td><td><span class="check">✓</span></td><td><span class="cross">✗</span></td><td><span class="check">✓</span></td></tr>
+            <tr><td class="f">Visual GUI workspace</td><td class="a"><span class="check">✓</span></td><td><span class="partial">CLI</span></td><td><span class="check">✓</span></td><td><span class="check">✓</span></td></tr>
+            <tr><td class="f">Cross-model side-by-side</td><td class="a"><span class="check">✓</span></td><td><span class="partial">Config</span></td><td><span class="partial">Partial</span></td><td><span class="partial">Partial</span></td></tr>
+            <tr><td class="f">Divergence score</td><td class="a"><span class="check">✓</span></td><td><span class="cross">✗</span></td><td><span class="cross">✗</span></td><td><span class="cross">✗</span></td></tr>
+            <tr><td class="f">Pre-run prompt checks</td><td class="a"><span class="check">✓</span></td><td><span class="partial">Asserts</span></td><td><span class="cross">✗</span></td><td><span class="cross">✗</span></td></tr>
+            <tr><td class="f">Persistent project memory</td><td class="a"><span class="check">✓</span></td><td><span class="cross">✗</span></td><td><span class="partial">Partial</span></td><td><span class="partial">Partial</span></td></tr>
+            <tr><td class="f">Self-hosted</td><td class="a"><span class="check">✓</span></td><td><span class="check">✓</span></td><td><span class="partial">Limited</span></td><td><span class="check">✓</span></td></tr>
+            <tr><td class="f">License</td><td class="a"><span class="check">MIT</span></td><td>Open source</td><td><span class="cross">Proprietary</span></td><td>Open source</td></tr>
           </tbody>
         </table>
       </div>
-      <p class="part" style="text-align:center; margin-top:10px;">Feature availability reflects each tool's core, self-hostable offering at time of writing. Corrections welcome — <a href="https://github.com/d4shm1r/amagra/issues" style="color:var(--g4);">open an issue</a>.</p>
+      <p class="fineprint">Feature availability reflects each tool's core, self-hostable offering at time of writing. Corrections welcome — <a href="https://github.com/d4shm1r/amagra/issues">open an issue</a>.</p>
 
       <div class="prose">
         <h2>A self-hosted LangSmith alternative</h2>
@@ -286,18 +150,16 @@
         <p>The <strong>divergence score</strong> is the differentiator none of the others have: the average pairwise word-set overlap across every model's answer, reported as <em>Aligned</em>, <em>Mixed</em>, or <em>Divergent</em>. It turns "did these models actually agree?" from a manual read of five outputs into a single number — so a prompt that silently breaks on one model is visible at a glance.</p>
       </div>
 
-      <div class="cta">
-        <a class="btn" href="https://github.com/d4shm1r/amagra">Get started on GitHub →</a>
-        <a class="btn-ghost" href="/faq.html">Read the FAQ</a>
+      <div class="cta-row">
+        <a class="btn btn-lg" href="https://github.com/d4shm1r/amagra">Get started on GitHub →</a>
+        <a class="btn btn-lg" href="/faq.html">Read the FAQ</a>
       </div>
     </div>
-  </main>
+  </section>
 
-  <footer class="site">
-    <div class="wrap">
-      Amagra — the local cross-model prompt debugger · MIT licensed ·
-      <a href="/">amagra.dev</a> · <a href="/faq.html">FAQ</a> · <a href="https://github.com/d4shm1r/amagra">GitHub</a>
-    </div>
+  <footer>
+    <span class="wordmark">AMAGRA</span>
+    <span class="footer-copy">© 2026 Amagra · the local cross-model prompt debugger · MIT licensed</span>
   </footer>
 </body>
 </html>
