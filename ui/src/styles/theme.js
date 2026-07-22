@@ -107,16 +107,16 @@ export const FONT_MONO    = "'JetBrains Mono', 'Cascadia Code', 'Consolas', 'Dro
 //
 // Override weight inline for one-off emphasis (e.g. ...TYPE.small, fontWeight: 700).
 export const TYPE = {
-  display:  { fontSize: 36,   lineHeight: 1.12, fontWeight: 600, letterSpacing: "0.01em",   fontFamily: FONT_DISPLAY }, // page hero (serif)
-  title:    { fontSize: 22,   lineHeight: 1.25, fontWeight: 600, letterSpacing: "-0.01em" },                            // section / panel heading
-  subtitle: { fontSize: 18,   lineHeight: 1.4,  fontWeight: 600, letterSpacing: "-0.005em" },                          // sub-section heading
+  display:  { fontSize: 44,   lineHeight: 1.05, fontWeight: 600, letterSpacing: "-0.01em",  fontFamily: FONT_DISPLAY }, // page hero (serif) — larger, more elegant
+  title:    { fontSize: 25,   lineHeight: 1.2,  fontWeight: 600, letterSpacing: "0",         fontFamily: FONT_DISPLAY }, // section / panel heading — now serif (was sans; every caller forced serif anyway)
+  subtitle: { fontSize: 18,   lineHeight: 1.4,  fontWeight: 600, letterSpacing: "-0.005em" },                          // sub-section heading (stays sans — also reused for stat numerals)
   lead:     { fontSize: 15,   lineHeight: 1.66, fontWeight: 400 },                                                     // emphasized / readable body
   body:     { fontSize: 14,   lineHeight: 1.6,  fontWeight: 400 },                                                     // default body
   small:    { fontSize: 13,   lineHeight: 1.55, fontWeight: 400 },                                                     // dense / secondary body
   caption:  { fontSize: 12,   lineHeight: 1.45, fontWeight: 400 },                                                     // captions, metadata, hints
   metric:   { fontSize: 22,   lineHeight: 1.1,  fontWeight: 700, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }, // stat-card numerals
   micro:    { fontSize: 10.5, lineHeight: 1.4,  fontWeight: 400 },                                                     // dense meta / numerics (badges add their own weight)
-  eyebrow:  { fontSize: 10.5, lineHeight: 1.4,  fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase" }, // overline labels / dividers
+  eyebrow:  { fontSize: 10.5, lineHeight: 1.4,  fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase" }, // overline labels / dividers — a touch airier
 };
 
 // ── Motion tokens — one easing language, four durations ──────────

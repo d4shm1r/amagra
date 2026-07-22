@@ -35,7 +35,7 @@ export function PageHeader({ title, subtitle, children, gold = true, center = fa
         {title}
       </h1>
       {subtitle && (
-        <div style={{ ...TYPE.caption, color: T.muted, marginTop: 6, maxWidth: 680, userSelect: "none",
+        <div style={{ ...TYPE.small, color: T.muted, marginTop: 8, maxWidth: 640, lineHeight: 1.6, userSelect: "none",
                       ...(center ? { marginLeft: "auto", marginRight: "auto" } : null) }}>
           {subtitle}
         </div>
