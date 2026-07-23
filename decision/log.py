@@ -209,7 +209,14 @@ def agent_regret_mean(agent: str, last_n: int = 50) -> float:
 
 
 def conflict_rate(last_n: int = 100) -> dict:
-    """Summary stats for dashboard or debugging."""
+    """Summary stats for dashboard or debugging.
+
+    O7 note: the `conflict` column no longer means "brain overrode the keyword
+    router" (that router was removed in #20). It now flags *routing indecision*
+    — the brain's confidence for the route was below the decisiveness floor.
+    `conflict_rate` is therefore the recent low-confidence-routing rate; consumers
+    (e.g. the maintenance auto-rebuild trigger) read it as a routing-health signal.
+    """
     try:
         c = _conn()
         total = c.execute(

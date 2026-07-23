@@ -343,6 +343,34 @@ score rather than the wiring alone.
 
 ---
 
+## 10a. Observability: which runtime moments are events ([#181](https://github.com/d4shm1r/amagra/issues/181))
+
+A dissolved CogOS tab ([#178](https://github.com/d4shm1r/amagra/issues/178)) had
+built a "Live Cognitive Events" feed *in the browser* — `synthesizeEvents()` walked
+`/decisions`, `/contradictions`, and `/coherence/dynamics` and invented event rows
+next to `EventLogPanel`, which renders the real typed stream from `event_bus`. Two
+feeds both called "events", one fabricated client-side. The transparency score
+(`GET /cos/transparency`) grades a component as **observed** only when it discloses
+through the bus, so a hand-reconstructed signal scores as unobserved — the score was
+right and the old tab routed around it.
+
+The fix is per-signal: emit the genuine runtime moments, and record why the rest are
+deliberately not events.
+
+| Candidate signal | Verdict | Why |
+|---|---|---|
+| `contradiction.detected` | **Emitted** (`coordinator.py`) | A real moment — the contradiction gate escalated to full reflection. `EventType` was reserved but never fired; now it does. |
+| `reflection.triggered` | **Emitted** (`coordinator.py`) | Reflection actually running is a moment worth a timeline row; wired at the single point where the reflection loop runs. |
+| `routing.conflict` | **Not an event** | Structurally dead: the keyword-router path was removed, so `final_agent` is always the brain's pick and the decision `conflict` flag is always `False`. There is no second router to disagree. Chasing this flag through the metrics stack surfaced [OPEN_PROBLEMS O7](OPEN_PROBLEMS.md) — the dead `conflict` column was load-bearing in six places; it has since been repurposed at the source as a routing-indecision signal (`confidence < 0.5`), reviving all six, with `C_routing` additionally rebased onto mean confidence. |
+| `coherence.shifted` | **Not an event** | A windowed derivative, not a moment. It is a chart, and it already is one (Diagnostics › Coherence). |
+| `regret.high` | **Not an event** | Regret is a scalar attached to the decision row, surfaced in Runs › Decisions; a threshold-crossing timeline row would duplicate it without adding a moment. |
+
+Contract pinned by `tests/test_event_bus_observability.py` (imports only `event_bus`,
+so it runs without the LangGraph runtime): the two emitted signals reach
+`recent_events` — i.e. `GET /cos/events` — and live subscribers receive them.
+
+---
+
 ## 11. Conclusions
 
 Intelligence in a routing system comes from structure, not scale. A well-defined signal space with a clear confidence threshold outperforms an LLM classifier on latency, consistency, and debuggability — while reserving the LLM for genuinely ambiguous or novel queries.

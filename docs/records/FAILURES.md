@@ -132,7 +132,7 @@ memory_filter.maybe_save(agent="python_dev", content=response, mem_type="code")
 
 **Cause:** phi4-mini has weak multilingual instruction-following. The English system prompt overrides the input language.
 
-**Mitigation:** `core/language.py` detects non-English input, strips the profile injection, and directs the model to answer in the user's language (issue #6). Measured against a labeled multilingual set in `tests/test_language_multilingual.py` — recall ≥ 95% on SQ/ES/DE/FR/PT/IT + non-Latin scripts (issue #18). Known gap: short Latin phrases with no diacritics.
+**Mitigation:** `core/language.py` detects non-English input, strips the profile injection, and directs the model to answer in the user's language (issue #6). Measured against a labeled multilingual set in `tests/test_language_multilingual.py` — recall ≥ 95% on SQ/ES/DE/FR/PT/IT + non-Latin scripts (issue #18). A foreign-function-word lexicon (consulted only after the English-stopword gate) now also catches short diacritic-free Romance phrases like `instala el paquete`. Residual gap: two-content-word imperatives with no article and no lexicon verb (`abre archivo`) — tracked as `KNOWN_MISSES`.
 
 **Workaround:** For languages outside the measured set, write queries in English.
 

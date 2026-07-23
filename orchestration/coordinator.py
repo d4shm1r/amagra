@@ -73,6 +73,9 @@ from infrastructure.db import path as _dbpath
 _GATE_DB_PATH     = _dbpath("gate")
 _DECISIONS_DB     = _dbpath("decisions")
 _DT_CONF_THRESHOLD = 0.52   # dual-trajectory forced when agent avg_confidence drops below this
+# O7: the decisiveness floor below which a route counts as "in conflict" (i.e.
+# routing indecision). Kept in step with coherence._DECISIVE_CONF (0.5).
+_INDECISION_CONF = 0.5
 _GATE_DB_INITED = False
 
 def _agent_avg_confidence(agent: str, n: int = 20) -> float:
@@ -232,6 +235,19 @@ def _write_episodic(agent: str, task: str, performance: float,
         print(f"[episodic] {outcome} | {agent} | regret={regret:.2f}")
     except Exception as e:
         print(f"[episodic] write failed: {e}")
+
+
+# ── Observability event emitter (#181) ────────────────────────
+# Emit runtime *moments* onto the event bus so Diagnostics › Events shows the
+# real typed stream instead of a feed the UI reconstructs by hand. Best-effort:
+# a telemetry failure must never break a request. See docs/records/FINDINGS.md
+# for which of the five candidate signals are events vs. deliberately not.
+def _emit_obs(event_type, payload: dict) -> None:
+    try:
+        from infrastructure.event_bus import emit as _emit
+        _emit(event_type, payload)
+    except Exception:
+        pass
 
 
 # ── Centralized agent runner with reflection + learning ───────
@@ -454,6 +470,15 @@ def _run_with_reflection(invoke_fn, state: AgentState):
                 reflect                = True   # noqa: F841
                 contradiction_detected = True
                 print(f"[coordinator] contradiction → full reflection escalated for {agent}")
+                # #181: a real runtime moment — emit it onto the bus instead of
+                # letting the UI reconstruct it from /contradictions.
+                from infrastructure.event_bus import EventType as _ET_c
+                _emit_obs(_ET_c.CONTRADICTION_DETECTED, {
+                    "run_id":   run_id,
+                    "agent":    agent,
+                    "action":   bd.get("action", "unknown"),
+                    "escalated_to": "full_reflection",
+                })
         except Exception as e:
             print(f"[coordinator] contradiction gate error: {e}")
 
@@ -477,6 +502,19 @@ def _run_with_reflection(invoke_fn, state: AgentState):
             response     = response_raw
             reflect_type = state.get("reflect_type", "general")
             mode         = reflect_level if reflect_level in {"light", "full"} else "full"
+
+            # #181: reflection is a runtime moment worth a timeline event. The
+            # EventType was reserved but never emitted; wire it at the one point
+            # where reflection actually runs (covers the "reflection.triggered"
+            # signal the old synthesized feed invented client-side).
+            from infrastructure.event_bus import EventType as _ET_r
+            _emit_obs(_ET_r.REFLECTION_TRIGGERED, {
+                "run_id":       run_id,
+                "agent":        agent,
+                "mode":         mode,
+                "reflect_type": reflect_type,
+                "contradiction": contradiction_detected,
+            })
 
             refined, history = reflection_loop(task, response, agent_type=reflect_type,
                                                mode=mode)
@@ -712,8 +750,18 @@ def coordinator_node(state: AgentState):
     # normalizer). These constants keep the decision-log / trace schema stable.
     final_agent  = brain_agent
     router_agent = "none"
-    conflict     = False
-    print(f"\n👑 Coordinator → [{final_agent}] (brain decision, {duration}ms)")
+    # ── O7: `conflict` repurposed from "brain overrode keyword router" (dead
+    # since #20 — there is no second router) to "routing indecision": the brain
+    # was not confident enough that this query mapped to one domain. This revives
+    # the column for its six consumers (coherence C_routing, decision.log
+    # conflict_rate, the maintenance auto-rebuild trigger, report_generator and
+    # specialization scores, failure_miner clusters), all of which had silently
+    # gone inert on a permanently-zero flag. Same 0.5 floor coherence uses.
+    # NOTE: the *name* "conflict" is now a misnomer (labels still say "brain vs
+    # router"); that rename is tracked as O7's residual naming-debt.
+    conflict     = decision.confidence < _INDECISION_CONF
+    print(f"\n👑 Coordinator → [{final_agent}] (brain decision, {duration}ms"
+          f"{', indecisive' if conflict else ''})")
 
     if decision.needs_plan:
         print("   Plan:")
