@@ -548,7 +548,7 @@ export default function TimelineTab() {
           { label: "Decisions logged", value: cohState?.n_decisions ?? "–",
             sub: `window of ${cohState?.window ?? 20}`, tone: "accent" },
           { label: "Conflict rate", value: `${Math.round((cohState?.conflict_rate ?? 0) * 100)}%`,
-            sub: "brain vs router", tone: (cohState?.conflict_rate ?? 0) > 0.35 ? "error" : "warn" },
+            sub: "low-confidence routing", tone: (cohState?.conflict_rate ?? 0) > 0.35 ? "error" : "warn" },
           { label: "Reflection rate", value: `${Math.round((cohState?.reflection_rate ?? 0) * 100)}%`,
             sub: "triggers / decisions", tone: "warn" },
           { label: "Memories", value: cohState?.mem_n ?? "–",
