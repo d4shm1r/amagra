@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Optional
 
-from infrastructure.db import path as _dbpath
+from infrastructure.db import path as _dbpath, tune as _tune
 _BASE    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _RUNS_DB = _dbpath("runs")
 _LOCK    = threading.Lock()
@@ -63,10 +63,10 @@ class _RunCtx:
 # ── DB setup ──────────────────────────────────────────────────
 
 def _conn() -> sqlite3.Connection:
+    # Fresh per-call connection (never shared across threads); busy_timeout+WAL
+    # applied centrally — see #195.
     os.makedirs(os.path.dirname(_RUNS_DB), exist_ok=True)
-    c = sqlite3.connect(_RUNS_DB, check_same_thread=False)
-    c.execute("PRAGMA journal_mode=WAL")
-    return c
+    return _tune(sqlite3.connect(_RUNS_DB, check_same_thread=False))
 
 
 def _init() -> None:

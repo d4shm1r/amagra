@@ -49,6 +49,36 @@ class EVEstimate:
     breakdown: dict = field(default_factory=dict)  # transparent term-by-term
 
 
+@dataclass
+class StrategyPreference:
+    """A selector recommendation the router can apply directly. `agent`/`reflect_level`
+    are parsed out of the winning strategy string; `estimate` carries the full EV
+    transparency; `runner_up_ev` records what it beat (for regret logging)."""
+    task_class: str
+    agent: str
+    reflect_level: str
+    memory: bool
+    tool: bool
+    estimate: "EVEstimate"
+    runner_up_ev: float | None = None
+
+
+def parse_strategy(strategy: str) -> tuple[str, str, bool, bool]:
+    """Inverse of `strategy_memory.canonical_strategy` →
+    (agent, reflect_level, memory, tool). Unknown parts are ignored defensively."""
+    parts = strategy.split("+")
+    agent = parts[0] if parts else "unknown"
+    reflect_level, memory, tool = "none", False, False
+    for p in parts[1:]:
+        if p.startswith("reflect:"):
+            reflect_level = p.split(":", 1)[1] or "none"
+        elif p == "memory":
+            memory = True
+        elif p == "tool":
+            tool = True
+    return agent, reflect_level, memory, tool
+
+
 def _smoothed_p(successes: int, graded: int,
                 alpha: float = PRIOR_ALPHA, beta: float = PRIOR_BETA) -> float:
     """Beta-smoothed success rate. Ungraded evidence (graded=0) falls back to the
@@ -103,6 +133,33 @@ class StrategySelector:
         if len(ranked) > 1 and (top.expected_value - ranked[1].expected_value) < margin:
             return None
         return top
+
+    def recommend(self, signal_domain: str | None, signal_shape: str | None, *,
+                  min_attempts: int = 3, margin: float = 0.02
+                  ) -> StrategyPreference | None:
+        """Router-facing entry point. Maps a query signal to a task class, picks the
+        EV-best strategy, and returns it parsed into an actionable preference — or
+        None (abstain) when the evidence is too thin or the winner doesn't clear the
+        runner-up by `margin`. The margin default is intentionally non-zero so a
+        near-tie keeps the current router instead of churning routes on noise.
+
+        The abstention is the safety property: an unwired class, a one-off class, or
+        a class with no clear winner all fall through to the existing router
+        untouched — decision economics can only ever *replace a guess with evidence*,
+        never inject one.
+        """
+        from decision.strategy_memory import task_class_of
+        tc = task_class_of(signal_domain, signal_shape)
+        chosen = self.select(tc, min_attempts=min_attempts, margin=margin)
+        if not chosen:
+            return None
+        ranked = self.rank(tc)
+        runner_up = ranked[1].expected_value if len(ranked) > 1 else None
+        agent, reflect_level, memory, tool = parse_strategy(chosen.strategy)
+        return StrategyPreference(
+            task_class=tc, agent=agent, reflect_level=reflect_level,
+            memory=memory, tool=tool, estimate=chosen, runner_up_ev=runner_up,
+        )
 
 
 # ── CLI ─────────────────────────────────────────────────────────────

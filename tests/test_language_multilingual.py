@@ -66,6 +66,11 @@ NON_ENGLISH = [
     ("홈 네트워크를 어떻게 설정하나요",                             "ko"),
     ("كيف يمكنني إعداد شبكتي المنزلية",                        "ar"),
     ("Πώς μπορώ να ρυθμίσω το δίκτυό μου",                     "el"),
+    # Short diacritic-free Latin phrases — the former F-13 gap, now caught by
+    # the foreign-function-word lexicon (a Romance article or verb tips them).
+    ("instala el paquete",                                    "es"),
+    ("mostra il file",                                        "it"),
+    ("configura la red local",                                "es"),
 ]
 
 ENGLISH = [
@@ -95,13 +100,15 @@ KNOWN_FALSE_POSITIVES = [
     "run database migration script now",
 ]
 
-# Known limitation (issue #18): short Latin-script non-English phrases with no
-# diacritics and no English-stopword collision are NOT flagged today. Kept out
-# of the recall gate; asserted as missed so an improvement is surfaced.
+# Residual limitation (issue #18 / FAILURES F-13): the foreign-function-word
+# lexicon closed the article/verb-bearing short phrases above, but a two-word
+# imperative whose *both* tokens are content words (no article, no lexicon verb,
+# no diacritic) still slips through the length fallback. Kept out of the recall
+# gate; asserted as missed so a further improvement is surfaced.
 KNOWN_MISSES = [
-    ("instala el paquete",        "es"),   # 3 words, no diacritics
-    ("mostra il file",            "it"),
-    ("configura la red local",    "es"),
+    ("abre archivo",     "es"),   # "open file" — 2 content words, no diacritics
+    ("leggi documento",  "it"),   # "read document"
+    ("salva ficheiro",   "pt"),   # "save file"
 ]
 
 

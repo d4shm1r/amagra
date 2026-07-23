@@ -166,7 +166,7 @@ def _report(records: list[dict]) -> None:
     print(f"\n{sep}")
     if net is not None and net > 0:
         print(f"  VERDICT: reflection is net-positive (+{net} correct) — worth its cost")
-        print(f"           where it fires. Consider routing it to those task types.")
+        print("           where it fires. Consider routing it to those task types.")
     elif changed == 0:
         print("  VERDICT: reflection changed NO answers and improved NO scores while")
         print("           adding latency — pure cost on this workload. Gate it off")

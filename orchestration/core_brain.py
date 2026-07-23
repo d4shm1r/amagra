@@ -125,10 +125,28 @@ CODE_NOUN = re.compile(
     re.I,
 )
 
-VALID_AGENTS = [
-    "it_networking", "python_dev", "dotnet_dev",
-    "ai_ml", "knowledge_learning", "terse",
-]
+# Sourced from the canonical registry (never hardcode agent ids — registry.py).
+# The old hardcoded 6-agent list had drifted: web_dev/devops/data_analyst/writer
+# were live in the registry + coordinator but invisible here, so the LLM classifier
+# prompt, the LLM result filter, the learned-router override, and the decision-econ
+# override could never reach those 4 agents. list() keeps a stable prompt order.
+from agents.registry import AGENT_MAP as _AGENT_MAP
+VALID_AGENTS = list(_AGENT_MAP.keys())
+
+
+# Cached selector for the AMAGRA_DECISION_ECON path — StrategySelector builds a
+# StrategyMemory whose __init__ runs CREATE TABLE DDL, so constructing it per
+# request (the flag's whole purpose is per-request use) would re-run DDL on the
+# hot path. Build once. Crash-safe: any failure leaves the heuristic path intact.
+_STRATEGY_SELECTOR = None
+
+
+def _strategy_selector():
+    global _STRATEGY_SELECTOR
+    if _STRATEGY_SELECTOR is None:
+        from decision.strategy_selector import StrategySelector
+        _STRATEGY_SELECTOR = StrategySelector()
+    return _STRATEGY_SELECTOR
 
 
 # ── BRAIN DECISION ───────────────────────────────────────────
@@ -291,7 +309,13 @@ def _llm_clarify(query: str) -> dict:
     """
     from providers.registry import get_provider
 
-    agent_list = "\n".join(f"- {a}" for a in VALID_AGENTS)
+    # Enrich each agent id with its registry label/domain so the classifier has
+    # guidance for every agent — not bare ids. Matters most for the agents that
+    # were previously invisible here (web_dev/devops/data_analyst/writer).
+    agent_list = "\n".join(
+        f"- {a} ({_AGENT_MAP[a]['label']}): {_AGENT_MAP[a]['domain']}"
+        for a in VALID_AGENTS
+    )
     user_prompt = f"""Analyze this user request. Return ONLY a JSON object, no explanation.
 
 User request: {query}
@@ -664,6 +688,43 @@ def think(task: str, state: AgentState) -> BrainDecision:
                     f"[core_brain] reflect downgrade: full→light after boosts "
                     f"(final conf={confidence:.2f})"
                 )
+
+        # ── Decision economics: evidence-driven strategy override ─────
+        # Behind AMAGRA_DECISION_ECON (off by default). Consults strategy memory
+        # for the EV-best strategy this task class has actually demonstrated. It
+        # *only* acts when there is enough evidence to beat the runner-up by a
+        # margin; otherwise it abstains and the heuristic decision above stands.
+        # This is the last override so evidence wins over the learned-router and
+        # rule heuristics — the whole point of O2. See docs/records/V1.9.0_SCOPE.md.
+        if os.getenv("AMAGRA_DECISION_ECON") == "1":
+            try:
+                pref = _strategy_selector().recommend(signal.domain, signal.answer_shape)
+                if pref and pref.agent in VALID_AGENTS:
+                    ev_gap = (pref.estimate.expected_value - pref.runner_up_ev
+                              if pref.runner_up_ev is not None else 0.0)
+                    if pref.agent != primary:
+                        print(
+                            f"[core_brain] decision_econ override: {primary} → "
+                            f"{pref.agent} (EV={pref.estimate.expected_value:.3f}, "
+                            f"p={pref.estimate.p_success:.2f}, n={pref.estimate.attempts})"
+                        )
+                        primary = pref.agent
+                        agents = [primary] + [a for a in agents if a != primary]
+                        confidence = round(to_confidence(primary), 3)
+                        regret = round(max(regret, ev_gap), 3)
+                    if pref.reflect_level != level:
+                        print(
+                            f"[core_brain] decision_econ reflect: {level} → "
+                            f"{pref.reflect_level} (task_class={pref.task_class})"
+                        )
+                        level = pref.reflect_level
+                        reflect = level != "none"
+                        # Keep the existing reflect_type — it's a function of
+                        # action/agent (code|research|general), independent of level.
+                        # Re-running _reflect_level here would re-fire the risk_gate's
+                        # logging + session side effects, double-counting one decision.
+            except Exception as e:
+                print(f"[core_brain] decision_econ unavailable ({e}) — heuristic stands")
 
         intent = f"{action} via {', '.join(agents)}"
 

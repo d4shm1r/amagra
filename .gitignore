@@ -40,6 +40,9 @@ research/
 docs/ideas/revenueGPT.md
 docs/ideas/
 
+# Scratch/throwaway scripts — one-off experiments, never source
+scratch_*.py
+
 # Environment and secrets
 .env
 config/settings.env
