@@ -153,11 +153,13 @@ These are the ones where the answer changes the product, not just the polish.
   reflects logged indecision, is not structurally 0). Expect composite C to *drop* from its
   previously-inflated value on real traffic — that is the correction landing.
 - **Residual (naming-debt, tracked not silent).** The column/metric is still *named*
-  `conflict` and some UI sub-labels still say "brain vs router" / "% routing conflict" — now
-  a misnomer for "routing indecision." Rename `conflict → indecision` across the schema,
-  metric keys, and UI labels as a follow-up. Also noted en route: `decision/log.conflict_rate()`
-  applies `LIMIT ?` to a bare `COUNT(*)` (a no-op), so its "last N" window is actually all-time —
-  a pre-existing bug, out of O7's scope but worth a separate fix.
+  `conflict` and most UI labels still say "Conflict rate". The two labels that made a
+  *false mechanism* claim — "brain vs router" (`TimelineTab`) and "brain vs router
+  disagreement" (`GuideTab`) — are **fixed** (now "low-confidence routing" / "routing
+  indecision"). The `decision/log.conflict_rate()` `LIMIT`-on-`COUNT(*)` no-op is **fixed**
+  (windowed subquery; `tests/test_decision_log_conflict.py` now pins the window). Still open:
+  the wholesale `conflict → indecision` rename of the DB column + metric keys (`conflict_rate`)
+  + remaining generic labels — deferred as a broad, schema-touching change, not a silent one.
 
 ---
 
