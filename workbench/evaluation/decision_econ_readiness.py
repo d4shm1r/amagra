@@ -34,7 +34,7 @@ import argparse
 from dataclasses import dataclass
 
 from decision.strategy_memory import StrategyMemory
-from decision.strategy_selector import StrategySelector, parse_strategy
+from decision.strategy_selector import StrategySelector
 
 
 @dataclass
