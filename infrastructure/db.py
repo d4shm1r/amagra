@@ -79,6 +79,28 @@ def path(name: str) -> str:
     return target
 
 
+# How long a writer waits for a contended lock before raising "database is
+# locked". SQLite's implicit default (the connect() timeout) is 5s; under
+# concurrent writers + system load that is occasionally exceeded and surfaces as
+# an error instead of a brief wait (#195). An explicit, generous value converts
+# those rare collisions into short waits.
+BUSY_TIMEOUT_MS = 10_000
+
+
+def tune(conn: sqlite3.Connection, *, wal: bool = True) -> sqlite3.Connection:
+    """Apply the standard concurrency pragmas to a fresh connection.
+
+    Centralizes the busy_timeout + WAL policy so every per-call connection in the
+    codebase behaves the same under concurrency. Set busy_timeout *before* the
+    WAL switch so the journal-mode change also waits on contention rather than
+    failing. Returns the same connection for `return tune(conn)` convenience.
+    """
+    conn.execute(f"PRAGMA busy_timeout={BUSY_TIMEOUT_MS}")
+    if wal:
+        conn.execute("PRAGMA journal_mode=WAL")
+    return conn
+
+
 def connect(name: str, **kwargs) -> sqlite3.Connection:
     """sqlite3.connect for a logical database name (parent dir is created if needed)."""
     return sqlite3.connect(path(name), **kwargs)

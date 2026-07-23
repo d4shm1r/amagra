@@ -43,6 +43,36 @@ _STRONG_DIACRITICS = set("ëçñßøåæąćęłńśźżãõœ")
 # weak signal only — it must not override genuine English stopwords.
 _WEAK_DIACRITICS = set("àâêîôûéèùüöäíóúá")
 
+# High-frequency function/greeting words from the languages we actually expect
+# (SQ/ES/DE/FR/PT/IT) that English essentially never uses. This closes the
+# documented gap (issue #18 / FAILURES F-13): short Latin-script phrases with no
+# diacritics and no English-stopword collision — "instala el paquete", "mostra
+# il file" — used to fall through to the 5-word length fallback and be missed.
+#
+# The set is deliberately conservative. It is only consulted AFTER the English-
+# stopword gate returns (so a foreign word colliding inside a genuine English
+# sentence can't trip it), and every member is screened to be neither an English
+# word nor a common tech token: "come"/"comment"/"die"/"den"/"was"/"red"/"con"/
+# ".com"/"sem" are pointedly excluded, as is the article "la" (Los Angeles / the
+# musical note) — the Romance verbs already cover those phrases.
+_FOREIGN_FUNCTION_WORDS = {
+    # Spanish
+    "el", "los", "las", "una", "uno", "esto", "esta", "muy", "pero", "porque",
+    "necesito", "quiero", "puedo", "instala", "configura", "hola", "gracias",
+    # Italian
+    "il", "lo", "gli", "della", "delle", "questo", "questa", "sono", "mostra",
+    # Portuguese
+    "minha", "meu", "preciso", "voce",
+    # French
+    "je", "tu", "vous", "avec", "pour", "dans", "bonjour", "peux", "besoin",
+    "pourquoi",
+    # German
+    "ich", "mein", "meine", "kann", "und", "oder", "nicht", "warum", "bitte",
+    "sehr", "das",
+    # Albanian
+    "une", "faleminderit", "pershendetje", "mund", "trego",
+}
+
 _WORD_RE = re.compile(r"[^\W\d_]+", re.UNICODE)
 
 
@@ -94,9 +124,16 @@ def is_probably_non_english(text: str) -> bool:
         # accented loan-word ("café") slipped in.
         return False
 
-    # No English stopwords at all. A weak diacritic now tips it; otherwise
-    # require a longer phrase so we don't flag terse English commands like
-    # "configure vlan trunking" or "restart nginx service".
+    # No English stopwords, but a high-frequency non-English function/greeting
+    # word (Romance/Germanic/Albanian) — enough to flag short diacritic-free
+    # phrases the length fallback would otherwise miss. Safe here precisely
+    # because the English-stopword gate above has already returned.
+    if any(w in _FOREIGN_FUNCTION_WORDS for w in words):
+        return True
+
+    # A weak diacritic now tips it; otherwise require a longer phrase so we
+    # don't flag terse English commands like "configure vlan trunking" or
+    # "restart nginx service".
     if chars & _WEAK_DIACRITICS and len(words) >= 2:
         return True
     if len(words) >= 5:

@@ -17,7 +17,7 @@ import os
 import threading
 from datetime import datetime, timezone
 
-from infrastructure.db import path as _dbpath
+from infrastructure.db import path as _dbpath, tune as _tune
 DB_PATH = _dbpath("snapshots")
 
 # Thread-local: active context_id for the current request thread
@@ -28,12 +28,17 @@ _buffers: dict = {}
 _lock = threading.Lock()
 
 
+def _conn() -> sqlite3.Connection:
+    # Fresh per-call connection (never shared across threads); busy_timeout+WAL
+    # applied centrally — see #195.
+    return _tune(sqlite3.connect(DB_PATH, check_same_thread=False))
+
+
 # ── Init ─────────────────────────────────────────────────────
 
 def init():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.execute("PRAGMA journal_mode=WAL;")
+    conn = _conn()
     conn.execute("""
         CREATE TABLE IF NOT EXISTS snapshots (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -200,8 +205,7 @@ def finalize(context_id: str, response: str, session_id: int = None) -> dict:
 
 def _persist(snapshot: dict, session_id: int = None) -> int:
     try:
-        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-        conn.execute("PRAGMA journal_mode=WAL;")
+        conn = _conn()
         cur = conn.execute(
             "INSERT INTO snapshots (context_id, session_id, timestamp, snapshot) "
             "VALUES (?,?,?,?)",
@@ -225,7 +229,7 @@ def _persist(snapshot: dict, session_id: int = None) -> int:
 
 def get_by_id(snapshot_id: int) -> dict | None:
     try:
-        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+        conn = _conn()
         row = conn.execute(
             "SELECT id, session_id, snapshot FROM snapshots WHERE id=?",
             (snapshot_id,),
@@ -244,7 +248,7 @@ def get_by_id(snapshot_id: int) -> dict | None:
 
 def get_by_context_id(context_id: str) -> dict | None:
     try:
-        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+        conn = _conn()
         row = conn.execute(
             "SELECT id, session_id, snapshot FROM snapshots "
             "WHERE context_id=? ORDER BY id DESC LIMIT 1",
@@ -264,7 +268,7 @@ def get_by_context_id(context_id: str) -> dict | None:
 
 def recent(n: int = 50) -> list:
     try:
-        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+        conn = _conn()
         rows = conn.execute(
             "SELECT id, session_id, timestamp, snapshot FROM snapshots "
             "ORDER BY id DESC LIMIT ?",

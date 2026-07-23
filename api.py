@@ -48,6 +48,44 @@ _PUBLIC_PREFIXES = ("/docs", "/redoc")  # FastAPI UI and Amagra docs sub-paths
 _MINUTE_LIMITS = {"free": 10, "developer": 60, "team": 300, "enterprise": 0}
 # In-memory per-key minute windows: key_id -> (count, window_start_monotonic)
 _minute_window: dict[int, tuple[int, float]] = {}
+# Evict fully-elapsed windows at most this often (seconds) so the dict stays
+# bounded to the active working set instead of every key ever seen (#194).
+_RL_SWEEP_INTERVAL = 60.0
+_last_rl_sweep = 0.0
+
+
+def _check_minute_limit(
+    key_id: int,
+    minute_limit: int,
+    now: float,
+    window: dict[int, tuple[int, float]] = _minute_window,
+) -> bool:
+    """Fixed-window per-minute rate check with periodic eviction.
+
+    Bumps `key_id`'s counter in `window` and returns True if the request is
+    within `minute_limit`, False if it exceeds it. At most once per
+    `_RL_SWEEP_INTERVAL` it also drops entries whose 60s window has fully
+    elapsed, so a long-running process can't accumulate one dict entry per key
+    seen for the life of the process. No `await` inside, so the read-modify-write
+    is atomic under asyncio's single thread — no lock needed.
+    """
+    global _last_rl_sweep
+
+    count, window_start = window.get(key_id, (0, now - 61))
+    if now - window_start >= 60:
+        count, window_start = 1, now
+    else:
+        count += 1
+    window[key_id] = (count, window_start)
+
+    if now - _last_rl_sweep >= _RL_SWEEP_INTERVAL:
+        # The just-touched key has window_start == now, so it is never stale here.
+        stale = [k for k, (_, ws) in window.items() if now - ws >= 60]
+        for k in stale:
+            del window[k]
+        _last_rl_sweep = now
+
+    return count <= minute_limit
 
 # CORS — set ALLOWED_ORIGINS env var (comma-separated) for production;
 # defaults to localhost only so a drive-by page can't call the API.
@@ -281,20 +319,13 @@ async def auth_middleware(request: Request, call_next):
 
             # Per-minute burst limit — prevents cost-of-goods attacks on free tier
             minute_limit = _MINUTE_LIMITS.get(_usage.get("tier", "free"), 10)
-            if minute_limit:
-                key_id = rec["id"]
-                now = time.monotonic()
-                count, window_start = _minute_window.get(key_id, (0, now - 61))
-                if now - window_start >= 60:
-                    count, window_start = 1, now
-                else:
-                    count += 1
-                _minute_window[key_id] = (count, window_start)
-                if count > minute_limit:
-                    return JSONResponse(
-                        {"detail": f"Rate limit exceeded: {minute_limit} req/minute"},
-                        status_code=429,
-                    )
+            if minute_limit and not _check_minute_limit(
+                rec["id"], minute_limit, time.monotonic()
+            ):
+                return JSONResponse(
+                    {"detail": f"Rate limit exceeded: {minute_limit} req/minute"},
+                    status_code=429,
+                )
 
     response = await call_next(request)
 

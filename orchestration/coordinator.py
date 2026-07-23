@@ -73,6 +73,9 @@ from infrastructure.db import path as _dbpath
 _GATE_DB_PATH     = _dbpath("gate")
 _DECISIONS_DB     = _dbpath("decisions")
 _DT_CONF_THRESHOLD = 0.52   # dual-trajectory forced when agent avg_confidence drops below this
+# O7: the decisiveness floor below which a route counts as "in conflict" (i.e.
+# routing indecision). Kept in step with coherence._DECISIVE_CONF (0.5).
+_INDECISION_CONF = 0.5
 _GATE_DB_INITED = False
 
 def _agent_avg_confidence(agent: str, n: int = 20) -> float:
@@ -234,11 +237,69 @@ def _write_episodic(agent: str, task: str, performance: float,
         print(f"[episodic] write failed: {e}")
 
 
+# ── Live strategy recording (closes O2's continuous-learning edge) ─────
+# strategy_memory previously only grew from the `--ingest` backfill CLI, so the
+# decision-economics loop learned in batch, never per request. This writes one
+# StrategyRecord at each run's outcome, using the SAME run_id as the run log so
+# that a later ingest_run_log() of the same run is a dedup no-op (never double
+# counts). Grading matches ingest_run_log exactly (quality >= SUCCESS_QUALITY) so
+# live and backfilled rows aggregate identically. Best-effort: never breaks a run.
+_STRATEGY_MEM = None  # cached: StrategyMemory.__init__ runs CREATE TABLE DDL, so
+                      # instantiating per request would re-run DDL on the hot path
+                      # (the §3/§5 refactor-debt anti-pattern). Build it once.
+
+
+def _strategy_mem():
+    global _STRATEGY_MEM
+    if _STRATEGY_MEM is None:
+        from decision.strategy_memory import StrategyMemory
+        _STRATEGY_MEM = StrategyMemory()
+    return _STRATEGY_MEM
+
+
+def _record_strategy_live(agent: str, bd: dict, quality, reflect_level: str,
+                          duration_ms: int, run_id: str) -> None:
+    try:
+        from decision.strategy_memory import (
+            StrategyRecord, canonical_strategy, task_class_of, SUCCESS_QUALITY,
+        )
+        success = (quality >= SUCCESS_QUALITY) if isinstance(quality, (int, float)) else None
+        _strategy_mem().record(StrategyRecord(
+            task_class=task_class_of(bd.get("signal_domain"), bd.get("signal_shape")),
+            strategy=canonical_strategy(agent, reflect_level, memory_used=False),
+            success=success,
+            latency_ms=int(duration_ms or 0),
+            run_id=run_id or None,   # real run_id → dedups against backfill
+        ))
+    except Exception as e:
+        print(f"[strategy] live record skipped: {e}")
+
+
+# ── Observability event emitter (#181) ────────────────────────
+# Emit runtime *moments* onto the event bus so Diagnostics › Events shows the
+# real typed stream instead of a feed the UI reconstructs by hand. Best-effort:
+# a telemetry failure must never break a request. See docs/records/FINDINGS.md
+# for which of the five candidate signals are events vs. deliberately not.
+def _emit_obs(event_type, payload: dict) -> None:
+    try:
+        from infrastructure.event_bus import emit as _emit
+        _emit(event_type, payload)
+    except Exception:
+        pass
+
+
 # ── Centralized agent runner with reflection + learning ───────
 # Single control point for all agents. All learning flows through
 # apply_learning_update() — never directly via adjust/update_ema.
 
-def _run_with_reflection(invoke_fn, state: AgentState):
+def _draft(invoke_fn, state: AgentState):
+    """Generate one draft: invoke the agent, run self-consistency (scalar-numeric
+    only), and emit routing observability. No scoring, reflection, or learning —
+    those belong to the reviewer and the finalizer. Shared by the legacy
+    monolithic runner and the graph review-loop's generate node.
+
+    Returns (result, response_raw, vote_escalate, meta)."""
+    _t0           = time.time()
     result        = invoke_fn(state)
     bd            = state.get("brain_decision", {})
     agent         = state.get("next_agent", "unknown")
@@ -332,6 +393,24 @@ def _run_with_reflection(invoke_fn, state: AgentState):
     except Exception:
         pass
 
+    meta = {
+        "t0": _t0, "bd": bd, "agent": agent, "confidence": confidence,
+        "regret": regret, "conflict": conflict, "reflect_level": reflect_level,
+        "run_id": run_id, "gram_winner": gram_winner, "gram_log": gram_log,
+    }
+    return result, response_raw, _vote_escalate, meta
+
+
+# ── Legacy monolithic runner (AMAGRA_REVIEW_LOOP off) ─────────
+# Draft → inline critic-gate regenerate → finalize, all in one node.
+# Behaviour-preserving wrapper over the extracted _draft / _finalize_response.
+
+def _run_with_reflection(invoke_fn, state: AgentState):
+    result, response_raw, _vote_escalate, meta = _draft(invoke_fn, state)
+    task    = state.get("task", "")
+    agent   = meta["agent"]
+    run_id  = meta["run_id"]
+
     # ── Critic gate: pre-commit acceptance barrier ────────────────
     # Score the raw response before it is committed or streamed.
     # If it fails the threshold, regenerate once at natural Ollama
@@ -383,6 +462,35 @@ def _run_with_reflection(invoke_fn, state: AgentState):
                 _log_gate(agent, agent_type_gate, task, gate_score, None, True)
         except Exception as e:
             print(f"[critic_gate] gate error: {e}")
+
+    return _finalize_response(
+        state, result, response_raw, meta=meta,
+        vote_escalate=_vote_escalate,
+        critic_perf=_critic_perf, critic_kept=_critic_kept,
+    )
+
+
+# ── Finalize: post-acceptance pipeline ────────────────────────
+# Claude enhancement, contradiction gate, reflection + learning, transparency
+# flags, and step verification. Shared by the legacy runner and the review
+# loop's finalize node. Operates on an already-accepted draft.
+
+def _finalize_response(state, result, response_raw, *, meta, vote_escalate,
+                       critic_perf, critic_kept):
+    bd            = meta["bd"]
+    agent         = meta["agent"]
+    confidence    = meta["confidence"]
+    regret        = meta["regret"]
+    conflict      = meta["conflict"]
+    reflect_level = meta["reflect_level"]
+    run_id        = meta["run_id"]
+    gram_winner   = meta["gram_winner"]
+    gram_log      = meta["gram_log"]
+    _t0           = meta["t0"]
+    _vote_escalate = vote_escalate
+    _critic_perf   = critic_perf
+    _critic_kept   = critic_kept
+    task           = state.get("task", "")
 
     # ── Claude enhancement pass ──────────────────────────────────
     # phi4-mini generates the draft; Claude elevates it to elite quality.
@@ -454,6 +562,15 @@ def _run_with_reflection(invoke_fn, state: AgentState):
                 reflect                = True   # noqa: F841
                 contradiction_detected = True
                 print(f"[coordinator] contradiction → full reflection escalated for {agent}")
+                # #181: a real runtime moment — emit it onto the bus instead of
+                # letting the UI reconstruct it from /contradictions.
+                from infrastructure.event_bus import EventType as _ET_c
+                _emit_obs(_ET_c.CONTRADICTION_DETECTED, {
+                    "run_id":   run_id,
+                    "agent":    agent,
+                    "action":   bd.get("action", "unknown"),
+                    "escalated_to": "full_reflection",
+                })
         except Exception as e:
             print(f"[coordinator] contradiction gate error: {e}")
 
@@ -477,6 +594,19 @@ def _run_with_reflection(invoke_fn, state: AgentState):
             response     = response_raw
             reflect_type = state.get("reflect_type", "general")
             mode         = reflect_level if reflect_level in {"light", "full"} else "full"
+
+            # #181: reflection is a runtime moment worth a timeline event. The
+            # EventType was reserved but never emitted; wire it at the one point
+            # where reflection actually runs (covers the "reflection.triggered"
+            # signal the old synthesized feed invented client-side).
+            from infrastructure.event_bus import EventType as _ET_r
+            _emit_obs(_ET_r.REFLECTION_TRIGGERED, {
+                "run_id":       run_id,
+                "agent":        agent,
+                "mode":         mode,
+                "reflect_type": reflect_type,
+                "contradiction": contradiction_detected,
+            })
 
             refined, history = reflection_loop(task, response, agent_type=reflect_type,
                                                mode=mode)
@@ -594,6 +724,12 @@ def _run_with_reflection(invoke_fn, state: AgentState):
         # Honest values only — keys absent when the critic gate didn't run.
         updates["response_quality"] = round(float(_resp_quality), 3)
         updates["response_kept"]    = _resp_kept or "first_attempt"
+        # Feed the decision-economics loop live (only when we have a real quality
+        # signal — never record a guessed outcome). See _record_strategy_live.
+        _record_strategy_live(
+            agent=agent, bd=bd, quality=_resp_quality, reflect_level=reflect_level,
+            duration_ms=int((time.time() - _t0) * 1000), run_id=run_id,
+        )
     if _resp_reflect_delta is not None:
         updates["reflect_delta"] = round(float(_resp_reflect_delta), 4)
     if updates:
@@ -712,8 +848,18 @@ def coordinator_node(state: AgentState):
     # normalizer). These constants keep the decision-log / trace schema stable.
     final_agent  = brain_agent
     router_agent = "none"
-    conflict     = False
-    print(f"\n👑 Coordinator → [{final_agent}] (brain decision, {duration}ms)")
+    # ── O7: `conflict` repurposed from "brain overrode keyword router" (dead
+    # since #20 — there is no second router) to "routing indecision": the brain
+    # was not confident enough that this query mapped to one domain. This revives
+    # the column for its six consumers (coherence C_routing, decision.log
+    # conflict_rate, the maintenance auto-rebuild trigger, report_generator and
+    # specialization scores, failure_miner clusters), all of which had silently
+    # gone inert on a permanently-zero flag. Same 0.5 floor coherence uses.
+    # NOTE: the *name* "conflict" is now a misnomer (labels still say "brain vs
+    # router"); that rename is tracked as O7's residual naming-debt.
+    conflict     = decision.confidence < _INDECISION_CONF
+    print(f"\n👑 Coordinator → [{final_agent}] (brain decision, {duration}ms"
+          f"{', indecisive' if conflict else ''})")
 
     if decision.needs_plan:
         print("   Plan:")
@@ -807,38 +953,191 @@ def route_to_agent(state: AgentState) -> str:
     return agent if agent in VALID_AGENTS else "knowledge_learning"
 
 
-# ── Specialist wrapper nodes ──────────────────────────────────
-# All agents pass through _run_with_reflection which handles both
-# the reflection path and the proxy learning update path.
+# ── Specialist invokers ───────────────────────────────────────
+# One builder per agent: (state) → invoke_fn. Building the invoker here (not
+# inline in the runner) lets both the legacy monolithic runner and the review
+# loop's draft-only node share the same construction — including the
+# dual-trajectory force decision for python/dotnet.
 
-def run_it(state):        return _run_with_reflection(it_agent.invoke, state)
-
-def run_python(state):
+def _python_invoker(state):
     avg_conf = _agent_avg_confidence("python_dev")
     force_dt = avg_conf < _DT_CONF_THRESHOLD
     if force_dt:
         print(f"[coordinator] python_dev avg_conf={avg_conf:.2f} < {_DT_CONF_THRESHOLD} → dual-trajectory forced")
-    return _run_with_reflection(
-        lambda s: dual_trajectory_invoke(python_agent.invoke, s, PYTHON_SYSTEM_PROMPT, force=force_dt),
-        state,
-    )
+    return lambda s: dual_trajectory_invoke(python_agent.invoke, s, PYTHON_SYSTEM_PROMPT, force=force_dt)
 
-def run_dotnet(state):
+def _dotnet_invoker(state):
     avg_conf = _agent_avg_confidence("dotnet_dev")
     force_dt = avg_conf < _DT_CONF_THRESHOLD
     if force_dt:
         print(f"[coordinator] dotnet_dev avg_conf={avg_conf:.2f} < {_DT_CONF_THRESHOLD} → dual-trajectory forced")
-    return _run_with_reflection(
-        lambda s: dual_trajectory_invoke(dotnet_agent.invoke, s, DOTNET_SYSTEM_PROMPT, force=force_dt),
-        state,
+    return lambda s: dual_trajectory_invoke(dotnet_agent.invoke, s, DOTNET_SYSTEM_PROMPT, force=force_dt)
+
+_AGENT_INVOKERS = {
+    "it_networking":      lambda s: it_agent.invoke,
+    "python_dev":         _python_invoker,
+    "dotnet_dev":         _dotnet_invoker,
+    "ai_ml":              lambda s: ai_ml_agent.invoke,
+    "knowledge_learning": lambda s: knowledge_agent.invoke,
+    "terse":              lambda s: terse_agent.invoke,
+    "web_dev":            lambda s: web_dev_agent.invoke,
+    "devops":             lambda s: devops_agent.invoke,
+    "data_analyst":       lambda s: data_analyst_agent.invoke,
+    "writer":             lambda s: writer_agent.invoke,
+}
+
+
+# ── Specialist wrapper nodes (legacy topology + pipeline) ─────
+# All agents pass through _run_with_reflection which handles both
+# the reflection path and the proxy learning update path. The pipeline
+# always uses these full runners (it finalizes each sub-agent internally),
+# independent of the review-loop flag.
+
+def _make_runner(agent_id):
+    return lambda state: _run_with_reflection(_AGENT_INVOKERS[agent_id](state), state)
+
+run_it           = _make_runner("it_networking")
+run_python       = _make_runner("python_dev")
+run_dotnet       = _make_runner("dotnet_dev")
+run_ai_ml        = _make_runner("ai_ml")
+run_knowledge    = _make_runner("knowledge_learning")
+run_terse        = _make_runner("terse")
+run_web_dev      = _make_runner("web_dev")
+run_devops       = _make_runner("devops")
+run_data_analyst = _make_runner("data_analyst")
+run_writer       = _make_runner("writer")
+
+
+# ── Review-loop nodes (AMAGRA_REVIEW_LOOP=1) ──────────────────
+# The revision cycle expressed as graph structure instead of a hidden `if`:
+#   agent(draft) → reviewer(score) → {fail: back to agent | pass/exhausted: finalize}
+# Bounded by max_revisions so the cycle always terminates.
+
+_REVIEW_LOOP           = os.environ.get("AMAGRA_REVIEW_LOOP", "0") == "1"
+_DEFAULT_MAX_REVISIONS = int(os.environ.get("AMAGRA_MAX_REVISIONS", "1"))
+
+def _make_gen_node(agent_id):
+    """Draft-only agent node: generate + self-consistency, no scoring/reflection.
+    Threads self-consistency's escalate flag and the draft start-time forward so
+    finalize can enhance and time the accepted answer."""
+    def node(state: AgentState):
+        result, _response_raw, vote_escalate, meta = _draft(_AGENT_INVOKERS[agent_id](state), state)
+        return {**result, "vote_escalate": vote_escalate, "gen_t0": meta["t0"]}
+    return node
+
+def reviewer_node(state: AgentState):
+    """Critic gate as a first-class node. Scores the current draft and decides the
+    edge: pass (good enough) / fail (revise — loop back to the agent) / exhausted
+    (out of revisions — keep the best draft and finalize)."""
+    task     = state.get("task", "")
+    response = state["messages"][-1].content if state.get("messages") else ""
+    agent    = state.get("active_agent", "unknown")
+    run_id   = state.get("run_id", "")
+    agent_ty = state.get("reflect_type", "general")
+
+    if task and response:
+        try:
+            score = grounded_evaluate(task, response, agent_ty)["score"]
+        except Exception as e:
+            print(f"[reviewer] eval error: {e} → pass")
+            score = 1.0
+    else:
+        score = 1.0
+
+    tries   = state.get("revise_count", 0) + 1
+    ceiling = state.get("max_revisions", _DEFAULT_MAX_REVISIONS)
+
+    # Keep-best: a worse revision must never displace a better earlier draft.
+    prev_best = state.get("best_score", -1.0)
+    if score >= prev_best:
+        best_response, best_score = response, score
+    else:
+        best_response, best_score = state.get("best_response", response), prev_best
+
+    if score >= _CRITIC_GATE_THRESHOLD:
+        verdict = "pass"
+    elif tries > ceiling:
+        verdict = "exhausted"
+        print(f"[reviewer] score={score:.3f} < {_CRITIC_GATE_THRESHOLD}, "
+              f"revisions exhausted ({tries-1}/{ceiling}) → keep best={best_score:.3f}")
+    else:
+        verdict = "fail"
+        print(f"[reviewer] score={score:.3f} < {_CRITIC_GATE_THRESHOLD} → revise ({tries}/{ceiling})")
+
+    try:
+        run_tracer.record_critic(run_id, score_initial=score,
+                                 accepted_on_first=(tries == 1 and verdict == "pass"))
+        _log_gate(agent, agent_ty, task, score, None, verdict != "fail")
+    except Exception:
+        pass
+
+    return {
+        "review_score":   round(float(score), 4),
+        "review_verdict": verdict,
+        "revise_count":   tries,
+        "best_response":  best_response,
+        "best_score":     round(float(best_score), 4),
+    }
+
+def route_after_review(state: AgentState) -> str:
+    """Conditional edge out of the reviewer: the loop-back is `fail → agent`."""
+    if state.get("review_verdict") == "fail":
+        return state.get("active_agent", "finalize")
+    return "finalize"
+
+def finalize_node(state: AgentState):
+    """Terminal node: restore the best draft if the loop exhausted, then run the
+    shared post-acceptance pipeline (enhancement, contradiction, reflection,
+    learning, verification) exactly once on the accepted answer."""
+    from langchain_core.messages import AIMessage as _AIMsgF
+
+    messages     = list(state.get("messages", []))
+    response_raw = messages[-1].content if messages else ""
+    orig_last_id = getattr(messages[-1], "id", None) if messages else None
+
+    # If we ran out of revisions, commit the best-scoring draft, not the last one.
+    if state.get("review_verdict") == "exhausted":
+        best = state.get("best_response", response_raw)
+        if best and best != response_raw and messages:
+            messages[-1] = _AIMsgF(content=best)
+            response_raw = best
+
+    bd = state.get("brain_decision", {})
+    meta = {
+        "t0":            state.get("gen_t0", time.time()),
+        "bd":            bd,
+        "agent":         state.get("active_agent", "unknown"),
+        "confidence":    bd.get("confidence", 0.67),
+        "regret":        bd.get("regret", 0.0),
+        "conflict":      bd.get("conflict", False),
+        "reflect_level": state.get("reflect_level", "none"),
+        "run_id":        state.get("run_id", ""),
+        "gram_winner":   state.get("gram_winner", ""),
+        "gram_log":      state.get("gram_log", ""),
+    }
+    critic_perf = state.get("best_score")
+    critic_kept = "first_attempt" if state.get("revise_count", 1) <= 1 else "revision_rewrite"
+
+    result = {"messages": messages, "result": response_raw}
+    out = _finalize_response(
+        state, result, response_raw, meta=meta,
+        vote_escalate=state.get("vote_escalate", False),
+        critic_perf=critic_perf, critic_kept=critic_kept,
     )
-def run_ai_ml(state):       return _run_with_reflection(ai_ml_agent.invoke, state)
-def run_knowledge(state):   return _run_with_reflection(knowledge_agent.invoke, state)
-def run_terse(state):       return _run_with_reflection(terse_agent.invoke, state)
-def run_web_dev(state):     return _run_with_reflection(web_dev_agent.invoke, state)
-def run_devops(state):      return _run_with_reflection(devops_agent.invoke, state)
-def run_data_analyst(state):return _run_with_reflection(data_analyst_agent.invoke, state)
-def run_writer(state):      return _run_with_reflection(writer_agent.invoke, state)
+
+    # LangGraph's add_messages reducer APPENDS, so returning the full message list
+    # would duplicate the whole conversation. Return only the final message, with
+    # the original id so the reducer overwrites in place instead of appending.
+    new_messages = out.pop("messages", None)
+    if new_messages:
+        final_msg = new_messages[-1]
+        if orig_last_id is not None:
+            try:
+                final_msg.id = orig_last_id
+            except Exception:
+                pass
+        return {"messages": [final_msg], **out}
+    return out
 
 
 def run_pipeline(state: AgentState):
@@ -882,7 +1181,43 @@ def run_pipeline(state: AgentState):
 
 # ── Build graph ───────────────────────────────────────────────
 
+_ROUTE_MAP = {aid: aid for aid in VALID_AGENTS}
+_ROUTE_MAP["pipeline"] = "pipeline"
+
+
+def _build_review_loop():
+    """Review-loop topology: agent(draft) → reviewer → (loop back | finalize).
+    The revision cycle is an explicit graph edge instead of a hidden retry."""
+    graph = StateGraph(AgentState)
+    graph.add_node("coordinator", coordinator_node)
+    for aid in VALID_AGENTS:
+        graph.add_node(aid, _make_gen_node(aid))
+    graph.add_node("pipeline", run_pipeline)   # finalizes its sub-agents internally
+    graph.add_node("reviewer", reviewer_node)
+    graph.add_node("finalize", finalize_node)
+
+    graph.add_edge(START, "coordinator")
+    graph.add_conditional_edges("coordinator", route_to_agent, _ROUTE_MAP)
+
+    # agent draft → reviewer  (pipeline skips review; it self-finalizes)
+    for aid in VALID_AGENTS:
+        graph.add_edge(aid, "reviewer")
+
+    # reviewer → loop back to the drafting agent (fail) OR finalize (pass/exhausted)
+    graph.add_conditional_edges(
+        "reviewer", route_after_review,
+        {**{aid: aid for aid in VALID_AGENTS}, "finalize": "finalize"},
+    )
+    graph.add_edge("finalize", END)
+    graph.add_edge("pipeline", END)
+    return graph.compile()
+
+
 def build_coordinator():
+    if _REVIEW_LOOP:
+        print("[coordinator] review-loop topology active (AMAGRA_REVIEW_LOOP=1)")
+        return _build_review_loop()
+
     graph = StateGraph(AgentState)
 
     graph.add_node("coordinator",        coordinator_node)

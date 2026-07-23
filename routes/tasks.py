@@ -7,7 +7,7 @@ from orchestration.coordinator import coordinator
 
 router = APIRouter()
 
-from infrastructure.db import path as _dbpath
+from infrastructure.db import path as _dbpath, tune as _tune
 TASKS_DB = _dbpath("tasks")
 
 worker_event = asyncio.Event()
@@ -15,8 +15,9 @@ task_db_lock = asyncio.Lock()
 
 
 def get_tasks_db():
-    conn = sqlite3.connect(TASKS_DB, check_same_thread=False)
-    conn.execute("PRAGMA journal_mode=WAL;")
+    # Fresh per-call connection (never shared across threads); busy_timeout+WAL
+    # applied centrally — see #195.
+    conn = _tune(sqlite3.connect(TASKS_DB, check_same_thread=False))
     conn.execute("PRAGMA synchronous=NORMAL;")
     return conn
 
