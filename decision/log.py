@@ -219,16 +219,18 @@ def conflict_rate(last_n: int = 100) -> dict:
     """
     try:
         c = _conn()
-        total = c.execute(
-            "SELECT COUNT(*) FROM brain_decisions ORDER BY id DESC LIMIT ?", (last_n,)
-        ).fetchone()[0]
-        conflicts = c.execute(
-            "SELECT COUNT(*) FROM brain_decisions WHERE conflict=1 ORDER BY id DESC LIMIT ?", (last_n,)
-        ).fetchone()[0]
-        reflected = c.execute(
-            "SELECT COUNT(*) FROM brain_decisions WHERE reflect=1 ORDER BY id DESC LIMIT ?", (last_n,)
-        ).fetchone()[0]
+        # `LIMIT ?` on a bare `COUNT(*)` is a no-op — the aggregate is a single
+        # row, so the limit never restricts it and every count was all-time, not
+        # the last N (O7 residual). Take the window in a subquery instead, then
+        # aggregate the returned rows in one pass.
+        rows = c.execute(
+            "SELECT conflict, reflect FROM brain_decisions ORDER BY id DESC LIMIT ?",
+            (last_n,)
+        ).fetchall()
         c.close()
+        total     = len(rows)
+        conflicts = sum(1 for r in rows if r[0])
+        reflected = sum(1 for r in rows if r[1])
         return {
             "total":          total,
             "conflicts":      conflicts,

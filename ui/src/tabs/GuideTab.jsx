@@ -160,7 +160,7 @@ const HOW_TO = [
   ]},
   { title: "Runs → Decisions", items: [
     "Shows every routing decision the brain made, with confidence and reflect level.",
-    "Color-coded by conflict (brain vs router disagreement) — yellow = conflicted.",
+    "Color-coded by routing indecision (low brain confidence) — yellow = indecisive.",
     "Use it to spot routing patterns and debug misroutes.",
     "Regret column shows how much the brain 'regretted' each decision in hindsight.",
   ]},

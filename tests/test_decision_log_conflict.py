@@ -55,3 +55,27 @@ def test_conflict_rate_is_not_structurally_zero():
     stats = dl.conflict_rate()
     assert stats["conflicts"] > 0
     assert stats["conflict_rate"] > 0.0
+
+
+def test_conflict_rate_window_is_honored():
+    """O7 residual: `LIMIT ?` on a bare COUNT(*) was a no-op, so the 'last N'
+    window silently spanned the whole table. The windowed subquery must cap
+    `total` at last_n even when the table holds more rows."""
+    for _ in range(6):
+        _log(conflict=False, confidence=0.9)
+    stats = dl.conflict_rate(last_n=3)
+    assert stats["total"] == 3, (
+        f"window not honored: total={stats['total']} for last_n=3 "
+        "(the COUNT+LIMIT no-op would return the whole table)"
+    )
+
+
+def test_conflict_rate_window_reflects_recent_rows():
+    """The window takes the *most recent* rows: after 4 fresh indecisive routes,
+    a last_n=4 view is entirely conflicts regardless of older history."""
+    for _ in range(4):
+        _log(conflict=True, confidence=0.1)
+    stats = dl.conflict_rate(last_n=4)
+    assert stats["total"] == 4
+    assert stats["conflicts"] == 4
+    assert stats["conflict_rate"] == 1.0
