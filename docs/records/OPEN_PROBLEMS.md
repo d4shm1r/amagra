@@ -301,6 +301,16 @@ defect is *fixed*; generation-model warm-up, TTFT 9.7s → 2.1s). **Steps 3–6 
   tested, and **half-adopted** — the worst state. *Decide explicitly:* adopt (persistence
   chain becomes middleware layers) or delete. Recommendation: adopt — §1 gives it its first
   real job.
+- **Review-loop topology promotion [B].** The agent revision cycle is now a first-class
+  graph edge (`reviewer_node` + `route_after_review` loop-back in `orchestration/coordinator.py`,
+  behind `AMAGRA_REVIEW_LOOP`, tested in `tests/test_review_loop.py`) rather than a hidden
+  `if` inside the agent node. **Built, tested, off by default** — the legacy monolithic
+  runner is still the production path. Three things gate promotion: (1) the single-agent
+  path only — `run_pipeline` still finalizes its sub-agents internally, so compound tasks
+  don't get the graph-level loop; (2) each revision should feed the decision-economics loop
+  as a data point (ties to [O2](#o2-the-decision-theoretic-policy-layer-is-wired-but-unproven));
+  (3) fan-out/fan-in and a human-checkpoint (HITL `interrupt`) node remain absent. *Done when:*
+  default-on with the pipeline path included and revisions recorded as decision-economics evidence.
 
 ---
 
