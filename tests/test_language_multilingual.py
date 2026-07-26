@@ -71,6 +71,11 @@ NON_ENGLISH = [
     ("instala el paquete",                                    "es"),
     ("mostra il file",                                        "it"),
     ("configura la red local",                                "es"),
+    # Two-content-word imperatives — the F-13 residual, now caught by the
+    # foreign-content-word set (Romance/German file-command verbs + nouns).
+    ("abre archivo",                                          "es"),
+    ("leggi documento",                                       "it"),
+    ("salva ficheiro",                                        "pt"),
 ]
 
 ENGLISH = [
@@ -100,15 +105,15 @@ KNOWN_FALSE_POSITIVES = [
     "run database migration script now",
 ]
 
-# Residual limitation (issue #18 / FAILURES F-13): the foreign-function-word
-# lexicon closed the article/verb-bearing short phrases above, but a two-word
-# imperative whose *both* tokens are content words (no article, no lexicon verb,
-# no diacritic) still slips through the length fallback. Kept out of the recall
-# gate; asserted as missed so a further improvement is surfaced.
+# Residual limitation (issue #18 / FAILURES F-13): the content-word set closed
+# the two-word imperatives (verb + noun). What still slips through is a two-word
+# *noun phrase* — noun + adjective, no verb, no article, no diacritic — where
+# neither token is in any lexicon. Kept out of the recall gate; asserted as
+# missed so a further improvement is surfaced.
 KNOWN_MISSES = [
-    ("abre archivo",     "es"),   # "open file" — 2 content words, no diacritics
-    ("leggi documento",  "it"),   # "read document"
-    ("salva ficheiro",   "pt"),   # "save file"
+    ("pagina bianca",    "it"),   # "blank page" — noun + adjective, no lexicon word
+    ("codice sorgente",  "it"),   # "source code"
+    ("rete locale",      "es"),   # "local network"
 ]
 
 

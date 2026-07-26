@@ -73,6 +73,32 @@ _FOREIGN_FUNCTION_WORDS = {
     "une", "faleminderit", "pershendetje", "mund", "trego",
 }
 
+# The residual F-13 gap: a two-word imperative whose *both* tokens are content
+# words — no article, no function word, no diacritic — e.g. "abre archivo",
+# "leggi documento", "salva ficheiro". The function-word gate above can't see
+# these. This adds the high-frequency Romance/German file-command imperatives and
+# a few unmistakably non-English nouns. Same conservative screen: consulted only
+# after the English-stopword gate, and every member is a form English never uses
+# (the English commands are open/read/save/create/… — never abre/leggi/salva).
+# Screened against tech tokens too: "salva"≠"save", "guarda"≠"guard".
+_FOREIGN_CONTENT_WORDS = {
+    # Imperative verbs (file / command register)
+    # Spanish / Portuguese
+    "abre", "abra", "cierra", "crea", "crie", "elimina", "borra", "guarda",
+    "busca", "encuentra", "encontra", "muestra", "escribe", "escreve",
+    "modifica", "agrega", "adiciona", "ejecuta", "executa", "ordena",
+    # Italian
+    "apri", "chiudi", "salva", "cerca", "trova", "leggi", "scrivi", "aggiungi",
+    "esegui", "ordina", "elenca",
+    # French (diacritic-free forms)
+    "ouvre", "ferme", "enregistre", "cherche", "trouve", "montre", "ajoute",
+    # German (diacritic-free forms)
+    "erstelle", "speichere", "suche", "finde", "zeige", "schreibe",
+    # Unmistakably non-English nouns
+    "archivo", "fichero", "ficheiro", "documento", "carpeta", "datei",
+    "fichier", "cartella", "verzeichnis",
+}
+
 _WORD_RE = re.compile(r"[^\W\d_]+", re.UNICODE)
 
 
@@ -129,6 +155,12 @@ def is_probably_non_english(text: str) -> bool:
     # phrases the length fallback would otherwise miss. Safe here precisely
     # because the English-stopword gate above has already returned.
     if any(w in _FOREIGN_FUNCTION_WORDS for w in words):
+        return True
+
+    # No function word either, but a Romance/German content-word imperative or an
+    # unmistakably non-English noun — catches the two-content-word phrases the
+    # length fallback would otherwise miss ("abre archivo", "leggi documento").
+    if any(w in _FOREIGN_CONTENT_WORDS for w in words):
         return True
 
     # A weak diacritic now tips it; otherwise require a longer phrase so we
