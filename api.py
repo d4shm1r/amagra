@@ -20,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 import core.api_keys as _ak
+import core.idempotency as _idem
 from infrastructure.version import __version__
 
 # Bundled UI: when ui/build exists, FastAPI serves it so the whole app runs as a
@@ -290,6 +291,12 @@ async def auth_middleware(request: Request, call_next):
         if not secrets.compare_digest(request.headers.get("X-Admin-Token", ""), _ADMIN_TOKEN):
             return JSONResponse({"detail": "X-Admin-Token required"}, status_code=403)
 
+    # ── Idempotency (#197) — opt-in via header, POST only ────────────────────
+    # Scope binds the caller so one key can't replay another's response; set once
+    # identity is known (below). idem_key == "" disables everything here.
+    idem_key   = request.headers.get("Idempotency-Key", "").strip() if request.method == "POST" else ""
+    idem_scope: str | None = None
+
     # ── Customer key gate (deny-by-default) ──────────────────────────────────
     _usage = None
     if _REQUIRE_AUTH:
@@ -305,14 +312,24 @@ async def auth_middleware(request: Request, call_next):
             rec = _ak.verify_key(raw)
             if not rec:
                 return JSONResponse({"detail": "Invalid or inactive API key"}, status_code=403)
-            _usage = _ak.increment_usage(rec["id"])
             request.state.key_id = rec["id"]
             if rec.get("org_id"):
                 request.state.org_id = rec["org_id"]
 
+            # Replay BEFORE metering so a repeat counts once and runs once.
+            if idem_key:
+                idem_scope = f"key:{rec['id']}"
+                hit = _idem.begin(idem_scope, idem_key)
+                if hit is not None:
+                    return hit
+
+            _usage = _ak.increment_usage(rec["id"])
+
             # Daily limit check
             daily_limit = _usage.get("limit", 0)
             if daily_limit and _usage.get("requests_today", 0) > daily_limit:
+                if idem_scope:
+                    _idem.release(idem_scope, idem_key)  # don't pin the key to a shed request
                 return JSONResponse(
                     {"detail": f"Daily limit ({daily_limit} req/day) exceeded"}, status_code=429
                 )
@@ -322,12 +339,30 @@ async def auth_middleware(request: Request, call_next):
             if minute_limit and not _check_minute_limit(
                 rec["id"], minute_limit, time.monotonic()
             ):
+                if idem_scope:
+                    _idem.release(idem_scope, idem_key)
                 return JSONResponse(
                     {"detail": f"Rate limit exceeded: {minute_limit} req/minute"},
                     status_code=429,
                 )
+        else:
+            idem_key = ""  # public paths are never idempotency-cached
+    elif idem_key:
+        # Local mode (no auth/metering): still dedupe the work + side effects.
+        idem_scope = "local"
+        hit = _idem.begin(idem_scope, idem_key)
+        if hit is not None:
+            return hit
 
-    response = await call_next(request)
+    if idem_key and idem_scope is not None:
+        try:
+            response = await call_next(request)
+        except Exception:
+            _idem.release(idem_scope, idem_key)  # let a retry proceed
+            raise
+        response = await _idem.finish(idem_scope, idem_key, response)
+    else:
+        response = await call_next(request)
 
     # ── Rate-limit headers (standard API convention) ────────────────────────
     if _usage:
