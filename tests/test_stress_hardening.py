@@ -21,7 +21,10 @@ for _mod in (
     sys.modules.setdefault(_mod, mock.MagicMock())
 
 import core.api_keys as _ak  # noqa: E402
-from routes.core import _is_offline_error  # noqa: E402
+from routes.core import (  # noqa: E402
+    _is_offline_error, _is_timeout_error, _map_invoke_error,
+    _failure_reason, _error_payload, _TIMEOUT_DETAIL, _OFFLINE_DETAIL,
+)
 from fastapi.testclient import TestClient  # noqa: E402
 from api import app  # noqa: E402
 
@@ -60,6 +63,84 @@ def test_offline_classifier_string_forms():
 def test_offline_classifier_ignores_unrelated():
     assert _is_offline_error(ValueError("bad prompt template")) is False
     assert _is_offline_error(KeyError("agent")) is False
+
+
+# ── timeout classifier + status mapping (#193) ───────────────────────────────
+# A hung-but-listening backend is a gateway timeout, not an internal fault. The
+# trap these cover: agents reach the model via `models.llm.llm` (the raw
+# chat_model), so they never hit OllamaProvider.generate()'s translation into
+# ProviderTimeoutError — the exception arrives as a bare httpx.ReadTimeout whose
+# str() is EMPTY. Classifying by message alone yields a 500 with a blank detail.
+
+def test_timeout_classifier_typed_provider_error():
+    from providers.base import ProviderTimeoutError
+    assert _is_timeout_error(ProviderTimeoutError("exceeded 120s")) is True
+
+
+def test_timeout_classifier_bare_httpx_with_empty_str():
+    import httpx
+    e = httpx.ReadTimeout("")
+    assert str(e) == ""                       # the whole reason we match by type
+    assert _is_timeout_error(e) is True
+
+
+def test_timeout_classifier_wrapped_cause():
+    import httpx
+    try:
+        try:
+            raise httpx.ReadTimeout("")
+        except httpx.ReadTimeout as inner:
+            raise RuntimeError("generation failed") from inner
+    except RuntimeError as outer:
+        assert _is_timeout_error(outer) is True
+
+
+def test_timeout_classifier_asyncio_timeout():
+    import asyncio
+    assert _is_timeout_error(asyncio.TimeoutError()) is True
+
+
+def test_timeout_classifier_ignores_unrelated():
+    assert _is_timeout_error(ValueError("bad prompt template")) is False
+    assert _is_timeout_error(ConnectionRefusedError(111, "Connection refused")) is False
+
+
+def test_timeout_maps_to_504_with_clean_detail():
+    import httpx
+    exc = _map_invoke_error(httpx.ReadTimeout(""))
+    assert exc.status_code == 504
+    assert exc.detail == _TIMEOUT_DETAIL
+    assert exc.detail                          # never blank
+
+
+def test_offline_wins_over_timeout_when_both_plausible():
+    # ConnectionRefused is the more specific + more actionable diagnosis.
+    exc = _map_invoke_error(ConnectionRefusedError(111, "Connection refused"))
+    assert exc.status_code == 503
+    assert exc.detail == _OFFLINE_DETAIL
+
+
+def test_unrelated_error_still_500_and_never_blank_detail():
+    exc = _map_invoke_error(ValueError())
+    assert exc.status_code == 500
+    assert exc.detail                          # repr() fallback, not ""
+
+
+def test_failure_reason_never_empty_for_bare_timeout():
+    import httpx
+    reason = _failure_reason(httpx.ReadTimeout(""))
+    assert reason and "timeout" in reason.lower()
+    assert "ReadTimeout" in reason             # the type survives into the run log
+
+
+def test_sse_error_payload_carries_retryable_code():
+    import httpx
+    payload = _error_payload(httpx.ReadTimeout(""))
+    assert payload["type"] == "error"
+    assert payload["code"] == "backend_timeout"
+    assert payload["detail"] == _TIMEOUT_DETAIL
+    assert _error_payload(ConnectionRefusedError(111, "x"))["code"] == "backend_offline"
+    assert _error_payload(ValueError("boom"))["code"] == "error"
 
 
 # ── body-size guard middleware ───────────────────────────────────────────────
