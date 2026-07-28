@@ -258,8 +258,88 @@ the next metrics iteration doesn't trip on it.
 
 ---
 
-*Source of truth for the proofs: the Lean development at `~/Desktop/lean`
-(`STATUS_AND_ROADMAP.md`); the A3′ restatement, sharp-ρ, and composition-law
-results live in the `ocac`/`ocac_2` repos (`OCAC/MajorantSeries.lean`,
-`OCAC/GevreyComposition.lean`, `paper/open-problems-formal.tex`). Re-verify any
-cited theorem with `lake build OCAC` and `#print axioms <name>`.*
+## 7. 2026-07-28 refinement pass — the post-§6 OCAC2 batch
+
+Between §6 (2026-07-03) and now, `ocac_2` produced a large batch of
+machine-checked results (all pinned axiom-clean in `OCAC/AxiomAudit.lean`, both
+repos). Four of them change what this bridge can claim; the frontier files moved
+from `MajorantSeries.lean`/`GevreyComposition.lean` to `GevreyKernel.lean`,
+`MajorantComparison.lean`, `NoGeometricSupersolution.lean`, `PeriodicRigidity.lean`.
+
+**(a) The four reduction theorems R1–R4 (2026-07-17) — the dependency graph
+collapses to one criterion.** R1 (`gevrey_iff_recursion_bound`, `Gevrey.lean`)
+proves the whole derivative-recursion / depth-budget apparatus is *equivalent* to
+a single checkable property: **uniform Gevrey-1**, `∃C,M ∀n,s: ‖f⁽ⁿ⁾(s)‖ ≤ C·Mⁿ·n!`.
+Agent translation — "is this loop safe to recurse to arbitrary depth?" reduces to
+"do its per-order sensitivities have factorial-geometric growth?", which is exactly
+what `gevrey_rate_estimate(...).a3_prime_ok` tests. R2 (`canonical_halfExp_unique_abel`)
+makes the fractional-depth uniqueness **chart-independent** (needs only injectivity
+of the Abel chart) — so `fractional_reflection_depth`'s semigroup guarantee is not an
+artifact of the specific height construction. R3/R4 bound what "resurgent" buys and
+pin a known negative; they matter to the math track, not the runtime yet.
+
+**(b) P2 closed at paper level — a closed-form, base-point-uniform radius.**
+The order-closed recursion (`fixedPointFamily_orderClosed_recursion`, `GevreyKernel.lean`,
+2026-07-18) and the majorant-domination capstone (`fixedPointFamily_le_majorant`,
+`MajorantComparison.lean`, 2026-07-19) are machine-checked, and the uniformity residual
+is closed at paper level (2026-07-22) by an explicit Cauchy-majorant radius depending on
+the joint constants `(B, D, κ)` **alone**:
+
+```
+r(B, D, κ) = (1−κ)² / (D·(1−κ + 2·B·D)²),      M = 1/r
+```
+
+This is the exact certified depth ceiling §4.3 asked for, now without a per-step
+kernel fit. **Landed** as `stability_radius(B, D, κ)` in `infrastructure/math_metrics.py`
+(self-tested: `B→0 ⇒ r=1/D`, `κ→1 ⇒ r→0`, exact value at `B=D=1,κ=0.5` is `0.04`).
+It supersedes the `certified_rate` kernel-fit for the common case where the A3′
+constants are known directly.
+
+**(c) A no-go that sharpens the depth-budget story.** `no_geometric_supersolution`
+(`NoGeometricSupersolution.lean`, 2026-07-22, machine-checked) proves **no rigid
+`c·ρⁿ·n!` ansatz is a valid majorant supersolution** — Gevrey-1 composition genuinely
+degrades the rate (the `L>M` arithmetic is real, not bookkeeping slack). Runtime
+consequence: an *empirical* ρ̂ from `gevrey_rate_estimate` is a **lower bound on the
+true growth, not a ceiling** — so a fitted geometric budget is provably optimistic.
+The `gevrey_majorant` docstring now records this, and the discipline is: gate on
+`a3_prime_ok` before trusting any empirical budget, and prefer the certified
+`stability_radius` when the A3′ constants are in hand.
+
+**(d) P6/D1 unblocks the graded-reflection design question.** The "Resurgent ⇒
+canonical" bridge is dead as a theorem — the canonical half-iterate is C¹ but not C²
+at −log2 (`phi_eq_exp_sub_half`/`phi_eq_log`), hence not analytic, hence not resurgent
+(D1 tree, 2026-07-17). For the runtime this is *liberating*, not blocking: there is **no
+unique fractional-reflection interpolation selected by smoothness**, so what
+`reflect_level = 0.5` executes as is a **product decision, not a mathematically forced
+one** (issue #110). Combined with R2's chart-independence, the dial is on solid ground;
+only its *calibration* on live traffic remains.
+
+**(e) A sixth false-as-stated catch, for the honesty ledger.** `se_false_as_stated`
+(`PeriodicRigidity.lean`, 2026-07-22) refutes a clean-sounding rigidity claim
+(1-periodic + bounded + uniform-Borel-radius ⇏ constant; the `sin` witness); rigidity
+needs the *dynamical* half-translation functional equation, not just periodicity+smoothness.
+This is the sixth entry in OCAC's statement-surgery pattern (A3→A3′, A1, P3b framing,
+P6, S-E). The runtime lesson is the one §3 already imports: any Amagra convergence/rigidity
+claim of the shape "bounded + smooth ⇒ stable" must state its dynamical constraint
+explicitly or it is an unearned axiom.
+
+**Still gated (diagnostic-before-controller).** P2's paper-level closure still has one
+Lean residual (the Banach majorant domination lemma / `hasFPowerSeriesAt_symm`
+identification), and the runtime has no real recursion series to measure until Deep
+Pipeline #16 lands — so `stability_radius` ships as a pure diagnostic, and the depth
+budgeters (`certified_rate`, `gevrey_rate_estimate`, `stability_radius`) stay behind
+#111. See [OPEN_PROBLEMS.md Part VII](../records/OPEN_PROBLEMS.md) for the live gate map.
+
+*(§7 additions verified by the module self-tests.)*
+
+---
+
+*Source of truth for the proofs: the Lean development in the `ocac` / `ocac_2`
+repos (`/home/dashmir/ocac`, `/home/dashmir/ocac_2`). Post-§6 frontier:
+`OCAC/GevreyKernel.lean`, `OCAC/MajorantComparison.lean`,
+`OCAC/NoGeometricSupersolution.lean`, `OCAC/PeriodicRigidity.lean`,
+`OCAC/AnalyticInverseQuantitative.lean`; strategy digest in `ocac_2/PROPOSALS.md`,
+status at-a-glance in `ocac_2/table.md`, every flagship theorem pinned in
+`OCAC/AxiomAudit.lean`. The earlier `MajorantSeries.lean` / `GevreyComposition.lean`
+anchors (A3′, sharp-ρ, composition law) remain valid. Re-verify any cited theorem
+with `lake build OCAC` and `#print axioms <name>`.*

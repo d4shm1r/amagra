@@ -13,7 +13,7 @@ queue); this file maps the *shape* of what's open and links out. See also
 [ISSUES.md](ISSUES.md) (by-design limitations), [STRATEGIC_SCORECARD.md](STRATEGIC_SCORECARD.md)
 (maturity control surface), [METRICS_ROADMAP.md](METRICS_ROADMAP.md).
 
-**Updated:** 2026-07-23
+**Updated:** 2026-07-28
 
 ---
 
@@ -328,20 +328,25 @@ only when there is real signal to act on.** Open items:
   unique interpolation selected by smoothness (the canonical half-iterate isn't even
   C²), so what `reflect_level = 0.5` executes is a **product decision, not a forced
   one** — pick by criteria and calibrate on live traffic.
-- **#111 — `certified_rate` / `gevrey_rate_estimate` depth budgeting.** Gated on **#16**
-  creating real recursion depth — today's paths are ≤1 retry, so there is no series to
-  measure. **New OCAC2 caveat to honor when wiring:** `no_geometric_supersolution` proves
-  a naive geometric-rate depth budget is *provably optimistic* — promote the `.rising`
-  flag (the A3-but-not-A3′ signature) from advisory to a **gate**.
+- **#111 — depth budgeting (`certified_rate` / `stability_radius` / `gevrey_rate_estimate`).**
+  Gated on **#16** creating real recursion depth — today's paths are ≤1 retry, so there is no
+  series to measure. **OCAC2 caveat now honored in code:** `no_geometric_supersolution` proves
+  a naive geometric-rate budget is *provably optimistic*, so a fitted ρ̂ is a lower bound not a
+  ceiling — the `gevrey_majorant` docstring records this and the discipline is to gate on
+  `gevrey_rate_estimate(...).a3_prime_ok`, preferring the certified `stability_radius` when the
+  A3′ constants are known.
 - **#74 — neutral-mode signed drift** (P3): the distinctive publishable metric —
   identify the slowest-contracting agent mode (smallest α, K→1) and report its *signed*
   drift. [METRICS_ROADMAP Phase 5](METRICS_ROADMAP.md).
 - **Metrics roadmap Phases 1–6** — signed curvature indicator (undo the `abs()` sign-loss),
   Lyapunov `drift_status_v2` (basin, not threshold), per-metric provenance tags, cubic
   saturation basin. All pure-function-first.
-- **Stale-anchor note:** the bridge doc's §6 cites `MajorantSeries.lean`/`GevreyComposition.lean`
-  as the frontier; OCAC2 has moved it to `GevreyKernel.lean` / `MajorantComparison.lean` /
-  `NoGeometricSupersolution.lean` / `PeriodicRigidity.lean`. A **§7 sync** is owed.
+- **~~Stale-anchor note / §7 sync~~ — DONE 2026-07-28.** [OCAC bridge §7](../design/OCAC_STABILITY_BRIDGE.md)
+  now covers the post-§6 OCAC2 batch (R1–R4, order-closed recursion, the closed-form uniform
+  radius, `no_geometric_supersolution`, P6/D1, the sixth false-as-stated catch) and the frontier
+  anchors are corrected. Concrete landing: `stability_radius(B,D,κ)` — the base-point-uniform
+  radius `r=(1−κ)²/[D(1−κ+2BD)²]`, `M=1/r` — is in `infrastructure/math_metrics.py`, self-tested,
+  diagnostic-only.
 
 ---
 
@@ -356,6 +361,7 @@ and where the evidence lives. An entry earns a place here only against its
 | **F-13** — short diacritic-free Latin phrases missed by language detection | Added a curated foreign-function-word lexicon (SQ/ES/DE/FR/PT/IT) consulted only after the English-stopword gate, so `instala el paquete` / `mostra il file` now flag without new English false positives. | `core/language.py`; `tests/test_language_multilingual.py` (5 pass; recall ≥95%, zero English FP). Residual documented (two-content-word imperatives). |
 | **#181** — routing conflicts/contradictions synthesized in the UI | Per-signal decision: `contradiction.detected` + `reflection.triggered` now emit from the runtime onto the event bus; `routing.conflict` / `coherence.shifted` / `regret.high` recorded as deliberately-not-events. | [FINDINGS §10a](FINDINGS.md); `orchestration/coordinator.py`; `tests/test_event_bus_observability.py` (4 pass). |
 | **#180** *(partial)* — PolicyPanel/PlanGraphPanel design-system conversion | Colour vocabulary migrated off raw hex onto the semantic tokens (`T`/`SEM`); the inline-style → kit-primitive conversion (incl. the SVG plan graph) remains open in Part IV. | `ui/src/components/panels/PlanGraphPanel.jsx`; `ui/scripts/lint-ui.mjs` ratchet still green. |
+| **OCAC §7 sync** — bridge doc stale vs the post-§6 OCAC2 batch | §7 added (R1–R4, P2 paper-level closure, `no_geometric_supersolution`, P6/D1, sixth false-as-stated catch); frontier anchors corrected; `stability_radius` landed as a pure diagnostic. | [OCAC bridge §7](../design/OCAC_STABILITY_BRIDGE.md); `infrastructure/math_metrics.py` self-tests green. Wiring stays gated on #16/#111. |
 
 ---
 
