@@ -72,8 +72,10 @@ quality weighting, consolidation, pruning. *[direction]* cross-device, multi-use
 **Coordination over automation.** The goal is intelligent coordination between humans, models,
 tools, and agents — not autonomy for its own sake. *Backed by:* router + skill graph + exec gate.
 
-**Transparency over magic.** If the system cannot explain itself, it should not act.
-*Backed by:* exec gate, verifier, `/cos/transparency` surface.
+**Transparency over magic.** If the system cannot show *what it decided and why it decided
+it* — which agent, which memories, what confidence — it should not act. The claim is over
+the orchestration layer, never the model's internals (see POSITIONING, "Two layers of
+transparency"). *Backed by:* exec gate, verifier, `/cos/transparency` surface.
 
 **Evolution over configuration.** Every interaction should leave the system slightly more
 capable, without the user tuning anything. *Backed by:* telemetry → metrics engine → outcome

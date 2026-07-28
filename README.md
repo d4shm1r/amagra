@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <b>The private AI workspace that shows its work.</b><br />
+  <b>The private AI workspace that replays every decision.</b><br />
   Run one prompt across Claude, GPT, and your local models — see exactly where they
   disagree, on hardware you control.
 </p>
@@ -45,8 +45,9 @@
 - **Stays private** — self-hosted via [Ollama](https://ollama.com) or your own cloud key.
   Nothing leaves your machine. MIT licensed.
 - **Remembers your work** — context carries across sessions, so you stop re-explaining yourself.
-- **Shows its reasoning** — replay any answer's decision: which agent was chosen, what
-  memory it drew on, and how the critic scored it.
+- **Records every decision** — replay any answer: which agent was chosen, what
+  memory it drew on, and how the critic scored it. Amagra can't tell you what happened
+  inside the model's weights — nobody can — but everything *around* the model is logged.
 
 ---
 
