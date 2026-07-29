@@ -9,7 +9,7 @@
 //
 // Env overrides: AMAGRA_PORT, AMAGRA_NO_OLLAMA=1.
 
-const { app, BrowserWindow, Menu, shell } = require("electron");
+const { app, BrowserWindow, Menu, shell, ipcMain } = require("electron");
 const { spawn } = require("child_process");
 const http = require("http");
 const path = require("path");
@@ -161,6 +161,127 @@ function logFd() {
   return _logFd;
 }
 
+// ── rounded window corners ────────────────────────────────────
+// Only Linux. The other two platforms already do this, and forcing it there
+// would cost more than it buys:
+//   · macOS rounds every frameless window itself, and a transparent window
+//     loses the native shadow and the traffic-light hit regions.
+//   · Windows 11's DWM rounds all top-level windows; going transparent opts the
+//     window out of the native shadow and Snap Layouts.
+// Linux compositors don't round anything, which is where the sharp corners come
+// from. Rounding needs `transparent: true` — the corner has to be genuinely
+// see-through, and CSS alone cannot do it because the page is clipped to the
+// window rect the compositor draws.
+const ROUND_CORNERS = process.platform === "linux";
+const CORNER_RADIUS = 12;
+
+// Applied by toggling a class, not by inserting and removing stylesheets — the
+// class survives navigations and costs one executeJavaScript per window-state
+// change instead of a stylesheet churn.
+//
+// body::after is in here for a reason that is easy to miss: it is the app's
+// paper-grain overlay, and it is `position: fixed`. Fixed elements are NOT
+// clipped by an ancestor's overflow/border-radius, so without its own radius it
+// would paint the one square thing left in each corner.
+// The non-obvious part is which element carries the cream.
+//
+// CSS propagates the ROOT background to the canvas: when html has no background
+// of its own the browser takes BODY's and paints it across the entire window,
+// and that painting is not clipped by anyone's border-radius. So making only
+// html transparent achieves exactly nothing — body's cream still fills all four
+// corners, which is precisely what a pixel probe of the running window showed
+// (corner read 240,234,222 = the canvas colour, not the desktop behind it).
+//
+// Both html and body therefore go transparent, and the cream moves to #root —
+// the first element in the tree that is actually clipped by its own radius.
+const CORNER_CSS = `
+  html.amagra-round, html.amagra-round body, html.amagra-round #root {
+    border-radius: ${CORNER_RADIUS}px;
+    overflow: hidden;
+  }
+  html.amagra-round, html.amagra-round body { background: transparent !important; }
+  html.amagra-round #root { background: var(--app-bg, #F0E9DF); }
+  html.amagra-round body::after { border-radius: ${CORNER_RADIUS}px; }
+`;
+
+// Window controls for the frameless Linux window, injected from the shell rather
+// than added to the React UI — same rule as the drag region below: the browser
+// and dev-server builds must not grow a set of buttons that do nothing there.
+//
+// Drawn, not glyphs: ─ □ ✕ as characters come from whatever font the machine has,
+// so each one lands on its own baseline at its own weight. These are three tiny
+// SVGs on one 10px grid with one 1.3px stroke, which is the same argument the UI
+// makes for its own icon set (components/ui/Icon.jsx).
+//
+// Idempotent: re-running removes the old bar first, so a reload cannot stack two.
+const CONTROLS_JS = `(() => {
+  const OLD = document.getElementById("amagra-winctl");
+  if (OLD) OLD.remove();
+  if (!window.amagra || !window.amagra.window) return "no-bridge";
+
+  const svg = (d) =>
+    '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" ' +
+    'stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
+  const MIN  = svg('<path d="M1.5 5h7"/>');
+  const MAX  = svg('<rect x="1.6" y="1.6" width="6.8" height="6.8" rx="1.4"/>');
+  const REST = svg('<rect x="1.4" y="3.1" width="5.5" height="5.5" rx="1.2"/><path d="M3.4 3.1V2.3a.9.9 0 0 1 .9-.9h3.4a.9.9 0 0 1 .9.9v3.4a.9.9 0 0 1-.9.9h-.8"/>');
+  const CLOSE = svg('<path d="M2 2l6 6M8 2l-6 6"/>');
+
+  const bar = document.createElement("div");
+  bar.id = "amagra-winctl";
+  bar.style.cssText = [
+    "position:fixed", "top:7px", "right:9px", "z-index:2147483646",
+    "display:flex", "gap:2px", "-webkit-app-region:no-drag",
+    "font-family:inherit",
+  ].join(";");
+
+  const mk = (html, label, onClick, danger) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.innerHTML = html;
+    b.setAttribute("aria-label", label);
+    b.title = label;
+    b.style.cssText = [
+      "width:26px", "height:26px", "display:inline-flex",
+      "align-items:center", "justify-content:center",
+      "border:none", "border-radius:8px", "background:transparent",
+      "color:#8A5A00", "cursor:pointer", "padding:0",
+      "-webkit-app-region:no-drag",
+      "transition:background 150ms ease-out, color 150ms ease-out",
+    ].join(";");
+    // Hover: the same gold tint the app uses for a soft hover, and the one red
+    // in the palette (T.error) for close — the single control you cannot undo.
+    b.addEventListener("mouseenter", () => {
+      b.style.background = danger ? "#B4231814" : "rgba(196,136,8,0.12)";
+      b.style.color = danger ? "#B42318" : "#6C4C00";
+    });
+    b.addEventListener("mouseleave", () => {
+      b.style.background = "transparent";
+      b.style.color = "#8A5A00";
+    });
+    b.addEventListener("click", onClick);
+    return b;
+  };
+
+  const w = window.amagra.window;
+  const minBtn = mk(MIN, "Minimize", () => w.minimize());
+  const maxBtn = mk(MAX, "Maximize", () => w.toggleMaximize());
+  const clsBtn = mk(CLOSE, "Close", () => w.close(), true);
+
+  const paint = (maximized) => {
+    maxBtn.innerHTML = maximized ? REST : MAX;
+    const label = maximized ? "Restore" : "Maximize";
+    maxBtn.setAttribute("aria-label", label);
+    maxBtn.title = label;
+  };
+  w.isMaximized().then(paint).catch(() => {});
+  w.onMaximizeChange(paint);
+
+  bar.append(minBtn, maxBtn, clsBtn);
+  document.body.appendChild(bar);
+  return "ok";
+})()`;
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1280,
@@ -168,18 +289,32 @@ function createWindow() {
     minWidth: 960,
     minHeight: 640,
     title: "AMAGRA",
-    backgroundColor: "#F0E9DF", // cream — no white flash on load (see DESIGN_PRINCIPLES.md)
+    // Cream so there is no white flash on load (see DESIGN_PRINCIPLES.md). When
+    // the window is transparent that job moves to the page's own background: an
+    // opaque backgroundColor here would paint a square cream rect behind the
+    // rounded page and put the sharp corners straight back.
+    ...(ROUND_CORNERS
+      ? { transparent: true, backgroundColor: "#00000000" }
+      : { backgroundColor: "#F0E9DF" }),
     icon: path.join(REPO_ROOT, "ui", "public", "logo512.png"),
-    // Branded top bar: hide the OS title bar and paint the native window-controls
-    // overlay in Gilded Calm (cream field, gold symbols). Win/Linux only — on
-    // macOS the traffic-lights sit top-left, exactly where the ☰ launcher lives
-    // (App.jsx: top 13 / left 15), so keep the native inset bar there.
-    ...(process.platform === "darwin"
-      ? {}
-      : {
-          titleBarStyle: "hidden",
-          titleBarOverlay: { color: "#F0E9DF", symbolColor: "#8A5A00", height: 36 },
-        }),
+    // Branded top bar. Three different answers, one per platform:
+    //
+    //  · macOS — native inset bar. The traffic lights sit top-left, exactly where
+    //    the ☰ launcher lives (App.jsx: top 13 / left 15), so leave it alone.
+    //  · Windows — hidden title bar + the native Window Controls Overlay painted
+    //    in Gilded Calm. The overlay is drawn by Chromium OUTSIDE the page, which
+    //    is fine here because DWM is rounding the window for us anyway.
+    //  · Linux — fully frameless, and the app draws its own controls (CONTROLS_JS).
+    //    It has to: that same native overlay is an opaque rectangle no CSS can
+    //    clip, so with it enabled the top-right corner stayed square while the
+    //    other three rounded. Owning the buttons is the price of four corners.
+    ...(process.platform === "darwin" ? {}
+      : ROUND_CORNERS
+        ? { frame: false }
+        : {
+            titleBarStyle: "hidden",
+            titleBarOverlay: { color: "#F0E9DF", symbolColor: "#8A5A00", height: 36 },
+          }),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -208,9 +343,65 @@ function createWindow() {
       ).catch(() => {});
     });
   }
+  // Round only when the window is floating. A maximized or fullscreen window is
+  // flush against the screen edge, and a radius there just carves four notches
+  // out of the desktop — every polished app squares off at that point.
+  if (ROUND_CORNERS) {
+    // Latched, so "resize" can be in the listener list below without firing an
+    // executeJavaScript on every pixel of a drag — the round/square state changes
+    // a handful of times in a session, not a thousand.
+    let lastRound = null;
+    const syncCorners = () => {
+      if (!win || win.isDestroyed()) return;
+      const round = !win.isMaximized() && !win.isFullScreen();
+      if (round === lastRound) return;
+      lastRound = round;
+      win.webContents
+        .executeJavaScript(`document.documentElement.classList.toggle("amagra-round", ${round})`)
+        .catch(() => {});
+    };
+    win.webContents.on("did-finish-load", () => {
+      lastRound = null;   // a reload drops the class, so re-assert it
+      win.webContents.insertCSS(CORNER_CSS).then(syncCorners).catch(() => {});
+    });
+    // "resize" is in here deliberately. Electron documents enter/leave-full-screen
+    // as macOS+Windows, and on Linux a tiling WM or a keyboard maximize often
+    // changes the window state without emitting the specific event — but it always
+    // resizes. The latch above makes the extra firings free.
+    for (const ev of ["maximize", "unmaximize", "restore", "resize",
+                      "enter-full-screen", "leave-full-screen"]) {
+      win.on(ev, syncCorners);
+    }
+
+    // The window is frameless on this path, so the page owns min/max/close.
+    win.webContents.on("did-finish-load", () => {
+      win.webContents.executeJavaScript(CONTROLS_JS).catch(() => {});
+    });
+    // Keep the maximize glyph honest when the state changes from outside the
+    // buttons — a double-clicked drag region, a WM keybinding, a tiling snap.
+    const pushMaxState = () => {
+      if (!win || win.isDestroyed()) return;
+      win.webContents.send("amagra:win-maximized", win.isMaximized());
+    };
+    for (const ev of ["maximize", "unmaximize", "restore"]) win.on(ev, pushMaxState);
+  }
+
   win.loadURL(UI_URL);
   win.on("closed", () => { win = null; });
 }
+
+// Window-control IPC for the frameless Linux window. Registered once, and every
+// handler resolves the window from the SENDER rather than the module-level `win`,
+// so a control can never act on a window other than the one it was clicked in.
+ipcMain.on("amagra:win-minimize", (e) => BrowserWindow.fromWebContents(e.sender)?.minimize());
+ipcMain.on("amagra:win-close",    (e) => BrowserWindow.fromWebContents(e.sender)?.close());
+ipcMain.on("amagra:win-toggle-maximize", (e) => {
+  const w = BrowserWindow.fromWebContents(e.sender);
+  if (!w) return;
+  if (w.isMaximized()) w.unmaximize(); else w.maximize();
+});
+ipcMain.handle("amagra:win-is-maximized", (e) =>
+  BrowserWindow.fromWebContents(e.sender)?.isMaximized() ?? false);
 
 async function startup() {
   // No File/Edit menu bar on Win/Linux (the ☰ launcher is the only chrome).
