@@ -9,6 +9,7 @@
 import { Fragment, useEffect, useState, useCallback, useRef } from "react";
 import { API } from "@/lib/api";
 import { SURFACES, NAV, surfaceOf } from "@/config/navConfig";
+import { loadTileMeta, markTabUsed } from "@/lib/launcherStats";
 import { Icon } from "@/components/ui";
 import { T, LUX, FONT_UI, FONT_DISPLAY, EASE, DUR, Z } from "@/styles/theme";
 
@@ -32,64 +33,147 @@ export const chatEvent = (name, detail) =>
 //
 // `primary` marks the menu's one anchor (New chat): double-width, icon beside
 // text, gold chip worn permanently — the one deliberate exception.
-// Geometry, top to bottom: 14 pad + 32 chip + 10 gap + ~17 label + 3 + 30
-// description + 18 bottom pad = 124. The bottom pad is generous on purpose — a
-// two-line description that fills the reserved box (e.g. "routing and memory in
-// numbers" in a narrow column) still sits clear of the tile's edge, not jammed
-// against it.
-const TILE_H = 124;   // fits chip + label + a reserved 2-line description + air
+// Geometry. Everything is border-box (styles/index.css), so TILE_H has to pay for
+// the border and both pads as well as the content:
+//
+//   2 border + 14 pad + 32 chip + 10 gap
+//     + 16.9 label (13px × 1.3) + 3 + 30 description + 3 + 14 metadata
+//     + 14 pad                                                  = 138.9 → 140
+//
+// The ~1px of slack is deliberate but thin: if you add a row here, redo the sum.
+// The old 124 predated the metadata row and was itself ~2px under (the border was
+// missing from the tally) — invisible only because the reserved 2-line
+// description box almost never fills to its last pixel. A clipped metadata line
+// would not have been anywhere near as forgiving.
+//
+// `meta` is the contextual footer — "18 prompts", "3 running", "used 2h ago"
+// (see lib/launcherStats.js). It is what makes the grid read as a command center
+// rather than a menu: the tile reports the state of the thing it opens. It sits
+// bottom-RIGHT, small and recessive, so it registers as instrument reading and
+// never competes with the label. Its row is reserved on every tile whether or
+// not that tile has anything to report — the same rule as the description box,
+// for the same reason: tiles must stay one object wearing different words.
+const TILE_H = 140;   // chip + label + reserved 2-line description + meta row + air
 const SUB_H  = 30;    // 2 lines at 10.5px / 1.4 — reserved whether used or not
+const META_H = 14;    // one 9.5px line — reserved whether used or not
 
-function Tile({ label, icon, sub, active, primary, onClick, ariaLabel }) {
+// The active tile's face: a fade, not a panel. Three layers —
+//   · a warm pool high-left and a fainter gold one low-right: the "dimmed
+//     lights", placed off-centre so what light there is has a direction. Both
+//     are wide and low-alpha; a tight or strong highlight reads as gloss.
+//   · a barely-there wash underneath, near-white at the crown drifting to the
+//     faintest honey at the base.
+// Tuned DOWN twice. The first pass (base ending #F7E9C4, pools at .95/.20) read
+// as a distinctly yellow card — you saw the gradient before you saw the tile.
+// The target is that you should not be able to point at where the gold starts:
+// the tile is just *warmer* than its neighbours, and the halo and border do the
+// actual work of saying "you are here". If this ever stops registering, widen
+// the halo before you deepen the fill — the fill is the thing that goes garish
+// first. Dimming also bought back contrast: T.muted on the deepest tone here is
+// 5.35:1, up from 4.61:1 when the base was #F7E9C4.
+const ACTIVE_FACE = `
+  radial-gradient(150px 90px at 20% 6%,   rgba(255,247,224,0.55), transparent 76%),
+  radial-gradient(190px 110px at 90% 100%, rgba(222,184,56,0.07), transparent 78%),
+  linear-gradient(168deg, #FFFEFA 0%, #FFFBF2 60%, #FDF6E8 100%)`;
+
+// Hover on the tile you are already on: the same lamp, barely turned up. It must
+// be its own rule because the generic hover sets a white face with !important,
+// which would wipe the fade off the active tile entirely.
+const ACTIVE_FACE_HOVER = `
+  radial-gradient(150px 90px at 20% 6%,   rgba(255,250,235,0.70), transparent 76%),
+  radial-gradient(190px 110px at 90% 100%, rgba(222,184,56,0.10), transparent 78%),
+  linear-gradient(168deg, #FFFFFC 0%, #FFFDF7 60%, #FEF9EE 100%)`;
+
+// The tile label's gilded ramp. It is NOT LUX.goldText: that ramp is built for
+// the 26px AMAGRA wordmark and peaks at #DEB838, which measures ~2.2:1 on cream —
+// fine for a display mark you recognise by shape, not for the 13px word that
+// tells you where a tile goes. This ramp keeps the metallic top-lit read (light
+// crown, deep base) while holding the body of every glyph in the deep golds that
+// clear AA. The bright crown still dips under it; see the note on .tile-label.
+const LABEL_GOLD = {
+  background: "linear-gradient(180deg, #C89A3A 0%, #9A6C00 58%, #7A5200 100%)",
+  WebkitBackgroundClip: "text",
+  WebkitTextFillColor: "transparent",
+  backgroundClip: "text",
+};
+
+function Tile({ label, icon, sub, meta, active, primary, onClick, ariaLabel }) {
   const gold = active || primary;
   return (
     <button
       onClick={onClick}
       aria-label={ariaLabel || label}
-      className="launch-tile"
+      className={`launch-tile${active ? " is-active" : ""}`}
       style={{
         display: "flex", flexDirection: primary ? "row" : "column",
         alignItems: primary ? "center" : undefined,
         gap: primary ? 13 : 10, textAlign: "left", userSelect: "none",
         gridColumn: primary ? "span 2" : undefined,
-        padding: "14px 15px 18px", height: TILE_H, cursor: "pointer",
+        padding: "14px 15px 14px", height: TILE_H, cursor: "pointer",
         position: "relative", overflow: "hidden",   // hosts the hover sheen sweep
         borderRadius: 14, fontFamily: FONT_UI,
         border: `1px solid ${gold ? T.accent : LUX.tileBorder}`,
-        // Active keeps the same white face as idle — "current" is marked by the
-        // gold border + soft halo + gold label, never a tinted fill.
-        background: primary ? T.surface
+        // Active is a lit gold panel. This reverses the tile's original rule
+        // ("same white face as idle, never a tinted fill") — that rule existed
+        // when active also owned a filled gold icon chip and hover owned a 3px
+        // lift, so the three states were already separable without it. Both of
+        // those are gone now, and border-alone left hover and active looking
+        // nearly identical. The fill is what tells them apart again.
+        background: active ? ACTIVE_FACE
+          : primary ? T.surface
           : "linear-gradient(172deg, #FFFEFB 0%, #FBF6EE 100%)",
+        // The inset glow is the light *inside* the panel; the outer halo is the
+        // same light escaping past the border. They are one effect in two halves,
+        // which is why the inset alpha and the halo alpha move together.
         boxShadow: active
-          ? `${LUX.tileLift}, 0 0 0 3px rgba(222,184,56,0.16), inset 0 1px 0 rgba(255,255,255,0.85)`
+          ? `inset 0 1px 0 rgba(255,255,255,0.95),
+             inset 0 0 34px rgba(255,236,180,0.30),
+             0 0 0 3px rgba(222,184,56,0.16),
+             0 10px 30px rgba(140,105,35,0.12)`
           : primary ? "inset 0 1px 0 rgba(255,255,255,0.7)"
           : `${LUX.tileLift}, inset 0 1px 0 rgba(255,255,255,0.85)`,
-        transition: `transform 260ms ${EASE.out}, border-color ${DUR.slow} ${EASE.out}, background ${DUR.slow} ${EASE.out}, box-shadow 260ms ${EASE.out}`,
+        // No `transform` in the list on purpose — hover is gilding, not motion.
+        // It stays only on :active, which sets its own 90ms duration.
+        transition: `transform 90ms ${EASE.out}, border-color ${DUR.slow} ${EASE.out}, background ${DUR.slow} ${EASE.out}, box-shadow ${DUR.slow} ${EASE.out}`,
       }}
     >
-      {/* The app-icon chip — idle: cream face + gold hairline ring (the menu-fab
-          language); active/primary: filled gold. The mark inside is drawn (see
-          components/ui/Icon.jsx), so every chip carries the same line weight and
-          the same optical size — which is the whole point. */}
+      {/* The app icon — the bare drawn mark in gold, sitting straight on the tile
+          face. It used to wear a chip (cream gradient panel + hairline ring +
+          inset highlight, filled gold when active): a frame around a frame, since
+          the tile is already a bordered card. Removing it leaves the icon itself
+          as the only thing there is to look at.
+          The 32px box STAYS — it is a layout slot, not a visual, and TILE_H's sum
+          depends on it. What was removed is only paint: background, border,
+          shadow, radius. Because the frame no longer supplies the optical mass,
+          the mark grows into the freed space (17→24) or it reads as a small thing
+          adrift in an empty square. 24 in a 32 slot leaves 4px a side, which is
+          the floor — past this the icon needs a bigger slot, and the slot is in
+          TILE_H's sum.
+          Colour is the whole state ladder now: T.accent at rest, deepening to
+          T.accent2 when the tile is active or hovered. */}
       <span aria-hidden className="tile-ico" style={{
-        width: primary ? 38 : 32, height: primary ? 38 : 32, borderRadius: primary ? 11 : 10, flexShrink: 0,
+        width: primary ? 38 : 32, height: primary ? 38 : 32, flexShrink: 0,
         display: "inline-flex", alignItems: "center", justifyContent: "center",
-        color: gold ? "#6C4C00" : "#8A5A00",
-        background: gold ? "linear-gradient(135deg,#FFE880 0%,#DEB838 55%,#C48808 100%)"
-                         : "linear-gradient(160deg,#FFFDF6 0%,#F6EEDC 100%)",
-        border: `1px solid ${gold ? "transparent" : "rgba(196,136,8,0.32)"}`,
-        boxShadow: gold ? "inset 0 1px 1px rgba(255,248,215,0.6)"
-                        : "inset 0 1px 1px rgba(255,255,255,0.9), 0 1px 3px rgba(95,75,20,0.08)",
-        transition: `color ${DUR.base} ${EASE.out}, background ${DUR.slow} ${EASE.out}, border-color ${DUR.slow} ${EASE.out}`,
+        color: gold ? T.accent2 : T.accent,
+        transition: `color ${DUR.base} ${EASE.out}`,
       }}>
-        <Icon name={icon} size={primary ? 20 : 17} />
+        <Icon name={icon} size={primary ? 28 : 24} />
       </span>
       <div style={{ minWidth: 0, width: "100%" }}>
+        {/* Gilded on every tile, in every state, hover included. Because the fill
+            is a clipped gradient there is no `color` left to animate, which is
+            the point: the label is the one thing on the tile that never reacts.
+            Current-ness is carried by weight (700) and the tile's gold border,
+            not by the label changing colour under the cursor.
+            Legibility note: the crown of the ramp (#C89A3A) sits near 3.4:1, under
+            the AA floor the rest of the palette holds. It is the top ~2px of a
+            13px glyph and the mass of the letterform is 4.5:1+, so the word stays
+            readable — but this is the one place in the app where gold-as-text is
+            not fully AA, and brightening the crown further would make it worse. */}
         <div className="tile-label" style={{
           fontSize: primary ? 14.5 : 13, fontWeight: active || primary ? 700 : 600,
-          color: active ? T.accentText : primary ? T.text : T.mutedLt, letterSpacing: "-0.01em",
+          ...LABEL_GOLD, letterSpacing: "-0.01em",
           lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          transition: `color ${DUR.base} ${EASE.out}`,
         }}>{label}</div>
         {/* Reserved to a fixed two-line box, so a one-line and a two-line
             description occupy the same height and every tile's content ends on
@@ -100,6 +184,29 @@ function Tile({ label, icon, sub, active, primary, onClick, ariaLabel }) {
           display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
           overflow: "hidden", transition: `color ${DUR.base} ${EASE.out}`,
         }}>{sub}</div>}
+        {/* Contextual footer. It has to sit BELOW the description in the reading
+            order without going lighter than it: T.muted is already the last tier
+            that clears AA on cream (see styles/theme.js), so recession here is
+            bought with size (9.5 vs 10.5) and right-alignment instead of colour.
+            The eye reads label → description → number, and can skip the number.
+            `live` counts (something running right now) carry a slow gold pulse —
+            a heartbeat every few seconds, not a blinking alert; a grid of 25
+            constantly-animating dots would be the opposite of calm. */}
+        {!primary && (
+          <div className="tile-meta" style={{
+            height: META_H, marginTop: 3, display: "flex", alignItems: "center",
+            justifyContent: "flex-end", gap: 5,
+            fontSize: 9.5, letterSpacing: "0.04em", color: T.muted,
+            fontVariantNumeric: "tabular-nums", opacity: meta ? 1 : 0,
+            transition: `color ${DUR.base} ${EASE.out}, opacity ${DUR.base} ${EASE.out}`,
+          }}>
+            {meta?.live && <span aria-hidden className="tile-pulse" style={{
+              width: 5, height: 5, borderRadius: "50%", flexShrink: 0,
+              background: T.accent,
+            }} />}
+            {meta?.label || ""}
+          </div>
+        )}
       </div>
     </button>
   );
@@ -221,6 +328,7 @@ export default function AppLauncher({
   searchSignal = 0,
 }) {
   const [threads, setThreads] = useState([]);
+  const [tileMeta, setTileMeta] = useState({});
   const [query, setQuery] = useState("");
   const searchRef = useRef(null);
   const online = apiStatus === "online";
@@ -268,15 +376,26 @@ export default function AppLauncher({
       .catch(() => {});
   }, [open, online]);
 
-  const go = useCallback((tabId) => { onNav(tabId); onClose(); }, [onNav, onClose]);
+  // Tile metadata. Resolves in two beats by design: the local last-used map lands
+  // synchronously-ish on the first tick, the live counts land when the fan-out
+  // returns. `alive` guards a close mid-flight — the launcher unmounts freely and
+  // a late stats response must not setState into a dead component.
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    loadTileMeta({ online }).then(m => { if (alive) setTileMeta(m); });
+    return () => { alive = false; };
+  }, [open, online]);
+
+  const go = useCallback((tabId) => { markTabUsed(tabId); onNav(tabId); onClose(); }, [onNav, onClose]);
   const openChatPanel = useCallback((panel) => {
-    onNav("chat"); chatEvent("amagra:chat-panel", panel); onClose();
+    markTabUsed("chat"); onNav("chat"); chatEvent("amagra:chat-panel", panel); onClose();
   }, [onNav, onClose]);
   const newChat = useCallback(() => {
-    onNav("chat"); chatEvent("amagra:new-thread"); onClose();
+    markTabUsed("chat"); onNav("chat"); chatEvent("amagra:new-thread"); onClose();
   }, [onNav, onClose]);
   const switchThread = useCallback((id) => {
-    onNav("chat"); chatEvent("amagra:switch-thread", id); onClose();
+    markTabUsed("chat"); onNav("chat"); chatEvent("amagra:switch-thread", id); onClose();
   }, [onNav, onClose]);
 
   if (!open) return null;
@@ -330,16 +449,39 @@ export default function AppLauncher({
         @keyframes launchRise { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
         @keyframes tileIn { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
         .launch-sec { animation: tileIn ${DUR.slow} ${EASE.out} both; }
+        /* Hover, without motion. The tile used to jump 3px and scale 1.012 — with
+           25 of them in a grid that reads as the page twitching under the cursor,
+           and "expensive" objects do not flinch when you approach them. What is
+           left is the gilding coming up:
+             · the hairline goes from a whisper of gold to the real thing
+             · a second gold hairline blooms just outside it (the 0 0 0 1px ring),
+               so the edge reads as two-part metal trim rather than one thicker
+               line — the detail that separates a bezel from a border
+             · the face brightens and the warm shadow deepens, so the card looks
+               lit rather than moved
+             · the sheen sweeps once (see ::after)
+           No transform anywhere, so nothing reflows and nothing overlaps: the
+           z-index that kept the lifted card's shadow out of the grid gap is gone
+           with it. */
         .launch-tile:hover {
-          z-index: 2;   /* lift above siblings so the spread shadow isn't cut in the grid gap */
-          transform: translateY(-3px) scale(1.012);
-          border-color: rgba(182,138,50,0.48) !important;
-          background: linear-gradient(165deg, rgba(255,255,255,0.92) 0%, rgba(253,247,236,0.82) 100%) !important;
+          border-color: ${T.accent} !important;
+          background: linear-gradient(165deg, #FFFFFF 0%, #FFFBF2 100%) !important;
           box-shadow:
-            0 18px 42px rgba(95,75,20,0.13),
-            0 4px 12px rgba(95,75,20,0.06),
-            0 0 0 1px rgba(222,184,56,0.10),
-            inset 0 1px 0 rgba(255,255,255,0.95);
+            0 0 0 1px rgba(222,184,56,0.22),
+            0 10px 30px rgba(95,75,20,0.11),
+            0 2px 8px rgba(95,75,20,0.05),
+            inset 0 1px 0 rgba(255,255,255,0.98);
+        }
+        /* Hovering the tile you are already on must not blank its gilding, which
+           the rule above would do (white face, !important). Same lamp, turned up:
+           the inner glow strengthens and the halo widens a touch. */
+        .launch-tile.is-active:hover {
+          background: ${ACTIVE_FACE_HOVER} !important;
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,1),
+            inset 0 0 34px rgba(255,238,190,0.40),
+            0 0 0 3px rgba(222,184,56,0.22),
+            0 12px 34px rgba(140,105,35,0.15) !important;
         }
         /* Gold sheen — a soft gilded light band sweeps across the tile once on
            hover-in, then rests off-canvas. Snaps back invisibly on hover-out. */
@@ -356,22 +498,31 @@ export default function AppLauncher({
           transform: translateX(310%) skewX(-16deg);
           transition: transform 780ms cubic-bezier(0.33, 0.7, 0.3, 1);
         }
-        .tile-ico { transition: transform 300ms ${EASE.out}, background ${DUR.base} ${EASE.out}, box-shadow 300ms ${EASE.out}, color ${DUR.base} ${EASE.out}; }
-        /* Hover lights the chip gold and lifts it a touch. It used to also
-           rotate(-3deg): with a glyph that read as a wink, but a drawn icon on a
-           1.6px grid just goes soft and crooked — a rotated stroke lands between
-           pixels. The lift is the affordance; the tilt was noise. */
-        .launch-tile:hover .tile-ico {
-          transform: translateY(-1px) scale(1.06);
-          background: linear-gradient(135deg,#FFF3C4,#EACB62) !important; color: #6C4C00 !important;
-          box-shadow: 0 4px 12px rgba(196,136,8,0.30), 0 0 18px rgba(222,184,56,0.20), inset 0 1px 1px rgba(255,248,215,0.8);
-        }
-        /* The whole button warms as one on hover: label and description each go
-           one step warmer together, not the label alone with a flat-grey
-           description under it. */
-        .launch-tile:hover .tile-label { color: ${T.accentText} !important; }
+        .tile-ico { transition: color ${DUR.base} ${EASE.out}; }
+        /* The mark deepens and holds its place — no lift, no scale, no tilt. A
+           24px icon that grows 6% is 1.4px of travel, which on a 1.6px stroke
+           grid is a blur, not a gesture. Colour alone is the response. */
+        .launch-tile:hover .tile-ico { color: ${T.accent2} !important; }
+        /* The description warms one step on hover. The LABEL deliberately does
+           not: it is a clipped gold gradient in every state, so there is no
+           colour property left to override here — see the note on .tile-label.
+           (No backticks in this block, ever — it is a JS template literal.) */
         .launch-tile:hover .tile-sub   { color: ${T.mutedLt} !important; }
-        .launch-tile:active { transform: translateY(-1px) scale(0.99); transition-duration: 90ms; }
+        .launch-tile:hover .tile-meta  { color: ${T.accent2} !important; }
+        /* A heartbeat, not a strobe: two seconds of visible pulse in a six-second
+           cycle, so a grid with several live tiles still reads as still. */
+        @keyframes metaPulse {
+          0%, 66%, 100% { opacity: .45; transform: scale(1) }
+          78%           { opacity: 1;   transform: scale(1.35) }
+        }
+        .tile-pulse {
+          animation: metaPulse 6s ${EASE.out} infinite;
+          box-shadow: 0 0 6px rgba(196,136,8,0.45);
+        }
+        /* The press is the only movement left on a tile, and it moves inward —
+           a settle under the finger, not a hop. Kept because a click with no
+           acknowledgement at all feels broken rather than calm. */
+        .launch-tile:active { transform: scale(0.994); transition-duration: 90ms; }
         .launch-tile:focus-visible { outline: 2px solid ${T.accent}; outline-offset: 2px; }
         .launch-row:hover {
           background: #FFFEFA !important; border-color: rgba(196,136,8,0.30) !important;
@@ -389,9 +540,12 @@ export default function AppLauncher({
           mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 30px), transparent 100%);
         }
         @media (prefers-reduced-motion: reduce) {
-          .launch-tile:hover, .launch-tile:active, .launch-row:hover, .launch-tile:hover .tile-ico { transform: none; }
+          /* Hover is already motionless by design; only the press and the row
+             nudge still need suppressing here. */
+          .launch-tile:active, .launch-row:hover { transform: none; }
           .launch-tile::after, .launch-tile:hover::after { transition: none; transform: translateX(-130%) skewX(-16deg); }
           .launch-sec { animation: none; }
+          .tile-pulse { animation: none; opacity: .7 }
           [role=dialog] { animation: none !important; }
         }
       `}</style>
@@ -463,6 +617,7 @@ export default function AppLauncher({
           {visibleSurfaces.map(([s, tabs], i) => {
             const tile = (t) => (
               <Tile key={t.id} label={t.label} icon={t.icon || s.icon} sub={t.desc}
+                meta={tileMeta[t.id]}
                 active={t.id === activeTab}
                 onClick={() => go(t.id)} />
             );
