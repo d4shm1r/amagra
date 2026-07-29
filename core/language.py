@@ -94,9 +94,20 @@ _FOREIGN_CONTENT_WORDS = {
     "ouvre", "ferme", "enregistre", "cherche", "trouve", "montre", "ajoute",
     # German (diacritic-free forms)
     "erstelle", "speichere", "suche", "finde", "zeige", "schreibe",
-    # Unmistakably non-English nouns
+    # Unmistakably non-English nouns (file / dev-command register). Screened to
+    # exclude English words and common borrowings — "base", "lista", "cola",
+    # "local", "locale", "grande", "porta" are pointedly NOT here; every member
+    # below is a form English simply does not use.
     "archivo", "fichero", "ficheiro", "documento", "carpeta", "datei",
     "fichier", "cartella", "verzeichnis",
+    "codice", "sorgente", "rete", "pagina", "memoria", "servidor", "usuario",
+    "utente", "tabella", "tabla", "datos", "dati", "cadena", "funcion",
+    "aplicacion", "nodo", "arbol", "consulta", "variabile", "bucle", "ciclo",
+    "matriz", "elenco", "riga", "colonna", "columna", "chiave",
+    "ajustes", "conexion", "connessione", "impostazioni",
+    # A few unmistakably non-English adjectives, to round out noun+adjective
+    # phrases ("pagina bianca", "codice nuevo").
+    "bianca", "bianco", "nueva", "nuevo", "vecchio", "viejo",
 }
 
 _WORD_RE = re.compile(r"[^\W\d_]+", re.UNICODE)

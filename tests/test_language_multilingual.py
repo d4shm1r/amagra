@@ -71,11 +71,16 @@ NON_ENGLISH = [
     ("instala el paquete",                                    "es"),
     ("mostra il file",                                        "it"),
     ("configura la red local",                                "es"),
-    # Two-content-word imperatives — the F-13 residual, now caught by the
-    # foreign-content-word set (Romance/German file-command verbs + nouns).
+    # Two-content-word imperatives — caught by the foreign-content-word set
+    # (Romance/German file-command verbs + nouns).
     ("abre archivo",                                          "es"),
     ("leggi documento",                                       "it"),
     ("salva ficheiro",                                        "pt"),
+    # Two-word tech noun phrases — caught by the expanded non-English noun set.
+    ("codice sorgente",                                       "it"),
+    ("rete locale",                                           "it"),
+    ("pagina bianca",                                         "it"),
+    ("base de datos",                                         "es"),
 ]
 
 ENGLISH = [
@@ -105,15 +110,17 @@ KNOWN_FALSE_POSITIVES = [
     "run database migration script now",
 ]
 
-# Residual limitation (issue #18 / FAILURES F-13): the content-word set closed
-# the two-word imperatives (verb + noun). What still slips through is a two-word
-# *noun phrase* — noun + adjective, no verb, no article, no diacritic — where
-# neither token is in any lexicon. Kept out of the recall gate; asserted as
-# missed so a further improvement is surfaced.
+# Residual limitation (issue #18 / FAILURES F-13): the lexicon now covers common
+# tech nouns/verbs, but a two-word phrase whose *both* tokens are outside every
+# lexicon and carry no diacritic still slips through — and that is the natural
+# ceiling of a dependency-free word-list heuristic. Closing it in general needs a
+# statistical language-ID (char n-gram) model, not a longer list; see FAILURES
+# F-13. Kept out of the recall gate; asserted as missed so the ceiling stays
+# visible rather than silently masked.
 KNOWN_MISSES = [
-    ("pagina bianca",    "it"),   # "blank page" — noun + adjective, no lexicon word
-    ("codice sorgente",  "it"),   # "source code"
-    ("rete locale",      "es"),   # "local network"
+    ("schermo intero",     "it"),   # "fullscreen" — both tokens outside the lexicon
+    ("ventana emergente",  "es"),   # "popup window"
+    ("respuesta rapida",   "es"),   # "quick reply" (diacritic-free)
 ]
 
 
