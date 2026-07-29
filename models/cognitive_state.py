@@ -35,6 +35,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict
 
+from core.logger import log_internal_failure
+
 # ── Session registry (in-process cache) ──────────────────────
 _SESSIONS: Dict[str, "CognitiveState"] = {}
 
@@ -120,8 +122,8 @@ class CognitiveState:
                 "action":     action,
                 "complexity": complexity,
             })
-        except Exception:
-            pass
+        except Exception as _e:
+            log_internal_failure("cos.emit.query_received", _e)
 
     def end_request(self, agent: str, outcome: str = "completed",
                     response_snippet: str = "",
@@ -163,8 +165,8 @@ class CognitiveState:
             if kept:
                 payload["evidence"] = kept
             emit(EventType.RESPONSE_GENERATED, payload)
-        except Exception:
-            pass
+        except Exception as _e:
+            log_internal_failure("cos.emit.response_generated", _e)
 
     # ── Component setters ─────────────────────────────────────
 
@@ -180,8 +182,8 @@ class CognitiveState:
                 "uncertainty":   plan.uncertainty if plan else 0,
                 "parallel_groups": plan.parallel_groups if plan else [],
             })
-        except Exception:
-            pass
+        except Exception as _e:
+            log_internal_failure("cos.emit.plan_created", _e)
 
     def set_risk(self, risk: Any) -> None:
         self.risk = risk
@@ -202,8 +204,8 @@ class CognitiveState:
                     "complexity_risk":     getattr(risk, "complexity_risk", None),
                 },
             })
-        except Exception:
-            pass
+        except Exception as _e:
+            log_internal_failure("cos.emit.risk_computed", _e)
 
     def add_issue(self, description: str, step_id: str = "") -> None:
         if self.world:
@@ -256,8 +258,8 @@ class CognitiveState:
             from infrastructure.metrics_engine import get_metrics
             self._metrics_cache = get_metrics()
             self._metrics_ts    = now
-        except Exception:
-            pass
+        except Exception as _e:
+            log_internal_failure("cos.metrics_cache", _e)
         return self._metrics_cache
 
 
@@ -305,16 +307,16 @@ if __name__ == "__main__":
             from orchestration.planner import plan_query
             plan = plan_query(query, action=action, agents=[agent])
             state.set_plan(plan)
-        except Exception:
-            pass
+        except Exception as _e:
+            log_internal_failure("cos.planner", _e)
 
         # Simulate risk assessment
         try:
             from cognition.risk_gate import compute_risk
             risk = compute_risk(action, agent, confidence=0.65, log=False)
             state.set_risk(risk)
-        except Exception:
-            pass
+        except Exception as _e:
+            log_internal_failure("cos.risk_gate", _e)
 
         state.end_request(agent, outcome, response_snippet=f"Response to: {query}")
         print(f"\n  After '{query[:45]}...':")

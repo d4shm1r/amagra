@@ -11,14 +11,14 @@ import sqlite3
 import os
 from datetime import datetime, timezone
 
-from infrastructure.db import path as _dbpath
+from infrastructure.db import path as _dbpath, tune as _tune
 DB_PATH = _dbpath("decisions")
 
 
 def _conn():
-    c = sqlite3.connect(DB_PATH, check_same_thread=False)
-    c.execute("PRAGMA journal_mode=WAL;")
-    return c
+    # Fresh connection per call, used and closed within one frame (never shared
+    # across threads) — see #195 and tests/test_db_thread_safety.py.
+    return _tune(sqlite3.connect(DB_PATH, check_same_thread=False))
 
 
 def init():
@@ -209,19 +209,28 @@ def agent_regret_mean(agent: str, last_n: int = 50) -> float:
 
 
 def conflict_rate(last_n: int = 100) -> dict:
-    """Summary stats for dashboard or debugging."""
+    """Summary stats for dashboard or debugging.
+
+    O7 note: the `conflict` column no longer means "brain overrode the keyword
+    router" (that router was removed in #20). It now flags *routing indecision*
+    — the brain's confidence for the route was below the decisiveness floor.
+    `conflict_rate` is therefore the recent low-confidence-routing rate; consumers
+    (e.g. the maintenance auto-rebuild trigger) read it as a routing-health signal.
+    """
     try:
         c = _conn()
-        total = c.execute(
-            "SELECT COUNT(*) FROM brain_decisions ORDER BY id DESC LIMIT ?", (last_n,)
-        ).fetchone()[0]
-        conflicts = c.execute(
-            "SELECT COUNT(*) FROM brain_decisions WHERE conflict=1 ORDER BY id DESC LIMIT ?", (last_n,)
-        ).fetchone()[0]
-        reflected = c.execute(
-            "SELECT COUNT(*) FROM brain_decisions WHERE reflect=1 ORDER BY id DESC LIMIT ?", (last_n,)
-        ).fetchone()[0]
+        # `LIMIT ?` on a bare `COUNT(*)` is a no-op — the aggregate is a single
+        # row, so the limit never restricts it and every count was all-time, not
+        # the last N (O7 residual). Take the window in a subquery instead, then
+        # aggregate the returned rows in one pass.
+        rows = c.execute(
+            "SELECT conflict, reflect FROM brain_decisions ORDER BY id DESC LIMIT ?",
+            (last_n,)
+        ).fetchall()
         c.close()
+        total     = len(rows)
+        conflicts = sum(1 for r in rows if r[0])
+        reflected = sum(1 for r in rows if r[1])
         return {
             "total":          total,
             "conflicts":      conflicts,

@@ -21,6 +21,19 @@ from dataclasses import dataclass
 from typing import AsyncIterator
 
 
+class ProviderError(Exception):
+    """Base class for provider-call failures surfaced to callers.
+
+    Providers should translate backend-specific exceptions (httpx timeouts,
+    connection refusals, asyncio cancellation on a hard ceiling) into these so
+    callers can catch a typed error instead of a leaked stack trace.
+    """
+
+
+class ProviderTimeoutError(ProviderError):
+    """A generation call exceeded its time budget (backend hung or overloaded)."""
+
+
 # ── Cost accounting (v1.5 Hybrid Inference) ──────────────────────────────────
 # USD per 1,000,000 tokens, (input, output). Approximate list prices; local
 # backends (Ollama / LM Studio) are free. Unknown models fall back to (0, 0) —

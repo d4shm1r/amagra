@@ -40,3 +40,18 @@ def test_non_code_imperatives_have_no_code_noun():
 def test_code_requests_have_code_noun():
     for q in CODE:
         assert CODE_NOUN.search(q) is not None, f"missed code noun: {q!r}"
+
+
+def test_valid_agents_matches_registry_no_drift():
+    """core_brain.VALID_AGENTS gates the LLM classifier prompt, the LLM result
+    filter, and both the learned-router and decision-econ overrides. If it drifts
+    below the registry, those paths silently can't reach the missing agents (this
+    exact bug hid web_dev/devops/data_analyst/writer). Mirror the coordinator's
+    boot assertion so the drift can't come back."""
+    from orchestration.core_brain import VALID_AGENTS
+    from agents.registry import AGENT_IDS
+    assert set(VALID_AGENTS) == AGENT_IDS, (
+        f"core_brain VALID_AGENTS drifted from registry: "
+        f"missing={sorted(AGENT_IDS - set(VALID_AGENTS))} "
+        f"extra={sorted(set(VALID_AGENTS) - AGENT_IDS)}"
+    )

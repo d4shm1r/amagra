@@ -11,34 +11,42 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import cognition.coherence as ch
 
 
-def _dec(conflict=False, reflect=False, regret=0.0):
-    return {"conflict": conflict, "reflect": reflect, "regret": regret}
+def _dec(conflict=False, reflect=False, regret=0.0, confidence=0.67):
+    return {"conflict": conflict, "reflect": reflect, "regret": regret,
+            "confidence": confidence}
 
 
-# ── _c_routing ────────────────────────────────────────────────────────────────
+# ── _c_routing (O7: rebased onto mean routing confidence) ─────────────────────
 
 def test_c_routing_empty():
     c, rate = ch._c_routing([])
     assert c == 0.5
     assert rate == 0.5
 
-def test_c_routing_no_conflicts():
-    decisions = [_dec(conflict=False)] * 10
-    c, rate = ch._c_routing(decisions)
-    assert c == 1.0
-    assert rate == 0.0
+def test_c_routing_is_mean_confidence():
+    # All high-confidence routes → C_routing ≈ mean confidence, no low-conf routes.
+    decisions = [_dec(confidence=0.9)] * 10
+    c, low_rate = ch._c_routing(decisions)
+    assert abs(c - 0.9) < 0.001
+    assert low_rate == 0.0
 
-def test_c_routing_all_conflicts():
-    decisions = [_dec(conflict=True)] * 10
-    c, rate = ch._c_routing(decisions)
-    assert c == 0.0
-    assert rate == 1.0
+def test_c_routing_low_confidence_rate():
+    # 3 indecisive (0.33 < 0.5 floor) + 7 confident (0.8).
+    decisions = [_dec(confidence=0.33)] * 3 + [_dec(confidence=0.8)] * 7
+    c, low_rate = ch._c_routing(decisions)
+    assert abs(low_rate - 0.3) < 0.001
+    assert abs(c - (3 * 0.33 + 7 * 0.8) / 10) < 0.001
 
-def test_c_routing_mixed():
-    decisions = [_dec(conflict=True)] * 3 + [_dec(conflict=False)] * 7
-    c, rate = ch._c_routing(decisions)
-    assert abs(rate - 0.3) < 0.001
-    assert abs(c - 0.7) < 0.001
+def test_c_routing_ignores_dead_conflict_flag():
+    # O7 regression: conflict is structurally dead; C_routing must not read it.
+    all_conflict = [_dec(conflict=True, confidence=0.7)] * 10
+    no_conflict  = [_dec(conflict=False, confidence=0.7)] * 10
+    assert ch._c_routing(all_conflict) == ch._c_routing(no_conflict)
+
+def test_c_routing_defaults_confidence_when_missing():
+    # Old-shaped decision dicts (no confidence key) must not crash.
+    c, _ = ch._c_routing([{"conflict": False, "reflect": False, "regret": 0.0}])
+    assert abs(c - 0.67) < 0.001
 
 
 # ── _c_calib ──────────────────────────────────────────────────────────────────

@@ -20,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 import core.api_keys as _ak
+import core.idempotency as _idem
 from infrastructure.version import __version__
 
 # Bundled UI: when ui/build exists, FastAPI serves it so the whole app runs as a
@@ -48,6 +49,44 @@ _PUBLIC_PREFIXES = ("/docs", "/redoc")  # FastAPI UI and Amagra docs sub-paths
 _MINUTE_LIMITS = {"free": 10, "developer": 60, "team": 300, "enterprise": 0}
 # In-memory per-key minute windows: key_id -> (count, window_start_monotonic)
 _minute_window: dict[int, tuple[int, float]] = {}
+# Evict fully-elapsed windows at most this often (seconds) so the dict stays
+# bounded to the active working set instead of every key ever seen (#194).
+_RL_SWEEP_INTERVAL = 60.0
+_last_rl_sweep = 0.0
+
+
+def _check_minute_limit(
+    key_id: int,
+    minute_limit: int,
+    now: float,
+    window: dict[int, tuple[int, float]] = _minute_window,
+) -> bool:
+    """Fixed-window per-minute rate check with periodic eviction.
+
+    Bumps `key_id`'s counter in `window` and returns True if the request is
+    within `minute_limit`, False if it exceeds it. At most once per
+    `_RL_SWEEP_INTERVAL` it also drops entries whose 60s window has fully
+    elapsed, so a long-running process can't accumulate one dict entry per key
+    seen for the life of the process. No `await` inside, so the read-modify-write
+    is atomic under asyncio's single thread — no lock needed.
+    """
+    global _last_rl_sweep
+
+    count, window_start = window.get(key_id, (0, now - 61))
+    if now - window_start >= 60:
+        count, window_start = 1, now
+    else:
+        count += 1
+    window[key_id] = (count, window_start)
+
+    if now - _last_rl_sweep >= _RL_SWEEP_INTERVAL:
+        # The just-touched key has window_start == now, so it is never stale here.
+        stale = [k for k, (_, ws) in window.items() if now - ws >= 60]
+        for k in stale:
+            del window[k]
+        _last_rl_sweep = now
+
+    return count <= minute_limit
 
 # CORS — set ALLOWED_ORIGINS env var (comma-separated) for production;
 # defaults to localhost only so a drive-by page can't call the API.
@@ -252,6 +291,12 @@ async def auth_middleware(request: Request, call_next):
         if not secrets.compare_digest(request.headers.get("X-Admin-Token", ""), _ADMIN_TOKEN):
             return JSONResponse({"detail": "X-Admin-Token required"}, status_code=403)
 
+    # ── Idempotency (#197) — opt-in via header, POST only ────────────────────
+    # Scope binds the caller so one key can't replay another's response; set once
+    # identity is known (below). idem_key == "" disables everything here.
+    idem_key   = request.headers.get("Idempotency-Key", "").strip() if request.method == "POST" else ""
+    idem_scope: str | None = None
+
     # ── Customer key gate (deny-by-default) ──────────────────────────────────
     _usage = None
     if _REQUIRE_AUTH:
@@ -267,36 +312,57 @@ async def auth_middleware(request: Request, call_next):
             rec = _ak.verify_key(raw)
             if not rec:
                 return JSONResponse({"detail": "Invalid or inactive API key"}, status_code=403)
-            _usage = _ak.increment_usage(rec["id"])
             request.state.key_id = rec["id"]
             if rec.get("org_id"):
                 request.state.org_id = rec["org_id"]
 
+            # Replay BEFORE metering so a repeat counts once and runs once.
+            if idem_key:
+                idem_scope = f"key:{rec['id']}"
+                hit = _idem.begin(idem_scope, idem_key)
+                if hit is not None:
+                    return hit
+
+            _usage = _ak.increment_usage(rec["id"])
+
             # Daily limit check
             daily_limit = _usage.get("limit", 0)
             if daily_limit and _usage.get("requests_today", 0) > daily_limit:
+                if idem_scope:
+                    _idem.release(idem_scope, idem_key)  # don't pin the key to a shed request
                 return JSONResponse(
                     {"detail": f"Daily limit ({daily_limit} req/day) exceeded"}, status_code=429
                 )
 
             # Per-minute burst limit — prevents cost-of-goods attacks on free tier
             minute_limit = _MINUTE_LIMITS.get(_usage.get("tier", "free"), 10)
-            if minute_limit:
-                key_id = rec["id"]
-                now = time.monotonic()
-                count, window_start = _minute_window.get(key_id, (0, now - 61))
-                if now - window_start >= 60:
-                    count, window_start = 1, now
-                else:
-                    count += 1
-                _minute_window[key_id] = (count, window_start)
-                if count > minute_limit:
-                    return JSONResponse(
-                        {"detail": f"Rate limit exceeded: {minute_limit} req/minute"},
-                        status_code=429,
-                    )
+            if minute_limit and not _check_minute_limit(
+                rec["id"], minute_limit, time.monotonic()
+            ):
+                if idem_scope:
+                    _idem.release(idem_scope, idem_key)
+                return JSONResponse(
+                    {"detail": f"Rate limit exceeded: {minute_limit} req/minute"},
+                    status_code=429,
+                )
+        else:
+            idem_key = ""  # public paths are never idempotency-cached
+    elif idem_key:
+        # Local mode (no auth/metering): still dedupe the work + side effects.
+        idem_scope = "local"
+        hit = _idem.begin(idem_scope, idem_key)
+        if hit is not None:
+            return hit
 
-    response = await call_next(request)
+    if idem_key and idem_scope is not None:
+        try:
+            response = await call_next(request)
+        except Exception:
+            _idem.release(idem_scope, idem_key)  # let a retry proceed
+            raise
+        response = await _idem.finish(idem_scope, idem_key, response)
+    else:
+        response = await call_next(request)
 
     # ── Rate-limit headers (standard API convention) ────────────────────────
     if _usage:

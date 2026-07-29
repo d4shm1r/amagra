@@ -11,9 +11,13 @@
 #
 # Components:
 #
-#   C_routing(t) = 1 - conflict_rate(t)
-#       → routing is coherent when the signal-first brain and
-#         the keyword router agree (no override needed)
+#   C_routing(t) = mean routing confidence(t)
+#       → routing is coherent when queries map decisively to a domain.
+#         (Was `1 - conflict_rate`, but issue #20 removed the keyword router,
+#         so `conflict` is now structurally 0 and that axis was pinned at 1.0 —
+#         a dead component silently inflating C. Rebased onto the brain's own
+#         confidence, a live post-#20 signal. See OPEN_PROBLEMS O7 for the wider
+#         set of consumers still reading the dead `conflict` column.)
 #
 #   C_calib(t) = 1 - mean|ε_cal(a, t)| over agents
 #       → calibration coherence: confidence tracks actual quality
@@ -69,12 +73,13 @@ class CoherenceState:
     t:            int     = 0
     window:       int     = WINDOW
 
-    c_routing:    float = 0.0   # 1 - conflict_rate
+    c_routing:    float = 0.0   # mean routing confidence (O7: was 1 - conflict_rate)
     c_calib:      float = 0.0   # 1 - mean|calibration_error|
     c_quality:    float = 0.0   # mean response quality
     C:            float = 0.0   # composite (1/3 sum)
 
-    conflict_rate:   float = 0.0
+    conflict_rate:       float = 0.0   # actual brain-vs-router conflicts (≡0 post-#20, see O7)
+    low_confidence_rate: float = 0.0   # fraction of routes below the decisiveness floor
     reflection_rate: float = 0.0
     mean_regret:     float = 0.0
     n_decisions:     int   = 0
@@ -98,7 +103,8 @@ def _load_decisions(limit: int = 500) -> list[dict]:
     conn = sqlite3.connect(_DECISIONS_DB, timeout=10)
     try:
         rows = conn.execute(
-            "SELECT id, timestamp, final_agent, conflict, reflect, regret "
+            "SELECT id, timestamp, final_agent, conflict, reflect, regret, "
+            "COALESCE(confidence, 0.67) "
             "FROM brain_decisions ORDER BY id DESC LIMIT ?",
             (limit,),
         ).fetchall()
@@ -107,7 +113,7 @@ def _load_decisions(limit: int = 500) -> list[dict]:
     return [
         {"id": r[0], "timestamp": r[1], "agent": r[2],
          "conflict": bool(r[3]), "reflect": bool(r[4]),
-         "regret": float(r[5] or 0.0)}
+         "regret": float(r[5] or 0.0), "confidence": float(r[6] if r[6] is not None else 0.67)}
         for r in rows
     ]
 
@@ -170,18 +176,32 @@ def _load_memory_quality() -> tuple[float, int]:
 
 # ── Component computation ─────────────────────────────────────
 
+# Below this confidence a route is "indecisive" — the query didn't map cleanly
+# to one domain (e.g. a single keyword scores ~0.33; the brain's default is 0.67).
+_DECISIVE_CONF = 0.5
+
+
 def _c_routing(decisions: list[dict]) -> tuple[float, float]:
     """
-    C_routing = 1 - conflict_rate.
-    Conflict = brain overrode the keyword router.
-    Non-conflicting decisions reflect consistent, coherent routing.
-    Returns (c_routing, conflict_rate).
+    C_routing = mean routing confidence over the window.
+    Returns (c_routing, low_confidence_rate).
+
+    Rebased in O7 (metric-owner decision). The old definition was
+    `1 - conflict_rate`, where conflict = "brain overrode the keyword router" —
+    but issue #20 removed that router, so `coordinator.py` writes `conflict = 0`
+    unconditionally and the axis was pinned at 1.0, a dead component inflating the
+    composite C. Confidence is the live post-#20 analogue: high confidence means
+    the query mapped decisively to a domain (coherent routing); a run of low-
+    confidence routes is the real incoherence signal. `low_confidence_rate` is the
+    fraction below `_DECISIVE_CONF`, reported as a diagnostic (it is *not* the same
+    as the — now always-zero — `conflict_rate`, which is reported separately).
     """
     if not decisions:
         return 0.5, 0.5
-    n_conflict = sum(1 for d in decisions if d["conflict"])
-    rate = n_conflict / len(decisions)
-    return round(1.0 - rate, 4), round(rate, 4)
+    confs = [float(d.get("confidence", 0.67)) for d in decisions]
+    mean_conf = sum(confs) / len(confs)
+    low_rate  = sum(1 for c in confs if c < _DECISIVE_CONF) / len(confs)
+    return round(min(1.0, max(0.0, mean_conf)), 4), round(low_rate, 4)
 
 
 def _c_calib(cal_errors: dict[str, float]) -> float:
@@ -295,7 +315,7 @@ def coherence_time_series(window: int = WINDOW) -> list[dict]:
 
     for start in range(0, len(decisions) - window + 1, step):
         window_slice = decisions[start : start + window]
-        cr, conflict_rate = _c_routing(window_slice)
+        cr, low_conf_rate = _c_routing(window_slice)
         cc = _c_calib(cal_errors)  # calibration is system-level, not window-specific
         cq = _c_quality(window_slice, mem_q, mem_n)
         composite = round((cr + cc + cq) / 3, 4)
@@ -308,7 +328,8 @@ def coherence_time_series(window: int = WINDOW) -> list[dict]:
             "c_calib":        cc,
             "c_quality":      cq,
             "C":              composite,
-            "conflict_rate":  conflict_rate,
+            "conflict_rate":  round(sum(1 for d in window_slice if d["conflict"]) / len(window_slice), 4),
+            "low_confidence_rate": low_conf_rate,
             "reflect_rate":   round(sum(1 for d in window_slice if d["reflect"]) / len(window_slice), 3),
         })
 
@@ -337,14 +358,15 @@ def current_coherence(window: int = WINDOW) -> CoherenceState:
     mem_q, mem_n = _load_memory_quality()
     gains_data   = reflection_gain_analysis()
 
-    cr, conflict_rate  = _c_routing(decisions)
+    cr, low_conf_rate  = _c_routing(decisions)
     cc                 = _c_calib(cal_errors)
     cq                 = _c_quality(decisions, mem_q, mem_n)
     composite          = round((cr + cc + cq) / 3, 4)
 
     n = len(decisions)
-    reflect_rate = round(sum(1 for d in decisions if d["reflect"]) / max(n, 1), 3)
-    mean_regret  = round(sum(d["regret"] for d in decisions) / max(n, 1), 4)
+    reflect_rate  = round(sum(1 for d in decisions if d["reflect"]) / max(n, 1), 3)
+    mean_regret   = round(sum(d["regret"] for d in decisions) / max(n, 1), 4)
+    conflict_rate = round(sum(1 for d in decisions if d["conflict"]) / max(n, 1), 4)
 
     return CoherenceState(
         t=n,
@@ -354,6 +376,7 @@ def current_coherence(window: int = WINDOW) -> CoherenceState:
         c_quality=cq,
         C=composite,
         conflict_rate=conflict_rate,
+        low_confidence_rate=low_conf_rate,
         reflection_rate=reflect_rate,
         mean_regret=mean_regret,
         n_decisions=n,
@@ -373,7 +396,7 @@ def print_coherence(state: CoherenceState) -> None:
     print(f"{'='*60}")
     print(f"\n  C(t)  = {state.C:.4f}  {bar(state.C)} {'COHERENT' if state.C > 0.75 else 'DEGRADED'}")
     print("\n  Components:")
-    print(f"    C_routing  {state.c_routing:.4f}  {bar(state.c_routing)}  (1 - conflict_rate={state.conflict_rate:.3f})")
+    print(f"    C_routing  {state.c_routing:.4f}  {bar(state.c_routing)}  (mean confidence · low-conf {state.low_confidence_rate:.3f})")
     print(f"    C_calib    {state.c_calib:.4f}  {bar(state.c_calib)}  (1 - mean|cal_error|)")
     print(f"    C_quality  {state.c_quality:.4f}  {bar(state.c_quality)}  (mean proxy performance)")
     print("\n  Supporting metrics:")
@@ -391,7 +414,7 @@ def print_dynamics(series: list[dict]) -> None:
     print(f"\n{'='*60}")
     print(f"  Coherence Dynamics  C(t)  — rolling windows of {WINDOW}")
     print(f"{'='*60}")
-    print(f"  {'Win':>4}  {'C(t)':>6}  {'C_rt':>6}  {'C_ca':>6}  {'C_ql':>6}  {'Δ²C':>8}  {'conf%':>6}  {'refl%':>6}  Trend")
+    print(f"  {'Win':>4}  {'C(t)':>6}  {'C_rt':>6}  {'C_ca':>6}  {'C_ql':>6}  {'Δ²C':>8}  {'loco%':>6}  {'refl%':>6}  Trend")
     print(f"  {'─'*66}")
     prev = None
     for row in series:
@@ -400,9 +423,10 @@ def print_dynamics(series: list[dict]) -> None:
             delta = "▲" if row["C"] > prev + 0.005 else ("▼" if row["C"] < prev - 0.005 else "→")
         cv = row.get("C_curvature")
         cv_str = f"{cv:>+8.4f}" if cv is not None else f"{'·':>8}"
+        loco = row.get('low_confidence_rate', row.get('conflict_rate', 0.0))
         print(f"  {row['window_idx']:>4}  {row['C']:>6.4f}  {row['c_routing']:>6.4f}  "
               f"{row['c_calib']:>6.4f}  {row['c_quality']:>6.4f}  {cv_str}  "
-              f"{row['conflict_rate']*100:>5.1f}%  {row['reflect_rate']*100:>5.1f}%  {delta}")
+              f"{loco*100:>5.1f}%  {row['reflect_rate']*100:>5.1f}%  {delta}")
         prev = row["C"]
 
     c_series = [row["C"] for row in series]

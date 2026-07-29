@@ -63,6 +63,80 @@ def test_get_provider_unknown_backend_falls_back_to_ollama(monkeypatch):
     assert isinstance(registry.get_provider("brain"), OllamaProvider)
 
 
+# ── OllamaProvider: generation timeout (#193) ────────────────────────────────
+
+import asyncio
+
+import httpx
+import pytest
+
+from providers.base import ProviderTimeoutError
+from providers.ollama import _resolve_timeout
+
+
+def test_resolve_timeout_precedence(monkeypatch):
+    monkeypatch.delenv("OLLAMA_TIMEOUT", raising=False)
+    assert _resolve_timeout(30) == 30.0          # explicit arg wins
+    assert _resolve_timeout(None) == 120.0        # falls back to default
+    monkeypatch.setenv("OLLAMA_TIMEOUT", "45")
+    assert _resolve_timeout(None) == 45.0         # env used when no explicit arg
+    assert _resolve_timeout(10) == 10.0           # explicit still wins over env
+
+
+def test_resolve_timeout_disabled_and_garbage(monkeypatch):
+    assert _resolve_timeout(0) is None            # 0 disables the ceiling
+    assert _resolve_timeout(-5) is None
+    monkeypatch.setenv("OLLAMA_TIMEOUT", "not-a-number")
+    assert _resolve_timeout(None) == 120.0        # garbage env → default, no crash
+
+
+def _last_chat_ollama_kwargs():
+    # conftest stubs langchain_ollama with a MagicMock, so ChatOllama is a mock
+    # constructor — inspect the kwargs the provider passed to it.
+    return sys.modules["langchain_ollama"].ChatOllama.call_args.kwargs
+
+
+def test_provider_wires_timeout_into_client_kwargs():
+    p = OllamaProvider(timeout=42)
+    assert p._timeout == 42.0
+    assert _last_chat_ollama_kwargs()["client_kwargs"] == {"timeout": 42.0}
+
+
+def test_provider_disabled_timeout_leaves_client_kwargs_empty():
+    p = OllamaProvider(timeout=0)
+    assert p._timeout is None
+    assert _last_chat_ollama_kwargs()["client_kwargs"] == {}
+
+
+class _HangingChatModel:
+    """Stands in for ChatOllama: sync raises a read timeout, async never returns."""
+
+    def invoke(self, _messages):
+        raise httpx.ReadTimeout("simulated backend hang")
+
+    async def ainvoke(self, _messages):
+        await asyncio.sleep(3600)  # longer than any test timeout
+
+
+def test_generate_translates_httpx_timeout_to_typed_error():
+    p = OllamaProvider(timeout=5)
+    p.chat_model = _HangingChatModel()
+    with pytest.raises(ProviderTimeoutError) as exc:
+        p.generate("hello")
+    assert "hung or overloaded" in str(exc.value)
+
+
+def test_agenerate_hard_ceiling_raises_typed_error():
+    p = OllamaProvider(timeout=0.05)  # 50ms ceiling vs a coro that sleeps an hour
+    p.chat_model = _HangingChatModel()
+
+    async def _run():
+        with pytest.raises(ProviderTimeoutError):
+            await p.agenerate("hello")
+
+    asyncio.run(_run())
+
+
 # ── registry: get_embedding_provider ─────────────────────────────────────────
 
 def test_get_embedding_provider_returns_ollama(monkeypatch):

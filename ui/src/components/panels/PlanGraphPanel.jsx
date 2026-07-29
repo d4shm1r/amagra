@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { usePoll } from "@/lib/usePoll";
-import { T, FONT_MONO } from "@/styles/theme";
+import { T, SEM, FONT_MONO } from "@/styles/theme";
 
 // ── Plan Graph (Diagnostics section) ──────────────────────────────
 // Section contract: content only — the host owns the header and refresh.
@@ -13,39 +13,46 @@ const V_GAP   = 18;
 const PAD     = 32;
 
 // ── Color maps ────────────────────────────────────────────────
+// Status carries meaning, so it maps onto the semantic tokens (not decoration).
+// pending = neutral/muted, running = warn, completed = success, failed = error.
 const STATUS_COLOR = {
-  pending:   "#9A7A60",
-  running:   "#A16207",
-  completed: "#2E7D32",
-  failed:    "#B42318",
+  pending:   T.muted,
+  running:   T.warn,
+  completed: T.success,
+  failed:    T.error,
 };
 
+// Node fills/borders are tints of the same status token so the whole graph
+// re-themes from one place. `${token}18` / `${token}44` are alpha suffixes
+// (the reason the panel uses hex tokens, not CSS vars — see theme.js).
 const STATUS_BG = {
-  pending:   "#FAF7F2",
-  running:   "#F5EDD6",
-  completed: "#E7F2E6",
-  failed:    "#F9E7E1",
+  pending:   T.surface,
+  running:   `${T.warn}18`,
+  completed: `${T.success}18`,
+  failed:    `${T.error}18`,
 };
 
 const STATUS_BORDER = {
-  pending:   "#E5DCCC",
-  running:   "#A07010",
-  completed: "#2A6030",
-  failed:    "#803030",
+  pending:   T.border,
+  running:   `${T.warn}88`,
+  completed: `${T.success}88`,
+  failed:    `${T.error}88`,
 };
 
+// Agent identity uses the shared data-viz vocabulary (SEM) so agent colours
+// match the other analysis tabs instead of re-hardcoding hex per panel.
 const AGENT_COLOR = {
-  python_dev:         "#1E5A8A",
-  ai_ml:              "#1E5A8A",
-  it_networking:      "#0F766E",
-  dotnet_dev:         "#B05B3B",
-  knowledge_learning: "#7E3F8F",
-  terse:              "#9A7A60",
+  python_dev:         SEM.blue,
+  ai_ml:              SEM.blue,
+  it_networking:      SEM.teal,
+  dotnet_dev:         SEM.clay,
+  knowledge_learning: SEM.purple,
+  terse:              T.muted,
 };
 
-function sColor(s)  { return STATUS_COLOR[s]   || "#9A7A60"; }
-function sBg(s)     { return STATUS_BG[s]       || "#FAF7F2"; }
-function sBorder(s) { return STATUS_BORDER[s]   || "#E0D6C4"; }
+function sColor(s)  { return STATUS_COLOR[s]   || T.muted; }
+function sBg(s)     { return STATUS_BG[s]       || T.surface; }
+function sBorder(s) { return STATUS_BORDER[s]   || T.border; }
 function aColor(a)  { return AGENT_COLOR[a]     || T.muted; }
 
 
@@ -176,7 +183,7 @@ function Node({ node, x, y, selected, onClick }) {
             }}>{node.status}</span>
             <div style={{
               flex: 1, height: 3, borderRadius: 2,
-              background: "#E5DCCC", overflow: "hidden",
+              background: T.border, overflow: "hidden",
             }}>
               <div style={{
                 width: `${uPct}%`, height: "100%",
@@ -226,7 +233,7 @@ function NodeDetail({ node, onClose }) {
   return (
     <div style={{
       marginTop: 12,
-      background: T.surface2 || "#FAF7F2",
+      background: T.surface2,
       border: `1px solid ${T.border}`,
       borderRadius: 12, padding: "14px 18px",
       position: "relative",
@@ -343,7 +350,7 @@ export default function PlanGraphPanel() {
           marginBottom: 14,
           fontFamily: FONT_MONO, fontSize: 11,
           color: T.muted,
-          background: T.surface2 || "#FAF7F2",
+          background: T.surface2,
           border: `1px solid ${T.border}`,
           borderRadius: 10, padding: "8px 13px",
           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
@@ -360,7 +367,7 @@ export default function PlanGraphPanel() {
         }}>
           {levels.map((group, li) => (
             <div key={li} style={{
-              background: T.surface2 || "#FAF7F2",
+              background: T.surface2,
               border: `1px solid ${T.border}`,
               borderRadius: 99, padding: "3px 11px",
               fontSize: 10, fontFamily: FONT_MONO,
@@ -396,11 +403,11 @@ export default function PlanGraphPanel() {
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 22,
           }}>⊢</div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: T.text || "#2E2010" }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>
             No execution plan active
           </div>
-          <div style={{ fontSize: 12, color: T.muted || "#9A7A60", maxWidth: 380, lineHeight: 1.6 }}>
-            Send a <strong style={{ color: T.text || "#2E2010" }}>compound query</strong> from the Chat tab
+          <div style={{ fontSize: 12, color: T.muted, maxWidth: 380, lineHeight: 1.6 }}>
+            Send a <strong style={{ color: T.text }}>compound query</strong> from the Chat tab
             to generate a multi-step plan. The DAG will appear here with live step statuses,
             agent assignments, and dependency edges.
           </div>
@@ -414,17 +421,17 @@ export default function PlanGraphPanel() {
               "Set up a React app with routing and a dark mode toggle",
             ].map((example, i) => (
               <div key={i} style={{
-                background: (T.surface2 || "#F4F0E8"),
-                border: `1px solid ${T.border || "#E0D6C4"}`,
+                background: T.surface2,
+                border: `1px solid ${T.border}`,
                 borderRadius: 6, padding: "8px 14px",
-                fontSize: 11, color: T.muted || "#9A7A60",
+                fontSize: 11, color: T.muted,
                 fontFamily: FONT_MONO,
               }}>
                 {example}
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 10, color: T.muted || "#9A7A60", marginTop: 4 }}>
+          <div style={{ fontSize: 10, color: T.muted, marginTop: 4 }}>
             Compound queries trigger the planner — simple questions go direct to an agent.
           </div>
         </div>

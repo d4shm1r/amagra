@@ -39,9 +39,9 @@ _QUALITY = {"explicit": 1.0, "derived": 0.6}
 
 
 def _conn():
-    c = _db.connect("model_decisions", check_same_thread=False)
-    c.execute("PRAGMA journal_mode=WAL;")
-    return c
+    # Fresh per-call connection (never shared across threads); busy_timeout+WAL
+    # applied centrally — see #195.
+    return _db.tune(_db.connect("model_decisions", check_same_thread=False))
 
 
 def init():

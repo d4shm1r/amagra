@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 from core.contract import Result
-from core.logger import log_response
+from core.logger import log_response, log_internal_failure
 from core.run_log import RunLog
 from infrastructure.db import path as _dbpath
 import cognition.run_tracer as run_tracer
@@ -95,8 +95,8 @@ def _log_telemetry(query: str, agent: str, signal_conf: float, complexity: str, 
         )
         conn.commit()
         conn.close()
-    except Exception:
-        pass
+    except Exception as _e:
+        log_internal_failure("telemetry.routing", _e)
 
 
 # ── Traces table — schema owned here, ensured once (not per request) ─────────
@@ -386,16 +386,16 @@ def begin_run(req: AskRequest, key_id: int | None = None) -> AskRun:
     try:
         from decision.weights import load as _load_weights
         weights_before = _load_weights()
-    except Exception:
-        pass
+    except Exception as _e:
+        log_internal_failure("telemetry.weights_before", _e)
 
     run_id = run_tracer.start(req.message)
 
     if _cos:
         try:
             _cos.begin_request(req.message, run_id=run_id, action="unknown")
-        except Exception:
-            pass
+        except Exception as _e:
+            log_internal_failure("telemetry.cognitive_state.begin", _e)
 
     try:
         import cognition.context_snapshot as _cx
@@ -403,8 +403,8 @@ def begin_run(req: AskRequest, key_id: int | None = None) -> AskRun:
         _sig = _qnorm(req.message, "")
         _cx.begin(run_id, req.message,
                   normalized_query=f"{_sig.domain}/{_sig.answer_shape}/{_sig.verbosity}")
-    except Exception:
-        pass
+    except Exception as _e:
+        log_internal_failure("telemetry.context_snapshot.begin", _e)
 
     # Tenant scoping — propagate key_id so memory search/save calls in this
     # request are automatically filtered to the calling tenant (S2).
@@ -450,8 +450,8 @@ def fail_run(run: AskRun, error: str) -> None:
     """Invoke failed: mark the trace, release tenant scoping."""
     try:
         run_tracer.mark_failed(run.run_id, error)
-    except Exception:
-        pass
+    except Exception as _e:
+        log_internal_failure("telemetry.run_tracer.mark_failed", _e)
     _reset_tenant(run)
 
 
@@ -494,8 +494,8 @@ def finish_run(run: AskRun) -> dict:
         )
         _conn.commit()
         _conn.close()
-    except Exception:
-        pass
+    except Exception as _e:
+        log_internal_failure("telemetry.traces", _e)
 
     # Transparent run log — one append-only row per run (core/run_log.py).
     try:
@@ -528,8 +528,8 @@ def finish_run(run: AskRun) -> dict:
                     "contradiction":    bool(run.result.get("contradiction_detected", False)),
                 }),
             )
-    except Exception:
-        pass
+    except Exception as _e:
+        log_internal_failure("telemetry.run_log", _e)
 
     confidence = bd.get("confidence", 0.67)
     session_history.append({
@@ -551,8 +551,8 @@ def finish_run(run: AskRun) -> dict:
         session_id = _cur.lastrowid
         _sc.commit()
         _sc.close()
-    except Exception:
-        pass
+    except Exception as _e:
+        log_internal_failure("telemetry.sessions", _e)
 
     # Auto-retrain the learned router every N real sessions (#15) — non-blocking.
     if session_id > 0:
@@ -583,8 +583,8 @@ def finish_run(run: AskRun) -> dict:
                 _sc2.commit()
                 _sc2.close()
             _dc.close()
-        except Exception:
-            pass
+        except Exception as _e:
+            log_internal_failure("telemetry.decisions", _e)
 
     try:
         run_tracer.finish(
@@ -594,15 +594,15 @@ def finish_run(run: AskRun) -> dict:
             session_id=session_id,
             duration_ms=duration_ms,
         )
-    except Exception:
-        pass
+    except Exception as _e:
+        log_internal_failure("telemetry.run_tracer.finish", _e)
 
     memories_used = []
     try:
         import memory_core.db as _mdb
         memories_used = _mdb.get_last_accessed_content(req.message, n=4)
-    except Exception:
-        pass
+    except Exception as _e:
+        log_internal_failure("telemetry.memories_used", _e)
 
     weight_before = weight_after = weight_delta = 0.0
     try:
@@ -611,8 +611,8 @@ def finish_run(run: AskRun) -> dict:
         weight_before = round(run.weights_before.get(agent_used, 1.0), 4)
         weight_after  = round(weights_after.get(agent_used, 1.0), 4)
         weight_delta  = round(weight_after - weight_before, 4)
-    except Exception:
-        pass
+    except Exception as _e:
+        log_internal_failure("telemetry.weights_after", _e)
 
     contradiction = bool(run.result.get("contradiction_detected", False))
     if contradiction:
@@ -627,14 +627,14 @@ def finish_run(run: AskRun) -> dict:
             )
             _cc.commit()
             _cc.close()
-        except Exception:
-            pass
+        except Exception as _e:
+            log_internal_failure("telemetry.contradictions", _e)
 
     try:
         import cognition.context_snapshot as _cx
         _cx.finalize(run.run_id, response, session_id=session_id)
-    except Exception:
-        pass
+    except Exception as _e:
+        log_internal_failure("telemetry.context_snapshot.finalize", _e)
 
     if _cos:
         try:
@@ -647,8 +647,8 @@ def finish_run(run: AskRun) -> dict:
                 kept             = run.result.get("gram_winner")
                                    or run.result.get("response_kept", ""),
             )
-        except Exception:
-            pass
+        except Exception as _e:
+            log_internal_failure("telemetry.cognitive_state.end", _e)
 
     _reset_tenant(run)
 

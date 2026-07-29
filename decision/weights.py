@@ -26,7 +26,7 @@ import time
 import sqlite3
 import threading
 
-from infrastructure.db import path as _dbpath
+from infrastructure.db import path as _dbpath, tune as _tune
 DB_PATH = _dbpath("decisions")
 BOUNDS  = (0.1, 3.0)
 
@@ -42,9 +42,9 @@ CACHE_TTL = 5.0
 
 
 def _conn():
-    c = sqlite3.connect(DB_PATH, check_same_thread=False)
-    c.execute("PRAGMA journal_mode=WAL;")
-    return c
+    # Fresh per-call connection (never shared across threads); busy_timeout+WAL
+    # applied centrally — see #195.
+    return _tune(sqlite3.connect(DB_PATH, check_same_thread=False))
 
 
 def _init_table():

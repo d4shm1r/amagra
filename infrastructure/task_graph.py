@@ -16,7 +16,7 @@ import sqlite3
 import json
 from datetime import datetime, timezone
 
-from infrastructure.db import path as _dbpath
+from infrastructure.db import path as _dbpath, tune as _tune
 DB_PATH = _dbpath("tasks")
 
 VALID_AGENTS = {
@@ -99,8 +99,9 @@ FAILURE_TYPES = {
 
 
 def _conn():
-    c = sqlite3.connect(DB_PATH, check_same_thread=False)
-    c.execute("PRAGMA journal_mode=WAL;")
+    # Fresh per-call connection (never shared across threads); busy_timeout+WAL
+    # applied centrally — see #195.
+    c = _tune(sqlite3.connect(DB_PATH, check_same_thread=False))
     c.execute("PRAGMA synchronous=NORMAL;")
     c.row_factory = sqlite3.Row
     return c

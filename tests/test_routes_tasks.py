@@ -121,3 +121,35 @@ def test_tasks_run_trigger():
     assert r.status_code == 200
     data = r.json()
     assert "message" in data
+
+
+# ── Backpressure + queue-depth observability (#198) ───────────────────────────
+
+def test_status_reports_queue_depth():
+    data = client.get("/tasks/status", headers=HEADERS).json()
+    assert isinstance(data.get("queue_depth"), int)
+    assert "queue_limit" in data
+    assert "worker_running" in data
+
+
+def test_queue_backpressure_returns_429(monkeypatch):
+    import routes.tasks as t
+    # Cap exactly one above the current pending depth: the next create fills the
+    # queue, the one after is shed with 429.
+    depth0 = client.get("/tasks/status", headers=HEADERS).json()["queue_depth"]
+    monkeypatch.setattr(t, "MAX_PENDING_TASKS", depth0 + 1)
+
+    r1 = client.post("/tasks/create", json={"prompt": "fits exactly"}, headers=HEADERS)
+    assert r1.status_code == 200
+
+    r2 = client.post("/tasks/create", json={"prompt": "overflow"}, headers=HEADERS)
+    assert r2.status_code == 429
+    assert "queue full" in r2.json()["error"]
+
+
+def test_backpressure_disabled_when_zero(monkeypatch):
+    import routes.tasks as t
+    monkeypatch.setattr(t, "MAX_PENDING_TASKS", 0)  # 0 disables the cap
+    r = client.post("/tasks/create", json={"prompt": "always allowed"}, headers=HEADERS)
+    assert r.status_code == 200
+    assert r.json()["status"] == "pending"

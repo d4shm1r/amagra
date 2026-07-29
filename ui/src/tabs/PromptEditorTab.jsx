@@ -5,6 +5,10 @@ import { computeDiagnostics } from "@/lib/promptDiagnostics";
 import { slugify, saveHead, saveVersion, importFromLocalStorage,
          currentVersion, promptVersionId, saveRun } from "@/lib/promptStore";
 import PromptVersionDiff from "@/components/panels/PromptVersionDiff";
+// The app-wide hero. Note this file keeps its OWN local `T` palette below, so
+// only the component comes across — importing the design-system `T` here would
+// shadow-clash with it.
+import { PageHeader } from "@/components/ui";
 
 const MARKER_OWNER = "amagra";
 let _codeActionsRegistered = false;   // module-level: register the quick-fix provider once
@@ -16,23 +20,44 @@ const FONT_SZ = 13;
 // Same origin the rest of the UI talks to (see ProviderSettingsTab).
 import { API } from "@/lib/api";
 
+// This file used to hard-code its own copy of the palette, and the copy had
+// DRIFTED from styles/theme.js — which is the whole reason the tab looked
+// slightly off from the rest of the app:
+//
+//   muted    #9A7A60  →  #806044   the theme deepened this deliberately; the old
+//                                  value measures 3.3:1 on cream, under the AA
+//                                  floor, and it was the colour of nearly every
+//                                  small label in the panel
+//   mutedLt  #8A7058  →  #5C4030   secondary text was lighter than the tertiary
+//                                  tier it is supposed to outrank
+//   warn     #9A6C00  →  #A16207   two different ambers for the same meaning
+//   bg       #F4F0E8  →  #F0E9DF   the tab painted itself on surface2 instead of
+//                                  the app canvas, so it sat a shade light
+//
+// So the names now alias the tokens instead of restating them. Only the few
+// genuinely editor-specific values are defined here, and each says why it exists.
+// If a colour is needed that theme.js does not have, add it THERE.
+import { T as TOK } from "@/styles/theme";
+
 const T = {
-  bg:            "#F4F0E8",
-  surface:       "#FAF7F2",
-  surface2:      "#F4F0E8",
-  border:        "#E0D6C4",
-  text:          "#2E2010",
-  muted:         "#9A7A60",
-  mutedLt:       "#8A7058",
-  accent:        "#C48808",
-  tabActiveBg:   "#F4F0E8",
-  tabInactiveBg: "#F4F0E8",
-  statusBg:      "#FAF7F2",
-  success:       "#15803D",
-  warn:          "#9A6C00",
-  error:         "#B42318",
-  gutterBorder:  "#D6C9B2",
-  lineNumActive: "#8A7058",
+  bg:            TOK.bg,
+  surface:       TOK.surface,
+  surface2:      TOK.surface2,
+  border:        TOK.border,
+  text:          TOK.text,
+  muted:         TOK.muted,
+  mutedLt:       TOK.mutedLt,
+  accent:        TOK.accent,
+  accentText:    TOK.accentText,
+  success:       TOK.success,
+  warn:          TOK.warn,
+  error:         TOK.error,
+  // Editor chrome. The tab strip sits on the inset well tone so the active tab
+  // (which wears the canvas) reads as lifted out of it.
+  tabActiveBg:   TOK.surface2,
+  tabInactiveBg: TOK.surface2,
+  gutterBorder:  "#D6C9B2",   // Monaco gutter rule — between border and muted
+  lineNumActive: TOK.mutedLt,
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -686,23 +711,38 @@ function MetricRow({ label, score, inverted = false, unit = "" }) {
   );
 }
 
-// Collapsible panel section
-function Section({ title, badge, badgeColor, right, defaultOpen = true, children }) {
-  const [open, setOpen] = useState(defaultOpen);
+// Collapsible panel section — a CARD, not a band.
+//
+// It used to be a full-width strip separated from its neighbours by a single
+// bottom hairline, which is the right shape for a 272px rail: at that width the
+// sections are a single column and a hairline is all the separation they need.
+// The panel is half the window now, so the sections tile into a grid instead,
+// and in a grid a bottom-hairline-only box has no left or right edge to sit on —
+// two of them side by side read as one torn sheet. A bordered card with its own
+// corner radius is what makes a grid cell look deliberate.
+//
+// `span` promotes a section to the full width of the grid. It is for the two
+// sections that are genuinely wide objects — the upgrade diff and the
+// across-models comparison table — not a way to break up a ragged row.
+// `defaultOpen` is accepted and ignored — kept so the seven call sites don't all
+// have to change, and so the intent of the old flag stays readable in context.
+function Section({ title, badge, badgeColor, right, defaultOpen, children }) {
   const bc = badgeColor || T.muted;
   return (
-    <div style={{ borderBottom: `1px solid ${T.border}` }}>
-      <button
-        onClick={() => setOpen(v => !v)}
-        style={{
-          width: "100%", display: "flex", alignItems: "center", gap: 7,
-          padding: "9px 15px 9px 15px", background: "transparent",
-          border: "none", cursor: "pointer", textAlign: "left",
-          transition: "background 0.1s",
-        }}
-        onMouseEnter={e => e.currentTarget.style.background = "#1F140807"}
-        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-      >
+    <div style={{
+      border: `1px solid ${T.border}`, borderRadius: 12, background: T.surface,
+      overflow: "hidden",
+    }}>
+      {/* A header, not a button. These used to collapse, which earned its keep in
+          a 272px rail where seven open sections meant a very long scroll. The
+          board has room for all of them at once, so the toggle was buying nothing
+          and costing something: a chevron on every card, a hover state that
+          implied the title did something else, and one more piece of state that
+          could hide the very readout you opened the panel to see. */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 7,
+        padding: "11px 13px 9px", borderBottom: `1px solid ${T.border}`,
+      }}>
         <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: T.muted, flex: 1 }}>
           {title}
         </span>
@@ -716,9 +756,8 @@ function Section({ title, badge, badgeColor, right, defaultOpen = true, children
           </span>
         )}
         {right}
-        <span style={{ fontSize: 9, color: T.muted }}>{open ? "▾" : "▸"}</span>
-      </button>
-      {open && <div style={{ padding: "0 15px 13px" }}>{children}</div>}
+      </div>
+      <div style={{ padding: "12px 13px 13px" }}>{children}</div>
     </div>
   );
 }
@@ -726,6 +765,58 @@ function Section({ title, badge, badgeColor, right, defaultOpen = true, children
 // ─────────────────────────────────────────────────────────────
 // Panel sections
 // ─────────────────────────────────────────────────────────────
+
+// ── Document ──────────────────────────────────────────────────
+// The old bottom status bar, rehoused on the board. It is NOT a straight port:
+// that bar also carried CLR/STR/SPC/ACT/TOK pips and an "N overall" readout,
+// and both of those are the Prompt Health card, restated in five-letter
+// abbreviations. Moving them here would have put the same five numbers on screen
+// twice, six inches apart. What survives is what only the bar knew — the shape
+// of the document and where the caret is in it.
+function DocStat({ label, value, color }) {
+  return (
+    <div style={{ minWidth: 74 }}>
+      <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "0.13em",
+        textTransform: "uppercase", color: T.muted, marginBottom: 3 }}>{label}</div>
+      <div style={{ fontSize: 14, fontWeight: 700, fontFamily: FONT, color: color || T.text,
+        lineHeight: 1 }}>{value}</div>
+    </div>
+  );
+}
+
+function DocumentSection({ doc, onJumpToSuggestion }) {
+  const { cursor, lineCount, wordCount, charCount, tokenEst, savedTag, suggestions } = doc;
+  return (
+    <Section
+      title="Document"
+      badge={savedTag || null}
+      badgeColor={savedTag === "save failed" ? T.error : T.success}
+    >
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "14px 22px", alignItems: "flex-start" }}>
+        <DocStat label="Cursor" value={`${cursor.line}:${cursor.col}`} color={T.mutedLt} />
+        <DocStat label="Lines"  value={lineCount} />
+        <DocStat label="Words"  value={wordCount} />
+        <DocStat label="Chars"  value={charCount} />
+        {tokenEst != null && <DocStat label="Tokens" value={`~${tokenEst}`} color={tokenColor(tokenEst)} />}
+        {suggestions > 0 && (
+          <button
+            onClick={onJumpToSuggestion}
+            title="Jump to the first inline suggestion — hover a squiggle in the editor to read it"
+            style={{
+              alignSelf: "center", marginLeft: "auto", display: "flex", alignItems: "center", gap: 6,
+              background: `${T.warn}14`, border: `1px solid ${T.warn}44`, borderRadius: 999,
+              padding: "5px 12px", cursor: "pointer", color: T.warn,
+              fontSize: 11, fontWeight: 700, fontFamily: "inherit",
+            }}
+          >
+            <span aria-hidden>⚑</span>
+            {suggestions} suggestion{suggestions > 1 ? "s" : ""}
+          </button>
+        )}
+      </div>
+    </Section>
+  );
+}
 
 function PromptHealthSection({ m }) {
   const overallColor = sColor(m.overall);
@@ -1348,7 +1439,7 @@ function RunAcrossModelsSection({ content, slug }) {
 // Metrics panel — assembles all sections
 // ─────────────────────────────────────────────────────────────
 
-function MetricsPanel({ metrics, content, slug, onApply }) {
+function MetricsPanel({ metrics, content, slug, onApply, doc, onJumpToSuggestion }) {
   const domain     = useMemo(() => detectDomain(content), [content]);
   const forecast   = useMemo(() => metrics ? computeForecast(metrics) : null, [metrics]);
   const missingCtx = useMemo(() => {
@@ -1356,25 +1447,71 @@ function MetricsPanel({ metrics, content, slug, onApply }) {
     return detectMissingContext(domain, content);
   }, [metrics, domain, content]);
 
+  // The panel is now a half of the split, not a fixed rail: flex 1 against the
+  // editor's flex 1, and minWidth 0 so a wide child (the across-models table)
+  // cannot push the split off its 50/50 — without it a flex item refuses to
+  // shrink below its content and the editor silently loses the width.
+  const shell = {
+    flex: 1, minWidth: 0, borderLeft: `1px solid ${T.border}`,
+    background: T.bg, overflowY: "auto", overflowX: "hidden",
+  };
+
   if (!metrics) {
     return (
-      <div style={{ width: 272, flexShrink: 0, borderLeft: `1px solid ${T.border}`, background: T.surface, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div style={{ textAlign: "center", color: T.muted, fontSize: 11, lineHeight: 1.9 }}>
-          Start writing<br />to activate the<br />Prompt IDE.
+      <div style={{ ...shell, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ textAlign: "center", color: T.muted, fontSize: 11, lineHeight: 1.9, maxWidth: 220 }}>
+          Start writing to activate the Prompt IDE.
         </div>
       </div>
     );
   }
 
+  // Three bands, not one grid.
+  //
+  // A CSS grid aligns its rows, so a short card sitting beside a tall one leaves
+  // the difference as dead space — with Missing Context (eight gaps) next to
+  // Suggested Agents (four names) that hole was about 200px of nothing. The five
+  // middle cards go into a COLUMN flow instead, which packs each column
+  // independently and closes the gap; `breakInside: avoid` stops a card being
+  // sliced across the column boundary.
+  //
+  // The trade is reading order: columns run top-to-bottom, then across. That is
+  // the right trade here because these five are independent readouts, not steps —
+  // nobody reads Prompt Health *into* Missing Context.
+  //
+  // The three full-width cards stay outside the column flow, because column
+  // layout has no equivalent of a spanning cell.
+
   return (
-    <div style={{ width: 272, flexShrink: 0, borderLeft: `1px solid ${T.border}`, background: T.surface, overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column" }}>
-      <PromptHealthSection    m={metrics} />
-      <ExecutionForecastSection forecast={forecast} />
-      <MissingContextSection  m={metrics} domain={domain} missingCtx={missingCtx} />
-      <SuggestedAgentsSection domain={domain} />
-      <TemplatesSection       domain={domain} currentContent={content} onApply={onApply} />
-      <PromptUpgradeSection   m={metrics} domain={domain} content={content} onApply={onApply} />
-      <RunAcrossModelsSection content={content} slug={slug} />
+    <div style={shell}>
+      {/* At half the window these stop being a scrolling stack and become a
+          board: auto-fill at a 290px minimum means two columns on a normal
+          desktop and one on a narrow window, with no breakpoint to maintain.
+          Reading order still runs diagnose → improve → run, so the grid is a
+          layout change, not a re-prioritisation. */}
+      <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* The relocated status bar leads: it describes the document you are
+            looking at, before anything starts scoring it. */}
+        <DocumentSection doc={doc} onJumpToSuggestion={onJumpToSuggestion} />
+
+        <div style={{ columns: "290px 2", columnGap: 12 }}>
+          {[
+            <PromptHealthSection      key="health"   m={metrics} />,
+            <ExecutionForecastSection key="forecast" forecast={forecast} />,
+            <MissingContextSection    key="gaps"     m={metrics} domain={domain} missingCtx={missingCtx} />,
+            <SuggestedAgentsSection   key="agents"   domain={domain} />,
+            <TemplatesSection         key="tpl"      domain={domain} currentContent={content} onApply={onApply} />,
+          ].map(card => (
+            <div key={card.key} style={{ breakInside: "avoid", marginBottom: 12 }}>{card}</div>
+          ))}
+        </div>
+
+        {/* The wide objects: a before/after diff and a model-by-model table. Both
+            are comparisons, and a comparison squeezed into a half-column is the
+            one thing this redesign was meant to stop. */}
+        <PromptUpgradeSection   m={metrics} domain={domain} content={content} onApply={onApply} />
+        <RunAcrossModelsSection content={content} slug={slug} />
+      </div>
     </div>
   );
 }
@@ -1603,21 +1740,44 @@ export default function PromptEditorTab() {
     setEditingId(null);
   }
 
+  // Lifted out of the old status bar's inline onClick so the Document card on
+  // the board can call it — the editor ref lives here, not in the panel.
+  const jumpToFirstSuggestion = useCallback(() => {
+    const d = diagnostics[0], ed = editorRef.current;
+    if (!d || !ed) return;
+    ed.revealLineInCenter(d.startLine);
+    ed.setPosition({ lineNumber: d.startLine, column: d.startCol });
+    ed.focus();
+  }, [diagnostics]);
+
   const wordCount    = content.trim() ? content.trim().split(/\s+/).length : 0;
   const overallScore = metrics?.overall ?? null;
   const overallColor = overallScore != null ? sColor(overallScore) : T.muted;
 
-  // Status bar metric pips
-  const statusPips = metrics ? [
-    { k: "CLR", v: metrics.clarity,       c: sColor(metrics.clarity) },
-    { k: "STR", v: metrics.structure,     c: sColor(metrics.structure) },
-    { k: "SPC", v: metrics.specificity,   c: sColor(metrics.specificity) },
-    { k: "ACT", v: metrics.actionability, c: sColor(metrics.actionability) },
-    { k: "TOK", v: metrics.tokenScore,    c: sColor(metrics.tokenScore) },
-  ] : [];
-
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: T.bg, overflow: "hidden", position: "relative" }}>
+
+      {/* ── Hero ──
+          This tab used to open straight onto its tab strip — the only surface in
+          the app with no title on it, so it read as a tool that had been dropped
+          in rather than one of the rooms. PageHeader is the app-wide hero (gold
+          serif title, description beneath), used here with sticky={false}: the
+          sticky variant is built to pin inside a scrolling <Column>, and this tab
+          does not scroll — the editor owns the height and the header is a fixed
+          band above it. */}
+      {/* `center` matches the rest of the app — 16 of the 27 PageHeaders use it,
+          and it also solves the ☰ collision for free: a centred title starts near
+          the middle of the window, nowhere near the button parked at x 15–59. The
+          explicit left padding this replaces was only ever needed because the
+          title was flush left in a full-bleed tab. */}
+      <div style={{ flexShrink: 0, padding: "18px 20px 4px" }}>
+        <PageHeader
+          sticky={false}
+          center
+          title="Prompt IDE"
+          subtitle="Write a prompt on the left, and watch it get read back to you on the right — health, missing context, a suggested rewrite, and the same prompt run across models."
+        />
+      </div>
 
       {/* ── Tab strip ── */}
       <div style={{ display: "flex", alignItems: "stretch", flexShrink: 0, background: T.surface2, borderBottom: `1px solid ${T.border}` }}>
@@ -1665,9 +1825,15 @@ export default function PromptEditorTab() {
         </button>
       </div>
 
-      {/* ── Editor + Panel ── */}
+      {/* ── Editor + Panel ──
+          A true half and half when the panel is open. The editor was flex 1
+          against a fixed 272px rail, so the writing surface got everything left
+          over — fine when the panel was a strip of readouts, wrong now that the
+          right half is where the work of improving the prompt actually happens.
+          With the panel hidden the editor keeps the whole width, which is what
+          the toggle is for. */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", overflow: "hidden" }}>
           <Editor
             language="markdown"
             theme={MONACO_THEME}
@@ -1697,55 +1863,24 @@ export default function PromptEditorTab() {
           />
         </div>
 
-        {showMetrics && <MetricsPanel metrics={metrics} content={content} slug={activeTab?.slug} onApply={updateContent} />}
+        {showMetrics && (
+          <MetricsPanel
+            metrics={metrics} content={content} slug={activeTab?.slug} onApply={updateContent}
+            doc={{
+              cursor, lineCount: lines.length, wordCount,
+              charCount: content.length, tokenEst: metrics?.tokenEst ?? null,
+              savedTag, suggestions: diagnostics.length,
+            }}
+            onJumpToSuggestion={jumpToFirstSuggestion}
+          />
+        )}
       </div>
 
-      {/* ── Status bar ── */}
-      <div style={{ height: 24, background: T.statusBg, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 14px", fontSize: 11, color: T.muted, borderTop: `1px solid ${T.border}`, userSelect: "none" }}>
-        <span style={{ color: T.mutedLt, marginRight: 12, fontFamily: FONT }}>Ln {cursor.line}, Col {cursor.col}</span>
-        {savedTag && (
-          <span title="Ctrl+S saves a version" style={{ color: savedTag === "save failed" ? T.danger ?? "#c0392b" : T.success, marginRight: 12, fontFamily: FONT }}>● {savedTag}</span>
-        )}
-        <span style={{ color: T.border, marginRight: 12 }}>│</span>
-        {statusPips.map(({ k, v, c }) => (
-          <span key={k} style={{ display: "flex", alignItems: "center", gap: 3, marginRight: 9 }}>
-            <span style={{ fontSize: 9, color: T.muted, fontFamily: FONT }}>{k}</span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: c, fontFamily: FONT }}>{v}</span>
-          </span>
-        ))}
-        {overallScore != null && (
-          <>
-            <span style={{ color: T.border, margin: "0 10px" }}>│</span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: overallColor, fontFamily: FONT }}>{overallScore} overall</span>
-          </>
-        )}
-        {diagnostics.length > 0 && (
-          <>
-            <span style={{ color: T.border, margin: "0 10px" }}>│</span>
-            <span
-              onClick={() => {
-                const d = diagnostics[0], ed = editorRef.current;
-                if (!ed) return;
-                ed.revealLineInCenter(d.startLine);
-                ed.setPosition({ lineNumber: d.startLine, column: d.startCol });
-                ed.focus();
-              }}
-              title="Inline suggestions — hover a squiggle in the editor to read each one"
-              style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", color: T.warn, fontFamily: FONT }}
-            >
-              <span style={{ fontSize: 11 }}>⚑</span>
-              <span style={{ fontSize: 10, fontWeight: 700 }}>
-                {diagnostics.length} suggestion{diagnostics.length > 1 ? "s" : ""}
-              </span>
-            </span>
-          </>
-        )}
-        <div style={{ flex: 1 }} />
-        {metrics && <span style={{ color: tokenColor(metrics.tokenEst), marginRight: 12, fontFamily: FONT }}>~{metrics.tokenEst} tokens</span>}
-        <span style={{ color: T.muted, marginRight: 10 }}>Ln {lines.length}</span>
-        <span style={{ color: T.muted, marginRight: 10 }}>{wordCount}w</span>
-        <span style={{ color: T.muted }}>{content.length}ch</span>
-      </div>
+      {/* The status bar that used to run along the bottom is gone — it is the
+          Document card on the board now (see DocumentSection). Its CLR/STR/SPC/
+          ACT/TOK pips and "N overall" were not moved but DELETED: they were the
+          Prompt Health card written in abbreviations, and carrying them across
+          would have put the same five numbers on screen twice. */}
 
       {diffOpen && activeTab?.slug && (
         <PromptVersionDiff T={T} slug={activeTab.slug} headContent={content} onClose={() => setDiffOpen(false)} />

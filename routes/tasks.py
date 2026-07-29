@@ -1,22 +1,33 @@
 import asyncio
+import os
 import sqlite3
 from datetime import datetime, timezone
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 from orchestration.coordinator import coordinator
 
 router = APIRouter()
 
-from infrastructure.db import path as _dbpath
+from infrastructure.db import path as _dbpath, tune as _tune
 TASKS_DB = _dbpath("tasks")
+
+# Backpressure: cap on queued (pending) tasks so a runaway client can't grow the
+# tasks table without bound (#198). The worker drains serially, so depth is the
+# only unbounded dimension. Override with AMAGRA_MAX_PENDING_TASKS; 0 disables.
+try:
+    MAX_PENDING_TASKS = int(os.environ.get("AMAGRA_MAX_PENDING_TASKS", "100"))
+except ValueError:
+    MAX_PENDING_TASKS = 100
 
 worker_event = asyncio.Event()
 task_db_lock = asyncio.Lock()
 
 
 def get_tasks_db():
-    conn = sqlite3.connect(TASKS_DB, check_same_thread=False)
-    conn.execute("PRAGMA journal_mode=WAL;")
+    # Fresh per-call connection (never shared across threads); busy_timeout+WAL
+    # applied centrally — see #195.
+    conn = _tune(sqlite3.connect(TASKS_DB, check_same_thread=False))
     conn.execute("PRAGMA synchronous=NORMAL;")
     return conn
 
@@ -152,6 +163,16 @@ async def create_task(data: dict):
     async with task_db_lock:
         conn = get_tasks_db()
         cur  = conn.cursor()
+        if MAX_PENDING_TASKS:
+            pending = cur.execute(
+                "SELECT COUNT(*) FROM tasks WHERE status='pending'"
+            ).fetchone()[0]
+            if pending >= MAX_PENDING_TASKS:
+                conn.close()
+                return JSONResponse(
+                    {"error": f"task queue full: {MAX_PENDING_TASKS} pending tasks; retry later"},
+                    status_code=429,
+                )
         cur.execute(
             "INSERT INTO tasks (title, prompt, agents, status) VALUES (?, ?, ?, 'pending')",
             (title, prompt, agents),
@@ -177,12 +198,20 @@ async def task_status():
         "SELECT id, title, status, agents, created_at, started_at, finished_at "
         "FROM tasks ORDER BY id DESC"
     ).fetchall()
+    pending = conn.execute("SELECT COUNT(*) FROM tasks WHERE status='pending'").fetchone()[0]
     conn.close()
-    return {"tasks": [
-        {"id": r[0], "title": r[1], "status": r[2], "agents": r[3],
-         "created": r[4], "started": r[5], "finished": r[6]}
-        for r in rows
-    ]}
+    return {
+        # Queue-depth observability (#198): pending count + the configured cap so a
+        # client/operator can see how close the queue is to shedding load.
+        "queue_depth":   pending,
+        "queue_limit":   MAX_PENDING_TASKS or None,
+        "worker_running": worker_event.is_set(),
+        "tasks": [
+            {"id": r[0], "title": r[1], "status": r[2], "agents": r[3],
+             "created": r[4], "started": r[5], "finished": r[6]}
+            for r in rows
+        ],
+    }
 
 
 @router.get("/tasks/results/{task_id}")

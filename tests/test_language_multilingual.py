@@ -66,6 +66,21 @@ NON_ENGLISH = [
     ("홈 네트워크를 어떻게 설정하나요",                             "ko"),
     ("كيف يمكنني إعداد شبكتي المنزلية",                        "ar"),
     ("Πώς μπορώ να ρυθμίσω το δίκτυό μου",                     "el"),
+    # Short diacritic-free Latin phrases — the former F-13 gap, now caught by
+    # the foreign-function-word lexicon (a Romance article or verb tips them).
+    ("instala el paquete",                                    "es"),
+    ("mostra il file",                                        "it"),
+    ("configura la red local",                                "es"),
+    # Two-content-word imperatives — caught by the foreign-content-word set
+    # (Romance/German file-command verbs + nouns).
+    ("abre archivo",                                          "es"),
+    ("leggi documento",                                       "it"),
+    ("salva ficheiro",                                        "pt"),
+    # Two-word tech noun phrases — caught by the expanded non-English noun set.
+    ("codice sorgente",                                       "it"),
+    ("rete locale",                                           "it"),
+    ("pagina bianca",                                         "it"),
+    ("base de datos",                                         "es"),
 ]
 
 ENGLISH = [
@@ -95,13 +110,17 @@ KNOWN_FALSE_POSITIVES = [
     "run database migration script now",
 ]
 
-# Known limitation (issue #18): short Latin-script non-English phrases with no
-# diacritics and no English-stopword collision are NOT flagged today. Kept out
-# of the recall gate; asserted as missed so an improvement is surfaced.
+# Residual limitation (issue #18 / FAILURES F-13): the lexicon now covers common
+# tech nouns/verbs, but a two-word phrase whose *both* tokens are outside every
+# lexicon and carry no diacritic still slips through — and that is the natural
+# ceiling of a dependency-free word-list heuristic. Closing it in general needs a
+# statistical language-ID (char n-gram) model, not a longer list; see FAILURES
+# F-13. Kept out of the recall gate; asserted as missed so the ceiling stays
+# visible rather than silently masked.
 KNOWN_MISSES = [
-    ("instala el paquete",        "es"),   # 3 words, no diacritics
-    ("mostra il file",            "it"),
-    ("configura la red local",    "es"),
+    ("schermo intero",     "it"),   # "fullscreen" — both tokens outside the lexicon
+    ("ventana emergente",  "es"),   # "popup window"
+    ("respuesta rapida",   "es"),   # "quick reply" (diacritic-free)
 ]
 
 

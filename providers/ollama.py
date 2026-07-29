@@ -11,10 +11,32 @@ Configuration (all optional, fall back to these defaults):
   OLLAMA_EMBED_MODEL nomic-embed-text
 """
 
+import asyncio
 import os
 from typing import AsyncIterator
 
-from providers.base import EmbeddingProvider, ModelProvider
+from providers.base import EmbeddingProvider, ModelProvider, ProviderTimeoutError
+
+# Default per-call ceiling for a single generation. A local Ollama serving a
+# small model answers in seconds; a value this high only trips when the backend
+# has actually hung or is thrashing under load. Override with OLLAMA_TIMEOUT
+# (seconds); 0/negative disables the ceiling.
+_DEFAULT_TIMEOUT = 120.0
+
+
+def _resolve_timeout(explicit: float | None) -> float | None:
+    """Pick the call timeout: explicit arg > OLLAMA_TIMEOUT env > default.
+
+    Returns None when the resolved value is <= 0, meaning "no ceiling".
+    """
+    if explicit is not None:
+        val = explicit
+    else:
+        try:
+            val = float(os.environ.get("OLLAMA_TIMEOUT", _DEFAULT_TIMEOUT))
+        except (TypeError, ValueError):
+            val = _DEFAULT_TIMEOUT
+    return val if val > 0 else None
 
 
 class OllamaProvider(ModelProvider):
@@ -27,11 +49,18 @@ class OllamaProvider(ModelProvider):
         num_ctx: int = 2048,
         num_thread: int = 6,
         num_predict: int = 256,
+        timeout: float | None = None,
     ):
         from langchain_ollama import ChatOllama
 
         self._model    = model    or os.environ.get("OLLAMA_MODEL",    "phi4-mini:latest")
         self._base_url = base_url or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+        self._timeout  = _resolve_timeout(timeout)
+
+        # client_kwargs sets the HTTP-level read/connect timeout on both the sync
+        # and async ollama clients ChatOllama builds, so generate()/stream() get a
+        # ceiling too — not just the asyncio.wait_for guard on agenerate() below.
+        client_kwargs = {"timeout": self._timeout} if self._timeout else {}
 
         # chat_model is exposed so existing agent code (from models.llm import llm)
         # continues to work without modification during the Phase 1 migration.
@@ -42,11 +71,27 @@ class OllamaProvider(ModelProvider):
             num_thread=num_thread,
             num_predict=num_predict,
             base_url=self._base_url,
+            client_kwargs=client_kwargs,
         )
 
     @property
     def name(self) -> str:
         return f"ollama/{self._model}"
+
+    def _messages(self, prompt: str, system_prompt: str | None):
+        from langchain_core.messages import HumanMessage, SystemMessage
+
+        messages = []
+        if system_prompt:
+            messages.append(SystemMessage(content=system_prompt))
+        messages.append(HumanMessage(content=prompt))
+        return messages
+
+    def _timeout_msg(self) -> str:
+        return (
+            f"Ollama generation exceeded {self._timeout:.0f}s "
+            f"({self._model} @ {self._base_url}) — backend hung or overloaded"
+        )
 
     def generate(
         self,
@@ -54,13 +99,12 @@ class OllamaProvider(ModelProvider):
         system_prompt: str | None = None,
         temperature: float = 0.2,
     ) -> str:
-        from langchain_core.messages import HumanMessage, SystemMessage
+        import httpx
 
-        messages = []
-        if system_prompt:
-            messages.append(SystemMessage(content=system_prompt))
-        messages.append(HumanMessage(content=prompt))
-        return self.chat_model.invoke(messages).content
+        try:
+            return self.chat_model.invoke(self._messages(prompt, system_prompt)).content
+        except httpx.TimeoutException as exc:
+            raise ProviderTimeoutError(self._timeout_msg()) from exc
 
     async def agenerate(
         self,
@@ -68,13 +112,19 @@ class OllamaProvider(ModelProvider):
         system_prompt: str | None = None,
         temperature: float = 0.2,
     ) -> str:
-        from langchain_core.messages import HumanMessage, SystemMessage
+        import httpx
 
-        messages = []
-        if system_prompt:
-            messages.append(SystemMessage(content=system_prompt))
-        messages.append(HumanMessage(content=prompt))
-        response = await self.chat_model.ainvoke(messages)
+        coro = self.chat_model.ainvoke(self._messages(prompt, system_prompt))
+        try:
+            # asyncio.wait_for is a hard ceiling independent of the HTTP client's
+            # own timeout: even if the client-level timeout is misconfigured or the
+            # hang is below the socket layer, the coroutine is guaranteed to return.
+            if self._timeout:
+                response = await asyncio.wait_for(coro, timeout=self._timeout)
+            else:
+                response = await coro
+        except (asyncio.TimeoutError, httpx.TimeoutException) as exc:
+            raise ProviderTimeoutError(self._timeout_msg()) from exc
         return response.content
 
     async def stream(
@@ -82,13 +132,10 @@ class OllamaProvider(ModelProvider):
         prompt: str,
         system_prompt: str | None = None,
     ) -> AsyncIterator[str]:
-        from langchain_core.messages import HumanMessage, SystemMessage
-
-        messages = []
-        if system_prompt:
-            messages.append(SystemMessage(content=system_prompt))
-        messages.append(HumanMessage(content=prompt))
-        async for chunk in self.chat_model.astream(messages):
+        # Streaming relies on the client-level read timeout (client_kwargs) rather
+        # than a wait_for wrapper: a per-chunk stall trips the HTTP read timeout,
+        # while wrapping the whole generator would cap total stream duration.
+        async for chunk in self.chat_model.astream(self._messages(prompt, system_prompt)):
             if chunk.content:
                 yield chunk.content
 
