@@ -756,8 +756,16 @@ def gevrey_majorant(a0: float, rho: float, n: int) -> float:
          balance is ρ = M, the Gevrey rate itself
          (``derivative_recursion_bound_of_majorant``); the earlier
          ``convolution_dominated`` constant ρ = B·M²/(M−L) is superseded.
-         Derive M from per-step kernel data with ``certified_rate``.
+         Derive M from per-step kernel data with ``certified_rate``, or the joint
+         A3′ constants with ``stability_radius`` (M = 1/r).
     n:   recursion depth
+
+    CAVEAT (OCAC2 ``no_geometric_supersolution``, 2026-07-22): a *fitted* geometric
+    rate is provably OPTIMISTIC — no rigid ``c·ρⁿ·n!`` ansatz is a valid majorant
+    supersolution, because Gevrey-1 composition genuinely degrades the rate. So an
+    empirical ρ̂ from ``gevrey_rate_estimate`` is a lower bound on the true growth,
+    not a ceiling.  Gate on its ``a3_prime_ok`` before trusting the budget, and
+    prefer the certified ``stability_radius`` when the A3′ constants are known.
     """
     return a0 * (rho ** n) * math.factorial(n)
 
@@ -789,6 +797,40 @@ def certified_rate(L: float, B: float, K: float) -> float:
     if L < 0.0 or B < 0.0:
         raise ValueError("kernel data B, L must be nonnegative")
     return L * (1.0 + 2.0 * B / (1.0 - K))
+
+
+def stability_radius(B: float, D: float, kappa: float) -> float:
+    """Closed-form, base-point-uniform Gevrey radius  r(B,D,κ).
+
+    OCAC2's paper-level closure of P2 (2026-07-22): running the classical
+    Cauchy-majorant proof *with constants tracked* gives an explicit convergence
+    radius for a jointly-analytic (A3′: ‖dⁿT‖ ≤ B·Dⁿ·n!) uniformly-contracting
+    (A1: ‖∂ₓT‖ ≤ κ < 1) fixed-point family, depending on ``(B, D, κ)`` ALONE:
+
+        r = (1−κ)² / (D·(1−κ + 2·B·D)²).
+
+    The uniform Gevrey rate is then ``M = 1/r`` (feed ``gevrey_majorant`` /
+    ``stable_recursion_depth`` directly, no per-step kernel fit needed). Because
+    the radius is base-point-independent, every pointwise recursion budget is
+    ≥ this one — a single certified depth ceiling for the whole family.
+
+    Sanity limits (match the S-A hand-check): κ → 1 ⇒ r → 0 (a weak contraction
+    tolerates no depth); B → 0 ⇒ r → 1/D (the data's own radius). It is a lower
+    bound (majorants are conservative), which is exactly what a safety budget wants.
+
+    Supersedes the ``certified_rate`` kernel-fit for the common case where you
+    have the joint A3′ constants directly rather than per-step kernel data.
+
+    Traces to: PROPOSALS.md §S-A "UNIFORMITY RESIDUAL CLOSED" + the machine-checked
+    ``fixedPointFamily_orderClosed_recursion`` (OCAC/GevreyKernel.lean) and
+    ``fixedPointFamily_le_majorant`` (OCAC/MajorantComparison.lean), ocac_2, 2026-07-22.
+    """
+    if B < 0.0 or D <= 0.0:
+        raise ValueError("D must be > 0 and B ≥ 0")
+    if kappa >= 1.0:
+        return 0.0
+    gap = 1.0 - kappa
+    return (gap * gap) / (D * (gap + 2.0 * B * D) ** 2)
 
 
 def compose_gevrey_rates(B_outer: float, D_outer: float,
@@ -1157,6 +1199,13 @@ def _run_tests():
     assert certified_rate(1.0, 1.0, 0.9) > certified_rate(1.0, 1.0, 0.5)
     assert certified_rate(2.0, 0.0, 0.5) == 2.0                   # no kernel gain → M = L
     assert certified_rate(1.0, 1.0, 1.0) == float("inf")          # contraction lost
+    # Closed-form uniform radius r(B,D,κ): sanity limits + κ→1 collapse (OCAC2 2026-07-22)
+    assert abs(stability_radius(0.0, 2.0, 0.5) - 0.5) < eps        # B→0 ⇒ r = 1/D
+    assert stability_radius(1.0, 2.0, 0.9) == 0.0 or \
+        stability_radius(1.0, 2.0, 0.9) < stability_radius(1.0, 2.0, 0.5)  # κ→1 shrinks r
+    assert stability_radius(1.0, 1.0, 1.0) == 0.0                  # contraction lost ⇒ no radius
+    # exact value: (1−κ)²/[D(1−κ+2BD)²] at B=D=1, κ=0.5 → 0.25/(1·2.5²) = 0.04
+    assert abs(stability_radius(1.0, 1.0, 0.5) - 0.04) < eps
     # Rate composition law: (B,D)∘(C,M) = (B, M(1+DC)) — rates don't multiply
     comp = compose_gevrey_rates(2.0, 1.0, 3.0, 0.5)
     assert comp["B"] == 2.0 and abs(comp["M"] - 2.0) < eps        # 0.5·(1+3)

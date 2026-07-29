@@ -45,11 +45,43 @@ corrections already in context. A chat tool's history scrolls away; a workspace 
 
 ---
 
+## Two layers of transparency
+
+The most common challenge to this pitch — and the one that will surface the moment it
+hits a technical audience — is: *"No AI system is fully transparent. Neural networks are
+not interpretable. You're overclaiming."* That objection is **correct about a layer
+Amagra never claimed.** Answer it by separating the two:
+
+| | **Layer 1 — model-internal** | **Layer 2 — system / orchestration** |
+|---|---|---|
+| The question | Why did *these weights* emit *this token*? | Which model ran, on what prompt, with which memories, chosen by what score? |
+| What it is | Billions of activations in high-dimensional space | Ordinary code, ordinary logs |
+| Fully inspectable? | **No** — open research problem, for everyone | **Yes** — this is engineering, not science |
+| Amagra's claim | *none* | *all of it* |
+
+**The honest sentence:** everything *around* the model is fully inspectable; the model
+itself is not, and no product can change that.
+
+That is not a retreat to a weaker claim. Most real "why did the AI do that?" failures are
+layer-2 failures — wrong route, stale memory, silently truncated context, a critic score
+nobody surfaced — not layer-1 mysteries. Layer 2 is where the debugging value is, and it
+is precisely the layer hosted APIs hide. A model explaining its own answer is a layer-1
+*narration* with no guarantee it matches the computation; a replayed routing decision is a
+layer-2 *record*. Never blur the two, and never let copy imply the first.
+
+**Copy consequence:** avoid "shows its work," "shows its reasoning," "explains itself,"
+and "understand why the model said that" — all read as layer-1 to a skeptical reader and
+hand them the objection for free. Use decision-language instead: *records*, *replays*,
+*routes*, *which agent*, *which memories*, *what confidence*. See the "Claim replay, not
+omniscience" guardrail below.
+
+---
+
 ## Channel hooks
 
 Always lead **comparison → glass box → local**. Title variants to test:
 
-- **Show HN:** "Show HN: Amagra – a local AI workspace that shows you *why* it answered"
+- **Show HN:** "Show HN: Amagra – a local AI workspace that replays *why* it answered"
 - **Show HN (alt):** "Show HN: Compare GPT, Claude, Gemini and local models on one prompt — and replay every decision"
 - **X / LinkedIn:** "I spent months building an open-source AI workspace that runs one prompt across GPT, Claude, Gemini and Ollama side by side — scores how much they agree, and lets you replay *why* it picked what it did. Fully on your hardware. MIT."
 - **r/LocalLLaMA:** "Built a self-hosted workspace that compares your local models against GPT/Claude/Gemini and shows the routing + agreement for each — no cloud, no telemetry"
@@ -154,6 +186,8 @@ sentence at the top of this document stays the only hook.
   is explainable" is not yet (component transparency ~31% — issues #47/#48). Outward copy
   claims precisely what ships — "replay why every answer was routed the way it was" — and
   the transparency number is positioning work with a deadline, not background engineering debt.
+  This guardrail has two edges: the *coverage* edge above (how much of layer 2 is wired), and
+  the *layer* edge (never imply layer 1 at all) — see "Two layers of transparency."
 - **Luxury is a lens, not a label.** "Luxury" appears only in internal docs
   (DESIGN_PRINCIPLES defines it as restraint — *quiet, not expensive-looking*)
   as a design compass. It never appears in outward copy. The brand doesn't

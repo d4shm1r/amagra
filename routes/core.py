@@ -17,6 +17,7 @@ from core.logger import read_log
 import cognition.run_tracer as run_tracer
 from infrastructure.db import path as _dbpath
 from infrastructure.inference_limit import inference_slot
+from providers.base import ProviderTimeoutError
 
 from .deps import (
     session_history, _SESSIONS_DB,
@@ -107,6 +108,35 @@ def _is_offline_error(exc: Exception) -> bool:
 _OFFLINE_DETAIL = ("LLM backend offline — start Ollama (ollama serve) "
                    "or check your provider in Settings → Model")
 
+_TIMEOUT_DETAIL = ("LLM backend timed out — the model server is hung or "
+                   "overloaded. Retry, pick a smaller model, or raise "
+                   "OLLAMA_TIMEOUT (seconds).")
+
+
+def _is_timeout_error(exc: Exception) -> bool:
+    """True when `exc` is the backend exceeding its time budget rather than
+    failing outright.
+
+    Agents reach the model through the legacy `models.llm.llm` accessor, which
+    hands out `OllamaProvider.chat_model` directly — so they get the provider's
+    `client_kwargs` HTTP ceiling but never its translation into
+    `ProviderTimeoutError` (that lives in generate()/agenerate(), which this path
+    doesn't call). A hung backend therefore surfaces here as a raw
+    `httpx.ReadTimeout`, and those carry an EMPTY str() — mapping it by message
+    alone yields a 500 with a blank detail. So walk the cause chain by type.
+    """
+    import httpx
+
+    seen: set[int] = set()
+    e: BaseException | None = exc
+    while e is not None and id(e) not in seen:
+        seen.add(id(e))
+        if isinstance(e, (ProviderTimeoutError, httpx.TimeoutException, TimeoutError)):
+            return True
+        e = e.__cause__ or e.__context__
+    msg = str(exc).lower()
+    return any(s in msg for s in ("timed out", "read timeout", "timeout exceeded"))
+
 
 def _anthropic_selected(req: AskRequest) -> bool:
     """Anthropic provider path — when the caller requests it explicitly or
@@ -127,9 +157,45 @@ async def _invoke_coordinator(state: dict) -> dict:
 
 
 def _map_invoke_error(e: Exception) -> HTTPException:
+    # Offline is checked first: it's the more specific diagnosis and the more
+    # actionable message ("start Ollama"). A hung-but-listening backend is a
+    # gateway timeout (504), not an internal fault (500) — the distinction lets
+    # a client retry a timeout while treating a 500 as a bug worth reporting.
     if isinstance(e, ConnectionRefusedError) or _is_offline_error(e):
         return HTTPException(status_code=503, detail=_OFFLINE_DETAIL)
-    return HTTPException(status_code=500, detail=str(e))
+    if _is_timeout_error(e):
+        return HTTPException(status_code=504, detail=_TIMEOUT_DETAIL)
+    return HTTPException(status_code=500, detail=str(e) or repr(e))
+
+
+def _failure_reason(e: Exception) -> str:
+    """What gets written to the run log. Never empty: bare timeout exceptions
+    stringify to "", which would otherwise record a failed run with no cause."""
+    if isinstance(e, ConnectionRefusedError) or _is_offline_error(e):
+        return "LLM backend offline"
+    if _is_timeout_error(e):
+        return f"LLM backend timeout ({type(e).__name__}: {e})" if str(e) \
+            else f"LLM backend timeout ({type(e).__name__})"
+    return str(e) or repr(e)
+
+
+_ERROR_CODES = {503: "backend_offline", 504: "backend_timeout"}
+
+
+def _error_payload(e: Exception) -> dict:
+    """The SSE equivalent of `_map_invoke_error`.
+
+    A stream is already committed to HTTP 200 by the time generation fails, so
+    the distinction /ask carries in its status code has to travel in-band as an
+    explicit `code` — otherwise a client cannot tell a retryable backend timeout
+    from a real bug. Reuses the same mapping so the two paths can't drift.
+    """
+    http = _map_invoke_error(e)
+    return {
+        "type":   "error",
+        "detail": http.detail,
+        "code":   _ERROR_CODES.get(http.status_code, "error"),
+    }
 
 
 @router.post("/ask", response_model=AskResponse)
@@ -164,7 +230,7 @@ async def ask(req: AskRequest, request: Request):
         try:
             run.result = await _invoke_coordinator(state)
         except Exception as e:
-            pipeline.fail_run(run, "LLM backend offline" if isinstance(e, ConnectionRefusedError) else str(e))
+            pipeline.fail_run(run, _failure_reason(e))
             raise _map_invoke_error(e)
         run.agent_used = run.result.get("active_agent", "unknown")
         run.response   = run.result["messages"][-1].content
@@ -695,7 +761,9 @@ async def ask_stream(req: AskRequest, request: Request):
                             "memories_used": extras.get("memories_used", [])})
                 return
             except Exception as exc:
-                yield _sse({"type": "error", "detail": str(exc)})
+                # Non-fatal: the coordinator fallback below still gets a shot, so
+                # this stays a bare detail (no `code`) — but never an empty one.
+                yield _sse({"type": "error", "detail": _failure_reason(exc)})
                 # fall through to non-streaming path
 
         # ── Fallback: run coordinator, stream its real lifecycle events ───
@@ -761,8 +829,8 @@ async def ask_stream(req: AskRequest, request: Request):
                         "memories_used": extras.get("memories_used",
                                                     run.bd.get("memories_used", []))})
         except Exception as exc:
-            pipeline.fail_run(run, str(exc))
-            yield _sse({"type": "error", "detail": str(exc)})
+            pipeline.fail_run(run, _failure_reason(exc))
+            yield _sse(_error_payload(exc))
 
     return StreamingResponse(
         _event_stream(),
