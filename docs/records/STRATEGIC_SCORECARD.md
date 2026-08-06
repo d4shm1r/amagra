@@ -10,7 +10,7 @@ tools, or bigger models — they are *knowing which strategy is worth using,
 knowing when a decision was bad, remembering what worked, and spending
 computation where it has the highest expected return.*
 
-**Updated:** 2026-07-21 · **Scale:** 0–100% maturity · **Weighted overall ≈ 50%**
+**Updated:** 2026-07-30 · **Scale:** 0–100% maturity · **Weighted overall ≈ 55%**
 
 The distribution matters more than the average: the project is strongest exactly
 where strategic value is highest (verification, adaptive compute, self-improving
@@ -112,15 +112,16 @@ the roadmap — it is the join key for directions 1, 2, 3, and 10.
 
 ## 3. Counterfactual Evaluation Engine ⭐
 
-**Status: 🟠 40%**
+**Status: 🟠 55%**
 
 **Existing**
 - [cognition/counterfactual.py](../../cognition/counterfactual.py) — `simulate_alternative`, `compare_agents` (mechanical A/B)
 - Regret computed and stored; [cognition/failure_miner.py](../../cognition/failure_miner.py)
+- **Wiring shipped** — [decision/experience.py](../../decision/experience.py) persists counterfactual output into Strategy Memory, plus an `explore()` driver to force alternatives; [workbench/evaluation/decision_econ_holdout.py](../../workbench/evaluation/decision_econ_holdout.py) is the off-policy held-out evaluator (temporal split, matched-strategy realized outcomes)
 
 **Missing**
-- Statistical validity (self-described as needing 400+ sessions)
-- **Wiring**: counterfactual output currently flows nowhere — it must feed Strategy Memory so failed decisions become training data
+- Statistical validity (self-described as needing 400+ sessions) — the evaluator currently returns **INSUFFICIENT** on real data rather than a verdict
+- Proxy-quality saturation: `_proxy_quality` grades almost every non-trivial answer as success, so on counterfactual rows the EV winner is discriminated by **latency**, not P(success). Live critic-gate quality does vary, so this improves as real rows accrue
 
 **Depends on:** Strategy Memory (#2) as the sink · Strategy Record
 
@@ -282,11 +283,15 @@ input the next one consumes.
 | 10 | Decision Quality benchmark | 🟢 70% |
 | 4 | Self-improving router | 🟢 65% |
 | 7 | Adaptive compute budget | 🟢 65% |
-| 3 | Counterfactual engine | 🟠 40% |
+| 2 | Strategy memory | 🟢 60% |
+| 3 | Counterfactual engine | 🟠 55% |
+| 1 | Decision intelligence layer | 🟠 50% |
 | 5 | Multi-agent specialization | 🟡 40% |
 | 9 | Personal Knowledge OS | 🟡 40% |
-| 2 | Strategy memory | 🟡 35% |
-| 1 | Decision intelligence layer | 🟡 30% |
 | 8 | Agent simulation / sandbox | 🟡 30% |
+
+The four rows that moved (1, 2, 3, and the evaluator under 10) are **one loop** — O2 —
+and all of it is now built and none of it is validated: the held-out evaluator reports
+INSUFFICIENT on current data. Maturity here means "wired and testable", not "proven".
 
 Related: [SCORECARD.md](SCORECARD.md) (capability scorecard) · [METRICS_ROADMAP.md](METRICS_ROADMAP.md)
