@@ -1487,12 +1487,19 @@ function MetricsPanel({ metrics, content, slug, onApply, doc, onJumpToSuggestion
       {/* At half the window these stop being a scrolling stack and become a
           board: auto-fill at a 290px minimum means two columns on a normal
           desktop and one on a narrow window, with no breakpoint to maintain.
-          Reading order still runs diagnose → improve → run, so the grid is a
-          layout change, not a re-prioritisation. */}
+          Reading order now runs improve → diagnose → run: the action that
+          changes the prompt leads, the read-only scorecards that explain *why*
+          sit below it, not in front of it. */}
       <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 12 }}>
         {/* The relocated status bar leads: it describes the document you are
             looking at, before anything starts scoring it. */}
         <DocumentSection doc={doc} onJumpToSuggestion={onJumpToSuggestion} />
+
+        {/* Auto Fix is the one card that acts on the prompt rather than just
+            reporting on it — it sits right under the document, ahead of the
+            stat board, so it doesn't take a scroll past six readouts to reach
+            the action that actually improves the text. */}
+        <PromptUpgradeSection m={metrics} domain={domain} content={content} onApply={onApply} />
 
         <div style={{ columns: "290px 2", columnGap: 12 }}>
           {[
@@ -1506,10 +1513,8 @@ function MetricsPanel({ metrics, content, slug, onApply, doc, onJumpToSuggestion
           ))}
         </div>
 
-        {/* The wide objects: a before/after diff and a model-by-model table. Both
-            are comparisons, and a comparison squeezed into a half-column is the
-            one thing this redesign was meant to stop. */}
-        <PromptUpgradeSection   m={metrics} domain={domain} content={content} onApply={onApply} />
+        {/* The wide run/compare object stays last: it's a comparison across
+            models, the final step once the prompt itself is in good shape. */}
         <RunAcrossModelsSection content={content} slug={slug} />
       </div>
     </div>
