@@ -48,3 +48,25 @@ def test_run_drives_loop_with_mocked_llm(monkeypatch):
     assert body["answer"] == "42 is the answer."
     assert body["stopped"] == "answer"
     assert body["calls"] == []
+
+
+def test_run_maps_offline_llm_to_503(monkeypatch):
+    # An unreachable Ollama surfaces deep inside langchain as a bare
+    # ConnectionRefusedError/httpx.ConnectError — this must map to the same
+    # friendly 503 /ask and /ask/stream give, not an opaque 500 (which the
+    # browser reports as a CORS failure, since an unhandled-exception 500
+    # carries no CORS headers).
+    def _boom(transcript):
+        raise ConnectionRefusedError("[Errno 111] Connection refused")
+    monkeypatch.setattr(rtools, "_llm_invoke", _boom)
+    r = client.post("/tools/run", json={"prompt": "hello"}, headers=HEADERS)
+    assert r.status_code == 503
+    assert "offline" in r.json()["detail"].lower()
+
+
+def test_run_maps_unknown_error_to_500(monkeypatch):
+    def _boom(transcript):
+        raise RuntimeError("something else broke")
+    monkeypatch.setattr(rtools, "_llm_invoke", _boom)
+    r = client.post("/tools/run", json={"prompt": "hello"}, headers=HEADERS)
+    assert r.status_code == 500

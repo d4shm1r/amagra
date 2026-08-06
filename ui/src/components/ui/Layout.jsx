@@ -118,8 +118,8 @@ export function Pad({ size = "md", children }) {
 /** A vertical scroll region capped at `max` height — for a long feed that must
  *  not push the page taller (event logs, run lists). Forwards its ref so a
  *  caller can pin it to the top on refresh. */
-export const Scroll = forwardRef(function Scroll({ max = "60vh", children }, ref) {
-  return <div ref={ref} style={{ maxHeight: max, overflowY: "auto" }}>{children}</div>;
+export const Scroll = forwardRef(function Scroll({ max = "60vh", onScroll, children }, ref) {
+  return <div ref={ref} onScroll={onScroll} style={{ maxHeight: max, overflowY: "auto" }}>{children}</div>;
 });
 
 /** Push subsequent siblings to the far edge of a Row. */
@@ -130,6 +130,28 @@ export function Spacer() {
 /** A hairline. The only horizontal rule in the app. */
 export function Divider({ inset = 0 }) {
   return <div style={{ height: 1, background: T.border, margin: `${SPACE[1]}px ${inset}px` }} />;
+}
+
+/** A full-width strip with a top hairline — a toolbar or dock header that
+ *  sits at the edge of a layout rather than inside a Card. Renders a real
+ *  `<button>` when `onClick` is given, so a whole-strip toggle (the terminal
+ *  dock's collapse bar) stays keyboard- and screen-reader-reachable instead
+ *  of being a div pretending to be one. `surface` toggles the recessed fill. */
+export function Bar({ surface = false, onClick, title, children }) {
+  const style = {
+    flexShrink: 0, width: "100%", display: "flex", alignItems: "center", gap: SPACE[2],
+    // `border: none` first resets the <button> default box, then the longhand
+    // adds back just the top hairline — needed because the plain-<div> variant
+    // must paint the identical edge with no shorthand/longhand conflict.
+    border: "none", borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: T.border,
+    background: surface ? T.surface2 : "transparent",
+    padding: `0 ${SPACE[4]}px`, minHeight: 30,
+    fontFamily: "inherit", fontSize: "inherit", color: "inherit",
+    textAlign: "left", cursor: onClick ? "pointer" : "default",
+  };
+  return onClick
+    ? <button type="button" onClick={onClick} title={title} style={style}>{children}</button>
+    : <div title={title} style={style}>{children}</div>;
 }
 
 /** Full-width cell inside a Grid — for the "nothing matched" row under a wall. */

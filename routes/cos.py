@@ -1,8 +1,18 @@
+import asyncio
+import json
+import queue
+import time
+
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import StreamingResponse
 
 from .deps import _cos
 
 router = APIRouter()
+
+
+def _sse(payload: dict) -> str:
+    return f"data: {json.dumps(payload)}\n\n"
 
 
 @router.get("/plan/graph")
@@ -108,6 +118,72 @@ def cos_events(n: int = 100, event_type: str = None):
         }
     except Exception as e:
         raise HTTPException(status_code=503, detail=str(e))
+
+
+@router.get("/cos/events/stream")
+async def cos_events_stream(request: Request, backlog: int = 20, health_interval: float = 20.0,
+                             max_seconds: float = 1800.0):
+    """Live SSE tail of the runtime event bus — the terminal-style feed.
+
+    Unlike `/cos/events` (a poll snapshot), this holds the connection open and
+    pushes every bus event as it fires, so a dock can show activity the moment
+    it happens rather than on the next poll tick. A `health.tick` is interleaved
+    on `health_interval` so the stream keeps producing signal even during quiet
+    periods — the "still watching" half of a health-checker, not just an
+    activity log. Auth follows the rest of `/cos/*` (owner API key, not public).
+
+    `max_seconds` bounds the connection even if the transport never reports
+    `is_disconnected()` (proxies and some ASGI transports don't) — the dock
+    reconnects on `stream.closed` rather than a subscriber leaking forever.
+    """
+    from infrastructure.event_bus import subscribe, unsubscribe, recent_events
+    from .core import health as _health
+
+    _q: "queue.SimpleQueue" = queue.SimpleQueue()
+
+    def _on_event(event_type, payload, ts):
+        _q.put({"type": event_type, "payload": payload, "ts": ts})
+
+    subscribe("*", _on_event)
+
+    async def _gen():
+        try:
+            start = time.time()
+            yield _sse({"type": "stream.connected", "ts": start})
+            if backlog:
+                # Chronological, so the dock can just append.
+                yield _sse({"type": "stream.backlog",
+                            "events": list(reversed(recent_events(n=backlog)))})
+
+            last_health = start
+            while time.time() - start < max_seconds:
+                if await request.is_disconnected():
+                    break
+                try:
+                    yield _sse(_q.get_nowait())
+                    continue
+                except queue.Empty:
+                    pass
+
+                now = time.time()
+                if health_interval and now - last_health >= health_interval:
+                    last_health = now
+                    try:
+                        yield _sse({"type": "health.tick", "payload": _health(), "ts": now})
+                    except Exception:
+                        pass
+
+                await asyncio.sleep(0.3)
+
+            yield _sse({"type": "stream.closed", "ts": time.time()})
+        finally:
+            unsubscribe("*", _on_event)
+
+    return StreamingResponse(
+        _gen(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.get("/cos/uci")

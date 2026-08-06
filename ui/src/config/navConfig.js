@@ -34,6 +34,7 @@ export const SURFACES = [
     { id: "chat",          label: "Chat",          icon: "chat",      desc: "your conversation with agents" },
     { id: "prompt",        label: "Prompt IDE",    icon: "prompt",    desc: "the prompt workbench" },
     { id: "consensus",     label: "Consensus",     icon: "consensus", desc: "where models agree" },
+    { id: "tools",         label: "Tools",         icon: "tools",     desc: "the model's tool-use loop", adv: true },
     { id: "explain",       label: "Explain",       icon: "explain",   desc: "a briefing from your decisions", adv: true },
     { id: "goals",         label: "Goals",         icon: "goals",     desc: "multi-step agent plans", adv: true, group: "Plan" },
     { id: "tasks",         label: "Tasks",         icon: "tasks",     desc: "the background work queue", adv: true, group: "Plan" },

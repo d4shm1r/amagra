@@ -26,6 +26,9 @@ const EVENT_META = {
   "routing.weight.changed": { icon: "△", tone: "gold" },
   "session.started":        { icon: "◦", tone: "muted" },
   "session.ended":          { icon: "◦", tone: "muted" },
+  "tool.call":              { icon: "⚒", tone: "accent" },
+  "health.tick":            { icon: "♡", tone: "muted" },
+  "stream.closed":          { icon: "↺", tone: "warn" },
 };
 
 /** type → { icon, color }. Kept returning a color for the existing call sites
@@ -35,33 +38,40 @@ export function eventMeta(type) {
   return { icon: m.icon, tone: m.tone, color: toneColor(m.tone) };
 }
 
-export function EventRow({ event, compact = false }) {
+/** `replay` dims a row to mark it as backlog history rather than something
+ *  that just happened. `count` renders a ×N suffix — the caller's signal that
+ *  several identical live occurrences were collapsed into one row instead of
+ *  repeating it verbatim (see components/layout/TerminalDock.jsx). */
+export function EventRow({ event, compact = false, replay = false, count }) {
   const meta  = eventMeta(event.event_type || event.type || "");
   const ts    = event.timestamp ? new Date(event.timestamp * 1000).toLocaleTimeString() : "";
   const label = (event.event_type || event.type || "event").replace(/\./g, " ");
+  const rowOpacity = replay ? 0.55 : 1;
 
   if (compact) {
     return (
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "3px 0",
-                    borderBottom: `1px solid ${T.border}20` }}>
+                    borderBottom: `1px solid ${T.border}20`, opacity: rowOpacity }}>
         <span style={{ color: meta.color, fontSize: 12, minWidth: 16 }}>{meta.icon}</span>
         <span style={{ ...TYPE.micro, color: T.muted, minWidth: 44 }}>{ts}</span>
         <span style={{ ...TYPE.caption, color: T.text, flex: 1 }}>{label}</span>
+        {count > 1 && <span style={{ ...TYPE.micro, color: T.muted }}>×{count}</span>}
       </div>
     );
   }
 
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "6px 0",
-                  borderBottom: `1px solid ${T.border}` }}>
+                  borderBottom: `1px solid ${T.border}`, opacity: rowOpacity }}>
       <span style={{ color: meta.color, fontSize: 14, minWidth: 18, paddingTop: 1 }}>{meta.icon}</span>
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
           <span style={{ ...TYPE.caption, color: T.text, fontWeight: 500 }}>{label}</span>
           <span style={{ ...TYPE.micro, color: T.muted }}>{ts}</span>
+          {count > 1 && <span style={{ ...TYPE.micro, color: T.muted }}>×{count}</span>}
         </div>
         {event.payload && Object.keys(event.payload).length > 0 && (
-          <div style={{ ...TYPE.micro, color: T.muted, marginTop: 2 }}>
+          <div style={{ ...TYPE.micro, color: T.muted, marginTop: 2, wordBreak: "break-word" }}>
             {Object.entries(event.payload)
               .filter(([k]) => !["session_id", "run_id"].includes(k))
               .slice(0, 4)

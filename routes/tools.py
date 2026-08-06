@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 import tools.catalog as catalog
 import tools.tool_loop as tool_loop
+from .core import _map_invoke_error
 
 router = APIRouter(prefix="/tools", tags=["tools"])
 
@@ -53,3 +54,12 @@ def run(req: ToolRunRequest):
         return tool_loop.run_tool_loop(_llm_invoke, req.prompt, max_iters=iters)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        # The loop's own tool errors are already caught and folded into an
+        # observation (tool_loop.py) — anything that reaches here is the LLM
+        # call itself failing (offline backend, timeout), the same failure
+        # class /ask and /ask/stream map via _map_invoke_error. Without this,
+        # an offline Ollama surfaced as a bare 500 with no CORS headers on the
+        # error body, which the browser reports as a CORS failure — a
+        # misleading symptom for "the backend isn't running".
+        raise _map_invoke_error(e)

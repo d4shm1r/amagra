@@ -4,8 +4,12 @@ Most endpoints return 503 when CognitiveState is unavailable (test environment),
 which is the expected behaviour — we verify the fallback contract, not the live COS state.
 """
 
+import json
 import os
 import sys
+import threading
+import time
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi.testclient import TestClient
@@ -72,6 +76,69 @@ def test_cos_events():
 def test_cos_events_with_n_param():
     r = client.get("/cos/events?n=5", headers=HEADERS)
     _ok_or_503(r)
+
+
+# ── /cos/events/stream ───────────────────────────────────────────────────────
+# `max_seconds` bounds the connection so the test client (which reads the
+# response to completion, it doesn't do half-duplex streaming) gets a
+# terminating body instead of hanging on an endpoint designed to stay open.
+
+def _frames(text):
+    return [json.loads(line[len("data: "):])
+            for line in text.splitlines() if line.startswith("data: ")]
+
+
+def test_cos_events_stream_opens_and_closes():
+    r = client.get(
+        "/cos/events/stream?max_seconds=0.05&health_interval=0&backlog=0",
+        headers=HEADERS,
+    )
+    assert r.status_code == 200
+    types = [f["type"] for f in _frames(r.text)]
+    assert types[0] == "stream.connected"
+    assert types[-1] == "stream.closed"
+
+
+def test_cos_events_stream_sends_backlog():
+    from infrastructure.event_bus import emit, EventType
+    emit(EventType.SESSION_STARTED, {"note": "backlog-probe"})
+
+    r = client.get(
+        "/cos/events/stream?max_seconds=0.05&health_interval=0&backlog=5",
+        headers=HEADERS,
+    )
+    frames = _frames(r.text)
+    backlog = next(f for f in frames if f["type"] == "stream.backlog")
+    assert isinstance(backlog["events"], list)
+
+
+def test_cos_events_stream_forwards_live_bus_event():
+    from infrastructure.event_bus import emit, EventType
+
+    def _emit_soon():
+        time.sleep(0.15)
+        emit(EventType.SESSION_STARTED, {"note": "live-probe-xyz"}, persist=False)
+
+    threading.Thread(target=_emit_soon, daemon=True).start()
+    r = client.get(
+        "/cos/events/stream?max_seconds=0.6&health_interval=0&backlog=0",
+        headers=HEADERS,
+    )
+    frames = _frames(r.text)
+    matches = [f for f in frames
+               if f.get("payload", {}).get("note") == "live-probe-xyz"]
+    assert matches, frames
+
+
+def test_cos_events_stream_health_tick():
+    # The poll loop sleeps in 0.3s ticks, so max_seconds must span at least
+    # one full tick past health_interval for a tick to have a chance to fire.
+    r = client.get(
+        "/cos/events/stream?max_seconds=1.0&health_interval=0.05&backlog=0",
+        headers=HEADERS,
+    )
+    types = [f["type"] for f in _frames(r.text)]
+    assert "health.tick" in types
 
 
 # ── /cos/uci ─────────────────────────────────────────────────────────────────

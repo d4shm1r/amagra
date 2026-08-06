@@ -38,4 +38,5 @@ export const ShortcutsTab        = lazy(() => import("./ShortcutsTab"));
 export const SkillsTab           = lazy(() => import("./SkillsTab"));
 export const TasksTab            = lazy(() => import("./TasksTab"));
 export const TimelineTab         = lazy(() => import("./TimelineTab"));
+export const ToolsTab            = lazy(() => import("./ToolsTab"));
 export const VersionHistoryTab   = lazy(() => import("./VersionHistoryTab"));

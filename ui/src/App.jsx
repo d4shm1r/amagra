@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback, Suspense, startTransition } from "rea
 import { API } from "@/lib/api";
 import { usePoll } from "@/lib/usePoll";
 import { ApiOfflineBanner, Column, ConfirmProvider, Toast } from "@/components/ui";
-import Onboarding  from "@/components/layout/Onboarding";
-import AppLauncher from "@/components/layout/AppLauncher";
+import Onboarding   from "@/components/layout/Onboarding";
+import AppLauncher  from "@/components/layout/AppLauncher";
+import TerminalDock from "@/components/layout/TerminalDock";
 // Every routed view, registered in tabs/index.js. Chat + Home are eager (they
 // must paint with no chunk fetch); the rest are lazy() chunks, one per tab.
 // Paired with startTransition in navTo + the Suspense boundary below, a tab
@@ -14,7 +15,7 @@ import {
   ExplainProjectTab, GoalsTab, GuideTab, KnowledgeGraphTab, LibraryTab, LogTab,
   MemoryBrowserTab, MindMapTab, PreferencesTab, ProjectStateTab, PromptEditorTab,
   ProviderSettingsTab, ResearchTab, RunsTab, ShortcutsTab, SkillsTab, TasksTab,
-  TimelineTab, VersionHistoryTab,
+  TimelineTab, ToolsTab, VersionHistoryTab,
 } from "@/tabs";
 import {
   SURFACE_BY_TAB, DEFAULT_TAB, TAB_ALIASES, VALID_TABS,
@@ -453,6 +454,7 @@ export default function App() {
               {activeTab === "inspector"     && <ContextInspectorTab contextId={inspectContextId} />}
               {activeTab === "project-state" && <ProjectStateTab />}
               {activeTab === "consensus"     && <ConsensusTab />}
+              {activeTab === "tools"         && <ToolsTab />}
               {activeTab === "explain"       && <ExplainProjectTab />}
               {activeTab === "skills"        && <SkillsTab />}
               {activeTab === "guide"         && <GuideTab />}
@@ -481,6 +483,10 @@ export default function App() {
         coherence={coherence}
         searchSignal={launcherSearchSignal}
       />
+
+      {/* Always-on runtime feed, independent of which tab is active — see
+          components/layout/TerminalDock.jsx for why this isn't the Log tab. */}
+      <TerminalDock />
     </div>
   );
 }
