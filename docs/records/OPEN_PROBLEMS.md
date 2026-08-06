@@ -299,10 +299,19 @@ defect is *fixed*; generation-model warm-up, TTFT 9.7s → 2.1s). **Steps 3–6 
   chunk + duplicates ROADMAP as a second version-truth); delete `orchestration/router.py`
   (self-declared legacy), `TABS_TOMORROW.md`, the `mode` plumbing, the `session_history`
   in-memory global.
-- **§2 — Spine decision.** `core/runtime.py` + `core/contract.py` (~1.3k LOC) are built,
-  tested, and **half-adopted** — the worst state. *Decide explicitly:* adopt (persistence
-  chain becomes middleware layers) or delete. Recommendation: adopt — §1 gives it its first
-  real job.
+- **§2 — Spine decision — reviewed 2026-08-06, DEFERRED.** Corrected finding: `core/runtime.py`
+  + `core/contract.py` + `core/registry.py` + `core/run_log.py` is ~250 lines of implementation
+  (the ~1.3k figure counted their test files). Not "half-adopted" so much as *fully isolated* —
+  `core.runtime.run()` (the onion loop) and `core.registry.ExtensionRegistry` have **zero
+  callers outside their own tests**; production `/ask` still runs entirely through
+  `orchestration/coordinator.py`. Only `Context`/`Result`/`RunLog` (plain data, not the
+  execution loop) reach `ask_pipeline.py`. §1 (the unified ask pipeline this was meant to
+  unblock) shipped in v1.8.0 — the adopt option is now unblocked, not just recommended. Owner
+  decision: **defer, not now** — adopting means real surgery on `ask_pipeline.py`'s dozen
+  inline persistence steps (the app's hottest endpoint) and deserves its own session with a
+  parity test, not a same-session call; deleting costs nothing to leave undone since the code
+  sits off every hot path. Revisit only when there's a concrete reason to touch
+  `ask_pipeline.py`'s persistence chain again — don't re-litigate from scratch.
 - **Review-loop topology promotion [B].** The agent revision cycle is now a first-class
   graph edge (`reviewer_node` + `route_after_review` loop-back in `orchestration/coordinator.py`,
   behind `AMAGRA_REVIEW_LOOP`, tested in `tests/test_review_loop.py`) rather than a hidden
