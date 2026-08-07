@@ -11,6 +11,7 @@ a tool that will 403.
 import os
 
 import tools.browser as browser
+import tools.ocac_graph as ocac
 import tools.sandbox as sbx
 import tools.web as web
 import tools.web_fetch as web_fetch
@@ -67,6 +68,19 @@ def _make_dir(args: dict):
 
 def _move(args: dict):
     return ws.move(args["src"], args["dst"], overwrite=bool(args.get("overwrite", False)))
+
+
+def _ocac_node(args: dict):
+    return ocac.get_node(args["id"])
+
+
+def _ocac_edges(args: dict):
+    return {"edges": ocac.edges(args["id"], direction=args.get("direction", "out"),
+                                 relation=args.get("relation"))}
+
+
+def _ocac_search(args: dict):
+    return {"nodes": ocac.search(args["query"], limit=int(args.get("limit", 20)))}
 
 
 def _writes_enabled() -> bool:
@@ -139,6 +153,26 @@ TOOLS: dict[str, dict] = {
         "fn": _move, "args": ["src", "dst"],
         "desc": "Move or rename a file/directory within the workspace.",
         "available": _writes_enabled,
+    },
+    "ocac_node": {
+        "fn": _ocac_node, "args": ["id"],
+        "desc": "Look up a node in the OCAC math research graph (a proof, gap, "
+                "conjecture, or theorem, by its id like 'GAP-cusp-bound') — "
+                "returns its type, status, confidence, and Lean symbol.",
+        "available": ocac.available,
+    },
+    "ocac_edges": {
+        "fn": _ocac_edges, "args": ["id", "direction?", "relation?"],
+        "desc": "List typed relations (depends_on, blocks, disproves, resolves, "
+                "...) touching an OCAC graph node — e.g. what a problem depends "
+                "on, or what blocks it.",
+        "available": ocac.available,
+    },
+    "ocac_search": {
+        "fn": _ocac_search, "args": ["query", "limit?"],
+        "desc": "Search the OCAC math research graph by node id or title "
+                "substring, to find the id for ocac_node/ocac_edges.",
+        "available": ocac.available,
     },
 }
 
