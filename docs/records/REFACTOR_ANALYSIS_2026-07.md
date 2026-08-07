@@ -5,6 +5,15 @@
 > the owner: *simplicity at maximum* — more consistency, more efficiency,
 > less perceived loading time.
 
+**Status (2026-08-06):** of the six steps in [§7](#7-suggested-sequencing-each-pr-sized-ordered-by-leverage),
+**1 (unify `/ask` pipeline) and 2 (generation-model warm-up) shipped in v1.8.0**
+(`routes/core.py` now routes both `/ask` and `/ask/stream` through the shared
+`pipeline` module). **6 (middleware-adoption-or-delete decision on the `core/`
+spine) was reviewed and explicitly deferred, not silently dropped** — `core/`
+stays as-is; see [OPEN_PROBLEMS.md](OPEN_PROBLEMS.md). **3–5 (telemetry writer,
+`constants.js` split, single-file DB default) remain open** and are not yet
+scheduled against a version.
+
 ## 0. Measured reality first (so we refactor the right thing)
 
 | Suspect | Measured | Verdict |

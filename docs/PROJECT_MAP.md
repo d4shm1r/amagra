@@ -1,26 +1,36 @@
 # Project Map — Amagra
 
-**Updated:** 2026-07-03 · **Version:** v1.6.3
+**Updated:** 2026-08-07 · **Version:** v1.8.1 (working branch: `feat/v1.9.0-decision-economics`)
 **Mission:** the local-first cognitive runtime developers build agents on top of.
 
 This is the orientation map. Each area links to the canonical document — this file does **not** duplicate their content.
 
 ## Documentation layout
 
-Docs are grouped by what kind of question they answer:
+Docs are grouped by what kind of question they answer. Every file that exists on
+disk is listed below — an entry missing from this map is the signal something
+drifted, not a reason to assume the file doesn't matter.
 
 | Directory | Question | Contents |
 |---|---|---|
 | `docs/` (top level) | *Where do I start?* | This map · [GUIDE.md](GUIDE.md) (day-to-day usage) · [ARCHITECTURE.md](ARCHITECTURE.md) (evaluator-facing claims → files) · [REFERENCE.md](REFERENCE.md) (every number) · [ROADMAP.md](ROADMAP.md) (what's next) |
 | [`docs/design/`](design/) | *What are the contracts?* | [PLATFORM_ENTITY_MODEL.md](design/PLATFORM_ENTITY_MODEL.md) · [PLUGIN_ARCHITECTURE.md](design/PLUGIN_ARCHITECTURE.md) · [PROMPT_ARTIFACT_CONTRACT.md](design/PROMPT_ARTIFACT_CONTRACT.md) · [IDENTITY.md](design/IDENTITY.md) · [OCAC_STABILITY_BRIDGE.md](design/OCAC_STABILITY_BRIDGE.md) · [TCST_AGENT_MODEL.md](design/TCST_AGENT_MODEL.md) · [DESIGN_PRINCIPLES.md](design/DESIGN_PRINCIPLES.md) (the UX filter) |
-| [`docs/records/`](records/) | *What happened, and what's true?* | [HISTORY.md](records/HISTORY.md) (phase-by-phase build log) · [FINDINGS.md](records/FINDINGS.md) (routing eval write-up) · [FAILURES.md](records/FAILURES.md) (invariants you must not break) · [ISSUES.md](records/ISSUES.md) (known bugs & limitations) · [OPEN_PROBLEMS.md](records/OPEN_PROBLEMS.md) (epistemic-layered register of what's *not* settled) · [METRICS_ROADMAP.md](records/METRICS_ROADMAP.md) · [IMPROVEMENTS.md](records/IMPROVEMENTS.md) |
-| [`docs/product/`](product/) | *Why does this exist, for whom?* | [VISION.md](product/VISION.md) · [POSITIONING.md](product/POSITIONING.md) · [COMPARISON.md](product/COMPARISON.md) (honest head-to-head) · [LAUNCH_DEBUGGER.md](product/LAUNCH_DEBUGGER.md) · [_someday.md](product/_someday.md) (frozen ideas) |
-| [`docs/ops/`](ops/) | *How do I run it in the world?* | [DEPLOY.md](ops/DEPLOY.md) (marketing site + Docker) · [PROVIDERS.md](ops/PROVIDERS.md) (cloud model keys) |
+| [`docs/records/`](records/) | *What happened, and what's true?* | **Evergreen:** [HISTORY.md](records/HISTORY.md) (phase-by-phase build log) · [FINDINGS.md](records/FINDINGS.md) (routing eval write-up) · [FAILURES.md](records/FAILURES.md) (invariants you must not break) · [ISSUES.md](records/ISSUES.md) (known bugs & limitations) · [OPEN_PROBLEMS.md](records/OPEN_PROBLEMS.md) (epistemic-layered register of what's *not* settled — start here for "what's open") · [SCORECARD.md](records/SCORECARD.md) (capability maturity, 1–10) · [STRATEGIC_SCORECARD.md](records/STRATEGIC_SCORECARD.md) (orchestration-roadmap maturity, 0–100%) · [PUBLISH_CHECKLIST.md](records/PUBLISH_CHECKLIST.md) (closed, local-only, gitignored). **The "what's next" chain** (each derives from the previous — don't duplicate, link): [IMPROVEMENTS.md](records/IMPROVEMENTS.md) (the *why*, from the OCAC bridge) → [METRICS_ROADMAP.md](records/METRICS_ROADMAP.md) (phased execution checklist) · [V1.9.0_SCOPE.md](records/V1.9.0_SCOPE.md) (current release's scope reality-check) · [UPCOMING.md](records/UPCOMING.md) (release-sequencing plan) · [NEXT_VERSION.md](records/NEXT_VERSION.md) (rolling queued-but-not-shipped register, ties the two together). **Dated one-off analyses:** [REFACTOR_ANALYSIS_2026-07.md](records/REFACTOR_ANALYSIS_2026-07.md) (status noted inline — partially shipped, partially open, one item explicitly deferred). |
+| [`docs/product/`](product/) | *Why does this exist, for whom?* | [VISION.md](product/VISION.md) · [POSITIONING.md](product/POSITIONING.md) · [COMPARISON.md](product/COMPARISON.md) (honest head-to-head) · [LAUNCH_DEBUGGER.md](product/LAUNCH_DEBUGGER.md) · [_someday.md](product/_someday.md) (frozen ideas — not current scope) |
+| [`docs/ops/`](ops/) | *How do I run it in the world?* | [DEPLOY.md](ops/DEPLOY.md) (marketing site + Docker) · [PROVIDERS.md](ops/PROVIDERS.md) (cloud model keys) · [RELEASING.md](ops/RELEASING.md) (tag → build pipeline) · [DISASTER_RECOVERY.md](ops/DISASTER_RECOVERY.md) · [TROUBLESHOOTING_WINDOWS.md](ops/TROUBLESHOOTING_WINDOWS.md) |
+| `docs/ideas/` | *What's speculative, pre-decision?* | [delta-algebra-spec.md](ideas/delta-algebra-spec.md) + its two check scripts (`delta_reducer_check.py`, `router_parity_check.py`) · [knowverse.md](ideas/knowverse.md) · [revenueGPT.md](ideas/revenueGPT.md). Not linked from anywhere else on purpose — promote to `design/` or `product/` if a decision is made, otherwise leave parked here. |
 | `docs/brand/` | assets | logo, wordmarks, social-preview card |
 | `docs/screenshots/` | assets | README screenshots |
 
 The live queue of bugs and features is **GitHub Issues**; docs are records, not queues.
-A curated subset of these docs is served by the API at `GET /docs/index` + `GET /docs/{name}` (`routes/docs_api.py`).
+A curated subset of these docs is served by the API at `GET /docs/index` + `GET /docs/{name}`
+(`routes/docs_api.py`, `_ALLOWED_DOCS`) — curated means evergreen reference material;
+the dated planning docs (`NEXT_VERSION`, `UPCOMING`, `V1.9.0_SCOPE`,
+`REFACTOR_ANALYSIS_2026-07`), frozen ideas (`_someday.md`, `docs/ideas/`), and the
+gitignored `PUBLISH_CHECKLIST.md` are deliberately left out of that API surface —
+they're for contributors reading the repo, not the in-app viewer.
+`test_routes_docs_api.py::test_allowed_docs_all_exist_on_disk` keeps the map itself honest;
+nothing currently checks that every *evergreen* doc has an entry, so update both when adding one.
 
 ## Code layout (one line each)
 
@@ -43,7 +53,7 @@ A curated subset of these docs is served by the API at `GET /docs/index` + `GET 
 | `desktop/` | Electron shell + `install-desktop-entry.sh` (Linux launcher entry) |
 | `packaging/` | AppImage build (`build-appimage.sh`) |
 | `scripts/` | Live utilities only: `migrate.py`, `migrate_to_single_db.py`, `ModelOverview.py` |
-| `tests/` | Pytest suite (986 passing) |
+| `tests/` | Pytest suite (1,275 passing, 1 skipped — measured 2026-08-07) |
 
 Runtime state (`memory/*.db`, `tasks.db`, `logs/`) is generated, never committed.
 
@@ -53,14 +63,14 @@ Runtime state (`memory/*.db`, `tasks.db`, `logs/`) is generated, never committed
 
 | | |
 |---|---|
-| Version | v1.6.3 (desktop app + unified launcher nav) |
+| Version | v1.8.1 (decision-economics groundwork + reliability hardening; `v1.9.0` in progress on `feat/v1.9.0-decision-economics`, see [UPCOMING.md](records/UPCOMING.md)) |
 | Specialist agents | 10 (`agents/registry.py` is canonical) |
 | Skill graph | 21 nodes |
 | Routing accuracy | ~99% curated · held-out (n=91): ~31% keyword-only → ~53% with semantic fallback (on by default) — internal metrics, not validated (single-rater), see [FINDINGS.md](records/FINDINGS.md) §3a |
-| Memory | SQLite → auto-promote to FAISS at 800 entries · 52× LRU cache (vector count is runtime state — 97 at the 2026-07-03 snapshot) |
-| UCI health | h_UCI ≈ 90.8 (2026-07-03 snapshot; internal heuristic, not a quality measure — not surfaced publicly) |
-| API surface | 100+ endpoints (153 routes) |
-| Tests | 986 passing |
+| Memory | SQLite → auto-promote to FAISS at 800 entries · 52× LRU cache (vector count is runtime state — last recorded 628+ in [SCORECARD.md](records/SCORECARD.md), not re-measured here) |
+| UCI health | Last recorded ≈ 80.8 ([SCORECARD.md](records/SCORECARD.md)/Phase 37 notes) — internal heuristic, not a quality measure, not surfaced publicly, and **not re-measured for this snapshot**; treat any UCI number as dated the moment it's written down |
+| API surface | 155 routes (measured 2026-08-07 via `len(app.routes)`) |
+| Tests | 1,275 passing, 1 skipped (measured 2026-08-07) |
 | Auth | API-key, deny-by-default when `REQUIRE_AUTH=1` |
 
 ---
@@ -111,7 +121,11 @@ Endpoint and UI-tab inventories live in [REFERENCE.md](REFERENCE.md); they are n
 | **v1.6.0** | **Prompts as first-class, versioned artifacts** (prompt files, versions, decision links, diff) | ✅ Shipped |
 | v1.6.1 – v1.6.2 | Calm tab redesign · design tokens · Cognition IA restraint | ✅ Shipped |
 | **v1.6.3** | **AMAGRA desktop app** (Electron) · wordmark branding · unified ☰ launcher nav | ✅ Shipped |
-| v1.7 → v2.0 | Workspaces & RBAC · team memory & governance · agent registry & SDK | ⬜ Planned |
+| v1.6.4 | System alignment & honesty pass (measured routing accuracy, identity contract, skill-graph coupling, OCAC §6 sync) | ✅ Shipped |
+| v1.7.0 – v1.7.6 | *(shipped — tagged in git, **not yet written up in [HISTORY.md](records/HISTORY.md)**; see the "Known gaps" section below)* | ✅ Shipped |
+| **v1.8.0 – v1.8.1** | Decision-economics groundwork (EV selector + counterfactual recording, not yet closing O2) · reliability hardening (thread-safety, rate limits) · review loop (flag-gated, off by default) — see [UPCOMING.md](records/UPCOMING.md) | ✅ Shipped |
+| **v1.9.0** | Decision-economics loop closes O2 (needs real feedback volume, [O5](records/OPEN_PROBLEMS.md#o5)) · review loop promoted default-on — see [V1.9.0_SCOPE.md](records/V1.9.0_SCOPE.md) | 🚧 In progress (`feat/v1.9.0-decision-economics`) |
+| v2.0 | Workspaces & RBAC · team memory & governance · agent registry & SDK | ⬜ Planned |
 
 See [ROADMAP.md](ROADMAP.md) for the full forward plan and [HISTORY.md](records/HISTORY.md) for the per-phase record.
 
@@ -124,5 +138,6 @@ See [ROADMAP.md](ROADMAP.md) for the full forward plan and [HISTORY.md](records/
 | Plan Graph pre-query | Empty state until first compound query runs. |
 | Feedback-negative 36% | 1,096 real 👍/👎 ratings exist (64% positive) — Adaptation is the weakest UCI layer; negative feedback isn't yet mined into fixes. |
 | No external benchmarks in the health picture | HumanEval/adversarial/recall harnesses exist in `evaluation/` but run ad hoc — no dated ledger, no unseen-workload suite. |
+| HISTORY.md stops at v1.6.4 | Seven tagged releases (v1.7.0–v1.8.1) shipped since without a HISTORY.md entry; the phase-status table above summarizes v1.8.0–v1.8.1 from [UPCOMING.md](records/UPCOMING.md), but v1.7.x has no write-up anywhere. Reconstruct from `git log --merges` PR titles when someone has the time. |
 
 Full bug/limitation list: [ISSUES.md](records/ISSUES.md).

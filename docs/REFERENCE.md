@@ -2,7 +2,7 @@
 
 A locally-running cognitive AI platform built on phi4-mini (3.8B) and LangGraph. Natural language queries are classified by a deterministic signal engine, routed to a specialist agent, executed with persistent semantic memory, and governed by a Cognitive OS that tracks world state, health scores, and execution plans. Everything runs on an RTX 2050 — no cloud dependency.
 
-**Version:** v1.6.3  
+**Version:** v1.8.1  
 **Stack:** phi4-mini · Ollama · LangGraph · FastAPI · React · FAISS · SQLite · nomic-embed-text · Stripe · SendGrid
 
 ---
@@ -307,12 +307,12 @@ Current: **h_UCI ≈ 90.8** (2026-07-03 snapshot; live value at `GET /cos/uci/hi
 | Build phases completed | 37 |
 | Routing accuracy | 97% · 99% ablation (internal dev metrics — see [FINDINGS.md](records/FINDINGS.md)) |
 | Skill graph nodes | 21 |
-| FAISS vectors | runtime state (97 at 2026-07-03) |
+| FAISS vectors | runtime state — last recorded 628+ ([SCORECARD.md](records/SCORECARD.md)), not re-measured here |
 | FAISS search P50 | 0.38ms |
 | LRU cache speedup | 52× |
-| UCI score | ~90.8 (2026-07-03) |
-| API endpoints | 100+ (153 routes) |
-| Test suite | 986 passing |
+| UCI score | last recorded ~80.8 ([SCORECARD.md](records/SCORECARD.md)); dated the moment it's written, not re-measured here |
+| API endpoints | 155 routes (measured 2026-08-07) |
+| Test suite | 1,275 passing, 1 skipped (measured 2026-08-07) |
 | Avg response latency | ~4–8s (phi4-mini on RTX 2050) |
 | Full reflection rate | ~15% (down from 58% pre-triage) |
 
