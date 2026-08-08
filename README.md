@@ -35,6 +35,12 @@
   <sub><b>Decision replay</b> — click any past answer and reconstruct exactly why it was routed and answered that way: which agent, which memories, what confidence.</sub>
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/offline.gif" width="90%" alt="Wifi turned off on camera, the local model still answers — no network icon, no cloud dependency" />
+  <br />
+  <sub><b>Offline proof</b> — pull the network (watch the wifi icon disappear), it still answers. Local means local.</sub>
+</p>
+
 ---
 
 ## What it does
