@@ -46,13 +46,12 @@ nothing currently checks that every *evergreen* doc has an entry, so update both
 | `infrastructure/` | Event bus, metrics engine, transparency classifier, DB plumbing |
 | `providers/` | Ollama / Anthropic / OpenAI / Gemini adapters |
 | `routes/` | FastAPI route modules (`api.py` at the root mounts them) |
-| `evaluation/` | Routing benchmarks, adversarial eval, rater harness |
-| `tools/` | Agent tools: workspace files, sandbox, web search |
+| `tools/` | Agent tools: workspace files, sandbox, web search, the OCAC research-graph adapter |
 | `training/` | Auto-retrain helpers for the learned router |
 | `ui/` | React dashboard (Vite) — see `ui/src/README.md` for the folder contract, `ui/src/config/navConfig.js` for the launcher |
 | `desktop/` | Electron shell + `install-desktop-entry.sh` (Linux launcher entry) |
 | `packaging/` | AppImage build (`build-appimage.sh`) |
-| `scripts/` | Live utilities only: `migrate.py`, `migrate_to_single_db.py`, `ModelOverview.py` |
+| `workbench/` | Dev tooling unreachable from the running app (split out 2026-07-14, PR `af4d958`): `workbench/evaluation/` (routing benchmarks, adversarial eval, rater harness — was `evaluation/`), `workbench/scripts/` (`migrate.py`, `migrate_to_single_db.py`, `ModelOverview.py` — was `scripts/`), `workbench/brand/` (diagram generators). Two files stayed behind because they're load-bearing at runtime: `infrastructure/math_metrics.py`, `memory_core/memory_gate.py`. |
 | `tests/` | Pytest suite (1,275 passing, 1 skipped — measured 2026-08-07) |
 
 Runtime state (`memory/*.db`, `tasks.db`, `logs/`) is generated, never committed.

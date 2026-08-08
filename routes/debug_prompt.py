@@ -24,6 +24,7 @@ it makes outbound model calls, possibly with the stored key.
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 
 from fastapi import APIRouter
@@ -56,7 +57,11 @@ class DebugResult(BaseModel):
 
 
 def _resolve_models(models: list[LLMConfig]) -> list[dict]:
-    """Validate each config and fill a blank api_key from the stored owner key."""
+    """Validate each config and fill a blank api_key: first from the stored
+    owner key (only when it's actually for this provider — the stored config
+    is a single current provider/key pair, not a per-provider map), then from
+    that provider's own env var (ANTHROPIC_API_KEY, OPENAI_API_KEY, ...), the
+    same names providers/*.py fall back to when run standalone."""
     if not models:
         cur = pc.current()  # {provider, model, base_url, ...} — no secret returned
         models = [LLMConfig(provider=cur["provider"], model=cur.get("model"),
@@ -66,8 +71,10 @@ def _resolve_models(models: list[LLMConfig]) -> list[dict]:
     for cfg in models:
         _validate(cfg)
         body = cfg.model_dump()
-        if not body.get("api_key") and stored.get("api_key"):
+        if not body.get("api_key") and stored.get("provider") == cfg.provider and stored.get("api_key"):
             body["api_key"] = stored["api_key"]
+        if not body.get("api_key"):
+            body["api_key"] = os.environ.get(f"{cfg.provider.upper()}_API_KEY", "")
         resolved.append(body)
     return resolved
 

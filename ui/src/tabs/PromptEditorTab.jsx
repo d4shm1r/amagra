@@ -5,6 +5,7 @@ import { computeDiagnostics } from "@/lib/promptDiagnostics";
 import { slugify, saveHead, saveVersion, importFromLocalStorage,
          currentVersion, promptVersionId, saveRun } from "@/lib/promptStore";
 import PromptVersionDiff from "@/components/panels/PromptVersionDiff";
+import { COMPARE_TARGETS } from "@/config/compareTargets";
 // The app-wide hero. Note this file keeps its OWN local `T` palette below, so
 // only the component comes across — importing the design-system `T` here would
 // shadow-clash with it.
@@ -1074,14 +1075,10 @@ function TemplatesSection({ domain, currentContent, onApply }) {
 // against the configured model by default and any extras side by side.
 // ─────────────────────────────────────────────────────────────
 
-// Optional comparison targets. "Current" (the saved provider) is added first
-// at runtime; these only run if the matching provider/key is configured —
-// otherwise the result slot carries the error, which is the point of a debugger.
-const COMPARE_TARGETS = [
-  { id: "ollama",    label: "Local · phi4-mini",  cfg: { provider: "ollama",    model: "phi4-mini:latest" } },
-  { id: "anthropic", label: "Claude Sonnet 4.6",  cfg: { provider: "anthropic", model: "claude-sonnet-4-6" } },
-  { id: "openai",    label: "GPT-4o-mini",        cfg: { provider: "openai",    model: "gpt-4o-mini", base_url: "https://api.openai.com/v1" } },
-];
+// "Current" (the saved provider) is added first at runtime; COMPARE_TARGETS
+// (shared with ConsensusTab — see ui/src/config/compareTargets.js) only run if
+// the matching provider/key is configured — otherwise the result slot carries
+// the error, which is the point of a debugger.
 
 // Divergence highlight — the point of running side by side is to SEE where the
 // models disagree. We measure it client-side: each output becomes a set of

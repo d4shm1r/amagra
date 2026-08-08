@@ -2,6 +2,7 @@ import { useState } from "react";
 import { T, LUX, GOLD, TYPE, EASE, DUR, FONT_DISPLAY } from "@/styles/theme";
 
 import { API } from "@/lib/api";
+import { COMPARE_TARGETS } from "@/config/compareTargets";
 
 // Consensus Engine — ask several models the same thing, then show how much they
 // AGREE. The debugger's divergence view turned into a trust feature: the result
@@ -37,7 +38,10 @@ export default function ConsensusTab() {
       const r = await fetch(`${API}/consensus`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, system: system || null, synthesize }),
+        body: JSON.stringify({
+          prompt, system: system || null, synthesize,
+          models: COMPARE_TARGETS.map(t => t.cfg),
+        }),
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setRes(await r.json());
@@ -111,7 +115,7 @@ export default function ConsensusTab() {
             Synthesize a merged answer
           </label>
           <span style={{ ...TYPE.caption, marginLeft: "auto", color: T.muted }}>
-            ⌘↵ to run · models from Settings → Model
+            ⌘↵ to run · compares local Ollama, Claude & GPT-4o-mini — unconfigured ones report their own error
           </span>
         </div>
       </div>

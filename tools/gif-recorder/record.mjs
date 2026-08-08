@@ -85,7 +85,9 @@ async function shotDivergence(browser) {
   console.log("▶ Shot 1 — divergence run");
   const { ctx, dir } = await newRecordedContext(browser, "divergence");
   const page = await ctx.newPage();
-  await page.goto(UI, { waitUntil: "networkidle" });
+  // Not "networkidle": Vite's dev-server HMR client keeps a WebSocket open
+  // indefinitely, so networkidle never resolves and this always timed out.
+  await page.goto(UI, { waitUntil: "load" });
   await page.waitForTimeout(700);
 
   await goToTab(page, "Consensus");
@@ -127,7 +129,9 @@ async function shotReplay(browser) {
   const page = await ctx.newPage();
   watchErrors(page, "replay");
   try {
-  await page.goto(UI, { waitUntil: "networkidle" });
+  // Not "networkidle": Vite's dev-server HMR client keeps a WebSocket open
+  // indefinitely, so networkidle never resolves and this always timed out.
+  await page.goto(UI, { waitUntil: "load" });
   await page.waitForTimeout(700);
 
   await goToTab(page, "Decisions");
@@ -185,7 +189,9 @@ async function shotOffline(browser) {
     if (/openai|anthropic|googleapis|cohere|mistral/i.test(host)) return route.abort();
     return route.continue();
   });
-  await page.goto(UI, { waitUntil: "networkidle" });
+  // Not "networkidle": Vite's dev-server HMR client keeps a WebSocket open
+  // indefinitely, so networkidle never resolves and this always timed out.
+  await page.goto(UI, { waitUntil: "load" });
   await page.waitForTimeout(700);
 
   const input = page.getByPlaceholder(/ask anything/i);
