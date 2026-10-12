@@ -1,3 +1,5 @@
+> **Archived (October 2026).** This project is finished as an experiment and is no longer maintained. The code stays here, MIT licensed, and still runs as described below; feel free to fork it. The amagra.dev domain now hosts the author's next products.
+
 <p align="center">
   <img src="docs/brand/amagra-logo.png" alt="Amagra" width="440" />
 </p>
